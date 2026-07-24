@@ -390,7 +390,9 @@ flowchart LR
   authorization. Vernal supplies component lifecycle and interception, not a
   competing security kernel. Its consumer-owned `sa-token-vernal` bridge now
   adapts `HttpRequestSnapshot`, projects `SecurityPrincipal`, and preserves
-  request-level `SaTokenContext` across Tokio futures.
+  request-level `SaTokenContext` across Tokio futures. `SaTokenComponents`
+  atomically installs the caller's exact `Arc<SaTokenManager>` and its bridge
+  into a validated Vernal dependency graph.
 - **Ddd4r** may use Vernal to compose domain services, application services,
   policies, and adapters while retaining its own DDD/CQRS semantics.
 - **Web frameworks** retain ownership of routing, request/response types,
@@ -432,7 +434,8 @@ under design. There is no crates.io installation command or stable API yet.
 | 5 | Hutool-Rust, Sa-Token-Rust, and Ddd4r bridges | Consumer-owned integration examples |
 | 6 | Preview release | MSRV, SemVer, security, docs.rs, and package gates |
 
-Phase 5 is in progress: Sa-Token-Rust owns a tested `sa-token-vernal` bridge,
+Phase 5 is in progress: Sa-Token-Rust owns a tested and remotely integrated
+`sa-token-vernal` bridge,
 and Hutool-Rust locally owns a tested `hutool-vernal` HTTP component bridge;
 both pin verified Vernal Git revisions. The Hutool-Rust checkout is currently
 under a separate history-rewrite/refactor stream, so its clean remote

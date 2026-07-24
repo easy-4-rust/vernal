@@ -619,8 +619,10 @@ Request Scope 传播鉴权结果。Token、Session、Role、Permission、Cookie 
 Sa-Token-Rust 仓库现已实现消费方持有、暂不发布的 `sa-token-vernal`。它固定到
 已经验证的 Vernal Git Revision，把 `HttpRequestSnapshot` 适配为 `SaRequest`，
 将已认证角色投影为 `SecurityPrincipal`，并让下游 Future 运行在请求级
-`SaTokenContext` 中。现有十类 Plugin 仍是 Vernal Adapter 矩阵的输入证据，
-不表示 Vernal 会静默复制或内嵌这些源码。
+`SaTokenContext` 中。`SaTokenComponents` 还会保留调用方传入的原始
+`Arc<SaTokenManager>` 身份，并把它与 Bridge 原子安装为经过图校验的
+`SaTokenManager -> VernalSaTokenBridge` 组件关系。现有十类 Plugin 仍是
+Vernal Adapter 矩阵的输入证据，不表示 Vernal 会静默复制或内嵌这些源码。
 
 ### 12.3 Ddd4r
 
