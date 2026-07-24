@@ -219,6 +219,9 @@ Implemented reusable facilities for Axum, Tonic, and other Tower services:
   owned HTTP metadata snapshot, and exposes the Scope-owned cancellation token;
 - `AopLayer` resolves `RouteMetadata` into a precompiled `InvocationPlan` for
   security, transaction, audit, and observability interceptors;
+- `ErrorMappingLayer` delegates both readiness and call failures to a typed
+  `TowerErrorMapper`, which can recover them as framework-native responses or
+  convert them into a new `Service::Error`;
 - `TowerRouteResolver` lets adapters derive low-cardinality route metadata from
   native routing information;
 - `TowerResponse<R>` preserves the native response and body across type erasure
@@ -233,14 +236,12 @@ interceptor never transfers request ownership to the downstream service, while
 downstream errors traverse the complete AOP chain before being restored to
 their native error type.
 
-Remaining Phase 4/adapter facility:
-
-- configurable error mapping to `Service::Error`.
-
-Layer ordering is contractual and tested:
+Layer ordering is contractual and tested. Error mapping wraps AOP so it can
+recover both infrastructure and interceptor failures:
 
 ```text
-Trace -> Context -> RequestScope -> ContextPropagation -> Security/AOP -> Handler -> ErrorMapping
+request: Trace -> Context -> RequestScope -> ContextPropagation -> ErrorMapping -> Security/AOP -> Handler
+error:   Handler -> Security/AOP -> ErrorMapping
 ```
 
 ### 7.2 `vernal-hyper`
@@ -270,7 +271,9 @@ This crate implements HTTP transport concerns only:
 ### 8.1 Framework-specific constraints
 
 - **Axum:** reuse `vernal-tower`; component extractors read router state or
-  request extensions and never create a second container.
+  request extensions and never create a second container. Its protocol mapper
+  is installed through the shared `ErrorMappingLayer`, rather than a dedicated
+  Axum error-handling middleware.
 - **Actix Web:** context lives in app data; multi-worker singleton and request
   scope boundaries need explicit tests. Actix services commonly use `Rc` and
   local non-`Send` futures, so strict middleware uses Vernal's separate

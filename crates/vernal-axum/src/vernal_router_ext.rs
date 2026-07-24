@@ -2,14 +2,12 @@
 
 use std::sync::Arc;
 
-use std::convert::Infallible;
-
-use axum::{Router, error_handling::HandleErrorLayer, middleware};
+use axum::{Router, middleware};
 use tower::ServiceBuilder;
 use vernal_context::ApplicationContext;
-use vernal_tower::{AopLayer, AopServiceError, VernalLayer};
+use vernal_tower::{AopLayer, ErrorMappingLayer, VernalLayer};
 
-use crate::{AxumAopError, AxumRequestScope, AxumRouteResolver};
+use crate::{AxumRequestScope, AxumRouteResolver, axum_aop_error_mapper::AxumAopErrorMapper};
 
 /// 为 Axum `Router` 一次装配 Vernal Context 与请求作用域。
 pub trait VernalRouterExt {
@@ -38,15 +36,10 @@ where
     fn with_vernal_aop(self, context: Arc<ApplicationContext>) -> Self {
         self.layer(
             ServiceBuilder::new()
-                .layer(HandleErrorLayer::new(map_aop_error))
+                .layer(ErrorMappingLayer::new(AxumAopErrorMapper))
                 .layer(AopLayer::new(AxumRouteResolver)),
         )
         .layer(middleware::from_fn_with_state((), AxumRequestScope::handle))
         .layer(VernalLayer::new(context))
     }
-}
-
-/// 把 Tower AOP 错误交给 Axum 原生 `IntoResponse` 边界。
-async fn map_aop_error(error: AopServiceError<Infallible>) -> AxumAopError {
-    AxumAopError::new(error)
 }

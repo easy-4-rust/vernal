@@ -204,6 +204,9 @@ stateDiagram-v2
   元数据快照，并暴露由请求 Scope 拥有的同源取消令牌；
 - `AopLayer`：把 `RouteMetadata` 转换成预编译 `InvocationPlan`，统一执行安全、
   事务、审计和可观测性拦截器；
+- `ErrorMappingLayer`：把就绪检查与调用阶段的失败统一交给类型化
+  `TowerErrorMapper`，既可恢复为框架原生响应，也可转换为新的
+  `Service::Error`；
 - `TowerRouteResolver`：允许上层 Adapter 使用原生路由信息生成低基数路由元数据；
 - `TowerResponse<R>`：在类型擦除边界内保留原生响应和 Body，不读取、不缓冲，
   且只要求响应满足 `Send`；
@@ -215,14 +218,12 @@ stateDiagram-v2
 `MissingPlanPolicy::Proceed`。拦截器短路时请求所有权不会交给下游；下游错误会先
 经过完整 AOP 链，再恢复为原生 `Service::Error`。
 
-仍待后续 Phase 4/Adapter 实现：
-
-- 错误分类到 Tower `Service::Error` 的可配置映射。
-
-Layer 顺序属于公共合同，必须在测试中固定：
+Layer 顺序属于公共合同，必须在测试中固定。错误映射层包裹 AOP，才能同时恢复
+基础设施错误与拦截器错误：
 
 ```text
-Trace -> Context -> RequestScope -> ContextPropagation -> Security/AOP -> Handler -> ErrorMapping
+请求：Trace -> Context -> RequestScope -> ContextPropagation -> ErrorMapping -> Security/AOP -> Handler
+错误：Handler -> Security/AOP -> ErrorMapping
 ```
 
 ### 7.2 `vernal-hyper`
@@ -252,7 +253,8 @@ Trace -> Context -> RequestScope -> ContextPropagation -> Security/AOP -> Handle
 ### 8.1 框架特定约束
 
 - **Axum**：优先复用 `vernal-tower`；Vernal 组件提取器只读取 Router State 或
-  Request Extension，不建立第二个容器。
+  Request Extension，不建立第二个容器；协议错误映射通过公共
+  `ErrorMappingLayer` 安装，不再维护 Axum 专属错误处理中间件。
 - **Actix Web**：Context 属于 App Data；必须验证多 Worker 下 Singleton 与
   Request Scope 的边界。Actix Service 通常使用 `Rc` 与本地非 `Send` Future，
   因此严格中间件使用 Vernal 独立的

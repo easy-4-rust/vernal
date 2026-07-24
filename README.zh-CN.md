@@ -109,7 +109,7 @@ Vernal 遵守四条不可退化的规则：
 | `vernal-macros` | Phase 2 宏已实现 | 显式注入元数据与 Context-local 异步方法织入 |
 | `vernal-web` | Phase 4 合同已实现 | 框架中立的 Context、请求 Scope、Handler 和错误合同 |
 | `vernal-http` | Phase 4 合同已实现 | HTTP 请求、响应、Body、流、取消和背压合同 |
-| `vernal-tower` | Phase 4 底座已实现 | Tower Context、请求 Scope、元数据/取消传播、AOP 调用链与原生错误边界 |
+| `vernal-tower` | Phase 4 底座已实现 | Tower Context、请求 Scope、传播、AOP 与可配置原生错误恢复 |
 | `vernal-hyper` | Phase 4 底座已实现 | Hyper 请求与 Body Frame 无损传输桥接 |
 
 目标集成集合记录在

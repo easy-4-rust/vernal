@@ -2,6 +2,7 @@
 #![doc = "Vernal 的 Axum 0.8 原生集成。"]
 
 mod axum_aop_error;
+mod axum_aop_error_mapper;
 mod axum_rejection;
 mod axum_request_scope;
 mod axum_route_resolver;
