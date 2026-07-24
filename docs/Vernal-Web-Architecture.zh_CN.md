@@ -200,6 +200,8 @@ stateDiagram-v2
 - `VernalLayer`：向 Service 注入 Context Handle；
 - `RequestScopeLayer`：在响应 Body 完成、Service 错误、取消或请求 Future
   被丢弃时关闭请求作用域；
+- `ContextPropagationLayer`：创建或保留 `RequestContext`，捕获 owned HTTP
+  元数据快照，并暴露由请求 Scope 拥有的同源取消令牌；
 - `AopLayer`：把 `RouteMetadata` 转换成预编译 `InvocationPlan`，统一执行安全、
   事务、审计和可观测性拦截器；
 - `TowerRouteResolver`：允许上层 Adapter 使用原生路由信息生成低基数路由元数据；
@@ -215,13 +217,12 @@ stateDiagram-v2
 
 仍待后续 Phase 4/Adapter 实现：
 
-- `ContextPropagationLayer`：传播请求元数据和取消；
 - 错误分类到 Tower `Service::Error` 的可配置映射。
 
 Layer 顺序属于公共合同，必须在测试中固定：
 
 ```text
-Trace -> Context -> RequestScope -> Security/AOP -> Handler -> ErrorMapping
+Trace -> Context -> RequestScope -> ContextPropagation -> Security/AOP -> Handler -> ErrorMapping
 ```
 
 ### 7.2 `vernal-hyper`

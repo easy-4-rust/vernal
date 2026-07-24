@@ -120,7 +120,7 @@ Detailed decisions, flows, failure semantics, and acceptance criteria are in:
 | `vernal-macros` | Phase 2 macros implemented | Explicit `Arc<T>` injection metadata and context-local async method weaving |
 | `vernal-web` | Phase 4 contract implemented | Framework-neutral context, request scope, handler, and error contracts |
 | `vernal-http` | Phase 4 contract implemented | HTTP request, response, body, streaming, cancellation, and backpressure |
-| `vernal-tower` | Phase 4 foundation implemented | Tower context, request scope, AOP invocation, and native error boundaries |
+| `vernal-tower` | Phase 4 foundation implemented | Tower context, request scope, metadata/cancellation propagation, AOP invocation, and native error boundaries |
 | `vernal-hyper` | Phase 4 foundation implemented | Lossless Hyper request/body-frame transport bridge |
 
 The target integration set is recorded in

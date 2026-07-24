@@ -215,6 +215,8 @@ Implemented reusable facilities for Axum, Tonic, and other Tower services:
 - `VernalLayer` injects the context handle;
 - `RequestScopeLayer` opens and closes request scopes across response body
   completion, service error, cancellation, and dropped futures;
+- `ContextPropagationLayer` creates or preserves `RequestContext`, captures an
+  owned HTTP metadata snapshot, and exposes the Scope-owned cancellation token;
 - `AopLayer` resolves `RouteMetadata` into a precompiled `InvocationPlan` for
   security, transaction, audit, and observability interceptors;
 - `TowerRouteResolver` lets adapters derive low-cardinality route metadata from
@@ -231,15 +233,14 @@ interceptor never transfers request ownership to the downstream service, while
 downstream errors traverse the complete AOP chain before being restored to
 their native error type.
 
-Remaining Phase 4/adapter facilities:
+Remaining Phase 4/adapter facility:
 
-- `ContextPropagationLayer` carries metadata and cancellation;
 - configurable error mapping to `Service::Error`.
 
 Layer ordering is contractual and tested:
 
 ```text
-Trace -> Context -> RequestScope -> Security/AOP -> Handler -> ErrorMapping
+Trace -> Context -> RequestScope -> ContextPropagation -> Security/AOP -> Handler -> ErrorMapping
 ```
 
 ### 7.2 `vernal-hyper`

@@ -32,7 +32,10 @@ use tower::{Layer, ServiceExt, service_fn};
 use vernal_aop::{Advisor, InvocationError, Operation};
 use vernal_context::{ApplicationContext, VernalApplicationBuilder};
 use vernal_http::HttpBody;
-use vernal_tower::{AopLayer, AopServiceError, MissingPlanPolicy, RequestScopeLayer, VernalLayer};
+use vernal_tower::{
+    AopLayer, AopServiceError, ContextPropagationLayer, MissingPlanPolicy, RequestScopeLayer,
+    VernalLayer,
+};
 use vernal_web::{RequestContext, RouteMetadata, WebRequestScope};
 
 async fn ready_context(
@@ -84,7 +87,8 @@ async fn recommended_layer_order_builds_context_scope_and_aop_invocation() {
         Ok::<_, Infallible>(Response::new(HttpBody::full("woven")))
     });
     let aop = AopLayer::from_extension().layer(handler);
-    let scoped = RequestScopeLayer::new().layer(aop);
+    let propagated = ContextPropagationLayer::from_extension().layer(aop);
+    let scoped = RequestScopeLayer::new().layer(propagated);
     let service = VernalLayer::new(context).layer(scoped);
     let mut request = Request::new(());
     request.extensions_mut().insert(route());

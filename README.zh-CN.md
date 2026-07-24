@@ -34,7 +34,8 @@ Hutool-Rust · Sa-Token-Rust · Ddd4r · 通用 Rust 应用
 > **项目状态**：实验阶段。Phase 1 IoC、Tokio-first 的 Phase 2 AOP 内核、
 > Phase 3 应用上下文，以及 Phase 4 Web/HTTP/Tower/Hyper 底座已有可调用实现
 > 和合同测试；Axum、Actix Web、Rocket、Warp、Salvo、Poem、Ntex、Gotham、
-> Tide 与 Tonic 十种适配器均已具备可运行实现，过程宏仍是骨架。当前尚未发布。
+> Tide 与 Tonic 十种适配器均已具备可运行实现，显式组件派生宏和 Context-local
+> 异步 AOP 方法宏可调用但仍处实验阶段。当前尚未发布。
 
 ## 1. 愿景
 
@@ -108,7 +109,7 @@ Vernal 遵守四条不可退化的规则：
 | `vernal-macros` | Phase 2 宏已实现 | 显式注入元数据与 Context-local 异步方法织入 |
 | `vernal-web` | Phase 4 合同已实现 | 框架中立的 Context、请求 Scope、Handler 和错误合同 |
 | `vernal-http` | Phase 4 合同已实现 | HTTP 请求、响应、Body、流、取消和背压合同 |
-| `vernal-tower` | Phase 4 底座已实现 | Tower Context、请求 Scope、AOP 调用链与原生错误边界 |
+| `vernal-tower` | Phase 4 底座已实现 | Tower Context、请求 Scope、元数据/取消传播、AOP 调用链与原生错误边界 |
 | `vernal-hyper` | Phase 4 底座已实现 | Hyper 请求与 Body Frame 无损传输桥接 |
 
 目标集成集合记录在

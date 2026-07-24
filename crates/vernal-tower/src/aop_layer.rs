@@ -6,7 +6,8 @@ use crate::{AopService, ExtensionRouteResolver, MissingPlanPolicy};
 
 /// 把 Vernal 预编译调用计划织入任意 Tower `Service`。
 ///
-/// 推荐层次为 `VernalLayer -> RequestScopeLayer -> AopLayer -> Handler`。
+/// 推荐层次为
+/// `VernalLayer -> RequestScopeLayer -> ContextPropagationLayer -> AopLayer -> Handler`。
 /// 上层框架适配器只负责提供路由元数据，AOP 的顺序、短路、取消与错误语义在
 /// 此处统一。
 #[derive(Clone)]
