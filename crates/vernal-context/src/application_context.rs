@@ -260,6 +260,15 @@ impl ApplicationContext {
         self.resources.events()
     }
 
+    /// 返回应用作用域共用的异步清理策略。
+    ///
+    /// 高层建造器默认提供 30 秒上限；调用方可以在构建阶段显式改为其他上限或
+    /// 无界等待。返回借用保证运行期间策略不可漂移。
+    #[must_use]
+    pub fn scope_cleanup_policy(&self) -> &crate::ScopeCleanupPolicy {
+        self.resources.scope_cleanup_policy()
+    }
+
     /// 返回高层应用建造器绑定的 Tokio Runtime Handle。
     ///
     /// 通过兼容性低层 API 创建的 Context 不隐式捕获 Runtime，因此返回

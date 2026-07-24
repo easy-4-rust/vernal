@@ -6,11 +6,12 @@ use std::{
         Arc,
         atomic::{AtomicUsize, Ordering},
     },
+    time::Duration,
 };
 
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, Notify};
 use tokio_util::sync::CancellationToken;
-use vernal_context::ApplicationContextBuilder;
+use vernal_context::{ApplicationContextBuilder, ScopeCleanupPolicy, VernalApplicationBuilder};
 use vernal_ioc::{ComponentDefinition, RegistryBuilder, ResolveError, ScopeKey};
 use vernal_web::{
     HandlerInvocation, ProblemDetails, ProblemKind, RequestContext, RouteMetadata, ScopeError,
@@ -178,6 +179,44 @@ async fn application_bound_scope_records_redacted_cleanup_failure() {
             .iter()
             .all(|warning| !warning.contains("password") && !warning.contains("token"))
     );
+}
+
+#[tokio::test]
+async fn web_scope_inherits_timeout_without_cancelling_background_cleanup() {
+    let mut builder = VernalApplicationBuilder::new(tokio::runtime::Handle::current());
+    builder.scope_cleanup_policy(ScopeCleanupPolicy::bounded(Duration::from_millis(1)));
+    let context = Arc::new(builder.build().expect("context build"));
+    context.refresh().await.expect("context refresh");
+    context.start().await.expect("context start");
+    let scope = WebRequestScope::from_application_context(Arc::clone(&context));
+    let release = Arc::new(Notify::new());
+    let hook_release = Arc::clone(&release);
+    scope
+        .on_close(move || async move {
+            hook_release.notified().await;
+            Ok::<_, io::Error>(())
+        })
+        .expect("blocking hook");
+
+    assert!(matches!(
+        scope.close().await,
+        Err(ScopeError::CloseTimeout { .. })
+    ));
+    assert_eq!(scope.state(), ScopeState::Closing);
+    assert_eq!(
+        context.startup_report().await.warnings(),
+        ["web.request-scope.cleanup-failed"]
+    );
+
+    // 超时只结束 Web 调用者的等待；底层协调器继续持有并执行钩子。释放钩子后，
+    // 使用无界内核入口加入同一关闭结果，证明没有启动第二次清理。
+    release.notify_one();
+    scope
+        .scope_context()
+        .close()
+        .await
+        .expect("background cleanup completion");
+    assert_eq!(scope.state(), ScopeState::Closed);
 }
 
 #[tokio::test]

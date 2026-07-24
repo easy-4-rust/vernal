@@ -1,11 +1,13 @@
 //! Vernal 高层应用建造器与 Context 内建组件合同测试。
 
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use tokio::runtime::Handle;
 use tokio_util::sync::CancellationToken;
 use vernal_aop::{InvocationPlanCatalog, LocalInvocationPlanCatalog, Operation};
-use vernal_context::{ApplicationBuildError, EventBus, Lifecycle, VernalApplicationBuilder};
+use vernal_context::{
+    ApplicationBuildError, EventBus, Lifecycle, ScopeCleanupPolicy, VernalApplicationBuilder,
+};
 use vernal_core::BoxError;
 use vernal_ioc::ComponentDefinition;
 
@@ -14,6 +16,7 @@ struct RuntimeAwareService {
     runtime: Arc<Handle>,
     cancellation: Arc<CancellationToken>,
     events: Arc<EventBus>,
+    scope_cleanup_policy: Arc<ScopeCleanupPolicy>,
     invocation_plans: Arc<InvocationPlanCatalog>,
     local_invocation_plans: Arc<LocalInvocationPlanCatalog>,
 }
@@ -33,6 +36,7 @@ async fn managed_context_injects_tokio_events_cancellation_and_aop_plans() {
     let operation = Operation::new("RuntimeAwareService", "execute");
     let mut application =
         VernalApplicationBuilder::current().expect("Tokio runtime should be available");
+    application.scope_cleanup_policy(ScopeCleanupPolicy::bounded(Duration::from_secs(7)));
     application.operation(operation.clone());
     application.lifecycle::<RuntimeAwareService>();
     application
@@ -43,6 +47,7 @@ async fn managed_context_injects_tokio_events_cancellation_and_aop_plans() {
                         runtime: resolver.resolve::<Handle>()?,
                         cancellation: resolver.resolve::<CancellationToken>()?,
                         events: resolver.resolve::<EventBus>()?,
+                        scope_cleanup_policy: resolver.resolve::<ScopeCleanupPolicy>()?,
                         invocation_plans: resolver.resolve::<InvocationPlanCatalog>()?,
                         local_invocation_plans: resolver.resolve::<LocalInvocationPlanCatalog>()?,
                     })
@@ -51,6 +56,7 @@ async fn managed_context_injects_tokio_events_cancellation_and_aop_plans() {
             .depends_on::<Handle>()
             .depends_on::<CancellationToken>()
             .depends_on::<EventBus>()
+            .depends_on::<ScopeCleanupPolicy>()
             .depends_on::<InvocationPlanCatalog>()
             .depends_on::<LocalInvocationPlanCatalog>(),
         )
@@ -76,6 +82,14 @@ async fn managed_context_injects_tokio_events_cancellation_and_aop_plans() {
     );
     assert!(context.runtime_handle().is_some());
     assert!(std::ptr::eq(service.events.as_ref(), context.events()));
+    assert_eq!(
+        service.scope_cleanup_policy.timeout(),
+        Some(Duration::from_secs(7))
+    );
+    assert!(std::ptr::eq(
+        service.scope_cleanup_policy.as_ref(),
+        context.scope_cleanup_policy()
+    ));
     assert!(std::ptr::eq(
         service.invocation_plans.as_ref(),
         context.invocation_plans()

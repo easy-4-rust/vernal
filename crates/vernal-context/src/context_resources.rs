@@ -6,7 +6,7 @@ use tokio::runtime::Handle;
 use tokio_util::sync::CancellationToken;
 use vernal_aop::{InvocationPlanCatalog, LocalInvocationPlanCatalog};
 
-use crate::{EventBus, diagnostic_configuration::DiagnosticConfiguration};
+use crate::{EventBus, ScopeCleanupPolicy, diagnostic_configuration::DiagnosticConfiguration};
 
 /// 聚合一个 `ApplicationContext` 独占或共享的基础运行资源。
 ///
@@ -17,6 +17,7 @@ pub(crate) struct ContextResources {
     runtime: Option<Arc<Handle>>,
     cancellation: Arc<CancellationToken>,
     events: Arc<EventBus>,
+    scope_cleanup_policy: Arc<ScopeCleanupPolicy>,
     invocation_plans: Arc<InvocationPlanCatalog>,
     local_invocation_plans: Arc<LocalInvocationPlanCatalog>,
     diagnostics: DiagnosticConfiguration,
@@ -31,6 +32,7 @@ impl ContextResources {
             runtime: None,
             cancellation: Arc::new(CancellationToken::new()),
             events: Arc::new(EventBus::new()),
+            scope_cleanup_policy: Arc::new(ScopeCleanupPolicy::default()),
             invocation_plans: Arc::new(InvocationPlanCatalog::default()),
             local_invocation_plans: Arc::new(LocalInvocationPlanCatalog::default()),
             diagnostics: DiagnosticConfiguration::default(),
@@ -42,6 +44,7 @@ impl ContextResources {
         runtime: Arc<Handle>,
         cancellation: Arc<CancellationToken>,
         events: Arc<EventBus>,
+        scope_cleanup_policy: Arc<ScopeCleanupPolicy>,
         invocation_plans: Arc<InvocationPlanCatalog>,
         local_invocation_plans: Arc<LocalInvocationPlanCatalog>,
         diagnostics: DiagnosticConfiguration,
@@ -50,6 +53,7 @@ impl ContextResources {
             runtime: Some(runtime),
             cancellation,
             events,
+            scope_cleanup_policy,
             invocation_plans,
             local_invocation_plans,
             diagnostics,
@@ -69,6 +73,11 @@ impl ContextResources {
     /// 返回 Context 独占的类型化事件总线。
     pub(crate) fn events(&self) -> &EventBus {
         &self.events
+    }
+
+    /// 返回应用作用域共享的清理等待策略。
+    pub(crate) fn scope_cleanup_policy(&self) -> &ScopeCleanupPolicy {
+        &self.scope_cleanup_policy
     }
 
     /// 返回应用构建阶段预编译的 AOP 调用计划目录。

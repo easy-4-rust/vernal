@@ -19,6 +19,7 @@ mod registry_snapshot;
 mod registry_summary;
 mod resolve_error;
 mod resolver;
+mod scope_close_failure;
 mod scope_context;
 mod scope_error;
 mod scope_future;

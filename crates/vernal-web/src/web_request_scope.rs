@@ -156,14 +156,23 @@ impl WebRequestScope {
     ///
     /// # Errors
     ///
-    /// 返回第一个关闭钩子错误，但仍执行其余钩子、清空缓存并进入 Closed。
-    /// 应用绑定 Scope 发生错误时还会向所属 `ApplicationContext` 写入静态、
+    /// 返回钩子失败、钩子任务异常、Runtime 缺失或等待超时等结构化错误；后台
+    /// 协调器仍执行其余钩子、清空缓存并进入 Closed。应用绑定 Scope 发生错误时
+    /// 还会向所属 `ApplicationContext` 写入静态、
     /// 脱敏的 `web.request-scope.cleanup-failed` 告警代码；独立兼容 Scope
-    /// 没有应用诊断目标，因此只返回原始结构化错误。
+    /// 没有应用诊断目标，因此只返回原始结构化错误。应用绑定 Scope 自动采用
+    /// [`vernal_context::ScopeCleanupPolicy`]；等待超时不会取消后台关闭任务。
     pub async fn close(&self) -> Result<(), ScopeError> {
-        let result = self.scope.close().await;
+        let application = self.owner.application_context().cloned();
+        let result = match application
+            .as_ref()
+            .and_then(|context| context.scope_cleanup_policy().timeout())
+        {
+            Some(maximum_wait) => self.scope.close_with_timeout(maximum_wait).await,
+            None => self.scope.close().await,
+        };
         if result.is_err() {
-            if let Some(context) = self.owner.application_context() {
+            if let Some(context) = application {
                 context
                     .record_runtime_warning("web.request-scope.cleanup-failed")
                     .await;

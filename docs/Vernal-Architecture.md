@@ -375,11 +375,20 @@ The Scope lifecycle contract is explicit:
 - asynchronous close hooks execute in reverse registration order, all hooks run
   even after an error, and the first error is returned;
 - cache clearing and `Closed` transition still complete after hook failure;
-- repeated and concurrent close calls are serialized and idempotent.
+- the first closer starts one Tokio coordinator task; repeated and concurrent
+  callers subscribe to the same final result;
+- cancelling a caller or reaching `close_with_timeout` only stops that waiter,
+  while the coordinator continues releasing resources;
+- each hook runs in a child task, so a hook panic is reported as a structured
+  close-task error and does not skip the remaining hooks.
 
 `ApplicationContext::open_scope` derives the Scope cancellation token from the
 application cancellation tree. Scope owners still call `close().await` so
-resource cleanup is observable rather than delegated to `Drop`.
+resource cleanup is observable rather than delegated to `Drop`. The high-level
+builder registers `ScopeCleanupPolicy` as a native application component.
+Application-owned Web scopes inherit its 30-second default bound or an explicit
+bounded/unbounded policy. A timeout is an observation result, not cancellation
+of the underlying cleanup.
 
 ### 8.4 Tokio and framework-native components
 
@@ -909,17 +918,18 @@ Phase 1 minimum acceptance:
    Tokio is allowed when needed.
 5. Normal failures use `Result`, not panic.
 
-As of 2026-07-25, all five items have local evidence: 30 IoC contract tests
+As of 2026-07-25, all five items have local evidence: 33 IoC contract tests
 cover a 1,000-node graph, missing/ambiguous/cycle paths, singleton isolation
 across two concurrent containers, transient creation, qualifiers, hidden
 dependency rejection, native-value registration, a real task spawned through
 an injected Tokio handle, named/primary/all Trait bindings, empty sets,
 missing targets, Trait cycles, naming conflicts, batch atomicity, and
 deterministic Registry serialization without factories or instance addresses.
-Six of those tests cover typed custom scopes: concurrent once-only
+Nine of those tests cover typed custom scopes: concurrent once-only
 construction, sibling isolation, safe parent/child visibility, Container
 ownership, cancellation, reverse cleanup with failure continuation, and close
-waiting for a factory already in flight.
+waiting for a factory already in flight, cancellation-safe waiters, timeout
+with background completion, and hook-panic isolation.
 `register_all` atomically installs definition-only batches; `register_bundle`
 atomically commits definitions and bindings together. Ordinary singleton and
 transient resolution remains synchronous; the custom Scope lifecycle uses
@@ -945,7 +955,7 @@ The Phase 3 kernel has twelve contract tests for dependency-order
 startup, reverse shutdown, initialize/start rollback, invalid transitions,
 idempotent close, concurrent close serialization, and context-local typed
 event isolation, plus runtime-unavailable diagnostics, same-instance injection
-of the four built-in resources, application-owned Scope cancellation, and
+of the six built-in resources, application-owned Scope cancellation, and
 owned/redacted serialization of successful and failed startup reports.
 
 ## 16. Delivery roadmap

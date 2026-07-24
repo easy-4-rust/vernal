@@ -195,7 +195,10 @@ stateDiagram-v2
 - 流式 HTTP/Tonic 的 Scope 生命周期必须延伸到 Stream 完成、失败或取消。
 - Adapter 只能桥接上游背压，不能通过无限队列伪造吞吐。
 - 取消清理必须幂等，且不能依赖 `Drop` 中执行异步工作。
-- 需要异步释放的组件由 Scope 显式 `close().await`，超时策略属于 Adapter 配置。
+- 需要异步释放的组件由 Scope 显式 `close().await`，等待上限来自应用拥有的
+  `ScopeCleanupPolicy`。
+- 默认等待上限为 30 秒；超时只结束 Adapter 当前等待，共享 Tokio 清理协调器仍在
+  后台运行，后续调用者可以等待同一结果且不会重复执行钩子。
 
 ## 7. Tower 与 Hyper 底座
 
@@ -408,6 +411,8 @@ Guardrails：
 - Trace/Metric 标签禁止使用无限基数的原始路径或用户 ID；
 - 诊断报告只公开 Adapter、版本、状态、Scope 计数和静态脱敏告警代码；Scope
   清理失败统一使用 `web.request-scope.cleanup-failed`，不记录关闭钩子错误正文；
+- 清理超时、钩子失败与钩子任务 panic 均遵守同一脱敏边界，后台协调器仍会把 Scope
+  推进到 `Closed`；
 - Panic 不作为拒绝、缺失组件或取消的正常控制流；
 - Adapter 不修改框架默认 Body 限制与超时，除非用户显式配置。
 

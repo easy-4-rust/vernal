@@ -212,7 +212,10 @@ stateDiagram-v2
   unbounded queue.
 - Cancellation cleanup is idempotent and cannot depend on async work in `Drop`.
 - Resources requiring async release use explicit `scope.close().await`; the
-  adapter owns the timeout policy.
+  application-owned `ScopeCleanupPolicy` supplies the wait bound.
+- The default bound is 30 seconds. Timeout ends only the current adapter wait;
+  the shared Tokio cleanup coordinator continues and later callers can join the
+  same result without executing hooks twice.
 
 ## 7. Tower and Hyper foundations
 
@@ -463,6 +466,8 @@ Guardrails:
 - diagnostics expose adapter, version, status, scope counts, and static redacted
   warning codes; scope cleanup failures use
   `web.request-scope.cleanup-failed`, never the close-hook error text;
+- cleanup timeout, hook failure, and hook-task panic share that redacted warning
+  boundary; the background coordinator still reaches `Closed`;
 - panic is not normal control flow for denial, resolution failure, or cancel;
 - adapters keep native body limits and timeouts unless explicitly configured.
 

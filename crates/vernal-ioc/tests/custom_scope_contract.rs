@@ -22,6 +22,7 @@ use std::{
         atomic::{AtomicUsize, Ordering},
         mpsc,
     },
+    time::Duration,
 };
 
 use request_scope::RequestScope;
@@ -31,6 +32,7 @@ use slow_scoped::SlowScoped;
 use tenant_consumer::TenantConsumer;
 use tenant_scope::TenantScope;
 use tenant_value::TenantValue;
+use tokio::sync::Notify;
 use vernal_ioc::{ComponentDefinition, RegistryBuilder, ResolveError, ScopeError, ScopeState};
 
 #[tokio::test]
@@ -244,11 +246,8 @@ async fn close_runs_all_hooks_in_reverse_and_rejects_late_resolution() {
         .expect("component before close");
 
     let (first_close, second_close) = tokio::join!(scope.close(), scope.close());
-    let error = match (first_close, second_close) {
-        (Err(error), Ok(())) | (Ok(()), Err(error)) => error,
-        results => panic!("exactly one concurrent closer should observe hook failure: {results:?}"),
-    };
-    assert!(matches!(error, ScopeError::CloseHook { .. }));
+    assert!(matches!(first_close, Err(ScopeError::CloseHook { .. })));
+    assert!(matches!(second_close, Err(ScopeError::CloseHook { .. })));
     assert_eq!(*order.lock().expect("order lock"), vec![3, 2, 1]);
     assert_eq!(scope.state(), ScopeState::Closed);
     assert!(scope.cancellation().is_cancelled());
@@ -266,7 +265,10 @@ async fn close_runs_all_hooks_in_reverse_and_rejects_late_resolution() {
             ..
         })
     ));
-    scope.close().await.expect("repeated close is idempotent");
+    assert!(matches!(
+        scope.close().await,
+        Err(ScopeError::CloseHook { .. })
+    ));
 }
 
 #[tokio::test]
@@ -348,5 +350,114 @@ async fn close_waits_for_factory_that_started_while_scope_was_open() {
         .await
         .expect("close task")
         .expect("scope closes after factory");
+    assert_eq!(scope.state(), ScopeState::Closed);
+}
+
+#[tokio::test]
+async fn cancelling_one_close_waiter_never_cancels_scope_cleanup() {
+    let scope = RegistryBuilder::new()
+        .build()
+        .expect("empty registry")
+        .container()
+        .open_scope::<RequestScope>();
+    let entered = Arc::new(Notify::new());
+    let release = Arc::new(Notify::new());
+    let completed = Arc::new(AtomicUsize::new(0));
+
+    let tail_completed = Arc::clone(&completed);
+    scope
+        .on_close(move || async move {
+            tail_completed.fetch_add(1, Ordering::SeqCst);
+            Ok::<_, io::Error>(())
+        })
+        .expect("tail hook");
+    let blocking_entered = Arc::clone(&entered);
+    let blocking_release = Arc::clone(&release);
+    let blocking_completed = Arc::clone(&completed);
+    scope
+        .on_close(move || async move {
+            blocking_entered.notify_one();
+            blocking_release.notified().await;
+            blocking_completed.fetch_add(1, Ordering::SeqCst);
+            Ok::<_, io::Error>(())
+        })
+        .expect("blocking hook");
+
+    let waiter = {
+        let scope = Arc::clone(&scope);
+        tokio::spawn(async move { scope.close().await })
+    };
+    entered.notified().await;
+    waiter.abort();
+    assert!(
+        waiter
+            .await
+            .expect_err("waiter must be cancelled")
+            .is_cancelled()
+    );
+    assert_eq!(scope.state(), ScopeState::Closing);
+
+    release.notify_one();
+    scope.close().await.expect("shared cleanup result");
+    assert_eq!(completed.load(Ordering::SeqCst), 2);
+    assert_eq!(scope.state(), ScopeState::Closed);
+}
+
+#[tokio::test]
+async fn close_timeout_leaves_cleanup_running_and_allows_later_join() {
+    let scope = RegistryBuilder::new()
+        .build()
+        .expect("empty registry")
+        .container()
+        .open_scope::<RequestScope>();
+    let release = Arc::new(Notify::new());
+    let hook_release = Arc::clone(&release);
+    scope
+        .on_close(move || async move {
+            hook_release.notified().await;
+            Ok::<_, io::Error>(())
+        })
+        .expect("blocking hook");
+
+    let error = scope
+        .close_with_timeout(Duration::from_millis(1))
+        .await
+        .expect_err("bounded wait must time out");
+    assert!(matches!(error, ScopeError::CloseTimeout { .. }));
+    assert_eq!(scope.state(), ScopeState::Closing);
+
+    release.notify_one();
+    scope.close().await.expect("later waiter joins cleanup");
+    assert_eq!(scope.state(), ScopeState::Closed);
+}
+
+#[tokio::test]
+async fn panicking_close_hook_does_not_skip_remaining_hooks() {
+    let scope = RegistryBuilder::new()
+        .build()
+        .expect("empty registry")
+        .container()
+        .open_scope::<RequestScope>();
+    let completed = Arc::new(AtomicUsize::new(0));
+    let remaining_completed = Arc::clone(&completed);
+    scope
+        .on_close(move || async move {
+            remaining_completed.fetch_add(1, Ordering::SeqCst);
+            Ok::<_, io::Error>(())
+        })
+        .expect("remaining hook");
+    scope
+        .on_close(|| async {
+            panic!("test close hook panic");
+            #[allow(unreachable_code)]
+            Ok::<_, io::Error>(())
+        })
+        .expect("panicking hook");
+
+    assert!(matches!(
+        scope.close().await,
+        Err(ScopeError::CloseTask { .. })
+    ));
+    assert_eq!(completed.load(Ordering::SeqCst), 1);
     assert_eq!(scope.state(), ScopeState::Closed);
 }

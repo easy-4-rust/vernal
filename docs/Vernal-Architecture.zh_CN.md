@@ -349,10 +349,16 @@ Scope 生命周期合同是显式的：
 - 已经开始的同步工厂执行完毕后才进入资源释放；
 - 异步关闭钩子按注册逆序执行，即使某个失败也继续执行其余钩子，并返回第一个错误；
 - 钩子失败后仍清空缓存并进入 `Closed`；
-- 重复/并发关闭由 Tokio Mutex 串行且保持幂等。
+- 第一个关闭者只启动一个 Tokio 协调任务，重复/并发调用者订阅同一个最终结果；
+- 调用者被取消或 `close_with_timeout` 到期只会停止该等待者，不会取消后台释放；
+- 每个钩子在独立子任务中执行，钩子 panic 会转换成结构化关闭任务错误，后续钩子
+  仍继续执行。
 
 `ApplicationContext::open_scope` 从应用取消树派生 Scope 令牌；Scope 所有者仍须显式
-调用 `close().await`，让资源释放结果可观察，而不是把异步清理藏进 `Drop`。
+调用 `close().await`，让资源释放结果可观察，而不是把异步清理藏进 `Drop`。高层
+建造器会把 `ScopeCleanupPolicy` 注册为应用原生组件；应用拥有的 Web Scope 默认
+最多等待 30 秒，也可显式选择其他上限或无限等待。超时只是本次观察结果，不会取消
+底层清理。
 
 ### 8.4 Tokio 与框架原生组件
 
@@ -884,13 +890,14 @@ Phase 1 最低验收：
 4. `cargo tree` 证明 `vernal-ioc` 不包含具体 Web 或 ORM 框架；允许按需使用 Tokio；
 5. 所有失败通过 `Result` 返回，不依赖 panic。
 
-截至 2026-07-25，上述五项已有本地证据：30 个 IoC 合同测试覆盖 1,000 节点图、
+截至 2026-07-25，上述五项已有本地证据：33 个 IoC 合同测试覆盖 1,000 节点图、
 缺失/歧义/循环路径、两个并行 Container 的 Singleton 隔离、Transient、
 qualifier、隐藏依赖拒绝、原生值注册、Tokio Handle 真实 task，以及 Trait
 命名/Primary/全部实现、空集合、目标缺失、Trait 图环、命名冲突、批量原子性，
 以及不含工厂与实例地址的确定性 Registry 序列化快照。
-其中 6 项验证类型化自定义 Scope 的并发一次构造、兄弟隔离、安全父子可见性、
-Container 所有权、取消传播、失败后继续逆序清理，以及关闭等待已开始工厂。
+其中 9 项验证类型化自定义 Scope 的并发一次构造、兄弟隔离、安全父子可见性、
+Container 所有权、取消传播、失败后继续逆序清理、关闭等待已开始工厂、等待者
+取消安全、超时后后台完成，以及关闭钩子 panic 隔离。
 普通 Singleton/Transient 解析仍为同步热路径；自定义 Scope 生命周期直接使用
 Tokio 同步与取消能力完成可观察的异步清理。
 `register_all` 原子注册纯组件批次；`register_bundle` 同时原子提交定义与绑定。
@@ -907,7 +914,7 @@ Singleton Component 注入、Transient 构造、Trait Object 注入和 Context-l
 
 Phase 3 内核另有 12 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
 回滚、非法转换、幂等关闭、并发关闭串行化、Context-local 类型化事件隔离，
-高层构建器的 Runtime 缺失诊断、四类内建组件同实例注入、应用 Scope 取消树，
+高层构建器的 Runtime 缺失诊断、六类内建组件同实例注入、应用 Scope 取消树，
 以及成功/失败启动报告的只读快照、Serde 序列化与业务错误正文脱敏。
 
 ## 16. 实施路线

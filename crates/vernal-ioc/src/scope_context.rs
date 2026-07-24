@@ -6,19 +6,26 @@ use std::{
     error::Error,
     future::Future,
     sync::{Arc, Mutex, OnceLock},
+    time::Duration,
 };
 
-use tokio::sync::{Mutex as AsyncMutex, Notify};
+use tokio::{
+    runtime::Handle,
+    sync::{Notify, watch},
+    time::timeout,
+};
 use tokio_util::sync::CancellationToken;
-use vernal_core::BoxError;
+use vernal_core::{BoxError, SharedError};
 
 use crate::{
     ComponentKey, ResolveError, ScopeError, ScopeKey, ScopeState,
-    component_definition::ErasedComponent, scope_future::ScopeCloseHook,
-    scope_operation_guard::ScopeOperationGuard, scope_runtime_state::ScopeRuntimeState,
+    component_definition::ErasedComponent, scope_close_failure::ScopeCloseFailure,
+    scope_future::ScopeCloseHook, scope_operation_guard::ScopeOperationGuard,
+    scope_runtime_state::ScopeRuntimeState,
 };
 
 type ScopedCell = OnceLock<Result<ErasedComponent, ResolveError>>;
+type CloseResult = Result<(), ScopeCloseFailure>;
 
 /// 绑定一个 Container、一个类型化 Scope 身份和一组实例缓存的显式作用域。
 ///
@@ -28,8 +35,9 @@ type ScopedCell = OnceLock<Result<ErasedComponent, ResolveError>>;
 /// [`ComponentKey`] 缓存，框架原生对象按 `TypeId` 存入独立命名空间；每个键
 /// 在并发下最多执行一次工厂。
 ///
-/// 关闭过程先禁止新解析并触发取消，再等待正在执行的同步工厂完成，随后逆序
-/// 执行全部异步关闭钩子并清空缓存。返回第一个关闭错误，但不会跳过后续钩子。
+/// 关闭过程先禁止新解析并触发取消，再由独立 Tokio task 等待正在执行的同步工厂，
+/// 随后逆序执行全部异步关闭钩子并清空缓存。调用方取消 `close()` Future 或等待
+/// 超时只会离开当前观察，不会取消后台清理；并发调用者共享同一个最终结果。
 pub struct ScopeContext {
     owner: Arc<()>,
     key: ScopeKey,
@@ -38,7 +46,7 @@ pub struct ScopeContext {
     native_objects: Mutex<HashMap<TypeId, Arc<ScopedCell>>>,
     close_hooks: Mutex<Vec<ScopeCloseHook>>,
     runtime: Mutex<ScopeRuntimeState>,
-    close_operation: AsyncMutex<()>,
+    close_result: watch::Sender<Option<CloseResult>>,
     idle: Notify,
     cancellation: CancellationToken,
 }
@@ -50,6 +58,7 @@ impl ScopeContext {
         key: ScopeKey,
         cancellation: CancellationToken,
     ) -> Arc<Self> {
+        let (close_result, _) = watch::channel(None);
         Arc::new(Self {
             owner,
             key,
@@ -58,7 +67,7 @@ impl ScopeContext {
             native_objects: Mutex::new(HashMap::new()),
             close_hooks: Mutex::new(Vec::new()),
             runtime: Mutex::new(ScopeRuntimeState::default()),
-            close_operation: AsyncMutex::new(()),
+            close_result,
             idle: Notify::new(),
             cancellation,
         })
@@ -74,6 +83,7 @@ impl ScopeContext {
     where
         S: 'static,
     {
+        let (close_result, _) = watch::channel(None);
         Arc::new(Self {
             owner: Arc::clone(&self.owner),
             key: ScopeKey::of::<S>(),
@@ -82,7 +92,7 @@ impl ScopeContext {
             native_objects: Mutex::new(HashMap::new()),
             close_hooks: Mutex::new(Vec::new()),
             runtime: Mutex::new(ScopeRuntimeState::default()),
-            close_operation: AsyncMutex::new(()),
+            close_result,
             idle: Notify::new(),
             cancellation: self.cancellation.child_token(),
         })
@@ -169,28 +179,93 @@ impl ScopeContext {
         Ok(())
     }
 
-    /// 取消作用域、等待既有构造结束并逆序执行全部关闭钩子。
+    /// 启动取消安全的后台关闭并等待最终结果。
     ///
-    /// 并发关闭由 Tokio Mutex 串行，重复关闭幂等。子作用域必须由自己的所有者
-    /// 关闭；关闭父作用域会通过取消令牌阻止子作用域继续解析。
+    /// 第一个调用者只负责原子启动一次后台任务；后续调用者订阅同一个结果。
+    /// 丢弃任一等待 Future 不会丢失已经取出的钩子，也不会中止资源释放。子作用域
+    /// 仍必须由自己的所有者关闭；父作用域只通过取消令牌阻止子作用域继续解析。
     ///
     /// # Errors
     ///
-    /// 返回第一个关闭钩子错误，但仍执行其余钩子、清空缓存并进入 Closed。
-    pub async fn close(&self) -> Result<(), ScopeError> {
-        let _close_operation = self.close_operation.lock().await;
-        {
+    /// 没有活跃 Tokio Runtime、关闭钩子失败或钩子任务异常结束时返回结构化错误。
+    /// 即使返回错误，后台协调器也会执行剩余钩子、清空缓存并进入 Closed。
+    pub async fn close(self: &Arc<Self>) -> Result<(), ScopeError> {
+        self.start_close()?;
+        self.wait_for_close().await
+    }
+
+    /// 启动取消安全的后台关闭，并最多等待 `maximum_wait`。
+    ///
+    /// 超时返回 [`ScopeError::CloseTimeout`]，但后台任务继续运行。调用方可以稍后
+    /// 再次调用 [`Self::close`] 等待同一个最终结果，不会重复执行关闭钩子。
+    ///
+    /// # Errors
+    ///
+    /// 除 [`Self::close`] 的错误外，超过等待上限时返回 `CloseTimeout`。
+    pub async fn close_with_timeout(
+        self: &Arc<Self>,
+        maximum_wait: Duration,
+    ) -> Result<(), ScopeError> {
+        self.start_close()?;
+        match timeout(maximum_wait, self.wait_for_close()).await {
+            Ok(result) => result,
+            Err(_) => Err(ScopeError::CloseTimeout {
+                scope: self.key,
+                timeout: maximum_wait,
+            }),
+        }
+    }
+
+    /// 原子切换到 Closing，并把唯一清理协调器提交给当前 Tokio Runtime。
+    fn start_close(self: &Arc<Self>) -> Result<(), ScopeError> {
+        if self.state() != ScopeState::Open {
+            return Ok(());
+        }
+        let handle = Handle::try_current()
+            .map_err(|_| ScopeError::RuntimeUnavailable { scope: self.key })?;
+        let should_start = {
             let mut runtime = self
                 .runtime
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
-            if runtime.state == ScopeState::Closed {
-                return Ok(());
+            if runtime.state == ScopeState::Open {
+                runtime.state = ScopeState::Closing;
+                true
+            } else {
+                false
             }
-            runtime.state = ScopeState::Closing;
+        };
+        if !should_start {
+            return Ok(());
         }
-        self.cancellation.cancel();
 
+        self.cancellation.cancel();
+        let scope = Arc::clone(self);
+        handle.spawn(async move {
+            let result = scope.finish_close().await;
+            scope.close_result.send_replace(Some(result));
+        });
+        Ok(())
+    }
+
+    /// 等待协调器发布结果，并为当前调用者重建公开错误值。
+    async fn wait_for_close(&self) -> Result<(), ScopeError> {
+        let mut receiver = self.close_result.subscribe();
+        loop {
+            if let Some(result) = receiver.borrow().clone() {
+                return result.map_err(|failure| self.public_close_error(failure));
+            }
+            if let Err(source) = receiver.changed().await {
+                return Err(ScopeError::CloseTask {
+                    scope: self.key,
+                    source: Arc::new(source),
+                });
+            }
+        }
+    }
+
+    /// 在独立协调器中完成等待、逆序钩子、缓存释放和终态发布。
+    async fn finish_close(&self) -> CloseResult {
         // Notify Future 必须在读取计数前创建，避免最后一个工厂恰好在检查与等待
         // 之间结束而丢失唤醒。
         loop {
@@ -206,20 +281,28 @@ impl ScopeContext {
             notified.await;
         }
 
-        let hooks = std::mem::take(
-            &mut *self
+        let mut first_error = None;
+        loop {
+            // 每次只从共享栈取出一个钩子。即使该钩子的用户 Future panic，后续
+            // 钩子仍留在 Scope 内，由协调器继续逆序处理。
+            let hook = self
                 .close_hooks
                 .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner),
-        );
-        let mut first_error = None;
-        for hook in hooks.into_iter().rev() {
-            let hook_error = hook().await.err();
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .pop();
+            let Some(hook) = hook else {
+                break;
+            };
+            let hook_error = match tokio::spawn(hook()).await {
+                Ok(Ok(())) => None,
+                Ok(Err(source)) => {
+                    let source: SharedError = source.into();
+                    Some(ScopeCloseFailure::Hook(source))
+                }
+                Err(source) => Some(ScopeCloseFailure::Task(Arc::new(source))),
+            };
             if first_error.is_none() {
-                first_error = hook_error.map(|source| ScopeError::CloseHook {
-                    scope: self.key,
-                    source,
-                });
+                first_error = hook_error;
             }
         }
 
@@ -236,6 +319,20 @@ impl ScopeContext {
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .state = ScopeState::Closed;
         first_error.map_or(Ok(()), Err)
+    }
+
+    /// 将内部可克隆失败恢复成每个调用者独立拥有的公开错误。
+    fn public_close_error(&self, failure: ScopeCloseFailure) -> ScopeError {
+        match failure {
+            ScopeCloseFailure::Hook(source) => ScopeError::CloseHook {
+                scope: self.key,
+                source,
+            },
+            ScopeCloseFailure::Task(source) => ScopeError::CloseTask {
+                scope: self.key,
+                source,
+            },
+        }
     }
 
     /// 校验作用域属于指定 Container。

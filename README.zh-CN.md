@@ -272,14 +272,17 @@ let json = serde_json::to_string(&startup_report)?;
 版本、MSRV、Scope/依赖摘要、AOP 计划槽位和生命周期耗时。失败报告只保存组件名、
 阶段和成功/失败分类，不序列化底层业务错误正文。请求 Scope 的运行期清理失败
 只追加去重后的静态代码 `web.request-scope.cleanup-failed`；响应已被 Drop、
-无法再返回原生错误时也能留下 Context-local 诊断证据。
+无法再返回原生错误时也能留下 Context-local 诊断证据。Scope 清理由取消安全的
+Tokio 协调任务负责：某个等待者被丢弃或等待超时都不会遗弃关闭钩子。作为应用
+内建组件注册的 `ScopeCleanupPolicy` 默认让应用拥有的 Scope 最多等待 30 秒；
+等待超时后协调器仍在后台继续完成清理。
 
 ## 6. 能力状态
 
 | 能力 | 目标合同 | 状态 |
 |:---|:---|:---:|
 | 类型化组件定义 | 构造器注入与显式元数据 | Phase 1 |
-| 作用域 | Singleton、Transient、类型化自定义 ScopeContext 与 IoC 驱动的 WebRequestScope | Phase 1.2/4 内核 |
+| 作用域 | Singleton、Transient、类型化自定义 ScopeContext、取消安全清理与 IoC 驱动的 WebRequestScope | Phase 1.2/4 内核 |
 | 依赖图 | 确定性顺序及缺失、歧义、循环结构化诊断 | Phase 1 |
 | Trait 绑定 | 不依赖字符串查找的命名、Primary 和多实现绑定 | Phase 1.1 内核 |
 | 拦截器链 | 有序 Around/Next、短路及结果/错误改写 | Phase 2 内核 |
@@ -367,12 +370,12 @@ AOP Bridge；Hutool-Rust
 Tokio 测试、Clippy 和文档构建已在独立依赖图通过。Ddd4r 全 Workspace 门禁仍被
 既有、当前不可获取的 `rbatis-r2dbc` Git Revision 阻断，不能据此宣称全仓通过。
 
-Phase 1/1.1/1.2 已通过 30 个 IoC 合同测试，覆盖 1,000 节点确定性规划、结构化图
+Phase 1/1.1/1.2 已通过 33 个 IoC 合同测试，覆盖 1,000 节点确定性规划、结构化图
 诊断、并发 Singleton、双 Container 隔离、Transient、原生对象、Trait 命名/
 Primary/全部实现、Trait 图环、跨定义/绑定原子模块注册，以及稳定 Registry
-序列化快照。新增 6 项自定义 Scope 合同进一步覆盖同 Scope 并发一次构造、兄弟
+序列化快照。9 项自定义 Scope 合同进一步覆盖同 Scope 并发一次构造、兄弟
 隔离、父子生命周期方向、Container 所有权、取消传播、失败后继续逆序清理，以及
-关闭等待已开始工厂。
+关闭等待已开始工厂、等待者取消安全、有界等待后后台完成、钩子间 panic 隔离。
 Phase 2 AOP 内核现有 9 个 Send 合同测试，覆盖顺序进入/逆序退出、短路、成功结果
 与错误改写、跨 `.await` 类型化上下文、取消/deadline、切点选择和 64 task
 并发共享计划、借用型非静态目标与计划目录合并；另有 5 个 Local-AOP 测试覆盖

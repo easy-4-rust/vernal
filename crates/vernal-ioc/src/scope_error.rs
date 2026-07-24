@@ -1,8 +1,8 @@
 //! 自定义组件作用域错误对象。
 
-use std::{error::Error, fmt};
+use std::{error::Error, fmt, time::Duration};
 
-use vernal_core::BoxError;
+use vernal_core::SharedError;
 
 use crate::{ResolveError, ScopeKey, ScopeState};
 
@@ -45,7 +45,26 @@ pub enum ScopeError {
         /// 目标作用域身份。
         scope: ScopeKey,
         /// 原始关闭错误。
-        source: BoxError,
+        source: SharedError,
+    },
+    /// 承载关闭钩子的 Tokio 任务异常结束。
+    CloseTask {
+        /// 目标作用域身份。
+        scope: ScopeKey,
+        /// Tokio Join 错误。
+        source: SharedError,
+    },
+    /// 调用方等待后台关闭完成超过明确上限。
+    CloseTimeout {
+        /// 目标作用域身份。
+        scope: ScopeKey,
+        /// 本次调用允许等待的最长时间。
+        timeout: Duration,
+    },
+    /// 启动取消安全关闭任务时没有可用的 Tokio Runtime。
+    RuntimeUnavailable {
+        /// 目标作用域身份。
+        scope: ScopeKey,
     },
 }
 
@@ -81,6 +100,21 @@ impl fmt::Display for ScopeError {
             Self::CloseHook { scope, source } => {
                 write!(formatter, "scope {scope} close hook failed: {source}")
             }
+            Self::CloseTask { scope, source } => {
+                write!(formatter, "scope {scope} close task failed: {source}")
+            }
+            Self::CloseTimeout { scope, timeout } => {
+                write!(
+                    formatter,
+                    "scope {scope} cleanup exceeded timeout {timeout:?}"
+                )
+            }
+            Self::RuntimeUnavailable { scope } => {
+                write!(
+                    formatter,
+                    "scope {scope} cleanup requires an active Tokio runtime"
+                )
+            }
         }
     }
 }
@@ -89,7 +123,9 @@ impl Error for ScopeError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::Resolution { source, .. } => Some(source.as_ref()),
-            Self::CloseHook { source, .. } => Some(source.as_ref()),
+            Self::CloseHook { source, .. } | Self::CloseTask { source, .. } => {
+                Some(source.as_ref())
+            }
             _ => None,
         }
     }

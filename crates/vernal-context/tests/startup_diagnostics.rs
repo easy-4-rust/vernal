@@ -53,7 +53,7 @@ async fn report_tracks_registry_aop_subsystems_and_lifecycle_without_mutability(
     );
     assert_eq!(ready.warnings(), ["preview-api"]);
     assert!(ready.unused_definitions().is_empty());
-    assert_eq!(ready.registry().summary().definition_count(), 6);
+    assert_eq!(ready.registry().summary().definition_count(), 7);
     assert_eq!(ready.observations().len(), 4);
     assert!(
         ready

@@ -416,14 +416,18 @@ AOP plan slots, and lifecycle timing. Failure snapshots retain only the
 component, phase, and outcome; business error text is never serialized.
 Runtime cleanup failures add only the deduplicated static code
 `web.request-scope.cleanup-failed`, including response-drop paths where no
-native response remains available.
+native response remains available. Scope cleanup is coordinated by a
+cancellation-safe Tokio task: dropping or timing out one waiter does not
+abandon close hooks. `ScopeCleanupPolicy`, registered as an application
+component, defaults to a bounded 30-second wait for application-owned scopes;
+the coordinator continues in the background after that wait expires.
 
 ## 6. Capabilities
 
 | Capability | Target contract | Status |
 |:---|:---|:---:|
 | Typed component definitions | Constructor injection with explicit metadata | Phase 1 |
-| Scopes | Singleton, transient, typed custom ScopeContext, and IoC-backed WebRequestScope | Phase 1.2/4 kernel |
+| Scopes | Singleton, transient, typed custom ScopeContext, cancellation-safe cleanup, and IoC-backed WebRequestScope | Phase 1.2/4 kernel |
 | Dependency graph | Deterministic build order and structured missing/ambiguous/cycle diagnostics | Phase 1 |
 | Trait binding | Named/primary/multiple implementations without string lookup | Phase 1.1 kernel |
 | Interceptor chain | Ordered Around/Next composition with short circuit and result/error transformation | Phase 2 kernel |
@@ -527,15 +531,16 @@ graph. The full Ddd4r workspace gate remains blocked by its pre-existing,
 currently unavailable `rbatis-r2dbc` Git revision and is not reported as
 passing.
 
-Phase 1/1.1/1.2 now has 30 IoC contract tests for 1,000-node deterministic
+Phase 1/1.1/1.2 now has 33 IoC contract tests for 1,000-node deterministic
 planning, structured graph diagnostics, concurrent singleton construction,
 container isolation, transient resolution, native objects, named/primary/all
 Trait bindings, Trait graph cycles, hidden-dependency rejection, atomic
 definition-plus-binding module registration, and stable Registry serialization.
-The six custom-Scope contracts additionally cover per-Scope concurrent
+The nine custom-Scope contracts additionally cover per-Scope concurrent
 construction, sibling isolation, parent/child lifetime direction, Container
 ownership, cancellation, reverse cleanup with failure continuation, and close
-waiting for an in-flight factory.
+waiting for an in-flight factory, cancellation-safe close waiters, bounded
+waiting with background completion, and panic isolation between hooks.
 The Phase 2 AOP kernel currently has nine Send contract tests covering ordered
 enter/reverse exit, short circuit, success and error transformation, typed
 context across `.await`, cancellation/deadline, pointcut selection, and

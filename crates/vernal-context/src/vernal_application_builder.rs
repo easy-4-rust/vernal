@@ -23,11 +23,12 @@ type LifecycleRegistrar = dyn FnOnce(&mut ApplicationContextBuilder) + Send + Sy
 /// 统一收集组件、生命周期、切面和 Tokio Context 资源的应用建造器。
 ///
 /// 与接收冻结 [`vernal_ioc::Registry`] 的低层 [`ApplicationContextBuilder`]
-/// 不同，该建造器在依赖图冻结前自动注册五类框架内建组件：
+/// 不同，该建造器在依赖图冻结前自动注册六类框架内建组件：
 ///
 /// - [`Handle`]：应用绑定的 Tokio Runtime；
 /// - [`CancellationToken`]：应用关闭与后台任务协作取消；
 /// - [`EventBus`]：Context 内类型化事件；
+/// - [`crate::ScopeCleanupPolicy`]：应用 Scope 的有界异步释放策略；
 /// - [`vernal_aop::InvocationPlanCatalog`]：预编译 AOP 调用计划。
 /// - [`vernal_aop::LocalInvocationPlanCatalog`]：预编译 Local-AOP 调用计划。
 ///
@@ -42,6 +43,7 @@ pub struct VernalApplicationBuilder {
     runtime: Arc<Handle>,
     cancellation: Arc<CancellationToken>,
     events: Arc<EventBus>,
+    scope_cleanup_policy: Arc<crate::ScopeCleanupPolicy>,
     enabled_features: BTreeSet<String>,
     adapters: BTreeMap<String, DiagnosticState>,
     external_dependencies: BTreeMap<String, DiagnosticState>,
@@ -61,6 +63,7 @@ impl VernalApplicationBuilder {
             runtime: Arc::new(runtime),
             cancellation: Arc::new(CancellationToken::new()),
             events: Arc::new(EventBus::new()),
+            scope_cleanup_policy: Arc::new(crate::ScopeCleanupPolicy::default()),
             enabled_features: BTreeSet::new(),
             adapters: BTreeMap::new(),
             external_dependencies: BTreeMap::new(),
@@ -186,6 +189,15 @@ impl VernalApplicationBuilder {
         self
     }
 
+    /// 设置应用拥有的 Scope 清理等待策略。
+    ///
+    /// `WebRequestScope` 和其他通过 `ApplicationContext` 创建的作用域可以读取同一个
+    /// 策略；策略本身也作为 `IoC` 内建组件注册，基础设施组件可以显式注入并复用。
+    pub fn scope_cleanup_policy(&mut self, policy: crate::ScopeCleanupPolicy) -> &mut Self {
+        self.scope_cleanup_policy = Arc::new(policy);
+        self
+    }
+
     /// 声明一个需要在应用构建阶段预编译调用计划的组件操作。
     pub fn operation(&mut self, operation: Operation) -> &mut Self {
         self.operations.push(operation);
@@ -258,6 +270,10 @@ impl VernalApplicationBuilder {
             .register(ComponentDefinition::shared_arc(Arc::clone(&self.events)))?;
         self.registry
             .register(ComponentDefinition::shared_arc(Arc::clone(
+                &self.scope_cleanup_policy,
+            )))?;
+        self.registry
+            .register(ComponentDefinition::shared_arc(Arc::clone(
                 &invocation_plans,
             )))?;
         self.registry
@@ -269,6 +285,7 @@ impl VernalApplicationBuilder {
             self.runtime,
             self.cancellation,
             self.events,
+            self.scope_cleanup_policy,
             invocation_plans,
             local_invocation_plans,
             DiagnosticConfiguration::new(
