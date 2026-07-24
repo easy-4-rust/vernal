@@ -7,8 +7,8 @@ use tokio_util::sync::CancellationToken;
 use vernal_aop::{InvocationPlanCatalog, LocalInvocationPlanCatalog};
 
 use crate::{
-    EventBus, ManagedTaskSupervisor, ScopeCleanupPolicy, TaskShutdownPolicy,
-    diagnostic_configuration::DiagnosticConfiguration,
+    EventBus, LifecycleExecutionPolicy, ManagedTaskSupervisor, ScopeCleanupPolicy,
+    TaskShutdownPolicy, diagnostic_configuration::DiagnosticConfiguration,
 };
 
 /// 聚合一个 `ApplicationContext` 独占或共享的基础运行资源。
@@ -22,6 +22,7 @@ pub(crate) struct ContextResources {
     pub(crate) cancellation: Arc<CancellationToken>,
     pub(crate) managed_tasks: Option<Arc<ManagedTaskSupervisor>>,
     pub(crate) task_shutdown_policy: Arc<TaskShutdownPolicy>,
+    pub(crate) lifecycle_execution_policy: Arc<LifecycleExecutionPolicy>,
     pub(crate) events: Arc<EventBus>,
     pub(crate) scope_cleanup_policy: Arc<ScopeCleanupPolicy>,
     pub(crate) invocation_plans: Arc<InvocationPlanCatalog>,
@@ -39,6 +40,7 @@ impl ContextResources {
             cancellation: Arc::new(CancellationToken::new()),
             managed_tasks: None,
             task_shutdown_policy: Arc::new(TaskShutdownPolicy::default()),
+            lifecycle_execution_policy: Arc::new(LifecycleExecutionPolicy::default()),
             events: Arc::new(EventBus::new()),
             scope_cleanup_policy: Arc::new(ScopeCleanupPolicy::default()),
             invocation_plans: Arc::new(InvocationPlanCatalog::default()),
@@ -65,6 +67,11 @@ impl ContextResources {
     /// 返回应用级受管任务停机策略。
     pub(crate) fn task_shutdown_policy(&self) -> &TaskShutdownPolicy {
         &self.task_shutdown_policy
+    }
+
+    /// 返回组件生命周期钩子的执行与 abort 收口预算。
+    pub(crate) fn lifecycle_execution_policy(&self) -> &LifecycleExecutionPolicy {
+        &self.lifecycle_execution_policy
     }
 
     /// 返回 Context 独占的类型化事件总线。

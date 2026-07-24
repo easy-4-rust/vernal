@@ -594,7 +594,7 @@ formats, web servers, and external configuration centers remain adapters whose
 native objects may still be registered as ordinary components.
 
 Before graph freezing, `VernalApplicationBuilder` automatically registers
-eight framework-native components:
+nine framework-native components:
 
 | Built-in component | Lifecycle responsibility |
 |:---|:---|
@@ -602,6 +602,7 @@ eight framework-native components:
 | `CancellationToken` | One application cancellation tree |
 | `ManagedTaskSupervisor` | Own task handles and propagate task failures |
 | `TaskShutdownPolicy` | Bound graceful wait and post-abort settlement |
+| `LifecycleExecutionPolicy` | Bound initialize/start/stop and post-abort settlement |
 | `EventBus` | Context-local typed events |
 | `ScopeCleanupPolicy` | Bound application-owned Web scope cleanup waits |
 | `InvocationPlanCatalog` | Immutable Send-AOP invocation plans |
@@ -672,8 +673,9 @@ flowchart LR
     Startup["ApplicationStartupCoordinator"] --> Operation["Tokio phase task"]
     Startup --> Observer["Tokio observer task"]
     Operation --> Hooks["initialize / start hooks"]
-    Hooks -->|"success"| Commit["Commit Refreshed / Ready"]
-    Hooks -->|"Err / panic / app cancellation"| Rollback["Cancel app + reverse stop"]
+    Hooks --> Budget["LifecycleExecutionPolicy budget"]
+    Budget -->|"success"| Commit["Commit Refreshed / Ready"]
+    Budget -->|"Err / panic / timeout / app cancellation"| Rollback["Cancel app + reverse stop"]
     Operation --> Observer
     Observer --> Receiver
     Dropped -.->|"does not affect"| Operation
@@ -681,9 +683,19 @@ flowchart LR
 
 Each user initialize/start hook also runs in an isolated child task, so panic
 becomes a component-and-phase `ContextError::Lifecycle` instead of terminating
-the coordinator. Components enter the shared stack before initialize, leaving
-rollback with an explicit owner. This retains tx-di's readable explicit phases
-without copying its global App or implicit task ownership.
+the coordinator. `LifecycleExecutionPolicy` gives initialize, start, and stop
+independent execution budgets plus a post-abort settlement budget. A timeout
+first requests Tokio abort, consumes the `JoinHandle` within the settlement
+budget, emits a redacted warning code, and then performs or continues reverse
+cleanup. Components enter the shared stack before initialize, leaving rollback
+with an explicit owner.
+
+Tokio abort is cooperative. Lifecycle hooks must stay asynchronous and yield;
+blocking work belongs in a component-owned `spawn_blocking` task with its own
+cancellation/settlement contract. Vernal reports whether an aborted hook
+settled, but cannot claim thread-level forced termination. This retains tx-di's
+readable explicit phases and bounded shutdown intent without copying its global
+App, implicit task ownership, or an unobserved timed-out `JoinHandle`.
 
 `ApplicationContext::close()` starts and observes shutdown, while one
 Context-local Tokio coordinator owns the component stack and the actual
@@ -1049,15 +1061,16 @@ receivers. Phase 2 now has a callable loop, while broader
 signatures, diagnostic coverage, benchmarks, and stability guarantees remain
 open.
 
-The Phase 3 kernel has twenty-five contract tests for dependency-order
+The Phase 3 kernel has twenty-eight contract tests for dependency-order
 startup, reverse shutdown, initialize/start rollback, invalid transitions,
 idempotent close, concurrent close serialization, and context-local typed
 event isolation, plus runtime-unavailable diagnostics, same-instance injection
-of the eight built-in resources, application-owned Scope cancellation,
+of the nine built-in resources, application-owned Scope cancellation,
 task failure/panic propagation, cancellation-safe shared task shutdown,
 timeout abort, task-before-component stop ordering, cancelled close-waiter
 recovery, cancelled refresh/start waiter rollback, pre-start application
-cancellation, failure-driven `run_until_cancelled()` shutdown, stop-hook panic
+cancellation, failure-driven `run_until_cancelled()` shutdown, bounded
+initialize/start timeout rollback, stop-timeout continuation, stop-hook panic
 isolation, and owned/redacted serialization of successful and failed startup
 reports.
 

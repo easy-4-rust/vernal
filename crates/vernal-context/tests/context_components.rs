@@ -6,8 +6,8 @@ use tokio::runtime::Handle;
 use tokio_util::sync::CancellationToken;
 use vernal_aop::{InvocationPlanCatalog, LocalInvocationPlanCatalog, Operation};
 use vernal_context::{
-    ApplicationBuildError, EventBus, Lifecycle, ManagedTaskSupervisor, ScopeCleanupPolicy,
-    TaskShutdownPolicy, VernalApplicationBuilder,
+    ApplicationBuildError, EventBus, Lifecycle, LifecycleExecutionPolicy, ManagedTaskSupervisor,
+    ScopeCleanupPolicy, TaskShutdownPolicy, VernalApplicationBuilder,
 };
 use vernal_core::BoxError;
 use vernal_ioc::ComponentDefinition;
@@ -19,6 +19,7 @@ struct RuntimeAwareService {
     events: Arc<EventBus>,
     managed_tasks: Arc<ManagedTaskSupervisor>,
     task_shutdown_policy: Arc<TaskShutdownPolicy>,
+    lifecycle_execution_policy: Arc<LifecycleExecutionPolicy>,
     scope_cleanup_policy: Arc<ScopeCleanupPolicy>,
     invocation_plans: Arc<InvocationPlanCatalog>,
     local_invocation_plans: Arc<LocalInvocationPlanCatalog>,
@@ -48,6 +49,26 @@ fn assert_managed_task_components(
     ));
 }
 
+/// 校验生命周期执行策略作为普通 `IoC` 原生组件保持同一实例。
+fn assert_lifecycle_execution_component(
+    service: &RuntimeAwareService,
+    context: &vernal_context::ApplicationContext,
+) {
+    assert_eq!(
+        *service.lifecycle_execution_policy,
+        LifecycleExecutionPolicy::new(
+            Duration::from_secs(11),
+            Duration::from_secs(12),
+            Duration::from_secs(13),
+            Duration::from_secs(3),
+        )
+    );
+    assert!(std::ptr::eq(
+        service.lifecycle_execution_policy.as_ref(),
+        context.lifecycle_execution_policy()
+    ));
+}
+
 #[test]
 fn current_builder_rejects_threads_without_a_tokio_runtime() {
     assert!(matches!(
@@ -66,6 +87,12 @@ async fn managed_context_injects_tokio_events_cancellation_and_aop_plans() {
         Duration::from_secs(9),
         Duration::from_secs(2),
     ));
+    application.lifecycle_execution_policy(LifecycleExecutionPolicy::new(
+        Duration::from_secs(11),
+        Duration::from_secs(12),
+        Duration::from_secs(13),
+        Duration::from_secs(3),
+    ));
     application.operation(operation.clone());
     application.lifecycle::<RuntimeAwareService>();
     application
@@ -78,6 +105,8 @@ async fn managed_context_injects_tokio_events_cancellation_and_aop_plans() {
                         events: resolver.resolve::<EventBus>()?,
                         managed_tasks: resolver.resolve::<ManagedTaskSupervisor>()?,
                         task_shutdown_policy: resolver.resolve::<TaskShutdownPolicy>()?,
+                        lifecycle_execution_policy: resolver
+                            .resolve::<LifecycleExecutionPolicy>()?,
                         scope_cleanup_policy: resolver.resolve::<ScopeCleanupPolicy>()?,
                         invocation_plans: resolver.resolve::<InvocationPlanCatalog>()?,
                         local_invocation_plans: resolver.resolve::<LocalInvocationPlanCatalog>()?,
@@ -89,6 +118,7 @@ async fn managed_context_injects_tokio_events_cancellation_and_aop_plans() {
             .depends_on::<EventBus>()
             .depends_on::<ManagedTaskSupervisor>()
             .depends_on::<TaskShutdownPolicy>()
+            .depends_on::<LifecycleExecutionPolicy>()
             .depends_on::<ScopeCleanupPolicy>()
             .depends_on::<InvocationPlanCatalog>()
             .depends_on::<LocalInvocationPlanCatalog>(),
@@ -116,6 +146,7 @@ async fn managed_context_injects_tokio_events_cancellation_and_aop_plans() {
     assert!(context.runtime_handle().is_some());
     assert!(std::ptr::eq(service.events.as_ref(), context.events()));
     assert_managed_task_components(&service, &context);
+    assert_lifecycle_execution_component(&service, &context);
     assert_eq!(
         service.scope_cleanup_policy.timeout(),
         Some(Duration::from_secs(7))

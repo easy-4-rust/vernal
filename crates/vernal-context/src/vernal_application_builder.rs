@@ -14,8 +14,9 @@ use vernal_ioc::{ComponentDefinition, DefinitionError, Qualifier, RegistryBuilde
 
 use crate::{
     ApplicationBuildError, ApplicationContext, ApplicationContextBuilder, DiagnosticState,
-    EventBus, Lifecycle, ManagedTaskSupervisor, SubsystemStatus, TaskShutdownPolicy,
-    context_resources::ContextResources, diagnostic_configuration::DiagnosticConfiguration,
+    EventBus, Lifecycle, LifecycleExecutionPolicy, ManagedTaskSupervisor, SubsystemStatus,
+    TaskShutdownPolicy, context_resources::ContextResources,
+    diagnostic_configuration::DiagnosticConfiguration,
 };
 
 type LifecycleRegistrar = dyn FnOnce(&mut ApplicationContextBuilder) + Send + Sync + 'static;
@@ -23,12 +24,13 @@ type LifecycleRegistrar = dyn FnOnce(&mut ApplicationContextBuilder) + Send + Sy
 /// 统一收集组件、生命周期、切面和 Tokio Context 资源的应用建造器。
 ///
 /// 与接收冻结 [`vernal_ioc::Registry`] 的低层 [`ApplicationContextBuilder`]
-/// 不同，该建造器在依赖图冻结前自动注册八类框架内建组件：
+/// 不同，该建造器在依赖图冻结前自动注册九类框架内建组件：
 ///
 /// - [`Handle`]：应用绑定的 Tokio Runtime；
 /// - [`CancellationToken`]：应用关闭与后台任务协作取消；
 /// - [`ManagedTaskSupervisor`]：后台 Tokio 任务所有权与失败传播；
 /// - [`TaskShutdownPolicy`]：受管任务的两阶段停机预算；
+/// - [`LifecycleExecutionPolicy`]：生命周期钩子的执行与 abort 收口预算；
 /// - [`EventBus`]：Context 内类型化事件；
 /// - [`crate::ScopeCleanupPolicy`]：应用 Scope 的有界异步释放策略；
 /// - [`vernal_aop::InvocationPlanCatalog`]：预编译 AOP 调用计划。
@@ -46,6 +48,7 @@ pub struct VernalApplicationBuilder {
     cancellation: Arc<CancellationToken>,
     managed_tasks: Arc<ManagedTaskSupervisor>,
     task_shutdown_policy: Arc<TaskShutdownPolicy>,
+    lifecycle_execution_policy: Arc<LifecycleExecutionPolicy>,
     events: Arc<EventBus>,
     scope_cleanup_policy: Arc<crate::ScopeCleanupPolicy>,
     enabled_features: BTreeSet<String>,
@@ -72,6 +75,7 @@ impl VernalApplicationBuilder {
             cancellation,
             managed_tasks,
             task_shutdown_policy: Arc::new(TaskShutdownPolicy::default()),
+            lifecycle_execution_policy: Arc::new(LifecycleExecutionPolicy::default()),
             events: Arc::new(EventBus::new()),
             scope_cleanup_policy: Arc::new(crate::ScopeCleanupPolicy::default()),
             enabled_features: BTreeSet::new(),
@@ -97,7 +101,8 @@ impl VernalApplicationBuilder {
     ///
     /// 内建类型由 [`Self::build`] 自动注册；业务代码不应重复注册同类型的
     /// `Handle`、`CancellationToken`、`ManagedTaskSupervisor`、
-    /// `TaskShutdownPolicy`、`EventBus` 或两类调用计划目录。
+    /// `TaskShutdownPolicy`、`LifecycleExecutionPolicy`、`EventBus` 或两类调用计划
+    /// 目录。
     ///
     /// # Errors
     ///
@@ -218,6 +223,15 @@ impl VernalApplicationBuilder {
         self
     }
 
+    /// 设置单个组件生命周期钩子的执行与 Tokio abort 收口预算。
+    ///
+    /// 策略会作为 `IoC` 内建组件注册；Context 与基础设施组件解析到同一个不可变
+    /// 实例，运行期间不会因配置刷新产生不同的超时语义。
+    pub fn lifecycle_execution_policy(&mut self, policy: LifecycleExecutionPolicy) -> &mut Self {
+        self.lifecycle_execution_policy = Arc::new(policy);
+        self
+    }
+
     /// 声明一个需要在应用构建阶段预编译调用计划的组件操作。
     pub fn operation(&mut self, operation: Operation) -> &mut Self {
         self.operations.push(operation);
@@ -295,6 +309,10 @@ impl VernalApplicationBuilder {
                 &self.task_shutdown_policy,
             )))?;
         self.registry
+            .register(ComponentDefinition::shared_arc(Arc::clone(
+                &self.lifecycle_execution_policy,
+            )))?;
+        self.registry
             .register(ComponentDefinition::shared_arc(Arc::clone(&self.events)))?;
         self.registry
             .register(ComponentDefinition::shared_arc(Arc::clone(
@@ -314,6 +332,7 @@ impl VernalApplicationBuilder {
             cancellation: self.cancellation,
             managed_tasks: Some(self.managed_tasks),
             task_shutdown_policy: self.task_shutdown_policy,
+            lifecycle_execution_policy: self.lifecycle_execution_policy,
             events: self.events,
             scope_cleanup_policy: self.scope_cleanup_policy,
             invocation_plans,

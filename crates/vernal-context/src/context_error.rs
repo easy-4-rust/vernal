@@ -1,6 +1,6 @@
 //! 应用上下文错误对象。
 
-use std::{error::Error, fmt};
+use std::{error::Error, fmt, time::Duration};
 
 use vernal_core::SharedError;
 use vernal_ioc::{ComponentKey, ResolveError};
@@ -43,6 +43,17 @@ pub enum ContextError {
         phase: LifecyclePhase,
         /// 原始组件错误。
         source: SharedError,
+    },
+    /// 组件生命周期钩子超过执行预算并已请求 Tokio abort。
+    LifecycleTimeout {
+        /// 组件诊断名称。
+        component: &'static str,
+        /// 超时阶段。
+        phase: LifecyclePhase,
+        /// 该阶段配置的最长执行时间。
+        timeout: Duration,
+        /// Tokio 任务是否在 abort 收口预算内到达终态。
+        abort_settled: bool,
     },
     /// 应用受管 Tokio 任务执行或停机失败。
     ManagedTask {
@@ -94,6 +105,16 @@ impl fmt::Display for ContextError {
             } => write!(
                 formatter,
                 "lifecycle component {component} failed during {phase}: {source}"
+            ),
+            Self::LifecycleTimeout {
+                component,
+                phase,
+                timeout,
+                abort_settled,
+            } => write!(
+                formatter,
+                "lifecycle component {component} exceeded {phase} timeout {timeout:?}; \
+                 Tokio abort settled: {abort_settled}"
             ),
             Self::ManagedTask { source } => {
                 write!(formatter, "managed task lifecycle failed: {source}")

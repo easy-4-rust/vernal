@@ -7,13 +7,13 @@ use tokio::{
     sync::oneshot,
     task::{JoinError, JoinHandle},
 };
-use vernal_core::SharedError;
 use vernal_ioc::{ComponentKey, Container, ResolveError};
 
 use crate::{
-    ContextError, ContextState, DiagnosticOutcome, DiagnosticPhase, Lifecycle, LifecyclePhase,
+    ContextError, ContextState, DiagnosticOutcome, DiagnosticPhase, Lifecycle,
+    LifecycleExecutionPolicy, LifecyclePhase,
     application_close_coordinator::ApplicationCloseCoordinator,
-    application_context_builder::LifecycleResolver,
+    application_context_builder::LifecycleResolver, lifecycle_task_executor::LifecycleTaskExecutor,
 };
 
 type OperationResult = Result<(), ContextError>;
@@ -195,7 +195,8 @@ impl ApplicationStartupCoordinator {
         // 外层观察任务也能从共享栈找到它并完成 stop，而不是只让 Arc 被动 Drop。
         self.lifecycle.push_component(Arc::clone(&component)).await;
         let initialize_started = Instant::now();
-        if let Err(source) = Self::initialize_component(Arc::clone(&component)).await {
+        let policy = *self.lifecycle.resources().lifecycle_execution_policy();
+        if let Err(error) = Self::initialize_component(Arc::clone(&component), policy).await {
             self.lifecycle
                 .record_observation(
                     component.name(),
@@ -204,11 +205,7 @@ impl ApplicationStartupCoordinator {
                     initialize_started,
                 )
                 .await;
-            let error = ContextError::Lifecycle {
-                component: component.name(),
-                phase: LifecyclePhase::Initialize,
-                source,
-            };
+            self.lifecycle.record_lifecycle_warning(&error).await;
             self.rollback_to_closed().await;
             return Err(error);
         }
@@ -242,9 +239,11 @@ impl ApplicationStartupCoordinator {
                 return Err(error);
             }
             let start_started = Instant::now();
-            if let Err(source) = Self::start_component(
+            let policy = *self.lifecycle.resources().lifecycle_execution_policy();
+            if let Err(error) = Self::start_component(
                 Arc::clone(component),
                 self.lifecycle.resources().cancellation().clone(),
+                policy,
             )
             .await
             {
@@ -256,11 +255,7 @@ impl ApplicationStartupCoordinator {
                         start_started,
                     )
                     .await;
-                let error = ContextError::Lifecycle {
-                    component: component.name(),
-                    phase: LifecyclePhase::Start,
-                    source,
-                };
+                self.lifecycle.record_lifecycle_warning(&error).await;
                 self.rollback_to_closed().await;
                 return Err(error);
             }
@@ -283,25 +278,39 @@ impl ApplicationStartupCoordinator {
         Ok(())
     }
 
-    /// 在独立任务中执行 initialize，把用户 panic 归一为共享错误源。
-    async fn initialize_component(component: Arc<dyn Lifecycle>) -> Result<(), SharedError> {
-        match tokio::spawn(async move { component.initialize().await }).await {
-            Ok(Ok(())) => Ok(()),
-            Ok(Err(source)) => Err(source.into()),
-            Err(source) => Err(Arc::new(source)),
-        }
+    /// 在有界独立任务中执行 initialize，并隔离业务错误、panic 与永久等待。
+    async fn initialize_component(
+        component: Arc<dyn Lifecycle>,
+        policy: LifecycleExecutionPolicy,
+    ) -> OperationResult {
+        let name = component.name();
+        let task = tokio::spawn(async move { component.initialize().await });
+        LifecycleTaskExecutor::execute(
+            task,
+            name,
+            LifecyclePhase::Initialize,
+            policy.initialize_timeout(),
+            policy.abort_timeout(),
+        )
+        .await
     }
 
-    /// 在独立任务中执行 start，把用户 panic 归一为共享错误源。
+    /// 在有界独立任务中执行 start，并在超时后请求 Tokio abort。
     async fn start_component(
         component: Arc<dyn Lifecycle>,
         cancellation: tokio_util::sync::CancellationToken,
-    ) -> Result<(), SharedError> {
-        match tokio::spawn(async move { component.start(cancellation).await }).await {
-            Ok(Ok(())) => Ok(()),
-            Ok(Err(source)) => Err(source.into()),
-            Err(source) => Err(Arc::new(source)),
-        }
+        policy: LifecycleExecutionPolicy,
+    ) -> OperationResult {
+        let name = component.name();
+        let task = tokio::spawn(async move { component.start(cancellation).await });
+        LifecycleTaskExecutor::execute(
+            task,
+            name,
+            LifecyclePhase::Start,
+            policy.start_timeout(),
+            policy.abort_timeout(),
+        )
+        .await
     }
 
     /// 取消应用并逆序释放共享组件栈，最后发布 Closed。

@@ -8,8 +8,8 @@ use vernal_aop::InvocationPlanCatalog;
 use vernal_ioc::{ComponentKey, Container, ScopeContext};
 
 use crate::{
-    ContextError, ContextState, EventBus, ManagedTaskSupervisor, StartupReport, TaskShutdownPolicy,
-    application_close_coordinator::ApplicationCloseCoordinator,
+    ContextError, ContextState, EventBus, LifecycleExecutionPolicy, ManagedTaskSupervisor,
+    StartupReport, TaskShutdownPolicy, application_close_coordinator::ApplicationCloseCoordinator,
     application_context_builder::LifecycleResolver,
     application_startup_coordinator::ApplicationStartupCoordinator,
     context_resources::ContextResources,
@@ -146,6 +146,14 @@ impl ApplicationContext {
     #[must_use]
     pub fn task_shutdown_policy(&self) -> &TaskShutdownPolicy {
         self.lifecycle().resources().task_shutdown_policy()
+    }
+
+    /// 返回单个生命周期钩子的执行与 Tokio abort 收口预算。
+    ///
+    /// 高层建造器会把同一对象注册到 IoC；返回借用确保 Context 启动后策略不可漂移。
+    #[must_use]
+    pub fn lifecycle_execution_policy(&self) -> &LifecycleExecutionPolicy {
+        self.lifecycle().resources().lifecycle_execution_policy()
     }
 
     /// 返回当前 Context 独占的类型化事件总线。

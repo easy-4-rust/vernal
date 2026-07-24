@@ -371,8 +371,9 @@ cancellation; Vernal does not introduce a second runtime abstraction.
 `VernalApplicationBuilder` is the high-level bootstrap path. Before freezing
 the dependency graph it registers the current Tokio `Handle`, the application
 `CancellationToken`, `ManagedTaskSupervisor`, `TaskShutdownPolicy`,
-`ScopeCleanupPolicy`, the context-local `EventBus`, and both precompiled Send
-and Local AOP plan catalogs as ordinary typed components:
+`LifecycleExecutionPolicy`, `ScopeCleanupPolicy`, the context-local `EventBus`,
+and both precompiled Send and Local AOP plan catalogs as ordinary typed
+components:
 
 ```rust
 use vernal_aop::Operation;
@@ -433,7 +434,12 @@ not prevent later components from stopping. Service entrypoints can await
 way to `Closed`. `refresh()` and `start()` use a separate Context-local Tokio
 coordinator: cancelling a waiter cannot abandon initialization or startup,
 and application cancellation during either phase produces a structured
-rollback instead of publishing `Ready`.
+rollback rather than publishing `Ready`. Every initialize/start/stop hook also
+has a `LifecycleExecutionPolicy` budget. The default is 30 seconds per hook
+plus one second for post-abort settlement; timeout is a structured lifecycle
+error, and reverse cleanup continues after a timed-out stop. Hooks must remain
+asynchronous and yield to Tokio—abort cannot forcibly terminate blocking code
+or a no-yield loop inside an async task.
 
 ## 6. Capabilities
 
@@ -445,7 +451,7 @@ rollback instead of publishing `Ready`.
 | Trait binding | Named/primary/multiple implementations without string lookup | Phase 1.1 kernel |
 | Interceptor chain | Ordered Around/Next composition with short circuit and result/error transformation | Phase 2 kernel |
 | Pointcuts | Operation matching compiled into immutable invocation plans | Phase 2 kernel |
-| Application context | Tokio-owned refresh/start/close, deterministic rollback, context-local typed events | Phase 3 kernel |
+| Application context | Tokio-owned refresh/start/close, bounded lifecycle hooks, deterministic rollback, context-local typed events | Phase 3 kernel |
 | Managed Tokio tasks | Context-owned task handles, failure-driven cancellation, graceful wait, bounded abort, shared shutdown result | Phase 3 kernel |
 | Events | Context-local typed event publication | Phase 3 kernel |
 | Async integration | Tokio-native cancellation, deadlines, and typed invocation context | Phase 2 kernel |
@@ -569,16 +575,17 @@ compile-fail cases for invalid component
 fields, invalid collection qualifiers, non-async interception, and borrowed
 receivers. Broader signature support, expanded
 macro diagnostics, and AOP benchmarks remain open.
-The Phase 3 kernel has twenty-five tests covering dependency-order startup,
+The Phase 3 kernel has twenty-eight tests covering dependency-order startup,
 reverse shutdown, initialize/start rollback, invalid transitions, idempotent
 close, concurrent close serialization, and context-local typed event
-isolation, plus managed injection of eight framework resources,
+isolation, plus managed injection of nine framework resources,
 application-owned Scope cancellation, task failure/panic propagation,
 cancellation-safe shared task shutdown, timeout abort, task-before-component
 stop ordering, cancelled close-waiter recovery, failure-driven
 `run_until_cancelled()` shutdown, cancelled refresh/start waiter recovery,
-pre-start application cancellation, stop-hook panic isolation, and read-only/
-redacted serialization of successful and failed startup reports.
+pre-start application cancellation, bounded initialize/start rollback,
+stop-timeout continuation, stop-hook panic isolation, and read-only/redacted
+serialization of successful and failed startup reports.
 
 Phase 4 now makes `WebRequestScope` the Web facade over IoC `ScopeContext`.
 All ten adapters resolve singleton, transient, and request-scoped components

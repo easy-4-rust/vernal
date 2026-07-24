@@ -13,11 +13,11 @@ use tokio::{
     runtime::Handle,
     sync::{Mutex, RwLock, watch},
 };
-use vernal_core::SharedError;
 
 use crate::{
     ContextError, ContextState, DiagnosticOutcome, DiagnosticPhase, Lifecycle, LifecyclePhase,
     ManagedTaskError, StartupObservation, StartupReport, context_resources::ContextResources,
+    lifecycle_task_executor::LifecycleTaskExecutor,
 };
 
 type CloseResult = Result<(), ContextError>;
@@ -102,6 +102,17 @@ impl ApplicationCloseCoordinator {
         self.diagnostics.lock().await.record_warning(warning);
     }
 
+    /// 将生命周期超时转换成低基数、无业务正文的运行期告警代码。
+    pub(crate) async fn record_lifecycle_warning(&self, error: &ContextError) {
+        if let ContextError::LifecycleTimeout { abort_settled, .. } = error {
+            self.record_warning("context.lifecycle-hook.timeout").await;
+            if !abort_settled {
+                self.record_warning("context.lifecycle-hook.abort-unsettled")
+                    .await;
+            }
+        }
+    }
+
     /// 追加一条不包含底层错误正文的生命周期观测。
     pub(crate) async fn record_observation(
         &self,
@@ -143,16 +154,20 @@ impl ApplicationCloseCoordinator {
     pub(crate) async fn stop_component(
         &self,
         component: &Arc<dyn Lifecycle>,
-    ) -> Result<(), SharedError> {
+    ) -> Result<(), ContextError> {
         let started = Instant::now();
         let name = component.name();
         let owned_component = Arc::clone(component);
-        let result = tokio::spawn(async move { owned_component.stop().await }).await;
-        let result = match result {
-            Ok(Ok(())) => Ok(()),
-            Ok(Err(source)) => Err(SharedError::from(source)),
-            Err(source) => Err(Arc::new(source) as SharedError),
-        };
+        let task = tokio::spawn(async move { owned_component.stop().await });
+        let policy = *self.resources.lifecycle_execution_policy();
+        let result = LifecycleTaskExecutor::execute(
+            task,
+            name,
+            LifecyclePhase::Stop,
+            policy.stop_timeout(),
+            policy.abort_timeout(),
+        )
+        .await;
         let outcome = if result.is_ok() {
             DiagnosticOutcome::Succeeded
         } else {
@@ -160,6 +175,9 @@ impl ApplicationCloseCoordinator {
         };
         self.record_observation(name, DiagnosticPhase::Stop, outcome, started)
             .await;
+        if let Err(error) = &result {
+            self.record_lifecycle_warning(error).await;
+        }
         result
     }
 
@@ -169,11 +187,7 @@ impl ApplicationCloseCoordinator {
         for component in components.iter().rev() {
             let stop_error = self.stop_component(component).await.err();
             if first_error.is_none() {
-                first_error = stop_error.map(|source| ContextError::Lifecycle {
-                    component: component.name(),
-                    phase: LifecyclePhase::Stop,
-                    source,
-                });
+                first_error = stop_error;
             }
         }
         first_error

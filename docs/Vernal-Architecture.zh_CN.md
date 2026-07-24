@@ -581,6 +581,7 @@ Web server 和外部配置中心仍属于独立适配器；应用可以把它们
 | `CancellationToken` | Context 关闭时统一取消，由组件监听或派生子令牌 |
 | `ManagedTaskSupervisor` | 持有后台任务句柄并传播任务失败 |
 | `TaskShutdownPolicy` | 约束优雅等待与 abort 后收口时间 |
+| `LifecycleExecutionPolicy` | 约束 initialize/start/stop 与 abort 后收口时间 |
 | `EventBus` | 每个 Context 独占的类型化广播事件 |
 | `ScopeCleanupPolicy` | 约束应用拥有的 Web Scope 清理等待 |
 | `InvocationPlanCatalog` | 构建阶段生成的只读 Send-AOP 计划目录 |
@@ -658,17 +659,26 @@ flowchart LR
     Startup["ApplicationStartupCoordinator"] --> Operation["Tokio 阶段任务"]
     Startup --> Observer["Tokio 观察任务"]
     Operation --> Hooks["initialize / start 钩子"]
-    Hooks -->|"成功"| Commit["提交 Refreshed / Ready"]
-    Hooks -->|"Err / panic / 应用取消"| Rollback["取消应用并逆序 stop"]
+    Hooks --> Budget["LifecycleExecutionPolicy 执行预算"]
+    Budget -->|"成功"| Commit["提交 Refreshed / Ready"]
+    Budget -->|"Err / panic / 超时 / 应用取消"| Rollback["取消应用并逆序 stop"]
     Operation --> Observer
     Observer --> Receiver
     Dropped -.->|"不影响"| Operation
 ```
 
 每个用户 initialize/start 钩子还会在独立子任务中执行，因此 panic 会变成携带
-组件名与阶段的 `ContextError::Lifecycle`，而不是击穿协调器。组件在 initialize
-前先进入共享组件栈，确保 panic 或等待者取消后仍有明确所有者执行 stop。Vernal
-在这里保留 tx-di 的显式阶段语义，但不复制其全局 App 和隐式任务所有权。
+组件名与阶段的 `ContextError::Lifecycle`，而不是击穿协调器。
+`LifecycleExecutionPolicy` 分别约束 initialize、start、stop，并提供 abort 后的
+收口预算。阶段超时会先请求 Tokio abort，在预算内消费 `JoinHandle`，写入脱敏
+告警，再执行或继续逆序回滚。组件在 initialize 前先进入共享组件栈，确保 panic、
+超时或等待者取消后仍有明确所有者执行 stop。
+
+Tokio abort 属于协作式终止：生命周期钩子必须保持异步并定期让出执行权；阻塞工作
+应由组件放入自有 `spawn_blocking` 任务，并定义自己的取消与收口合同。Vernal 会
+报告 abort 后任务是否按时收口，但不会虚构线程级强制终止能力。这里保留 tx-di
+清晰的显式阶段和有界停机意图，同时不复制其全局 App、隐式任务所有权或未被观察
+的超时 `JoinHandle`。
 
 `ApplicationContext::close()` 只负责启动并等待关闭，组件栈与实际释放流程由
 Context-local 的唯一 Tokio 协调对象持有。这样调用方取消 Future 不会等价于取消
@@ -994,14 +1004,14 @@ Singleton Component 注入、Transient 构造、Trait Object 注入和 Context-l
 非异步方法和借用接收器。Phase 2 已具备可调用
 闭环，但更广泛的方法签名、诊断矩阵、性能基准和稳定性承诺仍未完成。
 
-Phase 3 内核另有 25 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
+Phase 3 内核另有 28 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
 回滚、非法转换、幂等关闭、并发关闭串行化、Context-local 类型化事件隔离，
-高层构建器的 Runtime 缺失诊断、八类内建组件同实例注入、应用 Scope 取消树、
+高层构建器的 Runtime 缺失诊断、九类内建组件同实例注入、应用 Scope 取消树、
 任务错误/panic 传播、取消安全共享停机、超时 abort、任务先于组件 stop 的顺序、
 关闭等待者取消后继续完成组件释放、refresh/start 等待者取消后继续失败回滚、
 start 前应用取消、任务失败驱动 `run_until_cancelled()` 进入 `Closed`、stop
-钩子 panic 隔离，以及成功/失败启动报告的只读快照、Serde 序列化与业务错误
-正文脱敏。
+钩子 panic 隔离、initialize/start 超时回滚、stop 超时后继续逆序释放，以及
+成功/失败启动报告的只读快照、Serde 序列化与业务错误正文脱敏。
 
 ## 16. 实施路线
 
