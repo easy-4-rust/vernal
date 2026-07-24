@@ -1,5 +1,7 @@
 //! Vernal Local-AOP 的 `!Send` Around、短路、目录与取消合同测试。
 
+#[path = "local_aop_support/borrowed_local_target.rs"]
+mod borrowed_local_target;
 #[path = "local_aop_support/recording_local_interceptor.rs"]
 mod recording_local_interceptor;
 #[path = "local_aop_support/short_circuit_local_interceptor.rs"]
@@ -15,13 +17,15 @@ use std::{
     },
 };
 
+use borrowed_local_target::BorrowedLocalTarget;
 use recording_local_interceptor::RecordingLocalInterceptor;
 use short_circuit_local_interceptor::ShortCircuitLocalInterceptor;
 use tokio::sync::Mutex;
 use tokio_util::sync::CancellationToken;
 use vernal_aop::{
-    Invocation, LocalAdvisor, LocalInvocationError, LocalInvocationPlanBuilder,
-    LocalInvocationResult, LocalInvocationTarget, LocalInvocationValue, Operation,
+    BorrowedLocalInvocationTarget, Invocation, LocalAdvisor, LocalInvocationError,
+    LocalInvocationPlanBuilder, LocalInvocationResult, LocalInvocationTarget, LocalInvocationValue,
+    Operation,
 };
 
 #[tokio::test]
@@ -142,4 +146,23 @@ async fn cancellation_stops_pending_non_send_local_target() {
         Err(LocalInvocationError::Cancelled)
     ));
     assert_eq!(local_marker.borrow().as_str(), "worker-local");
+}
+
+#[tokio::test]
+async fn borrowed_local_target_stays_inside_current_call_lifetime() {
+    let events = RefCell::new(Vec::new());
+    let operation = Operation::new("NtexBorrowedEndpoint", "GET");
+    let plan = LocalInvocationPlanBuilder::new().build(operation.clone());
+    let target: Rc<dyn BorrowedLocalInvocationTarget + '_> =
+        Rc::new(BorrowedLocalTarget::new(&events));
+
+    let value = plan
+        .invoke_borrowed(Invocation::new(operation).shared(), target)
+        .await
+        .expect("borrowed local target");
+    let value = value
+        .downcast::<Rc<String>>()
+        .expect("borrowed target return value");
+    assert_eq!(value.as_str(), "borrowed-result");
+    assert_eq!(*events.borrow(), ["borrowed-target"]);
 }

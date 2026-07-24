@@ -3,8 +3,9 @@
 use std::{rc::Rc, sync::Arc};
 
 use crate::{
-    Invocation, LocalInterceptor, LocalInvocationError, LocalInvocationResult,
-    LocalInvocationTarget, LocalNext, Operation,
+    BorrowedLocalInvocationTarget, Invocation, LocalInterceptor, LocalInvocationError,
+    LocalInvocationResult, LocalInvocationTarget, LocalNext, Operation,
+    local_target_ref::LocalTargetRef,
 };
 
 /// 针对一个操作预编译的 `!Send` 有序拦截器链。
@@ -37,6 +38,35 @@ impl LocalInvocationPlan {
         invocation: Arc<Invocation>,
         target: Rc<LocalInvocationTarget>,
     ) -> LocalInvocationResult {
+        self.invoke_target(invocation, LocalTargetRef::Static(target.as_ref()))
+            .await
+    }
+
+    /// 执行可以借用当前 Worker 调用期资源的完整本地环绕链。
+    ///
+    /// 该入口用于 Ntex `ServiceCtx` 一类带非静态生命周期的框架对象。目标借用
+    /// 不会逃出返回 Future；取消、deadline、顺序与错误语义和 [`Self::invoke`]
+    /// 完全相同。
+    ///
+    /// # Errors
+    ///
+    /// 操作不匹配、调用取消、超过截止时间，或本地拦截器及目标失败时返回
+    /// [`LocalInvocationError`]。
+    pub async fn invoke_borrowed<'a>(
+        &self,
+        invocation: Arc<Invocation>,
+        target: Rc<dyn BorrowedLocalInvocationTarget + 'a>,
+    ) -> LocalInvocationResult {
+        self.invoke_target(invocation, LocalTargetRef::Borrowed(target.as_ref()))
+            .await
+    }
+
+    /// 在同一条内部路径上执行静态目标和借用型目标。
+    async fn invoke_target<'a>(
+        &'a self,
+        invocation: Arc<Invocation>,
+        target: LocalTargetRef<'a>,
+    ) -> LocalInvocationResult {
         if invocation.operation() != &self.operation {
             return Err(LocalInvocationError::PlanMismatch {
                 expected: self.operation.clone(),
@@ -46,7 +76,7 @@ impl LocalInvocationPlan {
 
         let cancellation = invocation.cancellation().clone();
         let deadline = invocation.deadline();
-        let execution = LocalNext::new(&self.interceptors, target.as_ref()).run(invocation);
+        let execution = LocalNext::new(&self.interceptors, target).run(invocation);
 
         if let Some(deadline) = deadline {
             tokio::select! {

@@ -2,7 +2,9 @@
 
 use std::sync::Arc;
 
-use crate::{Invocation, LocalInterceptor, LocalInvocationFuture, LocalInvocationTarget};
+use crate::{
+    Invocation, LocalInterceptor, LocalInvocationFuture, local_target_ref::LocalTargetRef,
+};
 
 /// 指向本地拦截器链中下一个节点。
 ///
@@ -10,7 +12,7 @@ use crate::{Invocation, LocalInterceptor, LocalInvocationFuture, LocalInvocation
 /// Around 语义，但不会要求下游 Future 或返回值实现 `Send`。
 pub struct LocalNext<'a> {
     interceptors: &'a [Arc<dyn LocalInterceptor>],
-    target: &'a LocalInvocationTarget,
+    target: LocalTargetRef<'a>,
     index: usize,
 }
 
@@ -18,7 +20,7 @@ impl<'a> LocalNext<'a> {
     /// 从本地调用计划首节点创建后继对象。
     pub(crate) fn new(
         interceptors: &'a [Arc<dyn LocalInterceptor>],
-        target: &'a LocalInvocationTarget,
+        target: LocalTargetRef<'a>,
     ) -> Self {
         Self {
             interceptors,
@@ -39,7 +41,7 @@ impl<'a> LocalNext<'a> {
                 };
                 interceptor.intercept_local(invocation, next).await
             } else {
-                (self.target)(invocation).await
+                self.target.invoke(invocation).await
             }
         })
     }

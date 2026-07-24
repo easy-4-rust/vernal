@@ -9,6 +9,8 @@ use ntex::{
 use vernal_ioc::ResolveError;
 use vernal_web::ScopeError;
 
+use crate::NtexAopError;
+
 /// 将 Vernal 基础设施失败映射为稳定、脱敏的 Ntex 响应。
 #[derive(Debug)]
 pub enum NtexRejection {
@@ -16,6 +18,8 @@ pub enum NtexRejection {
     MissingContext,
     /// 当前请求没有请求作用域。
     MissingRequestScope,
+    /// 当前请求没有严格 Local-AOP 创建的请求上下文。
+    MissingRequestContext,
     /// `IoC` 容器无法解析目标组件。
     ComponentResolution {
         /// 原始解析错误，仅供服务端错误链使用。
@@ -25,6 +29,11 @@ pub enum NtexRejection {
     ScopeClose {
         /// 原始关闭错误，仅供服务端错误链使用。
         source: ScopeError,
+    },
+    /// 严格 Local-AOP 调用失败且没有可用于直接构造响应的请求信封。
+    Aop {
+        /// 原始 AOP 错误，仅供服务端错误链使用。
+        source: NtexAopError,
     },
 }
 
@@ -43,14 +52,22 @@ impl NtexRejection {
         Self::ScopeClose { source }
     }
 
+    /// 创建严格 Local-AOP 拒绝。
+    #[must_use]
+    pub const fn aop(source: NtexAopError) -> Self {
+        Self::Aop { source }
+    }
+
     /// 返回允许发送给客户端的稳定错误消息。
     #[must_use]
-    pub const fn safe_message(&self) -> &'static str {
+    pub fn safe_message(&self) -> &str {
         match self {
             Self::MissingContext => "Vernal application context is unavailable",
             Self::MissingRequestScope => "Vernal request scope is unavailable",
+            Self::MissingRequestContext => "Vernal request context is unavailable",
             Self::ComponentResolution { .. } => "Vernal component resolution failed",
             Self::ScopeClose { .. } => "Vernal request scope cleanup failed",
+            Self::Aop { source } => source.safe_message(),
         }
     }
 }
@@ -62,12 +79,16 @@ impl fmt::Display for NtexRejection {
             Self::MissingRequestScope => {
                 formatter.write_str("Ntex request has no Vernal request scope")
             }
+            Self::MissingRequestContext => {
+                formatter.write_str("Ntex request has no Vernal request context")
+            }
             Self::ComponentResolution { source } => {
                 write!(formatter, "Ntex component resolution failed: {source}")
             }
             Self::ScopeClose { source } => {
                 write!(formatter, "Ntex request scope close failed: {source}")
             }
+            Self::Aop { source } => write!(formatter, "Ntex AOP request failed: {source}"),
         }
     }
 }
@@ -77,6 +98,7 @@ impl Error for NtexRejection {
         match self {
             Self::ComponentResolution { source } => Some(source.as_ref()),
             Self::ScopeClose { source } => Some(source),
+            Self::Aop { source } => Some(source),
             _ => None,
         }
     }
@@ -87,11 +109,18 @@ where
     Err: ErrorRenderer,
 {
     fn status_code(&self) -> StatusCode {
-        StatusCode::INTERNAL_SERVER_ERROR
+        match self {
+            Self::Aop { source } => source.status(),
+            _ => StatusCode::INTERNAL_SERVER_ERROR,
+        }
     }
 
     fn error_response(&self, _request: &HttpRequest) -> HttpResponse {
         // `Display` 包含服务端诊断细节；客户端只能收到固定的安全文本。
-        HttpResponse::build(StatusCode::INTERNAL_SERVER_ERROR).body(self.safe_message())
+        match self {
+            Self::Aop { source } => source.response(),
+            _ => HttpResponse::build(StatusCode::INTERNAL_SERVER_ERROR)
+                .body(self.safe_message().to_owned()),
+        }
     }
 }
