@@ -435,7 +435,8 @@ remain targets.
 
 Phase 1 was completed with tests for 1,000-node deterministic planning,
 structured graph diagnostics, concurrent singleton construction, container
-isolation, transient resolution, qualifiers, and hidden-dependency rejection.
+isolation, transient resolution, qualifiers, hidden-dependency rejection, and
+atomic component-bundle registration for ecosystem bridges.
 The Phase 2 AOP kernel currently has eight contract tests covering ordered
 enter/reverse exit, short circuit, success and error transformation, typed
 context across `.await`, cancellation/deadline, pointcut selection, and

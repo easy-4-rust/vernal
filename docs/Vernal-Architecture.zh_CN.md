@@ -690,10 +690,11 @@ Phase 1 最低验收：
 4. `cargo tree` 证明 `vernal-ioc` 不包含具体 Web 或 ORM 框架；允许按需使用 Tokio；
 5. 所有失败通过 `Result` 返回，不依赖 panic。
 
-截至 2026-07-24，上述五项已有本地证据：11 个 IoC 合同测试覆盖 1,000 节点图、
+截至 2026-07-24，上述五项已有本地证据：12 个 IoC 合同测试覆盖 1,000 节点图、
 缺失/歧义/循环路径、两个并行 Container 的 Singleton 隔离、Transient、
 qualifier、隐藏依赖拒绝、原生值注册和 Tokio Handle 真实 task；运行时 Tokio
-目前只作为 IoC 合同测试依赖，通用解析热路径未引入 Runtime 状态。
+目前只作为 IoC 合同测试依赖，通用解析热路径未引入 Runtime 状态。面向生态
+Bridge 的 `register_all` 会先校验整个组件批次，发生重复标识时不会保留已注册前缀。
 
 Phase 2 AOP 内核另有 8 个合同测试，覆盖顺序进入/逆序退出、短路、结果/
 错误改写、跨 `.await` 类型化上下文、取消/deadline、切点过滤和 64 task 并发

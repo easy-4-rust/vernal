@@ -79,6 +79,22 @@ impl VernalApplicationBuilder {
         Ok(self)
     }
 
+    /// 原子注册一组业务或基础设施组件定义。
+    ///
+    /// 该入口用于安装相互依赖的生态组件包；若任一标识冲突，整个批次都不会写入
+    /// 应用建造器，从而避免出现只注册了一半的 Bridge。
+    ///
+    /// # Errors
+    ///
+    /// 批次内部或与已有定义存在重复组件标识时返回 [`DefinitionError`]。
+    pub fn register_all(
+        &mut self,
+        definitions: impl IntoIterator<Item = ComponentDefinition>,
+    ) -> Result<&mut Self, DefinitionError> {
+        self.registry.register_all(definitions)?;
+        Ok(self)
+    }
+
     /// 注册一个无限定符生命周期组件类型。
     pub fn lifecycle<T>(&mut self) -> &mut Self
     where

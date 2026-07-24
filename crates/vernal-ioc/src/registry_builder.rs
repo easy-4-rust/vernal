@@ -1,6 +1,9 @@
 //! 可变组件注册表建造器。
 
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 use crate::{
     BuildPlan, ComponentDefinition, ComponentKey, DefinitionError, GraphError, Registry,
@@ -42,6 +45,40 @@ impl RegistryBuilder {
         let index = self.definitions.len();
         self.key_indices.insert(definition.key().clone(), index);
         self.definitions.push(Arc::new(definition));
+        Ok(self)
+    }
+
+    /// 原子注册一组组件定义。
+    ///
+    /// 方法会先校验批次内部以及批次与现有注册表之间的全部组件标识。只有所有
+    /// 定义都不冲突时才会修改建造器，适合 Hutool-Rust、Sa-Token-Rust 等消费方
+    /// Bridge 一次安装相互依赖的组件集合。
+    ///
+    /// # Errors
+    ///
+    /// 任一组件标识已经存在，或同一批次中出现重复标识时返回
+    /// [`DefinitionError::DuplicateDefinition`]；失败时建造器保持原状。
+    pub fn register_all(
+        &mut self,
+        definitions: impl IntoIterator<Item = ComponentDefinition>,
+    ) -> Result<&mut Self, DefinitionError> {
+        let definitions = definitions.into_iter().collect::<Vec<_>>();
+        let mut batch_keys = HashSet::with_capacity(definitions.len());
+
+        // 先完成全批次预检，避免前几个定义已经写入、后续定义才发现冲突。
+        for definition in &definitions {
+            let key = definition.key();
+            if self.key_indices.contains_key(key) || !batch_keys.insert(key.clone()) {
+                return Err(DefinitionError::DuplicateDefinition { key: key.clone() });
+            }
+        }
+
+        // 预检成功后再一次性提交，注册顺序仍与调用方提供的迭代顺序一致。
+        for definition in definitions {
+            let index = self.definitions.len();
+            self.key_indices.insert(definition.key().clone(), index);
+            self.definitions.push(Arc::new(definition));
+        }
         Ok(self)
     }
 

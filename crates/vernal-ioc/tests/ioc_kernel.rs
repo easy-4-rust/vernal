@@ -386,3 +386,33 @@ fn duplicate_definition_and_invalid_qualifier_are_rejected() {
         DefinitionError::DuplicateDefinition { .. }
     ));
 }
+
+#[test]
+fn batch_registration_is_atomic_when_any_definition_conflicts() {
+    let mut registry = RegistryBuilder::new();
+    registry
+        .register(ComponentDefinition::shared_value(1_u8))
+        .expect("initial definition");
+
+    let error = registry
+        .register_all([
+            ComponentDefinition::shared_value(2_u16),
+            ComponentDefinition::shared_value(3_u8),
+        ])
+        .expect_err("batch must reject an existing component key");
+
+    assert!(matches!(error, DefinitionError::DuplicateDefinition { .. }));
+    assert_eq!(
+        registry.len(),
+        1,
+        "failed batch must not retain its valid prefix"
+    );
+    assert!(matches!(
+        registry
+            .build()
+            .expect("original graph remains valid")
+            .container()
+            .resolve::<u16>(),
+        Err(ResolveError::NotFound { .. })
+    ));
+}

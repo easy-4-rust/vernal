@@ -669,12 +669,14 @@ Phase 1 minimum acceptance:
    Tokio is allowed when needed.
 5. Normal failures use `Result`, not panic.
 
-As of 2026-07-24, all five items have local evidence: eleven IoC contract tests
+As of 2026-07-24, all five items have local evidence: twelve IoC contract tests
 cover a 1,000-node graph, missing/ambiguous/cycle paths, singleton isolation
 across two concurrent containers, transient creation, qualifiers, hidden
 dependency rejection, native-value registration, and a real task spawned
-through an injected Tokio handle. Tokio remains a contract-test dependency for
-IoC rather than runtime state in its resolution hot path.
+through an injected Tokio handle. Atomic `register_all` validates complete
+ecosystem component bundles before mutation, so a duplicate key cannot leave a
+registered prefix behind. Tokio remains a contract-test dependency for IoC
+rather than runtime state in its resolution hot path.
 
 The Phase 2 AOP kernel additionally has eight contract tests for
 ordered entry/reverse exit, short circuit, result/error transformation, typed
