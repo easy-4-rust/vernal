@@ -212,6 +212,24 @@ Singleton 状态属于具体 Container，而不是进程级全局 Store。
 `reqwest::Client`、数据库连接池、Tower Service、框架 State、Tokio 同步原语和
 业务对象。具体框架依赖由注册它们的应用或集成 crate 持有。
 
+Trait Object 通过显式、类型安全的绑定进入同一依赖图：
+
+```rust
+use vernal_ioc::{Component, TraitBinding};
+
+registry.register_bundle(
+    [EmailSender::definition()],
+    [TraitBinding::new::<dyn MessageSender, EmailSender, _>(
+        |sender| sender,
+    ).primary()],
+)?;
+```
+
+`Arc<dyn MessageSender>` 字段由 Component 宏注入唯一或 Primary 实现，
+`#[component(qualifier = "email")]` 选择命名实现，
+`Vec<Arc<dyn MessageSender>>` 注入全部实现。绑定仍指向原始组件实例，不建立
+第二套 Store；模块定义与绑定通过 `register_bundle` 原子提交。
+
 ## 6. 能力状态
 
 | 能力 | 目标合同 | 状态 |
@@ -219,7 +237,7 @@ Singleton 状态属于具体 Container，而不是进程级全局 Store。
 | 类型化组件定义 | 构造器注入与显式元数据 | Phase 1 |
 | 作用域 | 每 Container Singleton 与每次解析 Transient | Phase 1 |
 | 依赖图 | 确定性顺序及缺失、歧义、循环结构化诊断 | Phase 1 |
-| Trait 绑定 | 不依赖字符串查找的命名、首选和多实现绑定 | 计划 |
+| Trait 绑定 | 不依赖字符串查找的命名、Primary 和多实现绑定 | Phase 1.1 内核 |
 | 拦截器链 | 有序 Around/Next、短路及结果/错误改写 | Phase 2 内核 |
 | 切点 | 操作匹配并编译成不可变调用计划 | Phase 2 内核 |
 | ApplicationContext | 串行生命周期、回滚、逆序关闭和 Context-local 类型化事件 | Phase 3 内核 |
@@ -232,8 +250,7 @@ Singleton 状态属于具体 Container，而不是进程级全局 Store。
 | 诊断 | 可检查的依赖图与不泄露秘密的启动报告 | 计划 |
 
 “Phase 1”和“Phase 2 内核”表示已有可调用实现与合同测试，但 API 仍处于实验
-阶段；过程宏和编译失败矩阵完成前，Phase 2 不能宣布整体完成。“计划”表示当前
-不存在可调用实现。任何标签都不代表稳定兼容或达到性能指标。
+阶段。“计划”表示当前不存在可调用实现。任何标签都不代表稳定兼容或达到性能指标。
 
 ## 7. 生态定位
 
@@ -300,14 +317,16 @@ Phase 5 正在进行：Sa-Token-Rust 已远端集成 `sa-token-vernal`；Hutool-
 Tokio 测试、Clippy 和文档构建已在独立依赖图通过。Ddd4r 全 Workspace 门禁仍被
 既有、当前不可获取的 `rbatis-r2dbc` Git Revision 阻断，不能据此宣称全仓通过。
 
-Phase 1 已通过 1,000 节点确定性规划、结构化图诊断、并发 Singleton、
-双 Container 隔离、Transient、qualifier 和隐藏依赖拒绝测试。
-Phase 2 AOP 内核现有 7 个 Tokio 测试，覆盖顺序进入/逆序退出、短路、成功结果
+Phase 1/1.1 已通过 22 个 IoC 合同测试，覆盖 1,000 节点确定性规划、结构化图
+诊断、并发 Singleton、双 Container 隔离、Transient、原生对象、Trait 命名/
+Primary/全部实现、Trait 图环和跨定义/绑定原子模块注册。
+Phase 2 AOP 内核现有 8 个 Tokio 测试，覆盖顺序进入/逆序退出、短路、成功结果
 与错误改写、跨 `.await` 类型化上下文、取消/deadline、切点选择和 64 task
-并发共享计划；宏生成与基准测试仍未完成。
-Phase 3 内核现有 7 个测试，覆盖依赖顺序启动、逆序关闭、initialize/start
+并发共享计划；性能基准仍未完成。宏前端另有 4 个运行时合同测试和 4 个
+compile-fail 用例。
+Phase 3 内核现有 9 个测试，覆盖依赖顺序启动、逆序关闭、initialize/start
 回滚、非法状态转换、幂等关闭、并发关闭串行化和 Context-local 类型化事件
-隔离；AOP 计划聚合与更丰富诊断仍待实现。
+隔离，以及高层构建器内建资源注入。
 
 ## 10. 贡献与许可证
 

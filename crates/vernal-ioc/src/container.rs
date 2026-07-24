@@ -10,7 +10,7 @@ use vernal_core::SharedError;
 
 use crate::{
     ComponentDefinition, ComponentKey, Dependency, Qualifier, Registry, ResolveError, Resolver,
-    Scope, component_definition::ErasedComponent,
+    Scope, TraitBinding, component_definition::ErasedComponent,
 };
 
 type SingletonCell = OnceLock<Result<ErasedComponent, ResolveError>>;
@@ -58,6 +58,48 @@ impl Container {
         self.resolve_typed(&Dependency::qualified::<T>(qualifier.clone()), &[])
     }
 
+    /// 解析指定 Trait Object 的唯一或 Primary 实现。
+    ///
+    /// # Errors
+    ///
+    /// 没有绑定、存在歧义、目标构造失败或绑定转换结果错误时返回
+    /// [`ResolveError`]。
+    pub fn resolve_trait<T>(&self) -> Result<Arc<T>, ResolveError>
+    where
+        T: ?Sized + Send + Sync + 'static,
+    {
+        self.resolve_trait_typed(&Dependency::trait_of::<T>(), &[])
+    }
+
+    /// 按限定符解析指定 Trait Object 实现。
+    ///
+    /// # Errors
+    ///
+    /// 没有精确命名绑定、目标构造失败或绑定转换结果错误时返回
+    /// [`ResolveError`]。
+    pub fn resolve_qualified_trait<T>(&self, qualifier: &Qualifier) -> Result<Arc<T>, ResolveError>
+    where
+        T: ?Sized + Send + Sync + 'static,
+    {
+        self.resolve_trait_typed(&Dependency::trait_qualified::<T>(qualifier.clone()), &[])
+    }
+
+    /// 按注册顺序解析指定 Trait Object 的全部实现。
+    ///
+    /// 没有绑定时返回空集合，而不是错误；任一已存在绑定的目标构造或转换失败时
+    /// 返回 [`ResolveError`]。
+    ///
+    /// # Errors
+    ///
+    /// 任一绑定目标构造失败或绑定转换结果与 Trait 类型不一致时返回
+    /// [`ResolveError`]。
+    pub fn resolve_all_traits<T>(&self) -> Result<Vec<Arc<T>>, ResolveError>
+    where
+        T: ?Sized + Send + Sync + 'static,
+    {
+        self.resolve_all_traits_typed(&Dependency::all_traits_of::<T>(), &[])
+    }
+
     /// 按依赖优先顺序构造全部单例。
     ///
     /// 普通 `IoC` 使用可以保持惰性；应用上下文会在 refresh 阶段调用此方法，
@@ -98,6 +140,36 @@ impl Container {
         })
     }
 
+    /// 为受限 Resolver 执行 Trait 单值解析。
+    pub(crate) fn resolve_trait_typed<T>(
+        &self,
+        dependency: &Dependency,
+        stack: &[ComponentKey],
+    ) -> Result<Arc<T>, ResolveError>
+    where
+        T: ?Sized + Send + Sync + 'static,
+    {
+        let binding = self.select_trait_binding(dependency, stack)?;
+        self.resolve_binding(binding, stack)
+    }
+
+    /// 为受限 Resolver 执行 Trait 全实现解析。
+    pub(crate) fn resolve_all_traits_typed<T>(
+        &self,
+        dependency: &Dependency,
+        stack: &[ComponentKey],
+    ) -> Result<Vec<Arc<T>>, ResolveError>
+    where
+        T: ?Sized + Send + Sync + 'static,
+    {
+        self.registry
+            .bindings()
+            .iter()
+            .filter(|binding| binding.key().type_id == dependency.type_id)
+            .map(|binding| self.resolve_binding(binding, stack))
+            .collect()
+    }
+
     /// 按类型与限定符选择唯一组件定义。
     fn select_definition(
         &self,
@@ -130,6 +202,88 @@ impl Container {
                 path: Self::display_path(stack, Some(dependency.to_string())),
             }),
         }
+    }
+
+    /// 按 Trait 类型、限定符和 Primary 规则选择唯一绑定。
+    fn select_trait_binding(
+        &self,
+        dependency: &Dependency,
+        stack: &[ComponentKey],
+    ) -> Result<&Arc<TraitBinding>, ResolveError> {
+        let matches: Vec<&Arc<TraitBinding>> = self
+            .registry
+            .bindings()
+            .iter()
+            .filter(|binding| binding.key().type_id == dependency.type_id)
+            .filter(|binding| {
+                dependency.qualifier().is_none()
+                    || binding.key().qualifier() == dependency.qualifier()
+            })
+            .collect();
+
+        match matches.as_slice() {
+            [binding] => Ok(*binding),
+            [] => Err(ResolveError::NotFound {
+                component: dependency.to_string(),
+                path: Self::display_path(stack, Some(dependency.to_string())),
+            }),
+            _ if dependency.qualifier().is_none() => {
+                let primary: Vec<&Arc<TraitBinding>> = matches
+                    .iter()
+                    .copied()
+                    .filter(|binding| binding.is_primary())
+                    .collect();
+                match primary.as_slice() {
+                    [binding] => Ok(*binding),
+                    _ => Err(ResolveError::Ambiguous {
+                        component: dependency.to_string(),
+                        candidates: matches.iter().map(ToString::to_string).collect(),
+                        path: Self::display_path(stack, Some(dependency.to_string())),
+                    }),
+                }
+            }
+            _ => Err(ResolveError::Ambiguous {
+                component: dependency.to_string(),
+                candidates: matches.iter().map(ToString::to_string).collect(),
+                path: Self::display_path(stack, Some(dependency.to_string())),
+            }),
+        }
+    }
+
+    /// 解析绑定目标并恢复其 `Arc<dyn Trait>` 类型。
+    fn resolve_binding<T>(
+        &self,
+        binding: &TraitBinding,
+        stack: &[ComponentKey],
+    ) -> Result<Arc<T>, ResolveError>
+    where
+        T: ?Sized + Send + Sync + 'static,
+    {
+        let definition = self
+            .registry
+            .definitions()
+            .iter()
+            .find(|definition| definition.key() == binding.target())
+            .ok_or_else(|| ResolveError::NotFound {
+                component: binding.target().to_string(),
+                path: Self::display_path(stack, Some(binding.to_string())),
+            })?;
+        let component = self.resolve_definition(definition, stack)?;
+        let erased_trait =
+            binding
+                .upcast(component)
+                .map_err(|target| ResolveError::TraitBindingTypeMismatch {
+                    binding: binding.key().clone(),
+                    target,
+                })?;
+
+        erased_trait
+            .downcast_ref::<Arc<T>>()
+            .cloned()
+            .ok_or_else(|| ResolveError::TraitBindingTypeMismatch {
+                binding: binding.key().clone(),
+                target: binding.target().clone(),
+            })
     }
 
     /// 根据作用域解析定义；单例使用每容器 `OnceLock` 保证并发只构造一次。

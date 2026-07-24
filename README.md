@@ -249,6 +249,25 @@ Every unmarked field must be `Arc<T>` and becomes a declared dependency.
 still call `RegistryBuilder::register`, so registration provenance stays
 explicit.
 
+Trait objects join the same graph through explicit, type-checked bindings:
+
+```rust
+use vernal_ioc::{Component, TraitBinding};
+
+registry.register_bundle(
+    [EmailSender::definition()],
+    [TraitBinding::new::<dyn MessageSender, EmailSender, _>(
+        |sender| sender,
+    ).primary()],
+)?;
+```
+
+The Component derive injects the unique or primary implementation into
+`Arc<dyn MessageSender>`, selects a named binding for
+`#[component(qualifier = "email")]`, and injects every implementation into
+`Vec<Arc<dyn MessageSender>>`. A binding reuses the original component
+instance; `register_bundle` atomically commits definitions and bindings.
+
 An AOP-enabled component explicitly receives its context-local plan catalog
 and cancellation token. The method macro then performs ordinary async Rust
 calls through the precompiled plan:
@@ -349,7 +368,7 @@ runtime capture and built-in registration are not wanted.
 | Typed component definitions | Constructor injection with explicit metadata | Phase 1 |
 | Scopes | Per-container singleton and per-resolution transient | Phase 1 |
 | Dependency graph | Deterministic build order and structured missing/ambiguous/cycle diagnostics | Phase 1 |
-| Trait binding | Named/primary/multiple implementations without string lookup | Planned |
+| Trait binding | Named/primary/multiple implementations without string lookup | Phase 1.1 kernel |
 | Interceptor chain | Ordered Around/Next composition with short circuit and result/error transformation | Phase 2 kernel |
 | Pointcuts | Operation matching compiled into immutable invocation plans | Phase 2 kernel |
 | Application context | Serialized lifecycle, rollback, reverse shutdown, context-local typed events | Phase 3 kernel |
@@ -447,18 +466,20 @@ graph. The full Ddd4r workspace gate remains blocked by its pre-existing,
 currently unavailable `rbatis-r2dbc` Git revision and is not reported as
 passing.
 
-Phase 1 was completed with tests for 1,000-node deterministic planning,
-structured graph diagnostics, concurrent singleton construction, container
-isolation, transient resolution, qualifiers, hidden-dependency rejection, and
-atomic component-bundle registration for ecosystem bridges.
+Phase 1/1.1 now has 22 IoC contract tests for 1,000-node deterministic
+planning, structured graph diagnostics, concurrent singleton construction,
+container isolation, transient resolution, native objects, named/primary/all
+Trait bindings, Trait graph cycles, hidden-dependency rejection, and atomic
+definition-plus-binding module registration.
 The Phase 2 AOP kernel currently has eight contract tests covering ordered
 enter/reverse exit, short circuit, success and error transformation, typed
 context across `.await`, cancellation/deadline, pointcut selection, and
 64-task concurrent plan reuse, plus deduplicated plan-catalog compilation.
-The macro frontend has three runtime tests covering singleton Component
-injection, transient construction, and context-local intercepted invocation,
-plus three compile-fail cases for invalid component fields, non-async
-interception, and borrowed receivers. Broader signature support, expanded
+The macro frontend has four runtime tests covering singleton Component
+injection, transient construction, Trait Object injection, and context-local
+intercepted invocation, plus four compile-fail cases for invalid component
+fields, invalid collection qualifiers, non-async interception, and borrowed
+receivers. Broader signature support, expanded
 diagnostic snapshots, and AOP benchmarks remain open.
 The Phase 3 kernel has nine tests covering dependency-order startup,
 reverse shutdown, initialize/start rollback, invalid transitions, idempotent

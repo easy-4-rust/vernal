@@ -12,8 +12,9 @@ use crate::ComponentDefinition;
 pub trait Component: Any + Send + Sync + Sized {
     /// 创建该类型的组件定义。
     ///
-    /// `#[derive(vernal_macros::Component)]` 会根据结构体的 `Arc<T>` 字段生成
-    /// 构造器和 `depends_on::<T>()` 元数据。
+    /// `#[derive(vernal_macros::Component)]` 会根据结构体的 `Arc<T>`、
+    /// `Arc<dyn Trait>` 与 `Vec<Arc<dyn Trait>>` 字段生成构造器和对应显式依赖
+    /// 元数据。
     #[must_use]
     fn definition() -> ComponentDefinition;
 }

@@ -1,0 +1,6 @@
+error: Vec<Arc<dyn Trait>> 全实现注入不支持 qualifier
+ --> tests/ui/component_all_trait_qualifier.rs:7:5
+  |
+7 | /     #[component(qualifier = "named")]
+8 | |     ports: Vec<Arc<dyn Port>>,
+  | |_____________________________^

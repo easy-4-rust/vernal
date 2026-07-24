@@ -2,7 +2,7 @@
 
 use proc_macro_crate::{FoundCrate, crate_name};
 use proc_macro2::TokenStream;
-use quote::quote;
+use quote::{format_ident, quote};
 use syn::{
     Attribute, Data, DeriveInput, Field, Fields, GenericArgument, LitStr, PathArguments, Type,
 };
@@ -15,7 +15,8 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
     let component_name = &input.ident;
     let fields = component_fields(&input.data)?;
     let mut initializers = Vec::with_capacity(fields.len());
-    let mut dependencies = Vec::new();
+    let mut dependency_statements = Vec::new();
+    let mut qualifier_declarations = Vec::new();
     let aop_implementation = if aop_enabled {
         generate_aop_implementation(component_name, &fields)?
     } else {
@@ -25,22 +26,13 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
     // 每个未标记 default 的字段都必须是 Arc<T>，宏同时生成构造表达式和显式
     // 依赖元数据，保证 Resolver 的运行期访问与启动期依赖图完全一致。
     for field in &fields {
-        let field_name = field
-            .ident
-            .as_ref()
-            .ok_or_else(|| syn::Error::new_spanned(field, "组件只支持具名字段"))?;
-        if uses_default(field)? {
-            initializers.push(quote! {
-                #field_name: ::core::default::Default::default()
-            });
-            continue;
-        }
-
-        let dependency = arc_inner_type(&field.ty)?;
-        initializers.push(quote! {
-            #field_name: __resolver.resolve::<#dependency>()?
-        });
-        dependencies.push(dependency);
+        generate_field_injection(
+            field,
+            &ioc,
+            &mut initializers,
+            &mut dependency_statements,
+            &mut qualifier_declarations,
+        )?;
     }
 
     let factory = if transient {
@@ -48,38 +40,117 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
     } else {
         quote! { #ioc::ComponentDefinition::try_singleton }
     };
-    let definition = dependencies.iter().fold(
-        quote! {
-            #factory::<Self, _>(
-                |__resolver| -> ::core::result::Result<
-                    Self,
-                    ::std::boxed::Box<
-                        dyn ::std::error::Error + ::core::marker::Send
-                            + ::core::marker::Sync + 'static
-                    >
-                > {
-                    ::core::result::Result::Ok(Self {
-                        #(#initializers),*
-                    })
-                }
-            )
-        },
-        |definition, dependency| {
-            quote! {
-                #definition.depends_on::<#dependency>()
-            }
-        },
-    );
 
     Ok(quote! {
         impl #ioc::Component for #component_name {
             fn definition() -> #ioc::ComponentDefinition {
-                #definition
+                #(#qualifier_declarations)*
+                let mut __definition = #factory::<Self, _>(
+                    move |__resolver| -> ::core::result::Result<
+                        Self,
+                        ::std::boxed::Box<
+                            dyn ::std::error::Error + ::core::marker::Send
+                                + ::core::marker::Sync + 'static
+                        >
+                    > {
+                        ::core::result::Result::Ok(Self {
+                            #(#initializers),*
+                        })
+                    }
+                );
+                #(#dependency_statements)*
+                __definition
             }
         }
 
         #aop_implementation
     })
+}
+
+/// 为一个组件字段生成构造表达式、依赖声明和可选 qualifier 局部变量。
+fn generate_field_injection(
+    field: &Field,
+    ioc: &TokenStream,
+    initializers: &mut Vec<TokenStream>,
+    dependency_statements: &mut Vec<TokenStream>,
+    qualifier_declarations: &mut Vec<TokenStream>,
+) -> syn::Result<()> {
+    let field_name = field
+        .ident
+        .as_ref()
+        .ok_or_else(|| syn::Error::new_spanned(field, "组件只支持具名字段"))?;
+    let (uses_default, qualifier) = field_options(field)?;
+    if uses_default {
+        initializers.push(quote! {
+            #field_name: ::core::default::Default::default()
+        });
+        return Ok(());
+    }
+
+    if let Some(dependency) = vec_arc_trait_inner(&field.ty)? {
+        if qualifier.is_some() {
+            return Err(syn::Error::new_spanned(
+                field,
+                "Vec<Arc<dyn Trait>> 全实现注入不支持 qualifier",
+            ));
+        }
+        initializers.push(quote! {
+            #field_name: __resolver.resolve_all_traits::<#dependency>()?
+        });
+        dependency_statements.push(quote! {
+            __definition = __definition.depends_on_all_traits::<#dependency>();
+        });
+        return Ok(());
+    }
+
+    let dependency = arc_inner_type(&field.ty)?;
+    let is_trait = matches!(dependency, Type::TraitObject(_));
+    let Some(qualifier) = qualifier else {
+        if is_trait {
+            initializers.push(quote! {
+                #field_name: __resolver.resolve_trait::<#dependency>()?
+            });
+            dependency_statements.push(quote! {
+                __definition = __definition.depends_on_trait::<#dependency>();
+            });
+        } else {
+            initializers.push(quote! {
+                #field_name: __resolver.resolve::<#dependency>()?
+            });
+            dependency_statements.push(quote! {
+                __definition = __definition.depends_on::<#dependency>();
+            });
+        }
+        return Ok(());
+    };
+
+    let definition_qualifier = format_ident!("__vernal_{}_definition_qualifier", field_name);
+    let factory_qualifier = format_ident!("__vernal_{}_factory_qualifier", field_name);
+    qualifier_declarations.push(quote! {
+        let #definition_qualifier = #ioc::Qualifier::new(#qualifier)
+            .expect("Vernal Component 宏已在编译期校验 qualifier");
+        let #factory_qualifier = #definition_qualifier.clone();
+    });
+    if is_trait {
+        initializers.push(quote! {
+            #field_name: __resolver.resolve_qualified_trait::<#dependency>(&#factory_qualifier)?
+        });
+        dependency_statements.push(quote! {
+            __definition = __definition.depends_on_qualified_trait::<#dependency>(
+                #definition_qualifier
+            );
+        });
+    } else {
+        initializers.push(quote! {
+            #field_name: __resolver.resolve_qualified::<#dependency>(&#factory_qualifier)?
+        });
+        dependency_statements.push(quote! {
+            __definition = __definition.depends_on_qualified::<#dependency>(
+                #definition_qualifier
+            );
+        });
+    }
+    Ok(())
 }
 
 /// 解析消费方实际使用的 `IoC` crate 路径，兼容 Cargo 依赖重命名和统一门面。
@@ -265,9 +336,10 @@ fn component_fields(data: &Data) -> syn::Result<Vec<&Field>> {
     }
 }
 
-/// 判断字段是否使用 `#[component(default)]` 跳过注入。
-fn uses_default(field: &Field) -> syn::Result<bool> {
+/// 读取字段的默认值与命名注入选项。
+fn field_options(field: &Field) -> syn::Result<(bool, Option<LitStr>)> {
     let mut default = false;
+    let mut qualifier = None;
     for attribute in field
         .attrs
         .iter()
@@ -276,13 +348,33 @@ fn uses_default(field: &Field) -> syn::Result<bool> {
         attribute.parse_nested_meta(|metadata| {
             if metadata.path.is_ident("default") {
                 default = true;
-                Ok(())
-            } else {
-                Err(metadata.error("字段 component 属性只支持 default"))
+                return Ok(());
             }
+            if metadata.path.is_ident("qualifier") {
+                if qualifier.is_some() {
+                    return Err(metadata.error("同一字段只能声明一个 qualifier"));
+                }
+                let value = metadata.value()?.parse::<LitStr>()?;
+                let text = value.value();
+                if text.is_empty() || text.trim() != text {
+                    return Err(syn::Error::new_spanned(
+                        value,
+                        "qualifier 不能为空且不能包含首尾空白",
+                    ));
+                }
+                qualifier = Some(value);
+                return Ok(());
+            }
+            Err(metadata.error("字段 component 属性只支持 default 或 qualifier"))
         })?;
     }
-    Ok(default)
+    if default && qualifier.is_some() {
+        return Err(syn::Error::new_spanned(
+            field,
+            "default 字段不能同时声明 qualifier",
+        ));
+    }
+    Ok((default, qualifier))
 }
 
 /// 从 `Arc<T>` 字段类型中提取依赖类型 `T`。
@@ -323,11 +415,38 @@ fn arc_inner_type(field_type: &Type) -> syn::Result<&Type> {
             "Arc 注入字段的参数必须是具体 Rust 类型",
         ));
     };
-    if matches!(dependency, Type::TraitObject(_)) {
+    Ok(dependency)
+}
+
+/// 尝试从 `Vec<Arc<dyn Trait>>` 字段中提取 Trait Object 类型。
+fn vec_arc_trait_inner(field_type: &Type) -> syn::Result<Option<&Type>> {
+    let Type::Path(type_path) = field_type else {
+        return Ok(None);
+    };
+    let Some(segment) = type_path.path.segments.last() else {
+        return Ok(None);
+    };
+    if segment.ident != "Vec" {
+        return Ok(None);
+    }
+    let PathArguments::AngleBracketed(arguments) = &segment.arguments else {
+        return Err(syn::Error::new_spanned(
+            field_type,
+            "Vec 注入字段缺少类型参数",
+        ));
+    };
+    let Some(GenericArgument::Type(item_type)) = arguments.args.first() else {
+        return Err(syn::Error::new_spanned(
+            field_type,
+            "Vec 注入字段的参数必须是 Arc<dyn Trait>",
+        ));
+    };
+    let dependency = arc_inner_type(item_type)?;
+    if !matches!(dependency, Type::TraitObject(_)) {
         return Err(syn::Error::new_spanned(
             dependency,
-            "首批 Component 宏暂不支持 Arc<dyn Trait>，请使用具体类型或手写定义",
+            "Vec 注入目前只支持 Vec<Arc<dyn Trait>>",
         ));
     }
-    Ok(dependency)
+    Ok(Some(dependency))
 }

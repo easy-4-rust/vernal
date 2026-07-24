@@ -16,6 +16,8 @@ mod qualifier;
 mod registry_builder;
 mod resolve_error;
 mod resolver;
+mod trait_binding;
+mod trait_key;
 
 pub use build_plan::BuildPlan;
 pub use component_contract::Component;
@@ -31,6 +33,8 @@ pub use qualifier::Qualifier;
 pub use registry_builder::RegistryBuilder;
 pub use resolve_error::ResolveError;
 pub use resolver::Resolver;
+pub use trait_binding::TraitBinding;
+pub use trait_key::TraitKey;
 
 /// 返回当前 `IoC` 内核的成熟度状态。
 #[must_use]

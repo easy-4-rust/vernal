@@ -4,7 +4,7 @@ use std::{error::Error, fmt};
 
 use vernal_core::SharedError;
 
-use crate::ComponentKey;
+use crate::{ComponentKey, TraitKey};
 
 /// 运行时选择或构造组件失败。
 #[derive(Clone, Debug)]
@@ -37,6 +37,13 @@ pub enum ResolveError {
     TypeMismatch {
         /// 类型不匹配的组件。
         component: ComponentKey,
+    },
+    /// Trait Binding 的转换结果与声明的 Trait Object 类型不一致。
+    TraitBindingTypeMismatch {
+        /// 无法恢复的 Trait 选择键。
+        binding: TraitKey,
+        /// 提供转换输入的具体组件。
+        target: ComponentKey,
     },
     /// 组件工厂返回业务错误。
     Construction {
@@ -79,6 +86,12 @@ impl fmt::Display for ResolveError {
             ),
             Self::TypeMismatch { component } => {
                 write!(formatter, "factory output type mismatch for {component}")
+            }
+            Self::TraitBindingTypeMismatch { binding, target } => {
+                write!(
+                    formatter,
+                    "trait binding output type mismatch for {binding} from {target}"
+                )
             }
             Self::Construction { component, source } => {
                 write!(formatter, "failed to construct {component}: {source}")

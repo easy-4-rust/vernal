@@ -39,7 +39,7 @@
   Web 底座 crate 已提供可调用行为。
 - `[已确认]` 所有 crate 设置 `publish = false`，没有 crates.io 或稳定 API 声明。
 - `[已确认]` `vernal-core` 与 `vernal-ioc` 已提供显式 Registry、确定性图规划、
-  Container 隔离、Singleton/Transient 和结构化错误。
+  Container 隔离、Singleton/Transient、Trait 命名/Primary/全部实现绑定和结构化错误。
 - `[已确认]` `vernal-aop` 已提供对象安全的异步 Around/Next、操作切点、
   不可变计划、类型化扩展、取消和 deadline。
 - `[已确认]` `vernal-context` 已提供串行 Tokio 生命周期状态机、依赖顺序
@@ -62,9 +62,12 @@
   Middleware、类型化 Request Extension 访问和 Reader 绑定 Scope 释放；
   `vernal-tonic` 已提供 Context Interceptor、类型化 Request 扩展、`Status`
   映射与 Tower 组合。
-- `[已确认]` `vernal-macros` 已提供显式 `Arc<T>` 构造注入的
-  `#[derive(Component)]`，支持 Singleton/Transient 与 default 字段，并通过
-  运行时和 compile-fail 合同测试；它不使用 linkme 或全局自动注册。
+- `[已确认]` `vernal-macros` 已提供显式 `Arc<T>`、`Arc<dyn Trait>` 和
+  `Vec<Arc<dyn Trait>>` 构造注入的 `#[derive(Component)]`，支持
+  Singleton/Transient、default 与字段 qualifier，并通过运行时和 compile-fail
+  合同测试；它不使用 linkme 或全局自动注册。
+- `[已确认]` tx-di 原文参考已从正式 `src/` 移到各 crate 的只读
+  `upstream/tx-di/` 证据目录；生产源码不再同时摆放未编译的 Store/App/全局注册表。
 - `[已确认]` `#[component(aop)]` 与 `#[intercept]` 已把 Context-local
   `InvocationPlanCatalog`、取消令牌和异步组件方法连接起来；无全局实例 Map，
   计划缺失、取消和返回类型不匹配均通过结构化错误返回。
@@ -266,6 +269,8 @@ adapter A ─X→ adapter B
 | 概念 | 目标职责 |
 |:---|:---|
 | `ComponentKey` | `TypeId` 与可选 qualifier 构成的稳定 Context 内身份 |
+| `TraitKey` | Trait `TypeId` 与可选 qualifier 构成的绑定选择身份 |
+| `TraitBinding` | 把具体组件的同一个 `Arc` 类型安全提升为 `Arc<dyn Trait>` |
 | `ComponentDefinition` | 构造器、依赖、作用域、顺序、生命周期元数据 |
 | `RegistryBuilder` | 显式注册 Definition，构建后冻结 |
 | `GraphPlanner` | 校验缺失依赖、歧义和循环，生成确定性计划 |
@@ -283,7 +288,7 @@ sequenceDiagram
     participant C as Container
     participant F as ComponentFactory
 
-    A->>R: register definitions
+    A->>R: register definitions + trait bindings
     R->>G: freeze and validate
     alt missing, ambiguous or cyclic dependency
         G-->>A: structured GraphError
@@ -332,7 +337,32 @@ crate 可以直接依赖 Tokio，不再人为抽象第二套 Runtime SPI。IoC �
 本身不要求生态对象实现 Vernal trait；当前合同测试已直接注册
 `tokio::runtime::Handle` 并通过该句柄执行真实 Tokio task。
 
-### 8.5 解析失败合同
+### 8.5 Trait 命名、Primary 与多实现绑定
+
+Trait Binding 不启用 tx-di 旧 `Store`，而是进入现有不可变 Registry 与依赖图：
+
+```mermaid
+flowchart LR
+    DEF["ComponentDefinition<C>"] --> TARGET["Arc<C>"]
+    BIND["TraitBinding<T, C>"] --> DEF
+    BIND --> KEY["TraitKey<br/>TypeId + qualifier"]
+    KEY --> SELECT["unique / named / primary / all"]
+    SELECT --> TARGET
+    TARGET --> TRAIT["Arc<dyn T><br/>same allocation"]
+```
+
+- `TraitBinding::new::<dyn T, C, _>` 的转换闭包由 Rust 编译器检查；
+- 无限定符单值依赖要求唯一候选，或恰好一个 Primary；
+- qualifier 精确选择一个命名绑定，同名绑定冲突在注册期拒绝；
+- `resolve_all_traits` 与 `Vec<Arc<dyn T>>` 按绑定注册顺序返回全部实现，零实现
+  返回空集合；
+- Trait 依赖会转换为目标具体组件的真实图边，因此参与缺失目标、环和启动顺序校验；
+- `register_bundle` 在修改 RegistryBuilder 前同时预检组件定义与绑定，任何冲突
+  都不会留下部分模块；
+- Component 宏对 `Arc<dyn T>`、字段 qualifier 和 `Vec<Arc<dyn T>>` 生成相同的
+  Resolver 调用与显式依赖元数据。
+
+### 8.6 解析失败合同
 
 | 错误 | 是否可重试 | 诊断要求 |
 |:---|:---:|:---|
@@ -360,7 +390,7 @@ AOP 同时服务两类用户：
 
 - 稳定的方法标识和声明类型；
 - 可选标签、qualifier、业务 operation；
--只读 Context 扩展，如 trace、principal、tenant；
+- 只读 Context 扩展，如 trace、principal、tenant；
 - 参数值默认不采集；显式启用时必须支持字段级脱敏；
 - 调用 deadline、取消信号和嵌套深度；
 - 业务错误作为原始 source 保留，不压缩成字符串。
@@ -713,17 +743,19 @@ Phase 1 最低验收：
 4. `cargo tree` 证明 `vernal-ioc` 不包含具体 Web 或 ORM 框架；允许按需使用 Tokio；
 5. 所有失败通过 `Result` 返回，不依赖 panic。
 
-截至 2026-07-24，上述五项已有本地证据：12 个 IoC 合同测试覆盖 1,000 节点图、
+截至 2026-07-24，上述五项已有本地证据：22 个 IoC 合同测试覆盖 1,000 节点图、
 缺失/歧义/循环路径、两个并行 Container 的 Singleton 隔离、Transient、
-qualifier、隐藏依赖拒绝、原生值注册和 Tokio Handle 真实 task；运行时 Tokio
-目前只作为 IoC 合同测试依赖，通用解析热路径未引入 Runtime 状态。面向生态
-Bridge 的 `register_all` 会先校验整个组件批次，发生重复标识时不会保留已注册前缀。
+qualifier、隐藏依赖拒绝、原生值注册、Tokio Handle 真实 task，以及 Trait
+命名/Primary/全部实现、空集合、目标缺失、Trait 图环、命名冲突和批量原子性。
+运行时 Tokio 目前只作为 IoC 合同测试依赖，通用解析热路径未引入 Runtime 状态。
+`register_all` 原子注册纯组件批次；`register_bundle` 同时原子提交定义与绑定。
 
 Phase 2 AOP 内核另有 8 个合同测试，覆盖顺序进入/逆序退出、短路、结果/
 错误改写、跨 `.await` 类型化上下文、取消/deadline、切点过滤和 64 task 并发
-复用，以及重复 Operation 合并的计划目录编译。宏前端另有 3 个运行时测试，覆盖
-Singleton Component 注入、Transient 构造和 Context-local 方法织入，并有 3 个
-compile-fail 用例覆盖非法组件字段、非异步方法和借用接收器。Phase 2 已具备可调用
+复用，以及重复 Operation 合并的计划目录编译。宏前端另有 4 个运行时测试，覆盖
+Singleton Component 注入、Transient 构造、Trait Object 注入和 Context-local
+方法织入，并有 4 个 compile-fail 用例覆盖非法组件字段、非法集合 qualifier、
+非异步方法和借用接收器。Phase 2 已具备可调用
 闭环，但更广泛的方法签名、诊断矩阵、性能基准和稳定性承诺仍未完成。
 
 Phase 3 内核另有 9 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start

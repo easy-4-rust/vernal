@@ -5,7 +5,7 @@ use std::sync::Arc;
 use tokio::runtime::Handle;
 use tokio_util::sync::CancellationToken;
 use vernal_aop::{Advisor, InvocationPlanBuilder, Operation};
-use vernal_ioc::{ComponentDefinition, DefinitionError, Qualifier, RegistryBuilder};
+use vernal_ioc::{ComponentDefinition, DefinitionError, Qualifier, RegistryBuilder, TraitBinding};
 
 use crate::{
     ApplicationBuildError, ApplicationContext, ApplicationContextBuilder, EventBus, Lifecycle,
@@ -92,6 +92,46 @@ impl VernalApplicationBuilder {
         definitions: impl IntoIterator<Item = ComponentDefinition>,
     ) -> Result<&mut Self, DefinitionError> {
         self.registry.register_all(definitions)?;
+        Ok(self)
+    }
+
+    /// 注册一个具体组件到 Trait Object 的类型安全绑定。
+    ///
+    /// # Errors
+    ///
+    /// 绑定重复、命名冲突或同一 Trait 已存在另一个 Primary 时返回
+    /// [`DefinitionError`]。
+    pub fn bind(&mut self, binding: TraitBinding) -> Result<&mut Self, DefinitionError> {
+        self.registry.bind(binding)?;
+        Ok(self)
+    }
+
+    /// 原子注册一组 Trait Binding。
+    ///
+    /// # Errors
+    ///
+    /// 批次内部或与已有绑定发生重复、命名冲突、Primary 冲突时返回
+    /// [`DefinitionError`]，失败不会保留批次前缀。
+    pub fn bind_all(
+        &mut self,
+        bindings: impl IntoIterator<Item = TraitBinding>,
+    ) -> Result<&mut Self, DefinitionError> {
+        self.registry.bind_all(bindings)?;
+        Ok(self)
+    }
+
+    /// 原子注册同时包含组件定义和 Trait Binding 的应用模块。
+    ///
+    /// # Errors
+    ///
+    /// 任一组件或绑定发生冲突时返回 [`DefinitionError`]，两类输入都不会留下
+    /// 部分注册结果。
+    pub fn register_bundle(
+        &mut self,
+        definitions: impl IntoIterator<Item = ComponentDefinition>,
+        bindings: impl IntoIterator<Item = TraitBinding>,
+    ) -> Result<&mut Self, DefinitionError> {
+        self.registry.register_bundle(definitions, bindings)?;
         Ok(self)
     }
 

@@ -42,7 +42,7 @@
   claim is made.
 - `[Confirmed]` `vernal-core` and `vernal-ioc` provide an explicit registry,
   deterministic graph planning, isolated containers, singleton/transient
-  scopes, and structured failures.
+  scopes, named/primary/all Trait bindings, and structured failures.
 - `[Confirmed]` `vernal-aop` provides object-safe async Around/Next,
   operation pointcuts, immutable plans, typed extensions, cancellation, and
   deadlines.
@@ -71,9 +71,14 @@
   cleanup; `vernal-tonic` provides a Context interceptor, typed Request
   extensions, `Status` mapping, and Tower composition.
 - `[Confirmed]` `vernal-macros` provides `#[derive(Component)]` for explicit
-  `Arc<T>` constructor injection, Singleton/Transient scope, and default
-  fields, with runtime and compile-fail tests. It uses neither linkme nor
-  global auto-registration.
+  `Arc<T>`, `Arc<dyn Trait>`, and `Vec<Arc<dyn Trait>>` constructor injection,
+  Singleton/Transient scope, default fields, and field qualifiers, with
+  runtime and compile-fail tests. It uses neither linkme nor global
+  auto-registration.
+- `[Confirmed]` verbatim tx-di references now live under each crate's
+  read-only `upstream/tx-di/` evidence directory instead of appearing as
+  uncompiled parallel Store/App/global-registry implementations in production
+  `src/`.
 - `[Confirmed]` `#[component(aop)]` and `#[intercept]` connect context-local
   invocation plans, cancellation, and async component methods. Missing plans,
   cancellation, and return-type mismatches remain structured errors, without a
@@ -284,6 +289,8 @@ adapter A ─X→ adapter B
 | Concept | Target responsibility |
 |:---|:---|
 | `ComponentKey` | Context-local identity: `TypeId` plus optional qualifier |
+| `TraitKey` | Trait `TypeId` plus optional qualifier used for binding selection |
+| `TraitBinding` | Type-safe upcast from the same concrete component `Arc` to `Arc<dyn Trait>` |
 | `ComponentDefinition` | Constructor, dependencies, scope, order, lifecycle metadata |
 | `RegistryBuilder` | Explicitly register definitions, then freeze |
 | `GraphPlanner` | Validate missing/ambiguous/cyclic dependencies; create deterministic plan |
@@ -301,7 +308,7 @@ sequenceDiagram
     participant C as Container
     participant F as ComponentFactory
 
-    A->>R: register definitions
+    A->>R: register definitions + trait bindings
     R->>G: freeze and validate
     alt missing, ambiguous, or cyclic
         G-->>A: structured GraphError
@@ -344,7 +351,36 @@ when tasks, asynchronous synchronization, time, or cancellation require it;
 the framework will not invent a second runtime SPI. The IoC contract tests
 register a native `tokio::runtime::Handle` and use it to run a real Tokio task.
 
-### 8.4 Failure contract
+### 8.4 Named, primary, and multiple Trait bindings
+
+Trait bindings join the existing immutable Registry and graph rather than
+enabling tx-di's former parallel Store:
+
+```mermaid
+flowchart LR
+    DEF["ComponentDefinition<C>"] --> TARGET["Arc<C>"]
+    BIND["TraitBinding<T, C>"] --> DEF
+    BIND --> KEY["TraitKey<br/>TypeId + qualifier"]
+    KEY --> SELECT["unique / named / primary / all"]
+    SELECT --> TARGET
+    TARGET --> TRAIT["Arc<dyn T><br/>same allocation"]
+```
+
+- `TraitBinding::new::<dyn T, C, _>` is checked by the Rust compiler.
+- Unqualified single-value injection requires one candidate or exactly one
+  primary candidate.
+- A qualifier selects one named binding; duplicate names fail during
+  registration.
+- `resolve_all_traits` and `Vec<Arc<dyn T>>` preserve binding registration
+  order and return an empty collection for zero implementations.
+- Trait dependencies become real edges to their concrete targets and
+  participate in missing-target, cycle, and startup-order validation.
+- `register_bundle` preflights definitions and bindings together and leaves no
+  partial module on failure.
+- The Component derive emits the same restricted Resolver calls and explicit
+  metadata for `Arc<dyn T>`, field qualifiers, and `Vec<Arc<dyn T>>`.
+
+### 8.5 Failure contract
 
 | Error | Retry | Required diagnostic |
 |:---|:---:|:---|
@@ -700,23 +736,26 @@ Phase 1 minimum acceptance:
    Tokio is allowed when needed.
 5. Normal failures use `Result`, not panic.
 
-As of 2026-07-24, all five items have local evidence: twelve IoC contract tests
+As of 2026-07-24, all five items have local evidence: 22 IoC contract tests
 cover a 1,000-node graph, missing/ambiguous/cycle paths, singleton isolation
 across two concurrent containers, transient creation, qualifiers, hidden
-dependency rejection, native-value registration, and a real task spawned
-through an injected Tokio handle. Atomic `register_all` validates complete
-ecosystem component bundles before mutation, so a duplicate key cannot leave a
-registered prefix behind. Tokio remains a contract-test dependency for IoC
-rather than runtime state in its resolution hot path.
+dependency rejection, native-value registration, a real task spawned through
+an injected Tokio handle, and named/primary/all Trait bindings, empty sets,
+missing targets, Trait cycles, naming conflicts, and batch atomicity.
+`register_all` atomically installs definition-only batches; `register_bundle`
+atomically commits definitions and bindings together. Tokio remains a
+contract-test dependency for IoC rather than runtime state in its resolution
+hot path.
 
 The Phase 2 AOP kernel additionally has eight contract tests for
 ordered entry/reverse exit, short circuit, result/error transformation, typed
 context across `.await`, cancellation/deadline, pointcut filtering, and
 64-task concurrent reuse, plus deduplicated plan-catalog compilation. The macro
-frontend additionally has three runtime tests for singleton Component
-injection, transient construction, and context-local intercepted invocation,
-plus three compile-fail cases for invalid component fields, non-async methods,
-and borrowed receivers. Phase 2 now has a callable loop, while broader
+frontend additionally has four runtime tests for singleton Component
+injection, transient construction, Trait Object injection, and context-local
+intercepted invocation, plus four compile-fail cases for invalid component
+fields, invalid collection qualifiers, non-async methods, and borrowed
+receivers. Phase 2 now has a callable loop, while broader
 signatures, diagnostic coverage, benchmarks, and stability guarantees remain
 open.
 

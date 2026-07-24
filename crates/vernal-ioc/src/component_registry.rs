@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use crate::{BuildPlan, ComponentDefinition, Container};
+use crate::{BuildPlan, ComponentDefinition, Container, TraitBinding};
 
 /// 保存已校验组件定义与构建计划的不可变注册表。
 ///
@@ -11,6 +11,7 @@ use crate::{BuildPlan, ComponentDefinition, Container};
 #[derive(Clone, Debug)]
 pub struct Registry {
     definitions: Arc<[Arc<ComponentDefinition>]>,
+    bindings: Arc<[Arc<TraitBinding>]>,
     ordered_indices: Arc<[usize]>,
     plan: BuildPlan,
 }
@@ -19,11 +20,13 @@ impl Registry {
     /// 由 [`crate::RegistryBuilder`] 在完成图校验后创建。
     pub(crate) fn new(
         definitions: Vec<Arc<ComponentDefinition>>,
+        bindings: Vec<Arc<TraitBinding>>,
         ordered_indices: Vec<usize>,
         plan: BuildPlan,
     ) -> Self {
         Self {
             definitions: definitions.into(),
+            bindings: bindings.into(),
             ordered_indices: ordered_indices.into(),
             plan,
         }
@@ -33,6 +36,12 @@ impl Registry {
     #[must_use]
     pub fn definitions(&self) -> &[Arc<ComponentDefinition>] {
         &self.definitions
+    }
+
+    /// 按稳定注册顺序返回全部 Trait Binding。
+    #[must_use]
+    pub fn bindings(&self) -> &[Arc<TraitBinding>] {
+        &self.bindings
     }
 
     /// 返回经过校验的依赖优先构建计划。

@@ -129,6 +129,32 @@ impl ComponentDefinition {
         self
     }
 
+    /// 声明一项 Trait Object 单值依赖。
+    ///
+    /// 无限定符选择要求只有一个绑定，或多个绑定中恰好一个标记为 Primary。
+    #[must_use]
+    pub fn depends_on_trait<T: ?Sized + 'static>(mut self) -> Self {
+        self.dependencies.push(Dependency::trait_of::<T>());
+        self
+    }
+
+    /// 声明一项带限定符的 Trait Object 依赖。
+    #[must_use]
+    pub fn depends_on_qualified_trait<T: ?Sized + 'static>(mut self, qualifier: Qualifier) -> Self {
+        self.dependencies
+            .push(Dependency::trait_qualified::<T>(qualifier));
+        self
+    }
+
+    /// 声明指定 Trait Object 的全部实现依赖。
+    ///
+    /// 没有任何绑定时工厂会得到空集合；存在绑定时所有目标都会进入依赖图。
+    #[must_use]
+    pub fn depends_on_all_traits<T: ?Sized + 'static>(mut self) -> Self {
+        self.dependencies.push(Dependency::all_traits_of::<T>());
+        self
+    }
+
     /// 返回组件标识。
     #[must_use]
     pub fn key(&self) -> &ComponentKey {

@@ -20,6 +20,11 @@ pub enum GraphError {
         /// 所有候选组件标识。
         candidates: Vec<String>,
     },
+    /// Trait Binding 指向没有注册定义的具体组件。
+    MissingTraitBindingTarget {
+        /// 无法落到组件定义的绑定描述。
+        binding: String,
+    },
     /// 依赖图中存在闭环。
     Cycle {
         /// 首尾相同的闭合环路径。
@@ -39,6 +44,12 @@ impl fmt::Display for GraphError {
                 path.join(" -> "),
                 candidates.join(", ")
             ),
+            Self::MissingTraitBindingTarget { binding } => {
+                write!(
+                    formatter,
+                    "trait binding target is not registered: {binding}"
+                )
+            }
             Self::Cycle { path } => {
                 write!(formatter, "dependency cycle: {}", path.join(" -> "))
             }

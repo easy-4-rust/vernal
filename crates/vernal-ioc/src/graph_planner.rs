@@ -2,7 +2,7 @@
 
 use std::{any::TypeId, collections::HashMap, sync::Arc};
 
-use crate::{ComponentDefinition, Dependency, GraphError};
+use crate::{ComponentDefinition, Dependency, GraphError, TraitBinding};
 
 const STATE_NEW: u8 = 0;
 const STATE_VISITING: u8 = 1;
@@ -16,7 +16,10 @@ pub(crate) struct GraphPlanner;
 
 impl GraphPlanner {
     /// 生成依赖优先的定义索引。
-    pub(crate) fn plan(definitions: &[Arc<ComponentDefinition>]) -> Result<Vec<usize>, GraphError> {
+    pub(crate) fn plan(
+        definitions: &[Arc<ComponentDefinition>],
+        bindings: &[Arc<TraitBinding>],
+    ) -> Result<Vec<usize>, GraphError> {
         let mut candidates: HashMap<TypeId, Vec<usize>> = HashMap::new();
         for (index, definition) in definitions.iter().enumerate() {
             candidates
@@ -24,6 +27,7 @@ impl GraphPlanner {
                 .or_default()
                 .push(index);
         }
+        Self::validate_binding_targets(definitions, bindings)?;
 
         let mut states = vec![STATE_NEW; definitions.len()];
         let mut stack = Vec::new();
@@ -33,6 +37,7 @@ impl GraphPlanner {
             Self::visit(
                 index,
                 definitions,
+                bindings,
                 &candidates,
                 &mut states,
                 &mut stack,
@@ -47,6 +52,7 @@ impl GraphPlanner {
     fn visit(
         index: usize,
         definitions: &[Arc<ComponentDefinition>],
+        bindings: &[Arc<TraitBinding>],
         candidates: &HashMap<TypeId, Vec<usize>>,
         states: &mut [u8],
         stack: &mut Vec<usize>,
@@ -62,19 +68,22 @@ impl GraphPlanner {
         stack.push(index);
 
         for dependency in definitions[index].dependencies() {
-            let dependency_index =
-                Self::select_dependency(dependency, definitions, candidates, stack)?;
-            if states[dependency_index] == STATE_VISITING {
-                return Err(Self::cycle_error(dependency_index, definitions, stack));
+            let dependency_indices =
+                Self::select_dependency(dependency, definitions, bindings, candidates, stack)?;
+            for dependency_index in dependency_indices {
+                if states[dependency_index] == STATE_VISITING {
+                    return Err(Self::cycle_error(dependency_index, definitions, stack));
+                }
+                Self::visit(
+                    dependency_index,
+                    definitions,
+                    bindings,
+                    candidates,
+                    states,
+                    stack,
+                    ordered,
+                )?;
             }
-            Self::visit(
-                dependency_index,
-                definitions,
-                candidates,
-                states,
-                stack,
-                ordered,
-            )?;
         }
 
         let popped = stack.pop();
@@ -88,9 +97,14 @@ impl GraphPlanner {
     fn select_dependency(
         dependency: &Dependency,
         definitions: &[Arc<ComponentDefinition>],
+        bindings: &[Arc<TraitBinding>],
         candidates: &HashMap<TypeId, Vec<usize>>,
         stack: &[usize],
-    ) -> Result<usize, GraphError> {
+    ) -> Result<Vec<usize>, GraphError> {
+        if dependency.is_trait_binding() {
+            return Self::select_trait_dependency(dependency, definitions, bindings, stack);
+        }
+
         let matches: Vec<usize> = candidates
             .get(&dependency.type_id)
             .into_iter()
@@ -103,7 +117,7 @@ impl GraphPlanner {
             .collect();
 
         match matches.as_slice() {
-            [index] => Ok(*index),
+            [index] => Ok(vec![*index]),
             [] => {
                 let mut path = Self::display_stack(definitions, stack);
                 path.push(dependency.to_string());
@@ -119,6 +133,91 @@ impl GraphPlanner {
                 Err(GraphError::AmbiguousDependency { path, candidates })
             }
         }
+    }
+
+    /// 将 Trait 依赖转换为一个或多个具体组件定义索引。
+    fn select_trait_dependency(
+        dependency: &Dependency,
+        definitions: &[Arc<ComponentDefinition>],
+        bindings: &[Arc<TraitBinding>],
+        stack: &[usize],
+    ) -> Result<Vec<usize>, GraphError> {
+        let matches: Vec<&Arc<TraitBinding>> = bindings
+            .iter()
+            .filter(|binding| binding.key().type_id == dependency.type_id)
+            .filter(|binding| {
+                dependency.qualifier().is_none()
+                    || binding.key().qualifier() == dependency.qualifier()
+            })
+            .collect();
+
+        // 集合注入没有实现时得到空集合；存在实现时每个目标都成为真实图边。
+        if dependency.is_multiple() {
+            return matches
+                .into_iter()
+                .map(|binding| Self::binding_target_index(binding, definitions))
+                .collect();
+        }
+
+        let selected = match matches.as_slice() {
+            [binding] => *binding,
+            [] => {
+                let mut path = Self::display_stack(definitions, stack);
+                path.push(dependency.to_string());
+                return Err(GraphError::MissingDependency { path });
+            }
+            _ if dependency.qualifier().is_none() => {
+                let primary: Vec<&Arc<TraitBinding>> = matches
+                    .iter()
+                    .copied()
+                    .filter(|binding| binding.is_primary())
+                    .collect();
+                if let [binding] = primary.as_slice() {
+                    *binding
+                } else {
+                    let mut path = Self::display_stack(definitions, stack);
+                    path.push(dependency.to_string());
+                    return Err(GraphError::AmbiguousDependency {
+                        path,
+                        candidates: matches.iter().map(ToString::to_string).collect(),
+                    });
+                }
+            }
+            _ => {
+                let mut path = Self::display_stack(definitions, stack);
+                path.push(dependency.to_string());
+                return Err(GraphError::AmbiguousDependency {
+                    path,
+                    candidates: matches.iter().map(ToString::to_string).collect(),
+                });
+            }
+        };
+
+        Ok(vec![Self::binding_target_index(selected, definitions)?])
+    }
+
+    /// 校验每个 Trait Binding 都指向一个精确存在的具体组件定义。
+    fn validate_binding_targets(
+        definitions: &[Arc<ComponentDefinition>],
+        bindings: &[Arc<TraitBinding>],
+    ) -> Result<(), GraphError> {
+        for binding in bindings {
+            Self::binding_target_index(binding, definitions)?;
+        }
+        Ok(())
+    }
+
+    /// 返回绑定目标在组件定义表中的稳定索引。
+    fn binding_target_index(
+        binding: &TraitBinding,
+        definitions: &[Arc<ComponentDefinition>],
+    ) -> Result<usize, GraphError> {
+        definitions
+            .iter()
+            .position(|definition| definition.key() == binding.target())
+            .ok_or_else(|| GraphError::MissingTraitBindingTarget {
+                binding: binding.to_string(),
+            })
     }
 
     /// 从当前 DFS 栈构造闭合环诊断。
