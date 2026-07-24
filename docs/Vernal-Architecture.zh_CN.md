@@ -40,8 +40,8 @@
 - `[已确认]` 所有 crate 设置 `publish = false`，没有 crates.io 或稳定 API 声明。
 - `[已确认]` `vernal-core` 与 `vernal-ioc` 已提供显式 Registry、确定性图规划、
   Container 隔离、Singleton/Transient、Trait 命名/Primary/全部实现绑定和结构化错误。
-- `[已确认]` `vernal-aop` 已提供对象安全的异步 Around/Next、操作切点、
-  不可变计划、类型化扩展、取消和 deadline。
+- `[已确认]` `vernal-aop` 已提供对象安全的异步 Send/Local 两套 Around/Next
+  执行平面、操作切点、不可变计划、类型化扩展、取消和 deadline。
 - `[已确认]` `vernal-context` 已提供串行 Tokio 生命周期状态机、依赖顺序
   initialize/start、取消、失败回滚、逆序幂等关闭和 Context-local 类型化事件；
   `VernalApplicationBuilder` 已在依赖图冻结前自动注册 Tokio Handle、应用取消
@@ -51,7 +51,8 @@
   生命周期 Layer 和真实 Hyper 传输桥接。
 - `[已确认]` `vernal-axum` 已提供原生 Router 装配与类型化 Context、组件、
   请求 Scope 提取器；`vernal-actix-web` 已提供原生 Transform/Service 中间件和
-  Body 绑定 Scope 释放；`vernal-rocket` 已提供 Managed State、Request Guard
+  Body 绑定 Scope 释放、匹配资源操作身份与严格 Local-AOP；`vernal-rocket`
+  已提供 Managed State、Request Guard
   与 Body 感知 Fairing；`vernal-warp` 已提供原生 Extension Filter 与 Tower
   Service Body Scope；`vernal-salvo` 已提供原生 Hoop、类型化 Depot 和
   Frame/Trailer 保真的 Body Scope；`vernal-poem` 已提供原生
@@ -431,7 +432,23 @@ sequenceDiagram
 5. Pointcut 在高层应用构建阶段编译为不可变 `InvocationPlan`，Context refresh
    只消费已经冻结的目录。
 
-### 9.5 不采用实例指针 Map
+### 9.5 双执行平面、同一语义模型
+
+Rust Web 框架并不保证所有 Service Future 都满足 `Send`。Vernal 不通过放宽
+类型约束来伪装统一，而是明确提供两个执行平面：
+
+| 执行平面 | 拦截链 | 目标与 Future | 擦除后的值 |
+|:---|:---|:---|:---|
+| 线程安全 | `Interceptor` / `Next` / `InvocationPlan` | `Arc` 目标、`Send` Future | `Box<dyn Any + Send + Sync>` |
+| Worker 本地 | `LocalInterceptor` / `LocalNext` / `LocalInvocationPlan` | `Rc` 目标、非 `Send` Future | `Box<dyn Any>` |
+
+两者共享 `Operation`、`Invocation`、Pointcut 语义、确定性顺序、短路、Tokio
+取消/deadline 和请求上下文快照。Local 拦截器的声明对象仍满足 `Send + Sync`，
+因此 `LocalInvocationPlanCatalog` 依然是 ApplicationContext 原生组件，启动
+诊断会单独统计其计划与拦截器数量。消费方如需同时覆盖两类运行时，必须有意识地
+实现并注册两份合同；Vernal 不会假设任意 Send 拦截器自动支持本地目标。
+
+### 9.6 不采用实例指针 Map
 
 Vernal 不使用 `self as *const Self as usize` 作为长期身份。目标方案按场景选择：
 
@@ -441,7 +458,7 @@ Vernal 不使用 `self as *const Self as usize` 作为长期身份。目标方�
 
 这样链的生命周期与所有者一致，无需全局清理，也不会因为地址复用关联到错误实例。
 
-### 9.6 方法宏安全合同
+### 9.7 方法宏安全合同
 
 第一版方法织入选择一个窄而明确的 Rust 合同：
 
@@ -597,7 +614,7 @@ flowchart TD
 | 优先级 | 框架 | Crate | 协议/能力 | 目标机制 |
 |:---:|:---|:---|:---|:---|
 | 1 | Axum | `vernal-axum` | HTTP、Body Streaming、Tower | Tower Layer、Service、Extractor/Context Bridge |
-| 2 | Actix Web | `vernal-actix-web` | HTTP、Body Streaming | Transform/Service Middleware、App Data；Local-AOP 待实现 |
+| 2 | Actix Web | `vernal-actix-web` | HTTP、Body Streaming、严格 Local-AOP | Transform/Service Middleware、App Data、匹配资源模式 |
 | 3 | Rocket | `vernal-rocket` | HTTP 请求/响应、可选 Streaming | Fairing、Request Guard、Managed State |
 | 4 | Warp | `vernal-warp` | HTTP、Body Streaming | Filter 组合与 Rejection 映射 |
 | 5 | Salvo | `vernal-salvo` | HTTP、Body Streaming | Handler、Hoop、Depot Scope |
@@ -615,8 +632,10 @@ Tower 与 Hyper 是公共底座，不占十种目标名额；Tonic 明确属于 
 Tower/Hyper 和十个 Adapter。四个底座已提供可调用的请求 Scope、HTTP
 Frame/Trailer、取消、Tower 生命周期、AOP 调用链和 Hyper 传输能力；Axum
 已增加原生 Router 装配与类型化提取器，Actix Web 已增加 App Data/Extensions
-与原生 Body 感知 Middleware；其基于 `Rc`、不要求 `Send` 的 Service 必须等
-专用 Local-AOP 内核才能提供完整 Around，不以仅前置 Handler 的实现冒充。
+与原生 Body 感知 Middleware，并通过 Vernal Local-AOP 为基于 `Rc`、不要求
+`Send` 的 Service 提供严格 Around。严格中间件在匹配后包裹具体 Resource，
+以低基数资源模式作为操作身份，缺少元数据或计划时 fail-closed，并保留 Actix
+原生错误。
 Rocket 已增加 Managed State、Request Guard
 与 Body 感知 Fairing，
 Warp 已增加 Extension Filter 与官方 Tower Service 生命周期，Salvo 已增加

@@ -115,7 +115,7 @@ Detailed decisions, flows, failure semantics, and acceptance criteria are in:
 | `vernal` | Experimental facade | Facade, prelude, feature composition |
 | `vernal-core` | Experimental | Shared contracts for the Tokio-first framework |
 | `vernal-ioc` | Phase 1/diagnostics kernel implemented | Definitions, scopes, resolution, graph validation, read-only snapshots |
-| `vernal-aop` | Phase 2 kernel implemented | Around/Next, pointcuts, immutable plans, cancellation |
+| `vernal-aop` | Phase 2 kernel implemented | Send/Local Around/Next, pointcuts, immutable plans, cancellation |
 | `vernal-context` | Phase 3/diagnostics kernel implemented | Managed bootstrap, lifecycle, events, redacted startup reports |
 | `vernal-macros` | Phase 2 macros implemented | Explicit `Arc<T>` injection metadata and context-local async method weaving |
 | `vernal-web` | Phase 4 contract implemented | Framework-neutral context, request scope, handler, and error contracts |
@@ -130,7 +130,7 @@ adapter crates contain runnable native integrations:
 | Priority | Framework | Vernal crate | Protocol | Status |
 |:---:|:---|:---|:---|:---:|
 | 1 | Axum | `vernal-axum` | HTTP + Tower | Phase 5 adapter + strict AOP |
-| 2 | Actix Web | `vernal-actix-web` | HTTP | Phase 5 adapter; Local-AOP pending |
+| 2 | Actix Web | `vernal-actix-web` | HTTP | Phase 5 adapter + strict Local-AOP |
 | 3 | Rocket | `vernal-rocket` | HTTP | Phase 5 adapter |
 | 4 | Warp | `vernal-warp` | HTTP | Phase 5 adapter |
 | 5 | Salvo | `vernal-salvo` | HTTP | Phase 5 adapter |
@@ -143,9 +143,11 @@ adapter crates contain runnable native integrations:
 Axum provides native Router assembly plus Context, component, request-scope
 extractors, matched-route operation identity, and fail-closed AOP assembly.
 Actix Web provides App Data/Extension extractors and a native
-`Transform`/`Service` whose Scope follows the response body. Its `Rc`-based,
-non-`Send` service contract requires a dedicated Local-AOP kernel for complete
-Around semantics; the adapter does not treat a pre-handler hook as equivalent.
+`Transform`/`Service` whose Scope follows the response body. Its strict
+middleware wraps a concrete `Resource` after route matching, identifies the
+operation with the low-cardinality resource pattern, and drives the complete
+`Rc`-based, non-`Send` Service future through Vernal's Local-AOP chain. Missing
+route metadata or plans fail closed, while native Actix errors remain native.
 Rocket provides
 Managed State, Request Guards, and a body-aware Fairing. Warp provides native
 extension filters over its official Tower Service boundary. Salvo provides a

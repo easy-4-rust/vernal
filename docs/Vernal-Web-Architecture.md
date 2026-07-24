@@ -251,7 +251,7 @@ This crate implements HTTP transport concerns only:
 | # | Framework | Crate | Protocol | Native integration seam | Current state |
 |:--:|:---|:---|:---|:---|:---:|
 | 1 | Axum | `vernal-axum` | HTTP + Tower | `Layer`, State/Extension, Extractor, IntoResponse | Phase 5 adapter |
-| 2 | Actix Web | `vernal-actix-web` | HTTP | `Transform`/`Service`, App Data, Extractor, Responder | Adapter; Local-AOP pending |
+| 2 | Actix Web | `vernal-actix-web` | HTTP | `Transform`/`Service`, App Data, Extractor, Responder | Adapter + strict Local-AOP |
 | 3 | Rocket | `vernal-rocket` | HTTP | Fairing, Request Guard, Managed State, Responder | Phase 5 adapter |
 | 4 | Warp | `vernal-warp` | HTTP | Filter, Rejection, Reply | Phase 5 adapter |
 | 5 | Salvo | `vernal-salvo` | HTTP | Handler, Hoop, Depot, Writer | Phase 5 adapter |
@@ -267,9 +267,12 @@ This crate implements HTTP transport concerns only:
   request extensions and never create a second container.
 - **Actix Web:** context lives in app data; multi-worker singleton and request
   scope boundaries need explicit tests. Actix services commonly use `Rc` and
-  local non-`Send` futures, so full Around interception requires a separate
-  Local-AOP target/value/future contract. A pre-handler-only hook is not strict
-  AOP and is intentionally not advertised as such.
+  local non-`Send` futures, so strict middleware uses Vernal's separate
+  `LocalInterceptor`/`LocalNext`/`LocalInvocationPlan` contract. It wraps a
+  concrete `web::resource(...)` after route matching, drives the complete
+  Service future, uses the matched resource pattern as low-cardinality
+  operation identity, fail-closes missing metadata/plans, maps AOP failures
+  through `EitherBody`, and preserves native Actix service errors.
 - **Rocket:** the ignite fairing registers managed context, the request fairing
   creates scope, request guards resolve context/components/scope, and the
   response fairing retains scope until the native body reaches EOF or is

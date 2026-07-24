@@ -12,7 +12,7 @@ use std::{
 
 use actix_web::{
     Error, HttpMessage,
-    body::MessageBody,
+    body::{EitherBody, MessageBody},
     dev::{Service, ServiceRequest, ServiceResponse},
 };
 use tokio_util::sync::CancellationToken;
@@ -25,7 +25,7 @@ use crate::{
 };
 
 type ServiceFuture<B> =
-    Pin<Box<dyn Future<Output = Result<ServiceResponse<ActixScopedBody<B>>, Error>>>>;
+    Pin<Box<dyn Future<Output = Result<ServiceResponse<ActixScopedBody<EitherBody<B>>>, Error>>>>;
 
 /// 执行 Actix 请求 Context 注入、Scope 创建和响应 Body 包装。
 pub struct VernalActixService<S> {
@@ -53,7 +53,7 @@ where
     async fn call_with_aop<B>(
         service: Rc<S>,
         context: Arc<ApplicationContext>,
-        mut request: ServiceRequest,
+        request: ServiceRequest,
         scope: Arc<WebRequestScope>,
         cancellation: CancellationToken,
     ) -> Result<ServiceResponse<B>, Error>
@@ -143,7 +143,7 @@ where
     S::Future: 'static,
     B: MessageBody + 'static,
 {
-    type Response = ServiceResponse<ActixScopedBody<B>>;
+    type Response = ServiceResponse<ActixScopedBody<EitherBody<B>>>;
     type Error = Error;
     type Future = ServiceFuture<B>;
 
@@ -168,29 +168,52 @@ where
 
         let request_guard = cancellation.clone().drop_guard();
         let service = Rc::clone(&self.service);
-        let context = Arc::clone(&self.context);
-        let strict_aop = self.strict_aop;
-        Box::pin(async move {
-            let response = if strict_aop {
-                Self::call_with_aop(service, context, request, Arc::clone(&scope), cancellation)
-                    .await
-            } else {
-                service.call(request).await
-            };
-            match response {
-                Ok(response) => {
-                    let cancellation = request_guard.disarm();
-                    Ok(
-                        response
-                            .map_body(|_, body| ActixScopedBody::new(body, scope, cancellation)),
-                    )
+        if self.strict_aop {
+            // 具体 Resource 已完成路径匹配，此处克隆 HttpRequest 只用于在策略短路
+            // 时构造原生错误响应，不会阻止 App Router 写入匹配参数。
+            let error_request = request.request().clone();
+            let context = Arc::clone(&self.context);
+            Box::pin(async move {
+                match Self::call_with_aop(
+                    service,
+                    context,
+                    request,
+                    Arc::clone(&scope),
+                    cancellation,
+                )
+                .await
+                {
+                    Ok(response) => {
+                        let cancellation = request_guard.disarm();
+                        Ok(response
+                            .map_into_left_body()
+                            .map_body(|_, body| ActixScopedBody::new(body, scope, cancellation)))
+                    }
+                    Err(error) => {
+                        let cancellation = request_guard.disarm();
+                        let response = ServiceResponse::new(error_request, error.error_response())
+                            .map_into_right_body();
+                        Ok(response
+                            .map_body(|_, body| ActixScopedBody::new(body, scope, cancellation)))
+                    }
                 }
-                Err(error) => {
-                    request_guard.disarm();
-                    scope.close().await.map_err(ActixRejection::scope_close)?;
-                    Err(error)
+            })
+        } else {
+            Box::pin(async move {
+                match service.call(request).await {
+                    Ok(response) => {
+                        let cancellation = request_guard.disarm();
+                        Ok(response
+                            .map_into_left_body()
+                            .map_body(|_, body| ActixScopedBody::new(body, scope, cancellation)))
+                    }
+                    Err(error) => {
+                        request_guard.disarm();
+                        scope.close().await.map_err(ActixRejection::scope_close)?;
+                        Err(error)
+                    }
                 }
-            }
-        })
+            })
+        }
     }
 }

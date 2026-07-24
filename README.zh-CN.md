@@ -103,7 +103,7 @@ Vernal 遵守四条不可退化的规则：
 | `vernal` | 实验性 Facade | Facade、prelude 与 feature 组合 |
 | `vernal-core` | 实验性 | Tokio-first 框架的公共合同 |
 | `vernal-ioc` | Phase 1/诊断内核已实现 | 定义、作用域、解析、依赖图和只读快照 |
-| `vernal-aop` | Phase 2 内核已实现 | Around/Next、切点、不可变计划和取消 |
+| `vernal-aop` | Phase 2 内核已实现 | Send/Local Around/Next、切点、不可变计划和取消 |
 | `vernal-context` | Phase 3/诊断内核已实现 | 生命周期、回滚、事件和脱敏启动报告 |
 | `vernal-macros` | Phase 2 宏已实现 | 显式注入元数据与 Context-local 异步方法织入 |
 | `vernal-web` | Phase 4 合同已实现 | 框架中立的 Context、请求 Scope、Handler 和错误合同 |
@@ -118,7 +118,7 @@ crate 均已具备可运行的原生集成：
 | 优先级 | 框架 | Vernal crate | 协议 | 状态 |
 |:---:|:---|:---|:---|:---:|
 | 1 | Axum | `vernal-axum` | HTTP + Tower | Phase 5 适配 + 严格 AOP 已实现 |
-| 2 | Actix Web | `vernal-actix-web` | HTTP | Phase 5 适配已实现；Local-AOP 待实现 |
+| 2 | Actix Web | `vernal-actix-web` | HTTP | Phase 5 适配 + 严格 Local-AOP 已实现 |
 | 3 | Rocket | `vernal-rocket` | HTTP | Phase 5 适配已实现 |
 | 4 | Warp | `vernal-warp` | HTTP | Phase 5 适配已实现 |
 | 5 | Salvo | `vernal-salvo` | HTTP | Phase 5 适配已实现 |
@@ -131,9 +131,10 @@ crate 均已具备可运行的原生集成：
 Axum 已提供原生 Router 装配、Context/组件/请求 Scope 提取器、匹配路由操作
 身份和 fail-closed AOP 装配；Actix Web 已提供 App Data/Extension 提取器，以及
 Scope 跟随响应 Body 的原生
-`Transform`/`Service`。由于 Actix Service 基于 `Rc` 且 Future 不要求
-`Send`，完整 Around 需要专用 Local-AOP 内核；当前不会以仅执行 Handler 前置
-逻辑的方式冒充严格 AOP。Rocket 已提供 Managed State、Request Guard 和 Body
+`Transform`/`Service`。严格中间件在路由匹配后包裹具体 `Resource`，以低基数
+资源模式建立操作身份，并通过 Local-AOP 链驱动完整的 `Rc`、非 `Send` Service
+Future；缺少路由元数据或计划时 fail-closed，同时保留 Actix 原生错误。Rocket
+已提供 Managed State、Request Guard 和 Body
 感知 Fairing；Warp 已通过官方 Tower Service 边界提供原生 Extension Filter；
 Salvo 已提供原生 Hoop、类型化 Depot 访问以及 Frame/Trailer 保真的 Body 释放；
 Poem 已提供原生 `Middleware`/`Endpoint` 组合、类型化

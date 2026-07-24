@@ -1,13 +1,23 @@
 //! Actix Web App Data、Middleware、Extractor 与 Scope 生命周期测试。
 
-use std::sync::Arc;
+#[path = "aop_support/policy_deny_local_interceptor.rs"]
+mod policy_deny_local_interceptor;
 
-use actix_web::{App, HttpResponse, http::StatusCode, test, web};
+use std::sync::{
+    Arc,
+    atomic::{AtomicBool, Ordering},
+};
+
+use actix_web::{App, HttpResponse, error::ErrorNotFound, http::StatusCode, test, web};
+use policy_deny_local_interceptor::PolicyDenyLocalInterceptor;
 use tokio::sync::Notify;
 use vernal_actix_web::{
-    VernalActixComponent, VernalActixContext, VernalActixMiddleware, VernalActixRequestScope,
+    VernalActixComponent, VernalActixContext, VernalActixMiddleware, VernalActixRequestContext,
+    VernalActixRequestScope,
 };
-use vernal_context::ApplicationContextBuilder;
+use vernal_aop::{LocalAdvisor, Operation};
+use vernal_context::{ApplicationContextBuilder, VernalApplicationBuilder};
+use vernal_http::HttpRequestSnapshot;
 use vernal_ioc::{ComponentDefinition, RegistryBuilder};
 
 struct Greeting(&'static str);
@@ -25,6 +35,21 @@ async fn ready_context() -> Arc<vernal_context::ApplicationContext> {
             .build()
             .expect("context build"),
     );
+    context.refresh().await.expect("context refresh");
+    context.start().await.expect("context start");
+    context
+}
+
+async fn ready_aop_context(
+    operation: Operation,
+    advisor: Option<LocalAdvisor>,
+) -> Arc<vernal_context::ApplicationContext> {
+    let mut builder = VernalApplicationBuilder::new(tokio::runtime::Handle::current());
+    builder.operation(operation);
+    if let Some(advisor) = advisor {
+        builder.local_advisor(advisor);
+    }
+    let context = Arc::new(builder.build().expect("Local-AOP context build"));
     context.refresh().await.expect("context refresh");
     context.start().await.expect("context start");
     context
@@ -86,4 +111,122 @@ async fn missing_context_returns_safe_internal_server_error() {
         test::read_body(response).await,
         "Vernal application context is unavailable"
     );
+}
+
+#[actix_web::test]
+async fn strict_local_aop_uses_matched_pattern_and_owned_snapshot() {
+    let context = ready_aop_context(Operation::new("/orders/{id}", "GET"), None).await;
+    let application = test::init_service(
+        App::new().service(
+            web::resource("/orders/{id}")
+                .wrap(VernalActixMiddleware::strict_aop(Arc::clone(&context)))
+                .route(web::get().to(
+                    |VernalActixRequestContext(context): VernalActixRequestContext| async move {
+                        let snapshot = context
+                            .extensions()
+                            .get::<HttpRequestSnapshot>()
+                            .await
+                            .expect("owned HTTP snapshot");
+                        assert_eq!(context.route().handler(), "/orders/{id}");
+                        assert_eq!(context.route().operation_name(), "GET");
+                        assert_eq!(context.route().path_template(), "/orders/{id}");
+                        assert_eq!(snapshot.method().as_str(), "GET");
+                        assert_eq!(snapshot.uri().path(), "/orders/42");
+                        HttpResponse::Ok().body("locally-woven")
+                    },
+                )),
+        ),
+    )
+    .await;
+
+    let request = test::TestRequest::get()
+        .uri("/orders/42")
+        .insert_header(("x-request-id", "request-42"))
+        .to_request();
+    let response = test::call_service(&application, request).await;
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(test::read_body(response).await, "locally-woven");
+}
+
+#[actix_web::test]
+async fn strict_local_aop_maps_policy_failure_without_calling_handler() {
+    let called = Arc::new(AtomicBool::new(false));
+    let context = ready_aop_context(
+        Operation::new("/protected", "GET"),
+        Some(LocalAdvisor::new(
+            |_: &Operation| true,
+            PolicyDenyLocalInterceptor,
+            -1000,
+        )),
+    )
+    .await;
+    let handler_called = Arc::clone(&called);
+    let application = test::init_service(
+        App::new().service(
+            web::resource("/protected")
+                .wrap(VernalActixMiddleware::strict_aop(Arc::clone(&context)))
+                .route(web::get().to(move || {
+                    handler_called.store(true, Ordering::SeqCst);
+                    async { HttpResponse::Ok().body("unreachable") }
+                })),
+        ),
+    )
+    .await;
+
+    let request = test::TestRequest::get().uri("/protected").to_request();
+    let response = test::call_service(&application, request).await;
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    assert_eq!(
+        test::read_body(response).await,
+        "Authentication is required"
+    );
+    assert!(!called.load(Ordering::SeqCst));
+}
+
+#[actix_web::test]
+async fn strict_local_aop_fails_closed_when_plan_is_missing() {
+    let called = Arc::new(AtomicBool::new(false));
+    let context = ready_aop_context(Operation::new("/declared", "GET"), None).await;
+    let handler_called = Arc::clone(&called);
+    let application = test::init_service(
+        App::new().service(
+            web::resource("/unplanned")
+                .wrap(VernalActixMiddleware::strict_aop(Arc::clone(&context)))
+                .route(web::get().to(move || {
+                    handler_called.store(true, Ordering::SeqCst);
+                    async { HttpResponse::Ok().body("unreachable") }
+                })),
+        ),
+    )
+    .await;
+
+    let request = test::TestRequest::get().uri("/unplanned").to_request();
+    let response = test::call_service(&application, request).await;
+    assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    assert_eq!(
+        test::read_body(response).await,
+        "Vernal Local-AOP invocation failed"
+    );
+    assert!(!called.load(Ordering::SeqCst));
+}
+
+#[actix_web::test]
+async fn strict_local_aop_preserves_native_actix_error_response() {
+    let context = ready_aop_context(Operation::new("/missing", "GET"), None).await;
+    let application = test::init_service(
+        App::new().service(
+            web::resource("/missing")
+                .wrap(VernalActixMiddleware::strict_aop(Arc::clone(&context)))
+                .route(
+                    web::get()
+                        .to(|| async { Err::<HttpResponse, _>(ErrorNotFound("native missing")) }),
+                ),
+        ),
+    )
+    .await;
+
+    let request = test::TestRequest::get().uri("/missing").to_request();
+    let response = test::call_service(&application, request).await;
+    assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    assert_eq!(test::read_body(response).await, "native missing");
 }

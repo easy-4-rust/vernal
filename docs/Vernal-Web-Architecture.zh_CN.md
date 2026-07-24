@@ -233,7 +233,7 @@ Trace -> Context -> RequestScope -> Security/AOP -> Handler -> ErrorMapping
 | # | 框架 | Crate | 协议 | 目标原生扩展点 | 当前状态 |
 |:--:|:---|:---|:---|:---|:---:|
 | 1 | Axum | `vernal-axum` | HTTP + Tower | `Layer`、State/Extension、Extractor、IntoResponse | Phase 5 适配已实现 |
-| 2 | Actix Web | `vernal-actix-web` | HTTP | `Transform`/`Service`、App Data、Extractor、Responder | Adapter 已实现；Local-AOP 待实现 |
+| 2 | Actix Web | `vernal-actix-web` | HTTP | `Transform`/`Service`、App Data、Extractor、Responder | Adapter + 严格 Local-AOP 已实现 |
 | 3 | Rocket | `vernal-rocket` | HTTP | Fairing、Request Guard、Managed State、Responder | Phase 5 适配已实现 |
 | 4 | Warp | `vernal-warp` | HTTP | Filter、Rejection、Reply | Phase 5 适配已实现 |
 | 5 | Salvo | `vernal-salvo` | HTTP | Handler、Hoop、Depot、Writer | Phase 5 适配已实现 |
@@ -249,8 +249,11 @@ Trace -> Context -> RequestScope -> Security/AOP -> Handler -> ErrorMapping
   Request Extension，不建立第二个容器。
 - **Actix Web**：Context 属于 App Data；必须验证多 Worker 下 Singleton 与
   Request Scope 的边界。Actix Service 通常使用 `Rc` 与本地非 `Send` Future，
-  完整 Around 必须有独立的 Local-AOP Target/Value/Future 合同；仅在 Handler
-  前执行一次 Hook 不属于严格 AOP，因此不会这样宣传。
+  因此严格中间件使用 Vernal 独立的
+  `LocalInterceptor`/`LocalNext`/`LocalInvocationPlan` 合同。它在路由匹配后
+  包裹具体 `web::resource(...)`，驱动完整 Service Future，以匹配资源模式作为
+  低基数操作身份；缺少元数据或计划时 fail-closed，通过 `EitherBody` 映射 AOP
+  失败，同时保留 Actix 原生 Service 错误。
 - **Rocket**：Fairing 在 Ignite 阶段注册 Managed Context，在 Request 阶段建立
   Scope；Request Guard 负责解析 Context、组件与 Scope，Response Fairing
   包装原生 Body，直到读取结束或取消后才释放。Rocket 0.5 的公共 Body 只暴露

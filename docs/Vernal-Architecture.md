@@ -43,9 +43,9 @@
 - `[Confirmed]` `vernal-core` and `vernal-ioc` provide an explicit registry,
   deterministic graph planning, isolated containers, singleton/transient
   scopes, named/primary/all Trait bindings, and structured failures.
-- `[Confirmed]` `vernal-aop` provides object-safe async Around/Next,
-  operation pointcuts, immutable plans, typed extensions, cancellation, and
-  deadlines.
+- `[Confirmed]` `vernal-aop` provides object-safe async Send and Local
+  Around/Next execution planes, operation pointcuts, immutable plans, typed
+  extensions, cancellation, and deadlines.
 - `[Confirmed]` `vernal-context` provides a serialized Tokio lifecycle state
   machine, dependency-order initialize/start, cancellation, rollback,
   reverse idempotent shutdown, and context-local typed events.
@@ -57,7 +57,8 @@
   Tower lifecycle layers, and a real Hyper transport bridge.
 - `[Confirmed]` `vernal-axum` provides native Router assembly and typed
   Context, component, and request-scope extractors; `vernal-actix-web` provides
-  native Transform/Service middleware and body-bound Scope cleanup;
+  native Transform/Service middleware, body-bound Scope cleanup, matched
+  resource operation identity, and strict Local-AOP;
   `vernal-rocket` provides managed state, request guards, and a body-aware
   fairing; `vernal-warp` provides native extension filters and a Tower Service
   body scope; `vernal-salvo` provides a native Hoop, typed Depot access, and
@@ -435,7 +436,27 @@ order. Pointcuts compile into immutable `InvocationPlan` values during
 high-level application construction; context refresh consumes the frozen
 catalog.
 
-### 9.4 No instance-pointer map
+### 9.4 Two execution planes, one semantic model
+
+Rust web frameworks do not agree that every Service future is `Send`. Vernal
+therefore exposes two explicit execution planes instead of weakening either
+contract:
+
+| Plane | Interceptor chain | Target and future | Erased value |
+|:---|:---|:---|:---|
+| Thread-safe | `Interceptor` / `Next` / `InvocationPlan` | `Arc` target and `Send` future | `Box<dyn Any + Send + Sync>` |
+| Worker-local | `LocalInterceptor` / `LocalNext` / `LocalInvocationPlan` | `Rc` target and non-`Send` future | `Box<dyn Any>` |
+
+Both planes share `Operation`, `Invocation`, pointcut semantics, deterministic
+ordering, short-circuit behavior, Tokio cancellation/deadline handling, and
+request-context snapshots. Local interceptor declarations remain `Send +
+Sync`, so `LocalInvocationPlanCatalog` is still a native ApplicationContext
+component and its counts appear separately in startup diagnostics. A consumer
+that needs both planes deliberately implements and registers both contracts;
+Vernal never pretends that an arbitrary Send interceptor automatically
+supports a local target.
+
+### 9.5 No instance-pointer map
 
 Vernal does not use `self as *const Self as usize` as durable identity:
 
@@ -446,7 +467,7 @@ Vernal does not use `self as *const Self as usize` as durable identity:
 
 Ownership and cleanup therefore follow the actual wrapper/context lifecycle.
 
-### 9.5 Method macro safety contract
+### 9.6 Method macro safety contract
 
 The first weaving frontend intentionally exposes a narrow Rust contract:
 
@@ -582,7 +603,7 @@ The versioned coverage set is owned by
 | Priority | Framework | Crate | Protocol/capabilities | Target mechanism |
 |:---:|:---|:---|:---|:---|
 | 1 | Axum | `vernal-axum` | HTTP, body streaming, Tower | Tower Layer, Service, extractor/context bridge |
-| 2 | Actix Web | `vernal-actix-web` | HTTP, body streaming | Transform/Service middleware and app data; Local-AOP pending |
+| 2 | Actix Web | `vernal-actix-web` | HTTP, body streaming, strict Local-AOP | Transform/Service middleware, app data, matched resource pattern |
 | 3 | Rocket | `vernal-rocket` | HTTP request/response, optional streaming | Fairing, request guard, managed state |
 | 4 | Warp | `vernal-warp` | HTTP, body streaming | Filter composition and rejection mapping |
 | 5 | Salvo | `vernal-salvo` | HTTP, body streaming | Handler, Hoop, Depot scope |
@@ -603,10 +624,11 @@ Tower/Hyper, and ten adapters. The four foundations now provide callable
 request-scope, HTTP frame/trailer, cancellation, Tower lifecycle, AOP
 invocation, and Hyper
 transport behavior. Axum adds native Router assembly and typed extractors;
-Actix Web adds App Data/Extensions and native body-aware middleware. Its
-`Rc`-based non-`Send` services require a dedicated Local-AOP kernel before
-complete Around semantics can be exposed; no pre-handler-only substitute is
-claimed. Rocket adds
+Actix Web adds App Data/Extensions, body-aware middleware, and strict Around
+interception for its `Rc`-based non-`Send` services through Vernal Local-AOP.
+Strict middleware wraps a concrete Resource after matching, uses the
+low-cardinality resource pattern as operation identity, fail-closes missing
+metadata/plans, and preserves native Actix errors. Rocket adds
 managed state, request guards, and a body-aware fairing; Warp adds extension
 filters and an official Tower Service lifecycle; Salvo adds a Hoop, typed Depot
 access, and frame/trailer-preserving body lifecycle; Poem adds
