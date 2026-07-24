@@ -35,8 +35,9 @@ Hutool-Rust · Sa-Token-Rust · Ddd4r · general Rust applications
 
 > **Project status:** experimental. Phase 1 IoC, the Tokio-first Phase 2 AOP
 > kernel, Phase 3 application context, and the Phase 4 Web/HTTP/Tower/Hyper
-> foundations are callable and contract-tested. Procedural macros and the ten
-> framework adapters remain skeletons. Nothing is published yet.
+> foundations are callable and contract-tested. Axum is the first runnable
+> framework adapter; procedural macros and the other nine adapters remain
+> skeletons. Nothing is published yet.
 
 ## 1. Vision
 
@@ -128,7 +129,7 @@ upstream middleware implementations:
 
 | Priority | Framework | Vernal crate | Protocol | Status |
 |:---:|:---|:---|:---|:---:|
-| 1 | Axum | `vernal-axum` | HTTP + Tower | Skeleton |
+| 1 | Axum | `vernal-axum` | HTTP + Tower | Phase 5 adapter |
 | 2 | Actix Web | `vernal-actix-web` | HTTP | Skeleton |
 | 3 | Rocket | `vernal-rocket` | HTTP | Skeleton |
 | 4 | Warp | `vernal-warp` | HTTP | Skeleton |
@@ -138,6 +139,9 @@ upstream middleware implementations:
 | 8 | Gotham | `vernal-gotham` | HTTP | Skeleton |
 | 9 | Tide | `vernal-tide` | HTTP | Skeleton |
 | 10 | Tonic | `vernal-tonic` | RPC streaming + Tower | Skeleton |
+
+Axum now provides native Router assembly plus Context, component, and
+request-scope extractors. The remaining nine adapters are descriptors.
 
 “Ten” is a versioned coverage priority derived from the reviewed local
 integration superset and current registry availability, not a claim of an

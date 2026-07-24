@@ -33,7 +33,8 @@ Hutool-Rust · Sa-Token-Rust · Ddd4r · 通用 Rust 应用
 
 > **项目状态**：实验阶段。Phase 1 IoC、Tokio-first 的 Phase 2 AOP 内核、
 > Phase 3 应用上下文，以及 Phase 4 Web/HTTP/Tower/Hyper 底座已有可调用实现
-> 和合同测试；过程宏及十个框架适配器仍是骨架。当前尚未发布。
+> 和合同测试；Axum 是首个可运行框架适配器，过程宏及其余九个 Adapter 仍是
+> 骨架。当前尚未发布。
 
 ## 1. 愿景
 
@@ -116,7 +117,7 @@ crate 已经存在并能参与编译，但当前只提供可检查的描述符�
 
 | 优先级 | 框架 | Vernal crate | 协议 | 状态 |
 |:---:|:---|:---|:---|:---:|
-| 1 | Axum | `vernal-axum` | HTTP + Tower | 骨架 |
+| 1 | Axum | `vernal-axum` | HTTP + Tower | Phase 5 适配已实现 |
 | 2 | Actix Web | `vernal-actix-web` | HTTP | 骨架 |
 | 3 | Rocket | `vernal-rocket` | HTTP | 骨架 |
 | 4 | Warp | `vernal-warp` | HTTP | 骨架 |
@@ -126,6 +127,9 @@ crate 已经存在并能参与编译，但当前只提供可检查的描述符�
 | 8 | Gotham | `vernal-gotham` | HTTP | 骨架 |
 | 9 | Tide | `vernal-tide` | HTTP | 骨架 |
 | 10 | Tonic | `vernal-tonic` | RPC Streaming + Tower | 骨架 |
+
+Axum 已提供原生 Router 装配，以及 Context、组件和请求 Scope 提取器；其余九个
+Adapter 仍是描述符。
 
 这里的“十种”是基于本地源码集成并集和当前 registry 可用性形成的版本化覆盖优先级，
 不是对全世界 Rust 框架热度的绝对排名。Tonic 明确属于 RPC 集成；Tower 和 Hyper

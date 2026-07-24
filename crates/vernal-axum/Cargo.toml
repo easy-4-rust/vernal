@@ -8,9 +8,18 @@ description = "Axum integration for Vernal."
 publish = false
 
 [dependencies]
+axum.workspace = true
+tokio.workspace = true
+tokio-util.workspace = true
+vernal-context = { path = "../vernal-context" }
 vernal-http = { path = "../vernal-http" }
+vernal-ioc = { path = "../vernal-ioc" }
 vernal-tower = { path = "../vernal-tower" }
 vernal-web = { path = "../vernal-web" }
+
+[dev-dependencies]
+http-body-util.workspace = true
+tower.workspace = true
 
 [lints]
 workspace = true

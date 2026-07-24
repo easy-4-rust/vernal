@@ -29,8 +29,8 @@
 - `vernal-hyper` 不缓冲地把 `Incoming` 转换为同一 Frame 流，并已通过真实
   TCP/HTTP 连接验证。
 
-十个应用/RPC Adapter 仍是描述符，尚未引入上游框架或实现原生 Middleware、
-Extractor、Guard、Interceptor。
+Axum 已引入 Axum 0.8，实现原生 Router 装配与类型化 Context、组件、请求 Scope
+提取器；其余九个应用/RPC Adapter 仍是描述符。
 
 版本化选择清单由
 [`web-integration-manifest.toml`](../web-integration-manifest.toml) 维护。
@@ -206,7 +206,7 @@ Trace -> Context -> RequestScope -> Security/AOP -> Handler -> ErrorMapping
 
 | # | 框架 | Crate | 协议 | 目标原生扩展点 | 当前状态 |
 |:--:|:---|:---|:---|:---|:---:|
-| 1 | Axum | `vernal-axum` | HTTP + Tower | `Layer`、State/Extension、Extractor、IntoResponse | 骨架 |
+| 1 | Axum | `vernal-axum` | HTTP + Tower | `Layer`、State/Extension、Extractor、IntoResponse | Phase 5 适配已实现 |
 | 2 | Actix Web | `vernal-actix-web` | HTTP | `Transform`/`Service`、App Data、Extractor、Responder | 骨架 |
 | 3 | Rocket | `vernal-rocket` | HTTP | Fairing、Request Guard、Managed State、Responder | 骨架 |
 | 4 | Warp | `vernal-warp` | HTTP | Filter、Rejection、Reply | 骨架 |

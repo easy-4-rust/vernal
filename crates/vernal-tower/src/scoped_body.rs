@@ -39,11 +39,11 @@ where
     B: Body,
 {
     /// 包装上游响应 Body。
-    pub(crate) fn new(
-        inner: B,
-        scope: Arc<WebRequestScope>,
-        cancellation: CancellationToken,
-    ) -> Self {
+    ///
+    /// 框架适配器可用此构造器把原生 Body 重新包装回框架响应类型，同时复用
+    /// Vernal 已验证的请求作用域关闭与取消语义。
+    #[must_use]
+    pub fn new(inner: B, scope: Arc<WebRequestScope>, cancellation: CancellationToken) -> Self {
         Self {
             inner: Box::pin(inner),
             scope,

@@ -1,33 +1,33 @@
 schema_version = 1
 verified_at = "2026-07-24"
-status = "design-stage"
+status = "implementation-stage"
 selection_basis = "Local integration superset plus current crates.io availability; this is a coverage priority, not an absolute popularity ranking."
 
 [[shared_contracts]]
 name = "Vernal Web"
 crate = "vernal-web"
 semantics = "request context, request scope, handler invocation, validation, error mapping"
-status = "skeleton"
+status = "phase-4-contract"
 
 [[shared_contracts]]
 name = "Vernal HTTP"
 crate = "vernal-http"
 semantics = "HTTP request, response, body frames, streaming, cancellation, backpressure"
-status = "skeleton"
+status = "phase-4-contract"
 
 [[foundations]]
 name = "Tower"
 crate = "vernal-tower"
 upstream_crate = "tower"
 observed_version = "0.5.3"
-status = "skeleton"
+status = "phase-4-foundation"
 
 [[foundations]]
 name = "Hyper"
 crate = "vernal-hyper"
 upstream_crate = "hyper"
 observed_version = "1.11.0"
-status = "skeleton"
+status = "phase-4-foundation"
 
 [[integrations]]
 priority = 1
@@ -38,7 +38,7 @@ observed_version = "0.8.9"
 category = "http-framework"
 protocol = "http"
 source_evidence = ["Sa-Token-Rust", "tx-di"]
-status = "skeleton"
+status = "phase-5-adapter"
 
 [[integrations]]
 priority = 2

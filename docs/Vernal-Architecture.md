@@ -51,8 +51,10 @@
 - `[Confirmed]` `vernal-web`, `vernal-http`, `vernal-tower`, and
   `vernal-hyper` provide request scope, standard HTTP body frames/trailers,
   Tower lifecycle layers, and a real Hyper transport bridge.
-- `[Skeleton]` Macros and the ten framework adapters still validate crate
-  boundaries only.
+- `[Confirmed]` `vernal-axum` provides native Router assembly and typed
+  Context, component, and request-scope extractors.
+- `[Skeleton]` Macros and the remaining nine framework adapters still validate
+  crate boundaries only.
 - `[Target]` Phase 2 macros, Context AOP-plan aggregation, framework adapters,
   and later production gates remain.
 
@@ -460,9 +462,9 @@ ranking.
 The workspace has fourteen web-related crates: `vernal-web`, `vernal-http`,
 Tower/Hyper, and ten adapters. The four foundations now provide callable
 request-scope, HTTP frame/trailer, cancellation, Tower lifecycle, and Hyper
-transport behavior. The ten upstream framework adapters remain
-compile-checked descriptors; native middleware and extractors are the next
-implementation layer. The detailed contract is
+transport behavior. Axum adds native Router assembly and typed extractors; the
+remaining nine upstream framework adapters are compile-checked descriptors.
+The detailed contract is
 [Vernal Web Architecture](./Vernal-Web-Architecture.md).
 
 ## 12. Consumer integrations

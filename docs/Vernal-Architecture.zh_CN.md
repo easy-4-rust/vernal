@@ -46,7 +46,9 @@
 - `[已确认]` `vernal-web`、`vernal-http`、`vernal-tower` 与
   `vernal-hyper` 已提供请求 Scope、标准 HTTP Body Frame/Trailer、Tower
   生命周期 Layer 和真实 Hyper 传输桥接。
-- `[骨架]` 宏及十个框架 Adapter 仍只验证 crate 边界与依赖方向。
+- `[已确认]` `vernal-axum` 已提供原生 Router 装配与类型化 Context、组件、
+  请求 Scope 提取器。
+- `[骨架]` 宏及其余九个框架 Adapter 仍只验证 crate 边界与依赖方向。
 - `[设计目标]` Phase 2 宏、Context AOP 计划聚合、框架 Adapter 与后续生产
   门禁仍需实现和验收。
 
@@ -479,8 +481,8 @@ Tower 与 Hyper 是公共底座，不占十种目标名额；Tonic 明确属于 
 
 当前 Workspace 包含十四个 Web 相关 crate：`vernal-web`、`vernal-http`、
 Tower/Hyper 和十个 Adapter。四个底座已提供可调用的请求 Scope、HTTP
-Frame/Trailer、取消、Tower 生命周期和 Hyper 传输能力；十个上游框架 Adapter
-仍是可编译描述符，原生 Middleware 与 Extractor 是下一层实现。详细合同见
+Frame/Trailer、取消、Tower 生命周期和 Hyper 传输能力；Axum 已增加原生 Router
+装配与类型化提取器，其余九个上游框架 Adapter 仍是可编译描述符。详细合同见
 [Vernal Web 集成架构](./Vernal-Web-Architecture.zh_CN.md)。
 
 ## 12. Hutool-Rust、Sa-Token-Rust 与 Ddd4r 集成

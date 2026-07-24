@@ -29,9 +29,9 @@ The four shared/foundation crates now expose callable contracts:
 - `vernal-hyper` converts `Incoming` into the same frame stream without
   buffering and is verified over a real TCP/HTTP connection.
 
-The ten application/RPC adapters remain descriptors. None yet depends on its
-upstream framework or implements native middleware, extractors, guards, or
-interceptors.
+Axum now depends on Axum 0.8 and implements native Router assembly plus typed
+Context, component, and request-scope extractors. The other nine
+application/RPC adapters remain descriptors.
 
 The versioned selection is recorded in
 [`web-integration-manifest.toml`](../web-integration-manifest.toml).
@@ -218,7 +218,7 @@ This crate implements HTTP transport concerns only:
 
 | # | Framework | Crate | Protocol | Native integration seam | Current state |
 |:--:|:---|:---|:---|:---|:---:|
-| 1 | Axum | `vernal-axum` | HTTP + Tower | `Layer`, State/Extension, Extractor, IntoResponse | Skeleton |
+| 1 | Axum | `vernal-axum` | HTTP + Tower | `Layer`, State/Extension, Extractor, IntoResponse | Phase 5 adapter |
 | 2 | Actix Web | `vernal-actix-web` | HTTP | `Transform`/`Service`, App Data, Extractor, Responder | Skeleton |
 | 3 | Rocket | `vernal-rocket` | HTTP | Fairing, Request Guard, Managed State, Responder | Skeleton |
 | 4 | Warp | `vernal-warp` | HTTP | Filter, Rejection, Reply | Skeleton |
