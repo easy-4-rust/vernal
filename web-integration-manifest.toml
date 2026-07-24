@@ -100,11 +100,11 @@ priority = 7
 name = "Ntex"
 crate = "vernal-ntex"
 upstream_crate = "ntex"
-observed_version = "3.10.1"
+observed_version = "2.18.0"
 category = "network-web-framework"
 protocol = "http"
 source_evidence = ["Sa-Token-Rust"]
-status = "skeleton"
+status = "phase-5-adapter"
 
 [[integrations]]
 priority = 8

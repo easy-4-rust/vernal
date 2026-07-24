@@ -8,7 +8,12 @@ description = "Ntex integration for Vernal."
 publish = false
 
 [dependencies]
+ntex.workspace = true
+tokio.workspace = true
+tokio-util.workspace = true
+vernal-context = { path = "../vernal-context" }
 vernal-http = { path = "../vernal-http" }
+vernal-ioc = { path = "../vernal-ioc" }
 vernal-web = { path = "../vernal-web" }
 
 [lints]

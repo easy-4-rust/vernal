@@ -40,7 +40,9 @@ Frame/Trailer 保真的 Body Scope；Poem 采用与 MSRV 一致的 3.1.12 版本
 实现原生 Middleware/Endpoint、Request Extension 提取器和 Body 绑定 Scope
 释放；Tonic 采用兼容 MSRV 的 0.12 版本线，实现 Context Interceptor、类型化
 Request 扩展、`GrpcMethod` 路由元数据、稳定 `Status` 映射和 Tower 组合。
-其余三个应用 Adapter 仍是描述符。
+Ntex 采用兼容 Rust 1.85 的 2.18.0 版本线，实现原生 Middleware/Service、
+App State/Extension 提取器与 `MessageBody` 绑定请求 Scope。其余两个应用
+Adapter 仍是描述符。
 
 版本化选择清单由
 [`web-integration-manifest.toml`](../web-integration-manifest.toml) 维护。
@@ -222,7 +224,7 @@ Trace -> Context -> RequestScope -> Security/AOP -> Handler -> ErrorMapping
 | 4 | Warp | `vernal-warp` | HTTP | Filter、Rejection、Reply | Phase 5 适配已实现 |
 | 5 | Salvo | `vernal-salvo` | HTTP | Handler、Hoop、Depot、Writer | Phase 5 适配已实现 |
 | 6 | Poem | `vernal-poem` | HTTP | Middleware、Endpoint、Data、IntoResponse | Phase 5 适配已实现 |
-| 7 | Ntex | `vernal-ntex` | HTTP | Service/Middleware、App State、Extractor | 骨架 |
+| 7 | Ntex | `vernal-ntex` | HTTP | Service/Middleware、App State、Extractor | Phase 5 适配已实现 |
 | 8 | Gotham | `vernal-gotham` | HTTP | State Middleware、Pipeline、Handler | 骨架 |
 | 9 | Tide | `vernal-tide` | HTTP | Middleware、Request State、Response | 骨架 |
 | 10 | Tonic | `vernal-tonic` | RPC Streaming + Tower | Layer、Interceptor、Extension、Status、Streaming | Phase 5 适配已实现 |
@@ -250,8 +252,12 @@ Trace -> Context -> RequestScope -> Security/AOP -> Handler -> ErrorMapping
   组件与 Scope；响应字节流保持错误和背压，Body 完成或取消后关闭 Scope。
   Poem 3 公共 `into_bytes_stream()` 不暴露 Trailer，因此该适配器不能承诺
   Trailer 保真；需要 Frame/Trailer 保真的场景使用 `vernal-hyper`。
-- **Ntex**：尊重 Service Factory 与 Worker 生命周期，禁止跨 Worker 隐式共享
-  非 `Send` 状态。
+- **Ntex**：原生 Middleware/Service 将显式应用 Context 与请求 Scope 注入
+  Extensions，提取器也可从 App State 读取共享 Context；原生 `MessageBody`
+  Wrapper 让 Scope 持续到 EOF、上游错误或取消，并保留 Ntex Body Size 与背压。
+  Vernal 启用 Ntex 的 Tokio 后端并固定 2.18.0，因为当前 3.x 已超过 Workspace
+  的 Rust 1.85 MSRV；Worker-local 的非 `Send` 状态不会被隐式提升为跨 Worker
+  Singleton。
 - **Gotham**：通过 State 传递请求上下文，Middleware Pipeline 负责 Scope 边界。
 - **Tide**：通过 Request State 与 Middleware 集成；因当前 registry 版本仍为
   beta，放在兼容性优先级，不作为首批稳定发布阻塞项。

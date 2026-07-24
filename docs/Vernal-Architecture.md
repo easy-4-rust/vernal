@@ -60,9 +60,11 @@
   body scope; `vernal-salvo` provides a native Hoop, typed Depot access, and
   frame/trailer-preserving body scope; `vernal-poem` provides native
   Middleware/Endpoint composition, typed extractors, and body-bound Scope
-  cleanup; `vernal-tonic` provides a Context interceptor, typed Request
-  extensions, `Status` mapping, and Tower composition.
-- `[Skeleton]` Macros and the remaining three framework adapters still validate
+  cleanup; `vernal-ntex` provides native Middleware/Service composition,
+  App State/Extension extractors, and body-bound Scope cleanup; `vernal-tonic`
+  provides a Context interceptor, typed Request extensions, `Status` mapping,
+  and Tower composition.
+- `[Skeleton]` Macros and the remaining two framework adapters still validate
   crate boundaries only.
 - `[Target]` Phase 2 macros, Context AOP-plan aggregation, framework adapters,
   and later production gates remain.
@@ -477,9 +479,10 @@ managed state, request guards, and a body-aware fairing; Warp adds extension
 filters and an official Tower Service lifecycle; Salvo adds a Hoop, typed Depot
 access, and frame/trailer-preserving body lifecycle; Poem adds
 Middleware/Endpoint, request-extension extractors, and body lifecycle
-integration; Tonic adds native Request/Metadata/Status and Tower integration.
-The remaining three upstream framework adapters are compile-checked
-descriptors.
+integration; Ntex adds native Middleware/Service, App State/Extensions, typed
+extractors, and response-body lifecycle integration; Tonic adds native
+Request/Metadata/Status and Tower integration. The remaining two upstream
+framework adapters are compile-checked descriptors.
 The detailed contract is
 [Vernal Web Architecture](./Vernal-Web-Architecture.md).
 

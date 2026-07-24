@@ -43,7 +43,10 @@ and implements native Middleware/Endpoint composition, request extension
 extractors, and body-bound Scope cleanup. Tonic uses the MSRV-compatible 0.12
 line and implements a Context interceptor, typed Request extensions,
 `GrpcMethod` routing metadata, stable `Status` mapping, and Tower composition.
-The other three application adapters remain descriptors.
+Ntex uses the Rust-1.85-compatible 2.18.0 line and implements native
+Middleware/Service composition, App State/Extension extractors, and a
+MessageBody-bound request scope. The other two application adapters remain
+descriptors.
 
 The versioned selection is recorded in
 [`web-integration-manifest.toml`](../web-integration-manifest.toml).
@@ -236,7 +239,7 @@ This crate implements HTTP transport concerns only:
 | 4 | Warp | `vernal-warp` | HTTP | Filter, Rejection, Reply | Phase 5 adapter |
 | 5 | Salvo | `vernal-salvo` | HTTP | Handler, Hoop, Depot, Writer | Phase 5 adapter |
 | 6 | Poem | `vernal-poem` | HTTP | Middleware, Endpoint, Data, IntoResponse | Phase 5 adapter |
-| 7 | Ntex | `vernal-ntex` | HTTP | Service/Middleware, App State, Extractor | Skeleton |
+| 7 | Ntex | `vernal-ntex` | HTTP | Service/Middleware, App State, Extractor | Phase 5 adapter |
 | 8 | Gotham | `vernal-gotham` | HTTP | State Middleware, Pipeline, Handler | Skeleton |
 | 9 | Tide | `vernal-tide` | HTTP | Middleware, Request State, Response | Skeleton |
 | 10 | Tonic | `vernal-tonic` | RPC Streaming + Tower | Layer, Interceptor, Extension, Status, Streaming | Phase 5 adapter |
@@ -271,8 +274,13 @@ This crate implements HTTP transport concerns only:
   public `into_bytes_stream()` does not expose trailers, so this adapter cannot
   promise trailer fidelity; use `vernal-hyper` when frame/trailer fidelity is
   required.
-- **Ntex:** preserve service-factory and worker lifecycles; do not silently
-  share non-`Send` state across workers.
+- **Ntex:** native Middleware/Service injects the explicit application context
+  and per-request scope into Extensions; extractors may also read the shared
+  context from App State. A native `MessageBody` wrapper retains the scope
+  through EOF, upstream failure, or cancellation while preserving Ntex body
+  size and backpressure. Vernal enables Ntex's Tokio backend and pins 2.18.0:
+  the current 3.x release exceeds the workspace Rust 1.85 MSRV. Worker-local
+  non-`Send` state is never silently promoted to a cross-worker singleton.
 - **Gotham:** state carries request context and middleware pipelines bound scope.
 - **Tide:** integrate through request state and middleware. Its current registry
   release remains beta, so it is a compatibility target rather than a first
