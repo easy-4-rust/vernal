@@ -32,8 +32,9 @@
 Axum 已引入 Axum 0.8，实现原生 Router 装配与类型化 Context、组件、请求 Scope
 提取器；Actix Web 采用兼容 MSRV 的 4.11/actix-http 3.11 版本线，实现原生
 Transform/Service Middleware、App Data/Extension 提取器和 Body 绑定 Scope
-释放；Rocket 0.5.1 实现 Managed State、Request Guard，以及覆盖请求与响应的
-Body 感知 Fairing；Warp 0.4.3 通过 `warp::ext` Filter 和官方 `warp::service`
+释放；Rocket 0.5.1 实现 Managed State、Request Guard、覆盖请求与响应的 Body
+感知 Fairing，以及包裹原生 Route Handler 并保持 Success/Error/Forward
+Outcome 的严格 Send-AOP；Warp 0.4.3 通过 `warp::ext` Filter 和官方 `warp::service`
 Tower 边界实现 Context/组件/Scope 提取、完整 Body 生命周期，以及基于显式
 路由模式的 fail-closed 严格 Send-AOP；Salvo 采用最后
 一个兼容 Rust 1.85 的 0.85.0 版本，实现原生 Hoop、类型化 Depot 访问和
@@ -238,7 +239,7 @@ Trace -> Context -> RequestScope -> Security/AOP -> Handler -> ErrorMapping
 |:--:|:---|:---|:---|:---|:---:|
 | 1 | Axum | `vernal-axum` | HTTP + Tower | `Layer`、State/Extension、Extractor、IntoResponse | Phase 5 适配已实现 |
 | 2 | Actix Web | `vernal-actix-web` | HTTP | `Transform`/`Service`、App Data、Extractor、Responder | Adapter + 严格 Local-AOP 已实现 |
-| 3 | Rocket | `vernal-rocket` | HTTP | Fairing、Request Guard、Managed State、Responder | Phase 5 适配已实现 |
+| 3 | Rocket | `vernal-rocket` | HTTP | Fairing、Request Guard、Route Handler、Responder | Adapter + 严格 AOP 已实现 |
 | 4 | Warp | `vernal-warp` | HTTP | Filter、Rejection、Reply、Tower Service | Adapter + 严格 AOP 已实现 |
 | 5 | Salvo | `vernal-salvo` | HTTP | Handler、Hoop、Depot、Writer | Adapter + 严格 AOP 已实现 |
 | 6 | Poem | `vernal-poem` | HTTP | Middleware、Endpoint、Data、IntoResponse | Adapter + 严格 AOP 已实现 |
@@ -262,7 +263,14 @@ Trace -> Context -> RequestScope -> Security/AOP -> Handler -> ErrorMapping
   Scope；Request Guard 负责解析 Context、组件与 Scope，Response Fairing
   包装原生 Body，直到读取结束或取消后才释放。Rocket 0.5 的公共 Body 只暴露
   `AsyncRead`，所以包装后成为 streamed body；字节、背压和错误保留，但原有
-  “已知长度/可 Seek”分类无法通过公共 API 原样重建。
+  “已知长度/可 Seek”分类无法通过公共 API 原样重建。严格模式在 mount 前把
+  `VernalRocketRoutesExt` 应用于既有 `routes![...]` 集合，只替换公开的
+  `Route.handler`，保留 Name、Method、URI、Rank、Format 与宏发现的 Sentinel。
+  运行时已匹配 Route 提供 mount 后的完整低基数 URI 模板，因此不会丢失挂载前缀；
+  该模板与真实请求方法组成 Operation，跨模型 owned 快照通过 `RequestContext`
+  传播；完整 Handler Future 经借用型 Send-AOP 目标执行，
+  缺少计划时 fail-closed，策略失败不执行 Handler，Rocket 的 Success、Error、
+  Forward Outcome 均保持原生语义。
 - **Warp**：用 `warp::ext` 组合 Filter 提取 Context、组件与 Scope，提取缺失
   映射为明确 Rejection，不能 panic。Warp 0.4 的公开 Reply 使用私有 Body
   类型，因此完整 Body Scope 必须通过官方 `warp::service(route)` 边界组合。

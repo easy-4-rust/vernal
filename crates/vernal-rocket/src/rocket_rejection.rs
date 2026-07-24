@@ -11,6 +11,8 @@ pub enum RocketRejection {
     MissingContext,
     /// 请求本地缓存中没有请求作用域。
     MissingRequestScope,
+    /// 当前 Route 尚未建立严格 AOP 请求上下文。
+    MissingRequestContext,
     /// `IoC` 组件解析失败。
     ComponentResolution {
         /// 原始解析错误，仅供服务端错误链使用。
@@ -33,6 +35,7 @@ impl RocketRejection {
         match self {
             Self::MissingContext => "Vernal application context is unavailable",
             Self::MissingRequestScope => "Vernal request scope is unavailable",
+            Self::MissingRequestContext => "Vernal request context is unavailable",
             Self::ComponentResolution { .. } => "Vernal component resolution failed",
         }
     }
@@ -46,6 +49,9 @@ impl fmt::Display for RocketRejection {
             }
             Self::MissingRequestScope => {
                 formatter.write_str("Rocket request has no Vernal request scope")
+            }
+            Self::MissingRequestContext => {
+                formatter.write_str("Rocket request has no Vernal request context")
             }
             Self::ComponentResolution { source } => {
                 write!(formatter, "Rocket component resolution failed: {source}")

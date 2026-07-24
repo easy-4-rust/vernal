@@ -131,7 +131,7 @@ adapter crates contain runnable native integrations:
 |:---:|:---|:---|:---|:---:|
 | 1 | Axum | `vernal-axum` | HTTP + Tower | Phase 5 adapter + strict AOP |
 | 2 | Actix Web | `vernal-actix-web` | HTTP | Phase 5 adapter + strict Local-AOP |
-| 3 | Rocket | `vernal-rocket` | HTTP | Phase 5 adapter |
+| 3 | Rocket | `vernal-rocket` | HTTP | Phase 5 adapter + strict AOP |
 | 4 | Warp | `vernal-warp` | HTTP | Phase 5 adapter + strict AOP |
 | 5 | Salvo | `vernal-salvo` | HTTP | Phase 5 adapter + strict AOP |
 | 6 | Poem | `vernal-poem` | HTTP | Phase 5 adapter + strict AOP |
@@ -148,8 +148,11 @@ middleware wraps a concrete `Resource` after route matching, identifies the
 operation with the low-cardinality resource pattern, and drives the complete
 `Rc`-based, non-`Send` Service future through Vernal's Local-AOP chain. Missing
 route metadata or plans fail closed, while native Actix errors remain native.
-Rocket provides
-Managed State, Request Guards, and a body-aware Fairing. Warp provides native
+Rocket provides Managed State, Request Guards, a body-aware Fairing, and
+strict Send-AOP around unmodified Route handlers. `routes![...]` is wrapped
+before mount while preserving route metadata; operation identity comes from
+Rocket's own URI template plus the real method, and Success/Error/Forward
+Outcomes remain native. Warp provides native
 extension filters plus strict Send-AOP over its official Tower Service
 boundary. Because Warp does not expose the matched template, each concrete
 Filter Service receives its full low-cardinality route pattern explicitly;

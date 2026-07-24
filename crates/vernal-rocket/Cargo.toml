@@ -8,9 +8,11 @@ description = "Rocket integration for Vernal."
 publish = false
 
 [dependencies]
+http.workspace = true
 rocket.workspace = true
 tokio.workspace = true
 tokio-util.workspace = true
+vernal-aop = { path = "../vernal-aop" }
 vernal-context = { path = "../vernal-context" }
 vernal-http = { path = "../vernal-http" }
 vernal-ioc = { path = "../vernal-ioc" }

@@ -1,18 +1,39 @@
 //! Rocket Fairing、Managed State、Request Guard 与请求作用域集成测试。
 
-use std::{sync::Arc, time::Duration};
+#[path = "aop_support/policy_deny_interceptor.rs"]
+mod policy_deny_interceptor;
 
-use rocket::{get, http::Status, local::asynchronous::Client, routes};
+use std::{
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
+    time::Duration,
+};
+
+use policy_deny_interceptor::PolicyDenyInterceptor;
+use rocket::{
+    Request, get,
+    http::Status,
+    local::asynchronous::Client,
+    request::{FromRequest, Outcome as RequestOutcome},
+    routes,
+};
 use tokio::{sync::Notify, time::timeout};
-use vernal_context::ApplicationContextBuilder;
+use vernal_aop::{Advisor, Operation};
+use vernal_context::{ApplicationContextBuilder, VernalApplicationBuilder};
+use vernal_http::HttpRequestSnapshot;
 use vernal_ioc::{ComponentDefinition, RegistryBuilder};
 use vernal_rocket::{
-    VernalRocketComponent, VernalRocketContext, VernalRocketFairing, VernalRocketRequestScope,
+    VernalRocketComponent, VernalRocketContext, VernalRocketFairing, VernalRocketRequestContext,
+    VernalRocketRequestScope, VernalRocketRoutesExt,
 };
 
 struct Greeting(&'static str);
 
 struct ScopeClosed(Arc<Notify>);
+
+static PROTECTED_CALLED: AtomicBool = AtomicBool::new(false);
 
 #[get("/hello")]
 async fn hello(
@@ -58,6 +79,88 @@ async fn ready_context(closed: Arc<Notify>) -> Arc<vernal_context::ApplicationCo
     context.refresh().await.expect("context refresh");
     context.start().await.expect("context start");
     context
+}
+
+async fn ready_aop_context(
+    operations: impl IntoIterator<Item = Operation>,
+    advisor: Option<Advisor>,
+) -> Arc<vernal_context::ApplicationContext> {
+    let mut builder = VernalApplicationBuilder::new(tokio::runtime::Handle::current());
+    for operation in operations {
+        builder.operation(operation);
+    }
+    if let Some(advisor) = advisor {
+        builder.advisor(advisor);
+    }
+    let context = Arc::new(builder.build().expect("AOP context build"));
+    context.refresh().await.expect("AOP context refresh");
+    context.start().await.expect("AOP context start");
+    context
+}
+
+#[get("/orders/<id>")]
+async fn strict_probe(id: u64, context: VernalRocketRequestContext) -> &'static str {
+    let snapshot = context
+        .0
+        .extensions()
+        .get::<HttpRequestSnapshot>()
+        .await
+        .expect("owned HTTP snapshot");
+    assert_eq!(id, 42);
+    assert_eq!(context.0.route().handler(), "/api/orders/<id>");
+    assert_eq!(context.0.route().operation_name(), "GET");
+    assert_eq!(context.0.route().path_template(), "/api/orders/<id>");
+    assert_eq!(snapshot.uri().path(), "/api/orders/42");
+    "woven"
+}
+
+#[get("/protected")]
+fn protected() -> &'static str {
+    PROTECTED_CALLED.store(true, Ordering::SeqCst);
+    "unreachable"
+}
+
+#[get("/missing-plan")]
+fn missing_plan() -> &'static str {
+    PROTECTED_CALLED.store(true, Ordering::SeqCst);
+    "unreachable"
+}
+
+struct ForwardGuard;
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for ForwardGuard {
+    type Error = ();
+
+    async fn from_request(_request: &'r Request<'_>) -> RequestOutcome<Self, Self::Error> {
+        RequestOutcome::Forward(Status::NotFound)
+    }
+}
+
+#[get("/forward", rank = 1)]
+fn forwarding(_guard: ForwardGuard) -> &'static str {
+    "unreachable"
+}
+
+#[get("/forward", rank = 2)]
+fn forward_fallback() -> &'static str {
+    "forwarded"
+}
+
+struct ErrorGuard;
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for ErrorGuard {
+    type Error = ();
+
+    async fn from_request(_request: &'r Request<'_>) -> RequestOutcome<Self, Self::Error> {
+        RequestOutcome::Error((Status::ImATeapot, ()))
+    }
+}
+
+#[get("/guard-error")]
+fn guard_error(_guard: ErrorGuard) -> &'static str {
+    "unreachable"
 }
 
 #[rocket::async_test]
@@ -108,4 +211,86 @@ async fn dropping_rocket_response_body_closes_request_scope() {
     timeout(Duration::from_secs(1), closed.notified())
         .await
         .expect("scope must close after Rocket response cancellation");
+}
+
+#[rocket::async_test]
+async fn strict_aop_routes_use_route_template_and_owned_snapshot() {
+    let context = ready_aop_context([Operation::new("/api/orders/<id>", "GET")], None).await;
+    let rocket = rocket::build()
+        .attach(VernalRocketFairing::new(context))
+        .mount("/api", routes![strict_probe].with_vernal_aop());
+    let client = Client::tracked(rocket).await.expect("Rocket client");
+
+    let response = client.get("/api/orders/42").dispatch().await;
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.into_string().await.as_deref(), Some("woven"));
+}
+
+#[rocket::async_test]
+async fn strict_aop_maps_policy_failure_without_calling_handler() {
+    PROTECTED_CALLED.store(false, Ordering::SeqCst);
+    let context = ready_aop_context(
+        [Operation::new("/protected", "GET")],
+        Some(Advisor::new(
+            |_: &Operation| true,
+            PolicyDenyInterceptor,
+            -1000,
+        )),
+    )
+    .await;
+    let rocket = rocket::build()
+        .attach(VernalRocketFairing::new(context))
+        .mount("/", routes![protected].with_vernal_aop());
+    let client = Client::tracked(rocket).await.expect("Rocket client");
+
+    let response = client.get("/protected").dispatch().await;
+    assert_eq!(response.status(), Status::Unauthorized);
+    assert_eq!(
+        response.into_string().await.as_deref(),
+        Some("Authentication is required")
+    );
+    assert!(!PROTECTED_CALLED.load(Ordering::SeqCst));
+}
+
+#[rocket::async_test]
+async fn strict_aop_fails_closed_when_plan_is_missing() {
+    PROTECTED_CALLED.store(false, Ordering::SeqCst);
+    let context = ready_aop_context([Operation::new("/different", "GET")], None).await;
+    let rocket = rocket::build()
+        .attach(VernalRocketFairing::new(context))
+        .mount("/", routes![missing_plan].with_vernal_aop());
+    let client = Client::tracked(rocket).await.expect("Rocket client");
+
+    let response = client.get("/missing-plan").dispatch().await;
+    assert_eq!(response.status(), Status::InternalServerError);
+    assert_eq!(
+        response.into_string().await.as_deref(),
+        Some("Vernal AOP invocation failed")
+    );
+    assert!(!PROTECTED_CALLED.load(Ordering::SeqCst));
+}
+
+#[rocket::async_test]
+async fn strict_aop_preserves_native_forward_outcome() {
+    let context = ready_aop_context([Operation::new("/forward", "GET")], None).await;
+    let rocket = rocket::build()
+        .attach(VernalRocketFairing::new(context))
+        .mount("/", routes![forwarding, forward_fallback].with_vernal_aop());
+    let client = Client::tracked(rocket).await.expect("Rocket client");
+
+    let response = client.get("/forward").dispatch().await;
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.into_string().await.as_deref(), Some("forwarded"));
+}
+
+#[rocket::async_test]
+async fn strict_aop_preserves_native_error_outcome() {
+    let context = ready_aop_context([Operation::new("/guard-error", "GET")], None).await;
+    let rocket = rocket::build()
+        .attach(VernalRocketFairing::new(context))
+        .mount("/", routes![guard_error].with_vernal_aop());
+    let client = Client::tracked(rocket).await.expect("Rocket client");
+
+    let response = client.get("/guard-error").dispatch().await;
+    assert_eq!(response.status(), Status::ImATeapot);
 }

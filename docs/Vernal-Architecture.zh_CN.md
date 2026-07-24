@@ -52,8 +52,9 @@
 - `[已确认]` `vernal-axum` 已提供原生 Router 装配与类型化 Context、组件、
   请求 Scope 提取器；`vernal-actix-web` 已提供原生 Transform/Service 中间件和
   Body 绑定 Scope 释放、匹配资源操作身份与严格 Local-AOP；`vernal-rocket`
-  已提供 Managed State、Request Guard
-  与 Body 感知 Fairing；`vernal-warp` 已提供原生 Extension Filter、Tower
+  已提供 Managed State、Request Guard、Body 感知 Fairing、路由模板操作身份，
+  以及覆盖原生 Handler Outcome 的 fail-closed 严格 Send-AOP；
+  `vernal-warp` 已提供原生 Extension Filter、Tower
   Service Body Scope、显式路由模式身份与 fail-closed 严格 Send-AOP；
   `vernal-salvo` 已提供原生 Hoop、类型化 Depot、
   Frame/Trailer 保真的 Body Scope、匹配路径操作身份，以及覆盖借用型 Handler
@@ -459,7 +460,8 @@ Rust Web 框架并不保证所有 Service Future 都满足 `Send`。Vernal 不�
 仍使用普通 `Interceptor` 合同，无需克隆
 `Request`、`Depot`、`Response` 或 `FlowCtrl`；Tide 使用同一合同，把借用自
 Router 的 `Next` 限定在单次计划调用内；Gotham 则把一次性 Pipeline Chain 与
-owned State 限定在同一个独占目标生命周期内。
+owned State 限定在同一个独占目标生命周期内；Rocket 同样把 Request、一次性
+Data 与带请求生命周期的原生 Outcome 限定在单次包装 Route Handler 调用内。
 
 静态本地闭包目标继续使用 `LocalInvocationTarget`。仅在单次调用中借用
 Worker-local 状态的框架 Service 则实现对象安全的
@@ -635,7 +637,7 @@ flowchart TD
 |:---:|:---|:---|:---|:---|
 | 1 | Axum | `vernal-axum` | HTTP、Body Streaming、Tower | Tower Layer、Service、Extractor/Context Bridge |
 | 2 | Actix Web | `vernal-actix-web` | HTTP、Body Streaming、严格 Local-AOP | Transform/Service Middleware、App Data、匹配资源模式 |
-| 3 | Rocket | `vernal-rocket` | HTTP 请求/响应、可选 Streaming | Fairing、Request Guard、Managed State |
+| 3 | Rocket | `vernal-rocket` | HTTP 请求/响应、可选 Streaming、严格 AOP | Fairing、Request Guard、包装 Route Handler |
 | 4 | Warp | `vernal-warp` | HTTP、Body Streaming、严格 AOP | Filter 组合、显式路由模式、Tower Service |
 | 5 | Salvo | `vernal-salvo` | HTTP、Body Streaming、严格 AOP | Handler、Hoop、匹配路径、借用型 Send 目标 |
 | 6 | Poem | `vernal-poem` | HTTP、Body Streaming、严格 AOP | Middleware、Endpoint、Request Data |
@@ -656,8 +658,9 @@ Frame/Trailer、取消、Tower 生命周期、AOP 调用链和 Hyper 传输能�
 `Send` 的 Service 提供严格 Around。严格中间件在匹配后包裹具体 Resource，
 以低基数资源模式作为操作身份，缺少元数据或计划时 fail-closed，并保留 Actix
 原生错误。
-Rocket 已增加 Managed State、Request Guard
-与 Body 感知 Fairing，
+Rocket 已增加 Managed State、Request Guard、Body 感知 Fairing、owned 请求
+快照，以及覆盖未修改 Route Handler、保持 Success/Error/Forward Outcome 的
+fail-closed 严格 Send-AOP，
 Warp 已增加 Extension Filter、官方 Tower Service 生命周期、owned 请求快照，
 以及基于显式低基数路由模式、覆盖具体 Filter Service 的 fail-closed 严格
 Send-AOP。Salvo 已增加

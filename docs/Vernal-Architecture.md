@@ -59,8 +59,9 @@
   Context, component, and request-scope extractors; `vernal-actix-web` provides
   native Transform/Service middleware, body-bound Scope cleanup, matched
   resource operation identity, and strict Local-AOP;
-  `vernal-rocket` provides managed state, request guards, and a body-aware
-  fairing; `vernal-warp` provides native extension filters, a Tower Service
+  `vernal-rocket` provides managed state, request guards, a body-aware fairing,
+  route-template operation identity, and fail-closed strict Send-AOP over
+  native Handler Outcomes; `vernal-warp` provides native extension filters, a Tower Service
   body scope, explicit route-pattern identity, and fail-closed strict
   Send-AOP; `vernal-salvo` provides a native Hoop, typed Depot access,
   frame/trailer-preserving body scope, matched-path operation identity, and
@@ -469,7 +470,8 @@ lifetime is tied to exclusive `&mut self` and cannot escape
 contracts without cloning `Request`, `Depot`, `Response`, or `FlowCtrl`; Tide
 uses the same contract to keep its borrowed router `Next` inside one plan call,
 while Gotham keeps its one-shot Pipeline Chain and owned State inside the same
-exclusive target lifetime.
+exclusive target lifetime. Rocket likewise keeps Request, one-shot Data, and
+the lifetime-bound native Outcome inside one wrapped Route Handler call.
 
 Static local closure targets remain `LocalInvocationTarget`. A framework
 Service that borrows worker-local state for only one call instead implements
@@ -626,7 +628,7 @@ The versioned coverage set is owned by
 |:---:|:---|:---|:---|:---|
 | 1 | Axum | `vernal-axum` | HTTP, body streaming, Tower | Tower Layer, Service, extractor/context bridge |
 | 2 | Actix Web | `vernal-actix-web` | HTTP, body streaming, strict Local-AOP | Transform/Service middleware, app data, matched resource pattern |
-| 3 | Rocket | `vernal-rocket` | HTTP request/response, optional streaming | Fairing, request guard, managed state |
+| 3 | Rocket | `vernal-rocket` | HTTP request/response, optional streaming, strict AOP | Fairing, request guard, wrapped Route Handler |
 | 4 | Warp | `vernal-warp` | HTTP, body streaming, strict AOP | Filter composition, explicit route pattern, Tower Service |
 | 5 | Salvo | `vernal-salvo` | HTTP, body streaming, strict AOP | Handler, Hoop, matched path, borrowed Send target |
 | 6 | Poem | `vernal-poem` | HTTP, body streaming, strict AOP | Middleware, Endpoint, request data |
@@ -650,8 +652,10 @@ Actix Web adds App Data/Extensions, body-aware middleware, and strict Around
 interception for its `Rc`-based non-`Send` services through Vernal Local-AOP.
 Strict middleware wraps a concrete Resource after matching, uses the
 low-cardinality resource pattern as operation identity, fail-closes missing
-metadata/plans, and preserves native Actix errors. Rocket adds
-managed state, request guards, and a body-aware fairing; Warp adds extension
+metadata/plans, and preserves native Actix errors. Rocket adds managed state,
+request guards, a body-aware fairing, owned request snapshots, and fail-closed
+strict Send-AOP over unmodified Route handlers while preserving
+Success/Error/Forward Outcomes; Warp adds extension
 filters, an official Tower Service lifecycle, owned request snapshots, and
 fail-closed strict Send-AOP for a concrete Filter Service using an explicit
 low-cardinality route pattern; Salvo adds a Hoop, typed
