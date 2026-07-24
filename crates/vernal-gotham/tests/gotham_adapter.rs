@@ -34,6 +34,8 @@ use vernal_context::{ApplicationContextBuilder, VernalApplicationBuilder};
 use vernal_gotham::{VernalGothamMiddleware, VernalGothamStateExt};
 use vernal_http::HttpRequestSnapshot;
 use vernal_ioc::{ComponentDefinition, RegistryBuilder};
+use vernal_web::WebRequestScope;
+use vernal_web_testkit::WebAdapterContract;
 
 struct Greeting(&'static str);
 
@@ -47,9 +49,9 @@ fn expect_response(result: HandlerResult) -> (State, Response<Body>) {
 async fn ready_context() -> Arc<vernal_context::ApplicationContext> {
     let mut registry = RegistryBuilder::new();
     registry
-        .register(ComponentDefinition::singleton::<Greeting, _>(|_| {
-            Greeting("vernal-gotham")
-        }))
+        .register(ComponentDefinition::scoped::<Greeting, WebRequestScope, _>(
+            |_| Greeting("vernal-gotham"),
+        ))
         .expect("component registration");
     let registry = registry.build().expect("registry build");
     let context = Arc::new(
@@ -101,14 +103,12 @@ async fn middleware_exposes_context_component_and_scope_until_body_finishes() {
                     .vernal_component::<Greeting>()
                     .expect("Vernal component");
                 let scope = state.vernal_request_scope().expect("request scope");
-                assert!(Arc::ptr_eq(&actual, &expected));
-                assert!(!scope.cancellation().is_cancelled());
+                WebAdapterContract::assert_request_binding(&expected, &actual, &scope, &greeting);
                 scope
                     .on_close(move || async move {
                         handler_closed.notify_one();
                         Ok::<_, io::Error>(())
                     })
-                    .await
                     .expect("scope close hook");
                 Ok((state, Response::new(greeting.0.into_body())))
             })
@@ -165,7 +165,6 @@ async fn dropping_response_body_closes_request_scope() {
                         handler_closed.notify_one();
                         Ok::<_, io::Error>(())
                     })
-                    .await
                     .expect("scope close hook");
                 Ok((state, Response::new("stream is not consumed".into_body())))
             })

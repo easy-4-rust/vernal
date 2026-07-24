@@ -172,8 +172,10 @@ where
         service_context: ServiceCtx<'_, Self>,
     ) -> Result<Self::Response, Self::Error> {
         request.extensions_mut().insert(Arc::clone(&self.context));
-        let cancellation = CancellationToken::new();
-        let scope = Arc::new(WebRequestScope::new(cancellation.clone()));
+        let scope = Arc::new(WebRequestScope::from_application_context(Arc::clone(
+            &self.context,
+        )));
+        let cancellation = scope.cancellation().clone();
         request.extensions_mut().insert(Arc::clone(&scope));
 
         // Body 或请求 Future 被丢弃时，DropGuard 只能同步发出取消信号；

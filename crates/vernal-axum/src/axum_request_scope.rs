@@ -8,7 +8,7 @@ use axum::{
     middleware::Next,
     response::Response,
 };
-use tokio_util::sync::CancellationToken;
+use vernal_context::ApplicationContext;
 use vernal_tower::ScopedBody;
 use vernal_web::WebRequestScope;
 
@@ -20,9 +20,13 @@ impl AxumRequestScope {
     ///
     /// `Next` 返回后仍不关闭 Scope；Scope 生命周期会延伸到响应 Body 完成、
     /// 出错或被客户端丢弃。请求 Future 被取消时，`DropGuard` 唤醒后台关闭任务。
-    pub async fn handle(State(()): State<()>, mut request: Request, next: Next) -> Response {
-        let cancellation = CancellationToken::new();
-        let scope = Arc::new(WebRequestScope::new(cancellation.clone()));
+    pub async fn handle(
+        State(context): State<Arc<ApplicationContext>>,
+        mut request: Request,
+        next: Next,
+    ) -> Response {
+        let scope = Arc::new(WebRequestScope::from_application_context(context));
+        let cancellation = scope.cancellation().clone();
         request.extensions_mut().insert(Arc::clone(&scope));
 
         let cleanup_scope = Arc::clone(&scope);

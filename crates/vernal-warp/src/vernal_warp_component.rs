@@ -4,9 +4,9 @@ use std::{any::Any, marker::PhantomData, ops::Deref, sync::Arc};
 
 use warp::{Filter, Rejection};
 
-use crate::{VernalWarpContext, WarpRejection};
+use crate::{VernalWarpContext, VernalWarpRequestScope, WarpRejection};
 
-/// 从当前 `ApplicationContext` 解析类型化组件。
+/// 从当前 Warp 请求作用域解析类型化组件。
 pub struct VernalWarpComponent<T> {
     component: Arc<T>,
     marker: PhantomData<T>,
@@ -19,17 +19,22 @@ impl<T> VernalWarpComponent<T> {
     where
         T: Any + Send + Sync,
     {
-        VernalWarpContext::filter().and_then(|context: VernalWarpContext| async move {
-            context
-                .0
-                .container()
-                .resolve::<T>()
-                .map(|component| Self {
-                    component,
-                    marker: PhantomData,
-                })
-                .map_err(|error| warp::reject::custom(WarpRejection::component_resolution(error)))
-        })
+        VernalWarpContext::filter()
+            .and(VernalWarpRequestScope::filter())
+            .and_then(
+                |_context: VernalWarpContext, scope: VernalWarpRequestScope| async move {
+                    scope
+                        .0
+                        .resolve::<T>()
+                        .map(|component| Self {
+                            component,
+                            marker: PhantomData,
+                        })
+                        .map_err(|error| {
+                            warp::reject::custom(WarpRejection::component_resolution(error))
+                        })
+                },
+            )
     }
 
     /// 取得共享组件所有权。

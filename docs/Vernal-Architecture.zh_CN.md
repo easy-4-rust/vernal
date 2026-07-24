@@ -35,8 +35,9 @@
 - `[已确认]` 根 Workspace manifest 声明 Edition 2024、Resolver 3、MSRV 1.85.0；
   本地 `cargo +1.85.0 check --workspace --all-targets` 已通过，自动化 MSRV CI
   仍是目标态。
-- `[已确认]` 已创建六个内核/组合层 crate 与十四个 Web 相关 crate，其中四个
-  Web 底座 crate 已提供可调用行为。
+- `[已确认]` 已创建六个内核/组合层 crate 与十五个 Web 相关 crate，其中四个
+  Web 底座 crate 已提供可调用行为，`vernal-web-testkit` 已提供跨框架共享
+  请求绑定合同。
 - `[已确认]` 所有 crate 设置 `publish = false`，没有 crates.io 或稳定 API 声明。
 - `[已确认]` `vernal-core` 与 `vernal-ioc` 已提供显式 Registry、确定性图规划、
   Container 隔离、Singleton/Transient、Trait 命名/Primary/全部实现绑定和结构化错误。
@@ -48,7 +49,8 @@
   令牌、事件总线和预编译 AOP 计划目录。
 - `[已确认]` `vernal-web`、`vernal-http`、`vernal-tower` 与
   `vernal-hyper` 已提供请求 Scope、标准 HTTP Body Frame/Trailer、Tower
-  生命周期 Layer 和真实 Hyper 传输桥接。
+  生命周期 Layer 和真实 Hyper 传输桥接。`WebRequestScope` 直接复用 IoC
+  `ScopeContext`，组件提取器不会绕过请求作用域回退到无作用域解析。
 - `[已确认]` `vernal-axum` 已提供原生 Router 装配与类型化 Context、组件、
   请求 Scope 提取器；`vernal-actix-web` 已提供原生 Transform/Service 中间件和
   Body 绑定 Scope 释放、匹配资源操作身份与严格 Local-AOP；`vernal-rocket`
@@ -642,6 +644,7 @@ Vernal 借鉴 Spring 的职责分离，不复制 JVM 产品命名。Rust Web 框
 |:---|:---|:---|:---|
 | Web 应用 | `vernal-web` | Request Context、请求 Scope、Handler 调用、提取、校验、错误映射 | 不包含传输层或框架类型 |
 | HTTP 协议 | `vernal-http` | Request、Response、Body Frame、Streaming、取消、背压 | 使用 Rust `Future`/`Stream`，不拥有 Runtime |
+| 合同测试 | `vernal-web-testkit` | 统一验证 Context、IoC 请求 Scope 与组件实例绑定 | 仅作为 Adapter 开发依赖，不进入运行时依赖图 |
 
 ```mermaid
 flowchart TD
@@ -650,6 +653,7 @@ flowchart TD
     Http["vernal-http 协议合同"]
     Tower["vernal-tower"]
     Hyper["vernal-hyper"]
+    Testkit["vernal-web-testkit"]
     HttpAdapters["九种 HTTP 框架 Adapter"]
     Tonic["vernal-tonic RPC Adapter"]
 
@@ -657,6 +661,7 @@ flowchart TD
     Http --> Web
     Tower --> Web
     Hyper --> Http
+    Testkit -.验证.-> Web
     HttpAdapters --> Http
     HttpAdapters --> Tower
     Tonic --> Tower
@@ -682,10 +687,12 @@ Tower 与 Hyper 是公共底座，不占十种目标名额；Tonic 明确属于 
 该集合是根据本地源码集成并集和当前 registry 可用性形成的版本化覆盖优先级，不是
 对全世界 Rust 框架热度的绝对排名。
 
-当前 Workspace 包含十四个 Web 相关 crate：`vernal-web`、`vernal-http`、
-Tower/Hyper 和十个 Adapter。四个底座已提供可调用的请求 Scope、HTTP
+当前 Workspace 包含十五个 Web 相关 crate：`vernal-web`、`vernal-http`、
+Tower/Hyper、`vernal-web-testkit` 和十个 Adapter。四个运行时底座已提供可调用的请求 Scope、HTTP
 Frame/Trailer、元数据/取消传播、Tower 生命周期、AOP 调用链、可配置原生错误
-恢复和 Hyper 传输能力；Axum 已增加原生 Router 装配与类型化提取器，Actix Web 已增加 App Data/Extensions
+恢复和 Hyper 传输能力；共享 testkit 已让十个 Adapter 使用同一请求绑定合同，
+验证原生提取器暴露的 Context、Scope 和组件来自同一 IoC `ScopeContext`。
+Axum 已增加原生 Router 装配与类型化提取器，Actix Web 已增加 App Data/Extensions
 与原生 Body 感知 Middleware，并通过 Vernal Local-AOP 为基于 `Rc`、不要求
 `Send` 的 Service 提供严格 Around。严格中间件在匹配后包裹具体 Resource，
 以低基数资源模式作为操作身份，缺少元数据或计划时 fail-closed，并保留 Actix

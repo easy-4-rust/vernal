@@ -144,8 +144,10 @@ where
 
     async fn call(&self, mut request: Request) -> Result<Self::Output> {
         request.extensions_mut().insert(Arc::clone(&self.context));
-        let cancellation = CancellationToken::new();
-        let scope = Arc::new(WebRequestScope::new(cancellation.clone()));
+        let scope = Arc::new(WebRequestScope::from_application_context(Arc::clone(
+            &self.context,
+        )));
+        let cancellation = scope.cancellation().clone();
         request.extensions_mut().insert(Arc::clone(&scope));
 
         // 请求 Future 或响应流被丢弃时，由 DropGuard 只发出同步取消信号；

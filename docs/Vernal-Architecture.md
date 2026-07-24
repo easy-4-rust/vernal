@@ -36,8 +36,9 @@
 - `[Confirmed]` The manifest declares Edition 2024, resolver 3, and MSRV
   1.85.0. The workspace passes `cargo +1.85.0 check --workspace --all-targets`
   locally; automated MSRV CI remains a target.
-- `[Confirmed]` Six kernel/composition crates and fourteen web-related crates
-  exist; four web foundation crates now expose callable behavior.
+- `[Confirmed]` Six kernel/composition crates and fifteen web-related crates
+  exist; four web foundation crates expose callable behavior and
+  `vernal-web-testkit` provides a shared request-binding contract.
 - `[Confirmed]` Every crate is `publish = false`; no crates.io or stable API
   claim is made.
 - `[Confirmed]` `vernal-core` and `vernal-ioc` provide an explicit registry,
@@ -55,6 +56,8 @@
 - `[Confirmed]` `vernal-web`, `vernal-http`, `vernal-tower`, and
   `vernal-hyper` provide request scope, standard HTTP body frames/trailers,
   Tower lifecycle layers, and a real Hyper transport bridge.
+  `WebRequestScope` delegates to the IoC `ScopeContext`, so component
+  extractors cannot bypass request scope with unscoped resolution.
 - `[Confirmed]` `vernal-axum` provides native Router assembly and typed
   Context, component, and request-scope extractors; `vernal-actix-web` provides
   native Transform/Service middleware, body-bound Scope cleanup, matched
@@ -644,6 +647,7 @@ than a separate application model.
 |:---|:---|:---|:---|
 | Web application | `vernal-web` | Request context, request scope, handler invocation, extraction, validation, error mapping | No transport or framework types |
 | HTTP protocol | `vernal-http` | Request, response, body frames, streaming, cancellation, backpressure | Uses Rust `Future`/`Stream`; owns no runtime |
+| Conformance | `vernal-web-testkit` | Shared Context, IoC request-scope, and component-instance binding assertions | Adapter development dependency only; absent from runtime graphs |
 
 ```mermaid
 flowchart TD
@@ -652,6 +656,7 @@ flowchart TD
     Http["vernal-http protocol contracts"]
     Tower["vernal-tower"]
     Hyper["vernal-hyper"]
+    Testkit["vernal-web-testkit"]
     HttpAdapters["Nine HTTP framework adapters"]
     Tonic["vernal-tonic RPC adapter"]
 
@@ -659,6 +664,7 @@ flowchart TD
     Http --> Web
     Tower --> Web
     Hyper --> Http
+    Testkit -. verifies .-> Web
     HttpAdapters --> Http
     HttpAdapters --> Tower
     Tonic --> Tower
@@ -686,11 +692,14 @@ versioned coverage priority derived from the reviewed local integration
 superset and current registry presence, not an objective universal popularity
 ranking.
 
-The workspace has fourteen web-related crates: `vernal-web`, `vernal-http`,
-Tower/Hyper, and ten adapters. The four foundations now provide callable
+The workspace has fifteen web-related crates: `vernal-web`, `vernal-http`,
+Tower/Hyper, `vernal-web-testkit`, and ten adapters. The four runtime
+foundations provide callable
 request-scope, HTTP frame/trailer, metadata/cancellation propagation, Tower
 lifecycle, AOP invocation, configurable native error recovery, and Hyper
-transport behavior. Axum adds native
+transport behavior. The shared testkit now makes all ten adapters verify that
+their native Context, scope, and extracted component share one IoC
+`ScopeContext`. Axum adds native
 Router assembly and typed extractors;
 Actix Web adds App Data/Extensions, body-aware middleware, and strict Around
 interception for its `Rc`-based non-`Send` services through Vernal Local-AOP.

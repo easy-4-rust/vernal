@@ -21,6 +21,8 @@ use vernal_warp::{
     VernalWarpAopLayer, VernalWarpComponent, VernalWarpContext, VernalWarpLayer,
     VernalWarpRequestContext, VernalWarpRequestScope, WarpRejection,
 };
+use vernal_web::WebRequestScope;
+use vernal_web_testkit::WebAdapterContract;
 use warp::{Filter, Rejection, Reply, http::StatusCode};
 
 struct Greeting(&'static str);
@@ -28,9 +30,9 @@ struct Greeting(&'static str);
 async fn ready_context() -> Arc<vernal_context::ApplicationContext> {
     let mut registry = RegistryBuilder::new();
     registry
-        .register(ComponentDefinition::singleton::<Greeting, _>(|_| {
-            Greeting("vernal-warp")
-        }))
+        .register(ComponentDefinition::scoped::<Greeting, WebRequestScope, _>(
+            |_| Greeting("vernal-warp"),
+        ))
         .expect("component registration");
     let registry = registry.build().expect("registry build");
     let context = Arc::new(
@@ -74,14 +76,16 @@ async fn service_exposes_context_component_and_scope_until_body_finishes() {
                 let expected = Arc::clone(&expected);
                 let handler_closed = Arc::clone(&handler_closed);
                 async move {
-                    assert!(Arc::ptr_eq(&actual.0, &expected));
+                    let greeting = greeting.into_inner();
+                    WebAdapterContract::assert_request_binding(
+                        &expected, &actual.0, &scope.0, &greeting,
+                    );
                     scope
                         .0
                         .on_close(move || async move {
                             handler_closed.notify_one();
                             Ok::<_, std::io::Error>(())
                         })
-                        .await
                         .expect("scope close hook");
                     Ok::<_, Rejection>(greeting.0)
                 }

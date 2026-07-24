@@ -27,15 +27,16 @@ use vernal_tonic::{
     VernalLayer,
 };
 use vernal_web::{ProblemDetails, ProblemKind, RequestContext, WebRequestScope};
+use vernal_web_testkit::WebAdapterContract;
 
 struct Greeting(&'static str);
 
 async fn ready_context() -> Arc<vernal_context::ApplicationContext> {
     let mut registry = RegistryBuilder::new();
     registry
-        .register(ComponentDefinition::singleton::<Greeting, _>(|_| {
-            Greeting("vernal-grpc")
-        }))
+        .register(ComponentDefinition::scoped::<Greeting, WebRequestScope, _>(
+            |_| Greeting("vernal-grpc"),
+        ))
         .expect("component registration");
     let registry = registry.build().expect("registry build");
     let context = Arc::new(
@@ -64,7 +65,7 @@ async fn ready_aop_context(
 }
 
 #[tokio::test]
-async fn interceptor_exposes_context_and_typed_component() {
+async fn interceptor_exposes_context_but_requires_scope_for_component_resolution() {
     let context = ready_context().await;
     let mut interceptor = TonicContextInterceptor::new(Arc::clone(&context));
     let request = interceptor
@@ -75,17 +76,20 @@ async fn interceptor_exposes_context_and_typed_component() {
         &request.vernal_context().expect("context extension"),
         &context
     ));
-    assert_eq!(
-        request.vernal_component::<Greeting>().expect("component").0,
-        "vernal-grpc"
-    );
+    assert!(matches!(
+        request.vernal_component::<Greeting>(),
+        Err(vernal_tonic::TonicRequestError::MissingRequestScope)
+    ));
 }
 
-#[test]
-fn request_reads_scope_and_grpc_method_from_native_extensions() {
-    let cancellation = tokio_util::sync::CancellationToken::new();
-    let scope = Arc::new(WebRequestScope::new(cancellation));
+#[tokio::test]
+async fn request_reads_scoped_component_and_grpc_method_from_native_extensions() {
+    let context = ready_context().await;
+    let scope = Arc::new(WebRequestScope::from_application_context(Arc::clone(
+        &context,
+    )));
     let mut request = Request::new("stream-message");
+    request.extensions_mut().insert(Arc::clone(&context));
     request.extensions_mut().insert(Arc::clone(&scope));
     request
         .extensions_mut()
@@ -95,6 +99,14 @@ fn request_reads_scope_and_grpc_method_from_native_extensions() {
         &request.vernal_request_scope().expect("request scope"),
         &scope
     ));
+    let component = request.vernal_component::<Greeting>().expect("component");
+    WebAdapterContract::assert_request_binding(
+        &context,
+        &request.vernal_context().expect("context"),
+        &scope,
+        &component,
+    );
+    assert_eq!(component.0, "vernal-grpc");
     let route = request.vernal_route_metadata().expect("route metadata");
     assert_eq!(route.handler(), "greeter.Greeter");
     assert_eq!(route.operation_name(), "SayHello");
@@ -148,14 +160,13 @@ async fn tower_layers_preserve_context_and_scope_through_tonic_interceptor() {
                     service_closed.notify_one();
                     Ok::<_, std::io::Error>(())
                 })
-                .await
                 .expect("close hook");
             Ok::<_, std::convert::Infallible>(Response::new(HttpBody::full("grpc")))
         }
     });
     let grpc_interceptor = TonicContextInterceptor::new(Arc::clone(&context));
     let service = interceptor(grpc_interceptor).layer(inner);
-    let service = RequestScopeLayer::new().layer(service);
+    let service = RequestScopeLayer::new(Arc::clone(&context)).layer(service);
     let service = VernalLayer::new(Arc::clone(&context)).layer(service);
 
     let response = service
@@ -198,7 +209,7 @@ async fn tonic_aop_layer_resolves_grpc_uri_and_propagates_owned_snapshot() {
         Ok::<_, std::convert::Infallible>(Response::new(empty_body()))
     });
     let service = TonicAopLayer::new().layer(inner);
-    let service = RequestScopeLayer::new().layer(service);
+    let service = RequestScopeLayer::new(Arc::clone(&context)).layer(service);
     let service = VernalLayer::new(context).layer(service);
 
     let response = service
@@ -236,7 +247,7 @@ async fn tonic_aop_layer_maps_policy_failure_to_grpc_status_without_calling_hand
         async { Ok::<_, std::convert::Infallible>(Response::new(empty_body())) }
     });
     let service = TonicAopLayer::new().layer(inner);
-    let service = RequestScopeLayer::new().layer(service);
+    let service = RequestScopeLayer::new(Arc::clone(&context)).layer(service);
     let service = VernalLayer::new(context).layer(service);
 
     let response = service

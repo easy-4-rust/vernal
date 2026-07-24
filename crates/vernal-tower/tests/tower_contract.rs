@@ -8,12 +8,30 @@ use tokio::sync::{Mutex, Notify};
 use tower::{Layer, ServiceExt, service_fn};
 use vernal_context::ApplicationContextBuilder;
 use vernal_http::HttpBody;
-use vernal_ioc::RegistryBuilder;
+use vernal_ioc::{ComponentDefinition, RegistryBuilder};
 use vernal_tower::{RequestScopeLayer, TowerBodyError, TowerError, VernalLayer};
 use vernal_web::{ScopeState, WebRequestScope};
 
 async fn ready_context() -> Arc<vernal_context::ApplicationContext> {
     let registry = RegistryBuilder::new().build().expect("empty registry");
+    let context = Arc::new(
+        ApplicationContextBuilder::new(registry)
+            .build()
+            .expect("context build"),
+    );
+    context.refresh().await.expect("context refresh");
+    context.start().await.expect("context start");
+    context
+}
+
+async fn ready_context_with_scoped_value() -> Arc<vernal_context::ApplicationContext> {
+    let mut registry = RegistryBuilder::new();
+    registry
+        .register(ComponentDefinition::scoped::<String, WebRequestScope, _>(
+            |_| "request-value".to_owned(),
+        ))
+        .expect("scoped value registration");
+    let registry = registry.build().expect("registry");
     let context = Arc::new(
         ApplicationContextBuilder::new(registry)
             .build()
@@ -48,10 +66,57 @@ async fn vernal_layer_injects_explicit_application_context() {
     assert_eq!(
         response
             .into_body()
-            .collect_limited(16)
+            .collect()
             .await
             .expect("body")
-            .bytes(),
+            .to_bytes(),
+        &vernal_http::Bytes::from_static(b"ok")
+    );
+}
+
+#[tokio::test]
+async fn request_scope_layer_uses_one_context_for_extensions_and_scoped_components() {
+    let context = ready_context_with_scoped_value().await;
+    let expected = Arc::clone(&context);
+    let service = service_fn(move |request: Request<()>| {
+        let expected = Arc::clone(&expected);
+        async move {
+            let injected = request
+                .extensions()
+                .get::<Arc<vernal_context::ApplicationContext>>()
+                .expect("context extension");
+            let scope = request
+                .extensions()
+                .get::<Arc<WebRequestScope>>()
+                .expect("request scope");
+            let value = scope.resolve::<String>().expect("request component");
+
+            // Layer 单独使用时也必须写入与 Scope Owner 完全相同的 Arc；
+            // 这保证组件提取器不会因 Tower Layer 顺序而访问另一棵组件图。
+            assert!(Arc::ptr_eq(injected, &expected));
+            assert!(Arc::ptr_eq(
+                scope
+                    .application_context()
+                    .expect("scope application owner"),
+                &expected
+            ));
+            assert_eq!(value.as_str(), "request-value");
+            Ok::<_, Infallible>(Response::new(HttpBody::full("ok")))
+        }
+    });
+
+    let response = RequestScopeLayer::new(context)
+        .layer(service)
+        .oneshot(Request::new(()))
+        .await
+        .expect("scoped response");
+    assert_eq!(
+        response
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes(),
         &vernal_http::Bytes::from_static(b"ok")
     );
 }
@@ -77,26 +142,25 @@ async fn response_body_completion_closes_scope_after_last_frame() {
                     service_events.lock().await.push("closed");
                     Ok::<_, io::Error>(())
                 })
-                .await
                 .expect("close hook");
             Ok::<_, Infallible>(Response::new(HttpBody::full("stream")))
         }
     });
 
-    let response = RequestScopeLayer::new()
+    let response = RequestScopeLayer::new(ready_context().await)
         .layer(service)
         .oneshot(Request::new(()))
         .await
         .expect("scoped response");
     let scope = captured_scope.lock().await.clone().expect("captured scope");
-    assert_eq!(scope.state().await, ScopeState::Open);
+    assert_eq!(scope.state(), ScopeState::Open);
     let collected = response
         .into_body()
         .collect()
         .await
         .expect("scoped body should complete");
     assert_eq!(collected.to_bytes(), "stream");
-    assert_eq!(scope.state().await, ScopeState::Closed);
+    assert_eq!(scope.state(), ScopeState::Closed);
     assert_eq!(*events.lock().await, ["closed"]);
 }
 
@@ -110,12 +174,11 @@ async fn response_body_reports_explicit_scope_close_failure() {
             .clone();
         scope
             .on_close(|| async { Err::<(), _>(io::Error::other("release failed")) })
-            .await
             .expect("close hook");
         Ok::<_, Infallible>(Response::new(HttpBody::full("body")))
     });
 
-    let response = RequestScopeLayer::new()
+    let response = RequestScopeLayer::new(ready_context().await)
         .layer(service)
         .oneshot(Request::new(()))
         .await
@@ -141,7 +204,7 @@ async fn upstream_service_error_still_closes_scope() {
         }
     });
 
-    let result = RequestScopeLayer::new()
+    let result = RequestScopeLayer::new(ready_context().await)
         .layer(service)
         .oneshot(Request::new(()))
         .await;
@@ -155,8 +218,7 @@ async fn upstream_service_error_still_closes_scope() {
             .await
             .as_ref()
             .expect("captured scope")
-            .state()
-            .await,
+            .state(),
         ScopeState::Closed
     );
 }
@@ -181,7 +243,6 @@ async fn dropping_request_future_signals_background_scope_cleanup() {
                     service_closed.notify_one();
                     Ok::<_, io::Error>(())
                 })
-                .await
                 .expect("close hook");
             service_started.notify_one();
             pending::<Result<Response<HttpBody>, Infallible>>().await
@@ -189,7 +250,7 @@ async fn dropping_request_future_signals_background_scope_cleanup() {
     });
 
     let task = tokio::spawn(
-        RequestScopeLayer::new()
+        RequestScopeLayer::new(ready_context().await)
             .layer(service)
             .oneshot(Request::new(())),
     );

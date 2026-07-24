@@ -19,5 +19,8 @@ vernal-http = { path = "../vernal-http" }
 vernal-ioc = { path = "../vernal-ioc" }
 vernal-web = { path = "../vernal-web" }
 
+[dev-dependencies]
+vernal-web-testkit = { path = "../vernal-web-testkit" }
+
 [lints]
 workspace = true

@@ -1,134 +1,197 @@
 //! Web 请求级组件作用域对象。
 
-use std::{
-    any::{Any, TypeId, type_name},
-    collections::HashMap,
-    error::Error,
-    future::Future,
-    sync::Arc,
+use std::{any::Any, error::Error, future::Future, sync::Arc};
+
+use tokio_util::sync::CancellationToken;
+use vernal_context::ApplicationContext;
+use vernal_ioc::{
+    Container, Qualifier, Registry, ResolveError, ScopeContext, ScopeError, ScopeKey, ScopeState,
 };
 
-use tokio::sync::{Mutex, RwLock};
-use tokio_util::sync::CancellationToken;
-use vernal_core::BoxError;
+use crate::web_request_scope_owner::WebRequestScopeOwner;
 
-use crate::{ScopeError, ScopeState, scope_future::ScopeCloseHook};
-
-/// 在一个请求生命周期内缓存组件并协调异步释放。
+/// 将 `IoC` 自定义作用域投影为框架中立的单请求组件作用域。
 ///
-/// Scope 不依赖具体 Web 框架。有限响应在 Handler 完成后关闭；流式响应由 Body
-/// Wrapper 在 Stream 完成、错误或取消后显式关闭。关闭操作串行且幂等。
+/// `WebRequestScope` 本身同时充当 `ScopeKey` 的标记类型，因此业务组件可以直接
+/// 声明 `#[component(scope = WebRequestScope)]`。正常 Adapter 必须通过
+/// [`Self::from_application_context`] 创建它；这样组件提取器、AOP 调用上下文和
+/// 响应 Body 释放逻辑共享同一个 [`ScopeContext`]，不会再维护第二套缓存或状态机。
+///
+/// 为兼容只使用类型缓存的低层调用，[`Self::new`] 会创建绑定空注册表的独立
+/// Container。该模式可以缓存原生请求对象和执行关闭钩子，但不能解析应用注册的
+/// 业务组件；框架集成不应使用它。
 pub struct WebRequestScope {
-    components: RwLock<HashMap<TypeId, Arc<dyn Any + Send + Sync>>>,
-    close_hooks: Mutex<Vec<ScopeCloseHook>>,
-    state: RwLock<ScopeState>,
-    operation: Mutex<()>,
-    cancellation: CancellationToken,
+    owner: WebRequestScopeOwner,
+    scope: Arc<ScopeContext>,
 }
 
 impl WebRequestScope {
-    /// 创建开放的请求作用域。
+    /// 创建不绑定 `ApplicationContext` 的兼容请求作用域。
+    ///
+    /// 调用方已有应用上下文时应使用 [`Self::from_application_context`]，否则
+    /// [`Self::resolve`] 只能从空注册表返回组件缺失错误。
     #[must_use]
     pub fn new(cancellation: CancellationToken) -> Self {
+        let container = Container::new(Registry::empty());
+        let scope = container.open_scope_with_cancellation::<Self>(cancellation);
         Self {
-            components: RwLock::new(HashMap::new()),
-            close_hooks: Mutex::new(Vec::new()),
-            state: RwLock::new(ScopeState::Open),
-            operation: Mutex::new(()),
-            cancellation,
+            owner: WebRequestScopeOwner::Standalone(container),
+            scope,
         }
     }
 
-    /// 获取或惰性创建一种请求级对象。
+    /// 基于真实应用上下文创建请求作用域。
+    ///
+    /// 作用域取消令牌是应用取消树的子令牌：请求结束只取消当前请求，应用关闭则
+    /// 会立即阻止所有存活请求继续创建作用域组件。
+    #[must_use]
+    pub fn from_application_context(context: Arc<ApplicationContext>) -> Self {
+        let scope = context.open_scope::<Self>();
+        Self {
+            owner: WebRequestScopeOwner::Application(context),
+            scope,
+        }
+    }
+
+    /// 在当前请求作用域解析唯一注册的 `T` 组件。
+    ///
+    /// Singleton、Transient 与 `WebRequestScope` 自定义组件均遵循 `IoC` 内核的
+    /// 同一依赖图和生命周期规则。
     ///
     /// # Errors
     ///
-    /// Scope 已开始关闭，或缓存对象无法恢复成 `T` 时返回 [`ScopeError`]。
-    pub async fn get_or_insert_with<T, F>(&self, factory: F) -> Result<Arc<T>, ScopeError>
+    /// 组件缺失、歧义、构造失败或作用域已经关闭时返回 [`ResolveError`]。
+    pub fn resolve<T>(&self) -> Result<Arc<T>, ResolveError>
+    where
+        T: Any + Send + Sync,
+    {
+        self.owner.container().resolve_in(&self.scope)
+    }
+
+    /// 在当前请求作用域解析带限定符的 `T` 组件。
+    ///
+    /// # Errors
+    ///
+    /// 限定符不存在、构造失败或作用域不可用时返回 [`ResolveError`]。
+    pub fn resolve_qualified<T>(&self, qualifier: &Qualifier) -> Result<Arc<T>, ResolveError>
+    where
+        T: Any + Send + Sync,
+    {
+        self.owner
+            .container()
+            .resolve_qualified_in(qualifier, &self.scope)
+    }
+
+    /// 在当前请求作用域解析 Trait Object 的唯一或 Primary 实现。
+    ///
+    /// # Errors
+    ///
+    /// Trait Binding 缺失、存在歧义、目标构造失败或作用域不可用时返回
+    /// [`ResolveError`]。
+    pub fn resolve_trait<T>(&self) -> Result<Arc<T>, ResolveError>
+    where
+        T: ?Sized + Send + Sync + 'static,
+    {
+        self.owner.container().resolve_trait_in(&self.scope)
+    }
+
+    /// 在当前请求作用域解析带限定符的 Trait Object。
+    ///
+    /// # Errors
+    ///
+    /// 命名绑定缺失、目标构造失败或作用域不可用时返回 [`ResolveError`]。
+    pub fn resolve_qualified_trait<T>(&self, qualifier: &Qualifier) -> Result<Arc<T>, ResolveError>
+    where
+        T: ?Sized + Send + Sync + 'static,
+    {
+        self.owner
+            .container()
+            .resolve_qualified_trait_in(qualifier, &self.scope)
+    }
+
+    /// 在当前请求作用域解析某个 Trait 的全部实现。
+    ///
+    /// # Errors
+    ///
+    /// 任一实现构造失败、类型转换失败或作用域不可用时返回 [`ResolveError`]。
+    pub fn resolve_all_traits<T>(&self) -> Result<Vec<Arc<T>>, ResolveError>
+    where
+        T: ?Sized + Send + Sync + 'static,
+    {
+        self.owner.container().resolve_all_traits_in(&self.scope)
+    }
+
+    /// 获取或惰性创建一种框架原生请求对象。
+    ///
+    /// 该入口与 `IoC` 请求组件共享 `ScopeContext` 生命周期，但使用独立缓存
+    /// 命名空间；即使原生对象与业务组件类型相同也不会互相覆盖。对于已注册业务
+    /// 组件应优先使用 [`Self::resolve`]，以保留依赖图和结构化构造错误。
+    ///
+    /// # Errors
+    ///
+    /// Scope 已开始关闭、取消或缓存类型不一致时返回 [`ScopeError`]。
+    pub fn get_or_insert_with<T, F>(&self, factory: F) -> Result<Arc<T>, ScopeError>
     where
         T: Any + Send + Sync,
         F: FnOnce() -> T,
     {
-        let _operation = self.operation.lock().await;
-        self.require_open("get_or_insert_with").await?;
-        let mut components = self.components.write().await;
-        if let Some(existing) = components.get(&TypeId::of::<T>()) {
-            return Arc::clone(existing)
-                .downcast::<T>()
-                .map_err(|_| ScopeError::TypeMismatch {
-                    expected: type_name::<T>(),
-                });
-        }
-
-        let component = Arc::new(factory());
-        components.insert(TypeId::of::<T>(), component.clone());
-        Ok(component)
+        self.scope.get_or_insert_with(factory)
     }
 
     /// 注册一个逆序执行的异步关闭钩子。
     ///
     /// # Errors
     ///
-    /// Scope 已开始关闭时返回 [`ScopeError::InvalidState`]。
-    pub async fn on_close<F, Fut, E>(&self, hook: F) -> Result<(), ScopeError>
+    /// Scope 已开始关闭或应用取消树已取消时返回 [`ScopeError`]。
+    pub fn on_close<F, Fut, E>(&self, hook: F) -> Result<(), ScopeError>
     where
         F: FnOnce() -> Fut + Send + 'static,
         Fut: Future<Output = Result<(), E>> + Send + 'static,
         E: Error + Send + Sync + 'static,
     {
-        let _operation = self.operation.lock().await;
-        self.require_open("on_close").await?;
-        let hook: ScopeCloseHook = Box::new(move || {
-            Box::pin(async move { hook().await.map_err(|error| Box::new(error) as BoxError) })
-        });
-        self.close_hooks.lock().await.push(hook);
-        Ok(())
+        self.scope.on_close(hook)
     }
 
-    /// 取消请求并逆序执行所有关闭钩子。
+    /// 取消请求、等待既有构造结束并逆序执行全部关闭钩子。
     ///
     /// # Errors
     ///
-    /// 返回第一个关闭钩子错误，但仍会执行其余钩子并清空请求级缓存。
+    /// 返回第一个关闭钩子错误，但仍执行其余钩子、清空缓存并进入 Closed。
     pub async fn close(&self) -> Result<(), ScopeError> {
-        let _operation = self.operation.lock().await;
-        if self.state().await == ScopeState::Closed {
-            return Ok(());
-        }
-
-        *self.state.write().await = ScopeState::Closing;
-        self.cancellation.cancel();
-        let hooks = std::mem::take(&mut *self.close_hooks.lock().await);
-        let mut first_error = None;
-        for hook in hooks.into_iter().rev() {
-            let hook_error = hook().await.err();
-            if first_error.is_none() {
-                first_error = hook_error.map(|source| ScopeError::CloseHook { source });
-            }
-        }
-        self.components.write().await.clear();
-        *self.state.write().await = ScopeState::Closed;
-        first_error.map_or(Ok(()), Err)
+        self.scope.close().await
     }
 
-    /// 返回当前作用域状态快照。
-    pub async fn state(&self) -> ScopeState {
-        *self.state.read().await
+    /// 返回当前请求作用域状态快照。
+    pub fn state(&self) -> ScopeState {
+        self.scope.state()
+    }
+
+    /// 返回请求作用域的类型化身份。
+    #[must_use]
+    pub fn key(&self) -> ScopeKey {
+        self.scope.key()
+    }
+
+    /// 返回底层 `IoC` 自定义作用域。
+    ///
+    /// 集成层需要建立子作用域或调用更低层容器 API 时可以显式使用该引用；普通
+    /// Handler 应优先使用本对象提供的解析方法。
+    #[must_use]
+    pub const fn scope_context(&self) -> &Arc<ScopeContext> {
+        &self.scope
+    }
+
+    /// 返回请求所属的真实应用上下文。
+    ///
+    /// 兼容模式 [`Self::new`] 没有应用上下文，因此返回 `None`。
+    #[must_use]
+    pub fn application_context(&self) -> Option<&Arc<ApplicationContext>> {
+        self.owner.application_context()
     }
 
     /// 返回请求取消令牌。
     #[must_use]
-    pub const fn cancellation(&self) -> &CancellationToken {
-        &self.cancellation
-    }
-
-    /// 校验 Scope 仍处于 Open。
-    async fn require_open(&self, operation: &'static str) -> Result<(), ScopeError> {
-        let state = self.state().await;
-        if state == ScopeState::Open {
-            Ok(())
-        } else {
-            Err(ScopeError::InvalidState { operation, state })
-        }
+    pub fn cancellation(&self) -> &CancellationToken {
+        self.scope.cancellation()
     }
 }

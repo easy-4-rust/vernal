@@ -24,15 +24,17 @@ use vernal_axum::{
 use vernal_context::{ApplicationContextBuilder, VernalApplicationBuilder};
 use vernal_http::HttpRequestSnapshot;
 use vernal_ioc::{ComponentDefinition, RegistryBuilder};
+use vernal_web::WebRequestScope;
+use vernal_web_testkit::WebAdapterContract;
 
 struct Greeting(&'static str);
 
 async fn ready_context() -> Arc<vernal_context::ApplicationContext> {
     let mut registry = RegistryBuilder::new();
     registry
-        .register(ComponentDefinition::singleton::<Greeting, _>(|_| {
-            Greeting("vernal")
-        }))
+        .register(ComponentDefinition::scoped::<Greeting, WebRequestScope, _>(
+            |_| Greeting("vernal"),
+        ))
         .expect("component registration");
     let registry = registry.build().expect("registry build");
     let context = Arc::new(
@@ -76,14 +78,14 @@ async fn router_extracts_context_component_and_request_scope() {
                     let expected = Arc::clone(&expected);
                     let handler_closed = Arc::clone(&handler_closed);
                     async move {
-                        assert!(Arc::ptr_eq(&actual, &expected));
-                        assert!(!scope.cancellation().is_cancelled());
+                        WebAdapterContract::assert_request_binding(
+                            &expected, &actual, &scope, &greeting,
+                        );
                         scope
                             .on_close(move || async move {
                                 handler_closed.notify_one();
                                 Ok::<_, std::io::Error>(())
                             })
-                            .await
                             .expect("scope close hook");
                         greeting.0
                     }

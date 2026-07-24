@@ -1,25 +1,19 @@
 [package]
-name = "vernal-rocket"
+name = "vernal-web-testkit"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
-description = "Rocket integration for Vernal."
+description = "Shared conformance assertions for Vernal Web adapters."
 publish = false
 
 [dependencies]
-http.workspace = true
-rocket.workspace = true
-tokio.workspace = true
-tokio-util.workspace = true
-vernal-aop = { path = "../vernal-aop" }
 vernal-context = { path = "../vernal-context" }
-vernal-http = { path = "../vernal-http" }
 vernal-ioc = { path = "../vernal-ioc" }
 vernal-web = { path = "../vernal-web" }
 
 [dev-dependencies]
-vernal-web-testkit = { path = "../vernal-web-testkit" }
+tokio.workspace = true
 
 [lints]
 workspace = true

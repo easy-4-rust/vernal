@@ -27,15 +27,17 @@ use vernal_poem::{
     VernalPoemComponent, VernalPoemContext, VernalPoemMiddleware, VernalPoemRequestContext,
     VernalPoemRequestScope,
 };
+use vernal_web::WebRequestScope;
+use vernal_web_testkit::WebAdapterContract;
 
 struct Greeting(&'static str);
 
 async fn ready_context() -> Arc<vernal_context::ApplicationContext> {
     let mut registry = RegistryBuilder::new();
     registry
-        .register(ComponentDefinition::singleton::<Greeting, _>(|_| {
-            Greeting("vernal-poem")
-        }))
+        .register(ComponentDefinition::scoped::<Greeting, WebRequestScope, _>(
+            |_| Greeting("vernal-poem"),
+        ))
         .expect("component registration");
     let registry = registry.build().expect("registry build");
     let context = Arc::new(
@@ -80,14 +82,12 @@ async fn endpoint_extracts_context_component_and_request_scope() {
             let VernalPoemRequestScope(scope) =
                 VernalPoemRequestScope::from_request_without_body(&request).await?;
 
-            assert!(Arc::ptr_eq(&actual, &expected));
-            assert!(!scope.cancellation().is_cancelled());
+            WebAdapterContract::assert_request_binding(&expected, &actual, &scope, &greeting);
             scope
                 .on_close(move || async move {
                     handler_closed.notify_one();
                     Ok::<_, std::io::Error>(())
                 })
-                .await
                 .expect("scope close hook");
             Ok::<_, poem::Error>(greeting.0)
         }
@@ -145,7 +145,6 @@ async fn dropping_response_body_closes_request_scope() {
                     handler_closed.notify_one();
                     Ok::<_, std::io::Error>(())
                 })
-                .await
                 .expect("scope close hook");
             Ok::<_, poem::Error>("stream is not consumed")
         }

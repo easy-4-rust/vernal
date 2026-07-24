@@ -22,6 +22,7 @@ vernal-web = { path = "../vernal-web" }
 [dev-dependencies]
 http-body-util.workspace = true
 tower.workspace = true
+vernal-web-testkit = { path = "../vernal-web-testkit" }
 
 [lints]
 workspace = true

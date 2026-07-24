@@ -19,7 +19,7 @@ use crate::{
 /// 转成 Service 并分别套用该 Layer，不能传入包含用户数据的原始 URI。
 #[derive(Clone)]
 pub struct VernalWarpAopLayer {
-    context_layer: VernalLayer,
+    context: Arc<ApplicationContext>,
     aop_layer: AopLayer<WarpRouteResolver>,
 }
 
@@ -28,7 +28,7 @@ impl VernalWarpAopLayer {
     #[must_use]
     pub fn new(context: Arc<ApplicationContext>, path_pattern: impl Into<Arc<str>>) -> Self {
         Self {
-            context_layer: VernalLayer::new(context),
+            context,
             aop_layer: AopLayer::new(WarpRouteResolver::new(path_pattern)),
         }
     }
@@ -43,7 +43,8 @@ impl<S> Layer<S> for VernalWarpAopLayer {
         // AOP 因而能读取前两层注入的对象；短路响应再由外层 Scope 包装 Body。
         let aop = self.aop_layer.layer(inner);
         let recovered = VernalWarpAopService::new(aop);
-        let context = self.context_layer.layer(recovered);
-        RequestScopeLayer::new().layer(context)
+        let application_context = Arc::clone(&self.context);
+        let context = VernalLayer::new(Arc::clone(&application_context)).layer(recovered);
+        RequestScopeLayer::new(application_context).layer(context)
     }
 }

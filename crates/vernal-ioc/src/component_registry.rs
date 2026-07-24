@@ -20,6 +20,21 @@ pub struct Registry {
 }
 
 impl Registry {
+    /// 创建不包含任何组件定义或 Trait Binding 的空注册表。
+    ///
+    /// 空图天然满足依赖约束，因此该构造不需要返回 `Result`。它主要服务于只需要
+    /// [`crate::ScopeContext`] 原生类型缓存能力、暂时不挂接应用组件图的边界对象，
+    /// 例如兼容模式下独立创建的 Web 请求作用域。
+    #[must_use]
+    pub fn empty() -> Self {
+        Self::new(
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            BuildPlan::new(Vec::new()),
+        )
+    }
+
     /// 由 [`crate::RegistryBuilder`] 在完成图校验后创建。
     pub(crate) fn new(
         definitions: Vec<Arc<ComponentDefinition>>,

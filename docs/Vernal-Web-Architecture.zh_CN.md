@@ -5,15 +5,17 @@
 
 **文档状态**：架构草案  
 **基线日期**：2026-07-24  
-**适用范围**：`vernal-web`、`vernal-http`、Tower/Hyper 底座及十个框架适配器
+**适用范围**：`vernal-web`、`vernal-http`、`vernal-web-testkit`、
+Tower/Hyper 底座及十个框架适配器
 
 [English](./Vernal-Web-Architecture.md) | [返回中文 README](../README.zh-CN.md)
 
 ## 1. 当前事实
 
-当前 Workspace 包含十四个 Web 相关 crate：
+当前 Workspace 包含十五个 Web 相关 crate：
 
 - 两个公共合同：`vernal-web`、`vernal-http`；
+- 一个共享合同测试工具：`vernal-web-testkit`；
 - 两个底层能力：`vernal-tower`、`vernal-hyper`；
 - 十个框架适配器：Axum、Actix Web、Rocket、Warp、Salvo、Poem、Ntex、
   Gotham、Tide、Tonic。
@@ -21,7 +23,10 @@
 四个公共合同/底座 crate 已提供可调用能力：
 
 - `vernal-web` 提供类型化请求上下文、请求 Scope、Invocation 桥接、安全主体载体
-  与稳定问题详情；
+  与稳定问题详情；请求 Scope 直接委托给 IoC `ScopeContext`，业务组件可以声明
+  `scope = WebRequestScope`；
+- `vernal-web-testkit` 让所有 Adapter 对原生提取结果执行相同的应用 Context、
+  Scope 身份和组件 `Arc` 身份断言；
 - `vernal-http` 直接使用标准 `http`/`http-body` 类型，保留 Frame 和 Trailer，
   支持取消，并且只在调用方给出明确上限时缓冲；
 - `vernal-tower` 注入 `ApplicationContext`，并在 Body 完成、Service 错误或请求
@@ -112,7 +117,8 @@ flowchart TB
 只定义框架中立的应用层合同：
 
 - `RequestContext`：请求 ID、路由元数据、安全主体和扩展；
-- `WebRequestScope`：请求级组件缓存、关闭钩子和释放状态；
+- `WebRequestScope`：IoC `ScopeContext` 的 Web 门面，提供请求级组件解析、原生
+  对象缓存、关闭钩子、取消和释放状态；
 - `HandlerInvocation`：Handler、方法元数据和已解析参数；
 - `ProblemDetails`：稳定的应用错误分类；
 - `ContextCarrier`：跨 Future、Stream 和任务边界传播上下文；
@@ -198,7 +204,8 @@ stateDiagram-v2
 已实现可被 Axum、Tonic 和其他 Tower 生态复用的能力：
 
 - `VernalLayer`：向 Service 注入 Context Handle；
-- `RequestScopeLayer`：在响应 Body 完成、Service 错误、取消或请求 Future
+- `RequestScopeLayer`：显式接收 `Arc<ApplicationContext>`，从其 Container
+  派生请求 Scope，并在响应 Body 完成、Service 错误、取消或请求 Future
   被丢弃时关闭请求作用域；
 - `ContextPropagationLayer`：创建或保留 `RequestContext`，捕获 owned HTTP
   元数据快照，并暴露由请求 Scope 拥有的同源取消令牌；
@@ -405,7 +412,11 @@ Guardrails：
 
 ## 12. 跨框架一致性测试
 
-每个 Adapter 必须复用同一 `vernal-web-testkit` 合同套件（实现阶段新增）：
+每个 Adapter 必须复用同一 `vernal-web-testkit` 合同套件。当前已落地第一条
+公共请求绑定合同：十个 Adapter 都把原生获得的 `ApplicationContext`、
+`WebRequestScope` 和请求级组件交给 `WebAdapterContract`；合同会在同一 Scope
+二次解析并比较 `Arc` 身份，因此能发现绕过请求 Scope 的错误实现。下表其余矩阵
+仍按阶段继续补齐：
 
 | 合同 | 必须覆盖 |
 |:---|:---|
@@ -442,9 +453,9 @@ Guardrails：
 
 ## 14. 架构完成定义
 
-- [ ] Web 与 HTTP 公共合同已经实现并有独立测试；
+- [x] Web 与 HTTP 公共合同已经实现并有独立测试；
 - [ ] Tower/Hyper 底座不进入 Core、IoC、AOP 或 Context；
-- [ ] 十个 Adapter 均使用框架原生扩展点，没有全局 Context；
+- [x] 十个 Adapter 均使用框架原生扩展点，没有全局 Context；
 - [ ] 非流式、流式、取消和 Scope 清理语义均被合同测试覆盖；
 - [ ] Tonic 被明确作为 RPC，而不是 HTTP Router；
 - [ ] Sa-Token-Rust 是唯一保留的安全集成目标；

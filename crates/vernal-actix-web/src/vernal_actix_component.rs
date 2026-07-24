@@ -7,7 +7,7 @@ use vernal_context::ApplicationContext;
 
 use crate::ActixRejection;
 
-/// 从当前 `ApplicationContext` 解析类型化组件。
+/// 从当前请求作用域解析类型化组件。
 pub struct VernalActixComponent<T>(pub Arc<T>);
 
 impl<T> Deref for VernalActixComponent<T> {
@@ -37,9 +37,15 @@ where
             });
         let result = context
             .ok_or(ActixRejection::MissingContext)
-            .and_then(|context| {
-                context
-                    .container()
+            .and_then(|_| {
+                request
+                    .extensions()
+                    .get::<Arc<vernal_web::WebRequestScope>>()
+                    .cloned()
+                    .ok_or(ActixRejection::MissingRequestScope)
+            })
+            .and_then(|scope| {
+                scope
                     .resolve::<T>()
                     .map(Self)
                     .map_err(ActixRejection::component_resolution)

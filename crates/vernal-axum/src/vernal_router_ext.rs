@@ -29,8 +29,11 @@ where
     S: Clone + Send + Sync + 'static,
 {
     fn with_vernal(self, context: Arc<ApplicationContext>) -> Self {
-        self.layer(middleware::from_fn_with_state((), AxumRequestScope::handle))
-            .layer(VernalLayer::new(context))
+        self.layer(middleware::from_fn_with_state(
+            Arc::clone(&context),
+            AxumRequestScope::handle,
+        ))
+        .layer(VernalLayer::new(context))
     }
 
     fn with_vernal_aop(self, context: Arc<ApplicationContext>) -> Self {
@@ -39,7 +42,10 @@ where
                 .layer(ErrorMappingLayer::new(AxumAopErrorMapper))
                 .layer(AopLayer::new(AxumRouteResolver)),
         )
-        .layer(middleware::from_fn_with_state((), AxumRequestScope::handle))
+        .layer(middleware::from_fn_with_state(
+            Arc::clone(&context),
+            AxumRequestScope::handle,
+        ))
         .layer(VernalLayer::new(context))
     }
 }

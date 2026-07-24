@@ -107,8 +107,10 @@ impl Handler for VernalSalvoHoop {
         control: &mut FlowCtrl,
     ) {
         depot.inject(Arc::clone(&self.context));
-        let cancellation = CancellationToken::new();
-        let scope = Arc::new(WebRequestScope::new(cancellation.clone()));
+        let scope = Arc::new(WebRequestScope::from_application_context(Arc::clone(
+            &self.context,
+        )));
+        let cancellation = scope.cancellation().clone();
         depot.inject(Arc::clone(&scope));
 
         // Handler Future 或响应 Body 被丢弃时，DropGuard 只负责同步发出取消信号；

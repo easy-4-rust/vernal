@@ -19,15 +19,17 @@ use vernal_aop::{LocalAdvisor, Operation};
 use vernal_context::{ApplicationContextBuilder, VernalApplicationBuilder};
 use vernal_http::HttpRequestSnapshot;
 use vernal_ioc::{ComponentDefinition, RegistryBuilder};
+use vernal_web::WebRequestScope;
+use vernal_web_testkit::WebAdapterContract;
 
 struct Greeting(&'static str);
 
 async fn ready_context() -> Arc<vernal_context::ApplicationContext> {
     let mut registry = RegistryBuilder::new();
     registry
-        .register(ComponentDefinition::singleton::<Greeting, _>(|_| {
-            Greeting("vernal-actix")
-        }))
+        .register(ComponentDefinition::scoped::<Greeting, WebRequestScope, _>(
+            |_| Greeting("vernal-actix"),
+        ))
         .expect("component registration");
     let registry = registry.build().expect("registry build");
     let context = Arc::new(
@@ -74,13 +76,17 @@ async fn middleware_exposes_context_component_and_scope_until_body_finishes() {
                         let expected = Arc::clone(&expected);
                         let handler_closed = Arc::clone(&handler_closed);
                         async move {
-                            assert!(Arc::ptr_eq(&actual, &expected));
+                            WebAdapterContract::assert_request_binding(
+                                &expected,
+                                &actual,
+                                &scope,
+                                &greeting,
+                            );
                             scope
                                 .on_close(move || async move {
                                     handler_closed.notify_one();
                                     Ok::<_, std::io::Error>(())
                                 })
-                                .await
                                 .expect("scope close hook");
                             HttpResponse::Ok().body(greeting.0)
                         }

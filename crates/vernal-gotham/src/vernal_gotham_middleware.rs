@@ -184,8 +184,10 @@ impl Middleware for VernalGothamMiddleware {
         Chain: FnOnce(State) -> Pin<Box<HandlerFuture>> + Send + 'static,
     {
         state.put(VernalGothamContext(Arc::clone(&self.context.0)));
-        let cancellation = CancellationToken::new();
-        let scope = Arc::new(WebRequestScope::new(cancellation.clone()));
+        let scope = Arc::new(WebRequestScope::from_application_context(Arc::clone(
+            &self.context.0,
+        )));
+        let cancellation = scope.cancellation().clone();
         state.put(VernalGothamRequestScope(Arc::clone(&scope)));
 
         // Handler Future 或响应 Body 被丢弃时，DropGuard 发出同步取消信号；

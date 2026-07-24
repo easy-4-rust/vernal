@@ -11,7 +11,7 @@ use vernal_context::ApplicationContext;
 
 use crate::RocketRejection;
 
-/// 从 Rocket Managed `ApplicationContext` 解析类型化组件。
+/// 从 Rocket 当前请求作用域解析类型化组件。
 pub struct VernalRocketComponent<T>(pub Arc<T>);
 
 impl<T> Deref for VernalRocketComponent<T> {
@@ -33,7 +33,17 @@ where
         let Some(context) = request.rocket().state::<Arc<ApplicationContext>>() else {
             return Outcome::Error((Status::InternalServerError, RocketRejection::MissingContext));
         };
-        match context.container().resolve::<T>() {
+        let Some(scope) = request
+            .local_cache(crate::rocket_request_state::RocketRequestState::missing)
+            .scope()
+        else {
+            return Outcome::Error((
+                Status::InternalServerError,
+                RocketRejection::MissingRequestScope,
+            ));
+        };
+        let _ = context;
+        match scope.resolve::<T>() {
             Ok(component) => Outcome::Success(Self(component)),
             Err(error) => Outcome::Error((
                 Status::InternalServerError,

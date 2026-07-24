@@ -7,10 +7,10 @@ use vernal_context::ApplicationContext;
 
 use crate::AxumRejection;
 
-/// 从当前 `ApplicationContext` 的 `IoC` 容器解析类型化组件。
+/// 从当前请求作用域解析类型化 `IoC` 组件。
 ///
-/// 组件仍遵循 Vernal 中注册的 Singleton/Transient 语义；提取器不会创建第二个
-/// 容器，也不会使用进程级全局注册表。
+/// 组件遵循 Vernal 中注册的 Singleton、Transient 或 `WebRequestScope` 自定义
+/// 作用域语义；提取器不会创建第二个容器，也不会使用进程级全局注册表。
 pub struct VernalComponent<T>(pub Arc<T>);
 
 impl<T> Deref for VernalComponent<T> {
@@ -29,12 +29,15 @@ where
     type Rejection = AxumRejection;
 
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
-        let context = parts
+        let _context = parts
             .extensions
             .get::<Arc<ApplicationContext>>()
             .ok_or(AxumRejection::MissingContext)?;
-        context
-            .container()
+        let scope = parts
+            .extensions
+            .get::<Arc<vernal_web::WebRequestScope>>()
+            .ok_or(AxumRejection::MissingRequestScope)?;
+        scope
             .resolve::<T>()
             .map(Self)
             .map_err(AxumRejection::component_resolution)

@@ -27,6 +27,8 @@ use vernal_aop::{Advisor, Operation};
 use vernal_context::{ApplicationContextBuilder, VernalApplicationBuilder};
 use vernal_ioc::{ComponentDefinition, RegistryBuilder};
 use vernal_salvo::{VernalSalvoDepotExt, VernalSalvoHoop};
+use vernal_web::WebRequestScope;
+use vernal_web_testkit::WebAdapterContract;
 
 struct Greeting(&'static str);
 
@@ -46,19 +48,25 @@ impl Handler for ProbeHandler {
         _control: &mut FlowCtrl,
     ) {
         let result: Result<
-            (Arc<Greeting>, Arc<vernal_web::WebRequestScope>),
+            (
+                Arc<vernal_context::ApplicationContext>,
+                Arc<Greeting>,
+                Arc<vernal_web::WebRequestScope>,
+            ),
             vernal_salvo::SalvoRejection,
         > = (|| {
             let context = depot.vernal_context()?;
             let greeting = depot.vernal_component::<Greeting>()?;
             let scope = depot.vernal_request_scope()?;
-            if let Some(expected) = &self.expected {
-                assert!(Arc::ptr_eq(&context, expected));
-            }
-            Ok((greeting, scope))
+            Ok((context, greeting, scope))
         })();
         match result {
-            Ok((greeting, scope)) => {
+            Ok((context, greeting, scope)) => {
+                if let Some(expected) = &self.expected {
+                    WebAdapterContract::assert_request_binding(
+                        expected, &context, &scope, &greeting,
+                    );
+                }
                 if let Some(closed) = &self.closed {
                     let closed = Arc::clone(closed);
                     scope
@@ -66,7 +74,6 @@ impl Handler for ProbeHandler {
                             closed.notify_one();
                             Ok::<_, std::io::Error>(())
                         })
-                        .await
                         .expect("scope close hook");
                 }
                 if self.stream_trailers {
@@ -96,9 +103,9 @@ impl Handler for ProbeHandler {
 async fn ready_context() -> Arc<vernal_context::ApplicationContext> {
     let mut registry = RegistryBuilder::new();
     registry
-        .register(ComponentDefinition::singleton::<Greeting, _>(|_| {
-            Greeting("vernal-salvo")
-        }))
+        .register(ComponentDefinition::scoped::<Greeting, WebRequestScope, _>(
+            |_| Greeting("vernal-salvo"),
+        ))
         .expect("component registration");
     let registry = registry.build().expect("registry build");
     let context = Arc::new(

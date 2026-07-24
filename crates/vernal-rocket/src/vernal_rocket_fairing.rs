@@ -6,7 +6,6 @@ use rocket::{
     Build, Data, Request, Response, Rocket,
     fairing::{Fairing, Info, Kind},
 };
-use tokio_util::sync::CancellationToken;
 use vernal_context::ApplicationContext;
 use vernal_web::WebRequestScope;
 
@@ -44,8 +43,15 @@ impl Fairing for VernalRocketFairing {
     }
 
     async fn on_request(&self, request: &mut Request<'_>, _data: &mut Data<'_>) {
-        let cancellation = CancellationToken::new();
-        let scope = Arc::new(WebRequestScope::new(cancellation.clone()));
+        // Ignite 可能发现应用已经注册了 Context。请求阶段必须绑定 Rocket 最终
+        // Managed State 中的权威实例，不能继续使用 Fairing 构造时传入但未安装的
+        // 另一个 Arc，否则组件提取器与请求 Scope 会落到不同 Container。
+        let Some(context) = request.rocket().state::<Arc<ApplicationContext>>().cloned() else {
+            request.local_cache(RocketRequestState::missing);
+            return;
+        };
+        let scope = Arc::new(WebRequestScope::from_application_context(context));
+        let cancellation = scope.cancellation().clone();
 
         // 请求或响应 Body 被丢弃时，DropGuard 发出取消；后台 Tokio 任务完成
         // 真正的异步 Scope 关闭。

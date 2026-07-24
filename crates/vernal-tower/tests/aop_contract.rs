@@ -56,7 +56,9 @@ async fn ready_context(
 }
 
 fn tower_request<B>(body: B, context: Arc<ApplicationContext>, route: RouteMetadata) -> Request<B> {
-    let scope = Arc::new(WebRequestScope::new(CancellationToken::new()));
+    let scope = Arc::new(WebRequestScope::from_application_context(Arc::clone(
+        &context,
+    )));
     let mut request = Request::new(body);
     request.extensions_mut().insert(context);
     request.extensions_mut().insert(scope);
@@ -88,7 +90,7 @@ async fn recommended_layer_order_builds_context_scope_and_aop_invocation() {
     });
     let aop = AopLayer::from_extension().layer(handler);
     let propagated = ContextPropagationLayer::from_extension().layer(aop);
-    let scoped = RequestScopeLayer::new().layer(propagated);
+    let scoped = RequestScopeLayer::new(Arc::clone(&context)).layer(propagated);
     let service = VernalLayer::new(context).layer(scoped);
     let mut request = Request::new(());
     request.extensions_mut().insert(route());

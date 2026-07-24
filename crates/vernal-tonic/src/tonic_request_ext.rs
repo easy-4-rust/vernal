@@ -20,7 +20,7 @@ pub trait TonicRequestExt {
     /// 未安装 `VernalLayer` 或 `TonicContextInterceptor` 时返回 Internal Status。
     fn vernal_context(&self) -> Result<Arc<ApplicationContext>, TonicRequestError>;
 
-    /// 从当前应用上下文解析类型化组件。
+    /// 从当前 Tower 请求作用域解析类型化组件。
     ///
     /// # Errors
     ///
@@ -63,8 +63,8 @@ impl<T> TonicRequestExt for Request<T> {
     where
         C: Any + Send + Sync,
     {
-        self.vernal_context()?
-            .container()
+        let _context = self.vernal_context()?;
+        self.vernal_request_scope()?
             .resolve::<C>()
             .map_err(TonicRequestError::component_resolution)
     }

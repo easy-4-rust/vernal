@@ -6,12 +6,26 @@ use http::{Method, Request, Response, Version};
 use tokio::sync::{Mutex, Notify};
 use tokio_util::sync::CancellationToken;
 use tower::{Layer, ServiceExt, service_fn};
+use vernal_context::ApplicationContextBuilder;
 use vernal_http::{HttpBody, HttpRequestSnapshot};
+use vernal_ioc::Registry;
 use vernal_tower::{ContextPropagationError, ContextPropagationLayer, RequestScopeLayer};
 use vernal_web::{RequestContext, RouteMetadata, WebRequestScope};
 
 fn route(path: &'static str) -> RouteMetadata {
     RouteMetadata::new(path, "GET", path)
+}
+
+/// 创建供 Tower 请求作用域绑定的最小可用应用上下文。
+async fn ready_context() -> Arc<vernal_context::ApplicationContext> {
+    let context = Arc::new(
+        ApplicationContextBuilder::new(Registry::empty())
+            .build()
+            .expect("context build"),
+    );
+    context.refresh().await.expect("context refresh");
+    context.start().await.expect("context start");
+    context
 }
 
 #[tokio::test]
@@ -42,8 +56,8 @@ async fn propagation_builds_owned_context_snapshot_and_cancellation_extension() 
         assert!(!context.cancellation().is_cancelled());
         Ok::<_, Infallible>(Response::new(HttpBody::full("propagated")))
     });
-    let service =
-        RequestScopeLayer::new().layer(ContextPropagationLayer::from_extension().layer(service));
+    let service = RequestScopeLayer::new(ready_context().await)
+        .layer(ContextPropagationLayer::from_extension().layer(service));
     let mut request = Request::builder()
         .method(Method::POST)
         .uri("/orders/42?dry_run=true")
@@ -165,8 +179,8 @@ async fn dropping_request_future_cancels_the_propagated_context() {
             pending::<Result<Response<HttpBody>, Infallible>>().await
         }
     });
-    let service =
-        RequestScopeLayer::new().layer(ContextPropagationLayer::from_extension().layer(service));
+    let service = RequestScopeLayer::new(ready_context().await)
+        .layer(ContextPropagationLayer::from_extension().layer(service));
     let mut request = Request::new(());
     request.extensions_mut().insert(route("/pending"));
 

@@ -10,6 +10,8 @@ use std::{
 
 use tokio::sync::Mutex;
 use tokio_util::sync::CancellationToken;
+use vernal_context::ApplicationContextBuilder;
+use vernal_ioc::{ComponentDefinition, RegistryBuilder, ResolveError, ScopeKey};
 use vernal_web::{
     HandlerInvocation, ProblemDetails, ProblemKind, RequestContext, RouteMetadata, ScopeError,
     ScopeState, SecurityPrincipal, WebRequestScope,
@@ -27,25 +29,88 @@ async fn request_scope_caches_by_type_and_rejects_access_after_close() {
         .get_or_insert_with(move || {
             RequestScopedValue(first_counter.fetch_add(1, Ordering::Relaxed))
         })
-        .await
         .expect("first resolution");
     let second = scope
         .get_or_insert_with(|| RequestScopedValue(99))
-        .await
         .expect("cached resolution");
 
     assert!(Arc::ptr_eq(&first, &second));
     assert_eq!(first.0, 0);
     assert_eq!(constructions.load(Ordering::Relaxed), 1);
     scope.close().await.expect("scope close");
-    assert_eq!(scope.state().await, ScopeState::Closed);
+    assert_eq!(scope.state(), ScopeState::Closed);
     assert!(matches!(
-        scope.get_or_insert_with(|| RequestScopedValue(2)).await,
+        scope.get_or_insert_with(|| RequestScopedValue(2)),
         Err(ScopeError::InvalidState {
             state: ScopeState::Closed,
             ..
         })
     ));
+}
+
+#[tokio::test]
+async fn web_scope_resolves_ioc_request_components_and_isolates_sibling_requests() {
+    let constructions = Arc::new(AtomicUsize::new(0));
+    let factory_constructions = Arc::clone(&constructions);
+    let mut registry = RegistryBuilder::new();
+    registry
+        .register(ComponentDefinition::scoped::<
+            RequestScopedValue,
+            WebRequestScope,
+            _,
+        >(move |_| {
+            RequestScopedValue(factory_constructions.fetch_add(1, Ordering::SeqCst))
+        }))
+        .expect("request component registration");
+    let context = Arc::new(
+        ApplicationContextBuilder::new(registry.build().expect("registry build"))
+            .build()
+            .expect("context build"),
+    );
+    context.refresh().await.expect("context refresh");
+    context.start().await.expect("context start");
+
+    // 同一请求两次解析必须命中 IoC ScopeContext 的同一个 OnceLock；兄弟请求则
+    // 拥有彼此隔离的缓存和取消令牌。
+    let first_scope = Arc::new(WebRequestScope::from_application_context(Arc::clone(
+        &context,
+    )));
+    let first = first_scope.resolve::<RequestScopedValue>().expect("first");
+    let repeated = first_scope
+        .resolve::<RequestScopedValue>()
+        .expect("repeated");
+    assert!(Arc::ptr_eq(&first, &repeated));
+    assert_eq!(first.0, 0);
+    assert_eq!(first_scope.key(), ScopeKey::of::<WebRequestScope>());
+
+    let sibling_scope = Arc::new(WebRequestScope::from_application_context(Arc::clone(
+        &context,
+    )));
+    let sibling = sibling_scope
+        .resolve::<RequestScopedValue>()
+        .expect("sibling");
+    assert!(!Arc::ptr_eq(&first, &sibling));
+    assert_eq!(sibling.0, 1);
+    assert_eq!(constructions.load(Ordering::SeqCst), 2);
+
+    first_scope.close().await.expect("first scope close");
+    assert!(matches!(
+        first_scope.resolve::<RequestScopedValue>(),
+        Err(ResolveError::ScopeUnavailable { .. })
+    ));
+
+    // 应用关闭取消整个作用域树，但兄弟 Scope 仍由响应所有者显式 close，以确保
+    // 已登记的清理钩子不会因为父级取消而被跳过。
+    context.close().await.expect("application close");
+    assert!(sibling_scope.cancellation().is_cancelled());
+    assert!(matches!(
+        sibling_scope.resolve::<RequestScopedValue>(),
+        Err(ResolveError::ScopeUnavailable {
+            cancelled: true,
+            ..
+        })
+    ));
+    sibling_scope.close().await.expect("sibling scope close");
 }
 
 #[tokio::test]
@@ -60,7 +125,6 @@ async fn close_hooks_run_in_reverse_and_close_is_idempotent() {
             first_events.lock().await.push("first");
             Ok::<_, io::Error>(())
         })
-        .await
         .expect("first hook");
     let second_events = Arc::clone(&events);
     scope
@@ -68,7 +132,6 @@ async fn close_hooks_run_in_reverse_and_close_is_idempotent() {
             second_events.lock().await.push("second");
             Ok::<_, io::Error>(())
         })
-        .await
         .expect("second hook");
 
     scope.close().await.expect("first close");

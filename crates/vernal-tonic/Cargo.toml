@@ -22,6 +22,7 @@ http-body-util.workspace = true
 tokio.workspace = true
 tokio-util.workspace = true
 vernal-http = { path = "../vernal-http" }
+vernal-web-testkit = { path = "../vernal-web-testkit" }
 
 [lints]
 workspace = true

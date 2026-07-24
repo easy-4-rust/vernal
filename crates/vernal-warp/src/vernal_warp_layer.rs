@@ -13,16 +13,14 @@ use vernal_tower::{RequestScopeLayer, RequestScopeService, VernalLayer, VernalSe
 /// 泛型包装私有 Body，因此仍能保留 Frame、Trailer、背压与取消语义。
 #[derive(Clone)]
 pub struct VernalWarpLayer {
-    context_layer: VernalLayer,
+    context: Arc<ApplicationContext>,
 }
 
 impl VernalWarpLayer {
     /// 创建 Warp Service Layer。
     #[must_use]
     pub fn new(context: Arc<ApplicationContext>) -> Self {
-        Self {
-            context_layer: VernalLayer::new(context),
-        }
+        Self { context }
     }
 }
 
@@ -30,6 +28,7 @@ impl<S> Layer<S> for VernalWarpLayer {
     type Service = RequestScopeService<VernalService<S>>;
 
     fn layer(&self, inner: S) -> Self::Service {
-        RequestScopeLayer::new().layer(self.context_layer.layer(inner))
+        let context = Arc::clone(&self.context);
+        RequestScopeLayer::new(Arc::clone(&context)).layer(VernalLayer::new(context).layer(inner))
     }
 }

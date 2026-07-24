@@ -77,8 +77,33 @@ async fn custom_scope_requires_context_caches_once_and_isolates_siblings() {
         .expect("cached native scope object");
     assert!(Arc::ptr_eq(&native, &repeated_native));
 
+    // 框架原生对象与 IoC 组件即使 Rust 类型相同也必须位于不同命名空间；
+    // 否则 Adapter 写入请求对象可能劫持业务组件解析。
+    let native_counter = first_scope
+        .get_or_insert_with(|| ScopedCounter { sequence: 99 })
+        .expect("same-type native object");
+    assert_eq!(native_counter.sequence, 99);
+    assert_eq!(first.sequence, 0);
+    assert!(!Arc::ptr_eq(&native_counter, &first));
+
+    // 同时覆盖相反顺序：先创建原生对象，再解析 IoC 组件。
+    let native_first_scope = container.open_scope::<RequestScope>();
+    let native_first = native_first_scope
+        .get_or_insert_with(|| ScopedCounter { sequence: 100 })
+        .expect("native object before component");
+    let component_after_native = container
+        .resolve_in::<ScopedCounter>(&native_first_scope)
+        .expect("component after native object");
+    assert_eq!(native_first.sequence, 100);
+    assert_eq!(component_after_native.sequence, 2);
+    assert!(!Arc::ptr_eq(&native_first, &component_after_native));
+
     first_scope.close().await.expect("first scope close");
     second_scope.close().await.expect("second scope close");
+    native_first_scope
+        .close()
+        .await
+        .expect("native-first scope close");
 }
 
 #[test]

@@ -17,7 +17,7 @@ pub trait VernalSalvoDepotExt {
     /// 未安装 [`VernalSalvoHoop`](crate::VernalSalvoHoop) 时返回脱敏拒绝。
     fn vernal_context(&self) -> Result<Arc<ApplicationContext>, SalvoRejection>;
 
-    /// 从当前 Context 解析类型化 `IoC` 组件。
+    /// 从当前请求作用域解析类型化 `IoC` 组件。
     ///
     /// # Errors
     ///
@@ -52,8 +52,8 @@ impl VernalSalvoDepotExt for Depot {
     where
         T: Any + Send + Sync,
     {
-        self.vernal_context()?
-            .container()
+        let _context = self.vernal_context()?;
+        self.vernal_request_scope()?
             .resolve::<T>()
             .map_err(SalvoRejection::component_resolution)
     }

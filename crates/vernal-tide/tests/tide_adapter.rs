@@ -23,15 +23,17 @@ use vernal_context::{ApplicationContextBuilder, VernalApplicationBuilder};
 use vernal_http::{HttpRequestSnapshot, Method as SnapshotMethod};
 use vernal_ioc::{ComponentDefinition, RegistryBuilder};
 use vernal_tide::{VernalTideMiddleware, VernalTideRequestExt};
+use vernal_web::WebRequestScope;
+use vernal_web_testkit::WebAdapterContract;
 
 struct Greeting(&'static str);
 
 async fn ready_context() -> Arc<vernal_context::ApplicationContext> {
     let mut registry = RegistryBuilder::new();
     registry
-        .register(ComponentDefinition::singleton::<Greeting, _>(|_| {
-            Greeting("vernal-tide")
-        }))
+        .register(ComponentDefinition::scoped::<Greeting, WebRequestScope, _>(
+            |_| Greeting("vernal-tide"),
+        ))
         .expect("component registration");
     let registry = registry.build().expect("registry build");
     let context = Arc::new(
@@ -91,14 +93,12 @@ async fn middleware_exposes_context_component_and_scope_until_body_finishes() {
                 .vernal_component::<Greeting>()
                 .expect("Vernal component");
             let scope = request.vernal_request_scope().expect("request scope");
-            assert!(Arc::ptr_eq(&actual, &expected));
-            assert!(!scope.cancellation().is_cancelled());
+            WebAdapterContract::assert_request_binding(&expected, &actual, &scope, &greeting);
             scope
                 .on_close(move || async move {
                     handler_closed.notify_one();
                     Ok::<_, io::Error>(())
                 })
-                .await
                 .expect("scope close hook");
             Ok(greeting.0)
         }
@@ -164,7 +164,6 @@ async fn dropping_response_body_closes_request_scope() {
                     handler_closed.notify_one();
                     Ok::<_, io::Error>(())
                 })
-                .await
                 .expect("scope close hook");
             Ok("stream is not consumed")
         }

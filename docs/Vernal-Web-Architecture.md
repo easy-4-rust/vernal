@@ -5,15 +5,17 @@
 
 **Status:** Architecture draft  
 **Baseline:** 2026-07-24  
-**Scope:** `vernal-web`, `vernal-http`, Tower/Hyper foundations, and ten adapters
+**Scope:** `vernal-web`, `vernal-http`, `vernal-web-testkit`, Tower/Hyper
+foundations, and ten adapters
 
 [简体中文](./Vernal-Web-Architecture.zh_CN.md) | [Back to README](../README.md)
 
 ## 1. Current facts
 
-The workspace contains fourteen web-related crates:
+The workspace contains fifteen web-related crates:
 
 - two shared contracts: `vernal-web` and `vernal-http`;
+- one shared conformance utility: `vernal-web-testkit`;
 - two foundations: `vernal-tower` and `vernal-hyper`;
 - ten adapters: Axum, Actix Web, Rocket, Warp, Salvo, Poem, Ntex, Gotham,
   Tide, and Tonic.
@@ -21,7 +23,11 @@ The workspace contains fourteen web-related crates:
 The four shared/foundation crates now expose callable contracts:
 
 - `vernal-web` owns typed request context, request scope, invocation bridging,
-  security-principal carriage, and stable problem details;
+  security-principal carriage, and stable problem details. Its request scope
+  delegates directly to IoC `ScopeContext`, and business components may declare
+  `scope = WebRequestScope`;
+- `vernal-web-testkit` gives every adapter the same application-context,
+  scope-identity, and component-`Arc` binding assertions;
 - `vernal-http` uses standard `http`/`http-body` types, preserves frames and
   trailers, supports cancellation, and only buffers through an explicit limit;
 - `vernal-tower` injects `ApplicationContext` and closes request scopes after
@@ -120,7 +126,9 @@ This crate defines framework-neutral application contracts only:
 
 - `RequestContext`: request ID, route metadata, security principal, and
   extensions;
-- `WebRequestScope`: request component cache, close hooks, and release state;
+- `WebRequestScope`: the Web facade over IoC `ScopeContext`, including scoped
+  component resolution, native-object caching, close hooks, cancellation, and
+  release state;
 - `HandlerInvocation`: handler and method metadata plus resolved arguments;
 - `ProblemDetails`: stable application error categories;
 - `ContextCarrier`: context propagation across futures, streams, and tasks;
@@ -213,7 +221,8 @@ stateDiagram-v2
 Implemented reusable facilities for Axum, Tonic, and other Tower services:
 
 - `VernalLayer` injects the context handle;
-- `RequestScopeLayer` opens and closes request scopes across response body
+- `RequestScopeLayer` explicitly receives `Arc<ApplicationContext>`, derives
+  request scope from its Container, and closes it across response body
   completion, service error, cancellation, and dropped futures;
 - `ContextPropagationLayer` creates or preserves `RequestContext`, captures an
   owned HTTP metadata snapshot, and exposes the Scope-owned cancellation token;
@@ -457,7 +466,12 @@ Guardrails:
 
 ## 12. Cross-framework conformance
 
-Every adapter must reuse a future `vernal-web-testkit` contract suite:
+Every adapter must reuse the same `vernal-web-testkit` contract suite. Its
+first shared request-binding contract is implemented: all ten adapters pass
+their native `ApplicationContext`, `WebRequestScope`, and request-scoped
+component to `WebAdapterContract`, which resolves again within the same scope
+and compares `Arc` identity. This catches adapters that bypass request scope.
+The remaining matrix continues incrementally:
 
 | Contract | Required coverage |
 |:---|:---|
@@ -494,9 +508,9 @@ change updates the manifest, bilingual docs, and compatibility matrix together.
 
 ## 14. Definition of architecture done
 
-- [ ] Web and HTTP contracts are implemented and independently tested.
+- [x] Web and HTTP contracts are implemented and independently tested.
 - [ ] Tower/Hyper do not enter Core, IoC, AOP, or Context.
-- [ ] All ten adapters use native extension points and no global context.
+- [x] All ten adapters use native extension points and no global context.
 - [ ] Non-streaming, streaming, cancellation, and cleanup semantics have tests.
 - [ ] Tonic is classified as RPC, not an HTTP router.
 - [ ] Sa-Token-Rust is the sole retained security integration target.

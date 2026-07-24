@@ -21,6 +21,7 @@ warp.workspace = true
 [dev-dependencies]
 bytes.workspace = true
 http-body-util.workspace = true
+vernal-web-testkit = { path = "../vernal-web-testkit" }
 
 [lints]
 workspace = true

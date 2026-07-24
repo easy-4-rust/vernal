@@ -17,7 +17,7 @@ pub trait VernalTideRequestExt {
     /// 未安装 [`VernalTideMiddleware`](crate::VernalTideMiddleware) 时返回拒绝。
     fn vernal_context(&self) -> Result<Arc<ApplicationContext>, TideRejection>;
 
-    /// 从当前 Context 解析类型化 `IoC` 组件。
+    /// 从当前请求作用域解析类型化 `IoC` 组件。
     ///
     /// # Errors
     ///
@@ -52,8 +52,8 @@ impl<State> VernalTideRequestExt for Request<State> {
     where
         T: Any + Send + Sync,
     {
-        self.vernal_context()?
-            .container()
+        let _context = self.vernal_context()?;
+        self.vernal_request_scope()?
             .resolve::<T>()
             .map_err(TideRejection::component_resolution)
     }

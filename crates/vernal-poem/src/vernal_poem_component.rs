@@ -7,7 +7,7 @@ use vernal_context::ApplicationContext;
 
 use crate::PoemRejection;
 
-/// 从当前 `ApplicationContext` 解析类型化组件。
+/// 从当前 Poem 请求作用域解析类型化组件。
 pub struct VernalPoemComponent<T>(pub Arc<T>);
 
 impl<T> Deref for VernalPoemComponent<T> {
@@ -23,13 +23,17 @@ where
     T: Any + Send + Sync,
 {
     async fn from_request(request: &'a Request, _body: &mut RequestBody) -> Result<Self> {
-        let context = request
+        let _context = request
             .extensions()
             .get::<Arc<ApplicationContext>>()
             .cloned()
             .ok_or(PoemRejection::MissingContext)?;
-        context
-            .container()
+        let scope = request
+            .extensions()
+            .get::<Arc<vernal_web::WebRequestScope>>()
+            .cloned()
+            .ok_or(PoemRejection::MissingRequestScope)?;
+        scope
             .resolve::<T>()
             .map(Self)
             .map_err(|error| PoemRejection::component_resolution(error).into())

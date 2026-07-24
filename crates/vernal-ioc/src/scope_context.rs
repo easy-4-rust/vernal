@@ -1,7 +1,7 @@
 //! 自定义组件作用域上下文对象。
 
 use std::{
-    any::{Any, type_name},
+    any::{Any, TypeId, type_name},
     collections::HashMap,
     error::Error,
     future::Future,
@@ -25,7 +25,8 @@ type ScopedCell = OnceLock<Result<ErasedComponent, ResolveError>>;
 /// `ScopeContext` 由 [`crate::Container::open_scope`] 创建，不能跨 Container 混用。
 /// 子作用域通过 [`Self::child`] 组成显式父子链：子作用域组件可以解析父作用域
 /// 组件，父作用域组件不能反向捕获更短生命周期的子作用域组件。实例按完整
-/// [`ComponentKey`] 缓存，每个键在并发下最多执行一次工厂。
+/// [`ComponentKey`] 缓存，框架原生对象按 `TypeId` 存入独立命名空间；每个键
+/// 在并发下最多执行一次工厂。
 ///
 /// 关闭过程先禁止新解析并触发取消，再等待正在执行的同步工厂完成，随后逆序
 /// 执行全部异步关闭钩子并清空缓存。返回第一个关闭错误，但不会跳过后续钩子。
@@ -34,6 +35,7 @@ pub struct ScopeContext {
     key: ScopeKey,
     parent: Option<Arc<Self>>,
     components: Mutex<HashMap<ComponentKey, Arc<ScopedCell>>>,
+    native_objects: Mutex<HashMap<TypeId, Arc<ScopedCell>>>,
     close_hooks: Mutex<Vec<ScopeCloseHook>>,
     runtime: Mutex<ScopeRuntimeState>,
     close_operation: AsyncMutex<()>,
@@ -53,6 +55,7 @@ impl ScopeContext {
             key,
             parent: None,
             components: Mutex::new(HashMap::new()),
+            native_objects: Mutex::new(HashMap::new()),
             close_hooks: Mutex::new(Vec::new()),
             runtime: Mutex::new(ScopeRuntimeState::default()),
             close_operation: AsyncMutex::new(()),
@@ -76,6 +79,7 @@ impl ScopeContext {
             key: ScopeKey::of::<S>(),
             parent: Some(Arc::clone(self)),
             components: Mutex::new(HashMap::new()),
+            native_objects: Mutex::new(HashMap::new()),
             close_hooks: Mutex::new(Vec::new()),
             runtime: Mutex::new(ScopeRuntimeState::default()),
             close_operation: AsyncMutex::new(()),
@@ -113,8 +117,8 @@ impl ScopeContext {
 
     /// 在当前 Scope 中获取或惰性创建一个无限定符 Rust 原生对象。
     ///
-    /// 该便捷入口与 `IoC` 自定义作用域共享同一缓存，适合 Adapter 放入框架原生
-    /// 请求对象。需要限定符、依赖图或工厂错误时应注册
+    /// 该便捷入口与 `IoC` 组件共享作用域生命周期，但使用独立缓存命名空间，避免
+    /// 同类型原生对象覆盖已注册的业务组件。需要限定符、依赖图或工厂错误时应注册
     /// [`crate::ComponentDefinition::scoped`] 并通过 Container 解析。
     ///
     /// # Errors
@@ -125,10 +129,9 @@ impl ScopeContext {
         T: Any + Send + Sync,
         F: FnOnce() -> T,
     {
-        let key = ComponentKey::of::<T>();
         let _operation = self.begin_operation("get_or_insert_with")?;
         let component = self
-            .component_cell(&key)
+            .native_cell(TypeId::of::<T>())
             .get_or_init(|| Ok(Arc::new(factory()) as ErasedComponent))
             .clone()
             .map_err(|source| ScopeError::Resolution {
@@ -224,6 +227,10 @@ impl ScopeContext {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .clear();
+        self.native_objects
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .clear();
         self.runtime
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -273,6 +280,21 @@ impl ScopeContext {
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         components
             .entry(key.clone())
+            .or_insert_with(|| Arc::new(OnceLock::new()))
+            .clone()
+    }
+
+    /// 返回指定 Rust 原生类型的独立并发一次初始化单元。
+    ///
+    /// 原生对象不进入 Registry 依赖图，因此只用 `TypeId` 标识，并刻意与
+    /// `ComponentKey` 组件缓存隔离；两类对象仍由同一关闭状态和取消令牌约束。
+    fn native_cell(&self, type_id: TypeId) -> Arc<ScopedCell> {
+        let mut native_objects = self
+            .native_objects
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        native_objects
+            .entry(type_id)
             .or_insert_with(|| Arc::new(OnceLock::new()))
             .clone()
     }

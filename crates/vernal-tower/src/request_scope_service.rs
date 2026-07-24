@@ -8,8 +8,8 @@ use std::{
 };
 
 use http::{Request, Response};
-use tokio_util::sync::CancellationToken;
 use tower::Service;
+use vernal_context::ApplicationContext;
 use vernal_web::WebRequestScope;
 
 use crate::{ScopedBody, TowerError};
@@ -18,12 +18,13 @@ use crate::{ScopedBody, TowerError};
 #[derive(Clone)]
 pub struct RequestScopeService<S> {
     inner: S,
+    context: Arc<ApplicationContext>,
 }
 
 impl<S> RequestScopeService<S> {
     /// 包装下游 Service。
-    pub(crate) fn new(inner: S) -> Self {
-        Self { inner }
+    pub(crate) fn new(inner: S, context: Arc<ApplicationContext>) -> Self {
+        Self { inner, context }
     }
 }
 
@@ -45,8 +46,15 @@ where
     }
 
     fn call(&mut self, mut request: Request<RequestBody>) -> Self::Future {
-        let cancellation = CancellationToken::new();
-        let scope = Arc::new(WebRequestScope::new(cancellation.clone()));
+        // Scope 直接从应用 Context 派生，因而请求组件与 Singleton/Transient
+        // 共用同一个 Container 和依赖图，不再维护 Web 层私有组件缓存。
+        let scope = Arc::new(WebRequestScope::from_application_context(Arc::clone(
+            &self.context,
+        )));
+        let cancellation = scope.cancellation().clone();
+        // Scope Layer 已显式持有 Context，因此同时写入权威实例。调用方仍可单独使用
+        // VernalLayer，但不能因 Layer 顺序不同让组件提取器看到另一个 Container。
+        request.extensions_mut().insert(Arc::clone(&self.context));
         request.extensions_mut().insert(Arc::clone(&scope));
 
         // 清理 task 在请求开始时建立；Future/Body Drop 只发取消信号。

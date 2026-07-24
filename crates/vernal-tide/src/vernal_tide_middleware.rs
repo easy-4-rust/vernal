@@ -105,8 +105,10 @@ where
 {
     async fn handle(&self, mut request: Request<State>, next: TideNext<'_, State>) -> tide::Result {
         request.set_ext(Arc::clone(&self.context));
-        let cancellation = CancellationToken::new();
-        let scope = Arc::new(WebRequestScope::new(cancellation.clone()));
+        let scope = Arc::new(WebRequestScope::from_application_context(Arc::clone(
+            &self.context,
+        )));
+        let cancellation = scope.cancellation().clone();
         request.set_ext(Arc::clone(&scope));
 
         // 请求 Future 或 Body 被丢弃时，DropGuard 发出同步取消信号；

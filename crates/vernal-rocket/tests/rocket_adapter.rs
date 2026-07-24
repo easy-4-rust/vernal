@@ -28,6 +28,8 @@ use vernal_rocket::{
     VernalRocketComponent, VernalRocketContext, VernalRocketFairing, VernalRocketRequestContext,
     VernalRocketRequestScope, VernalRocketRoutesExt,
 };
+use vernal_web::WebRequestScope;
+use vernal_web_testkit::WebAdapterContract;
 
 struct Greeting(&'static str);
 
@@ -36,34 +38,37 @@ struct ScopeClosed(Arc<Notify>);
 static PROTECTED_CALLED: AtomicBool = AtomicBool::new(false);
 
 #[get("/hello")]
-async fn hello(
+fn hello(
     context: VernalRocketContext,
     greeting: VernalRocketComponent<Greeting>,
     scope: VernalRocketRequestScope,
 ) -> &'static str {
-    assert!(context.0.container().resolve::<Greeting>().is_ok());
+    let VernalRocketContext(context) = context;
+    let VernalRocketComponent(greeting) = greeting;
+    let VernalRocketRequestScope(scope) = scope;
+    WebAdapterContract::assert_request_binding(&context, &context, &scope, &greeting);
     let closed = context
-        .0
         .container()
         .resolve::<ScopeClosed>()
         .expect("scope notifier");
     scope
-        .0
         .on_close(move || async move {
             closed.0.notify_one();
             Ok::<_, std::io::Error>(())
         })
-        .await
         .expect("scope close hook");
-    greeting.0.0
+    greeting.0
 }
 
-async fn ready_context(closed: Arc<Notify>) -> Arc<vernal_context::ApplicationContext> {
+async fn ready_context_with_greeting(
+    closed: Arc<Notify>,
+    greeting: &'static str,
+) -> Arc<vernal_context::ApplicationContext> {
     let mut registry = RegistryBuilder::new();
     registry
-        .register(ComponentDefinition::singleton::<Greeting, _>(|_| {
-            Greeting("vernal-rocket")
-        }))
+        .register(ComponentDefinition::scoped::<Greeting, WebRequestScope, _>(
+            move |_| Greeting(greeting),
+        ))
         .expect("greeting registration");
     registry
         .register(ComponentDefinition::singleton::<ScopeClosed, _>(
@@ -79,6 +84,10 @@ async fn ready_context(closed: Arc<Notify>) -> Arc<vernal_context::ApplicationCo
     context.refresh().await.expect("context refresh");
     context.start().await.expect("context start");
     context
+}
+
+async fn ready_context(closed: Arc<Notify>) -> Arc<vernal_context::ApplicationContext> {
+    ready_context_with_greeting(closed, "vernal-rocket").await
 }
 
 async fn ready_aop_context(
@@ -181,6 +190,31 @@ async fn fairing_exposes_context_component_and_scope_until_body_finishes() {
     timeout(Duration::from_secs(1), closed.notified())
         .await
         .expect("scope close");
+}
+
+#[rocket::async_test]
+async fn existing_managed_context_is_the_authority_for_request_scope() {
+    let closed = Arc::new(Notify::new());
+    let managed_context = ready_context_with_greeting(Arc::clone(&closed), "managed-context").await;
+    let fairing_context =
+        ready_context_with_greeting(Arc::new(Notify::new()), "fairing-context").await;
+    let rocket = rocket::build()
+        .manage(Arc::clone(&managed_context))
+        .attach(VernalRocketFairing::new(fairing_context))
+        .mount("/", routes![hello]);
+    let client = Client::tracked(rocket).await.expect("Rocket client");
+
+    // Handler 内的共享契约同时检查 Managed Context、Scope Owner 与请求组件
+    // 的 Arc 身份，因此这里不仅验证字符串值，也验证三者使用同一组件图。
+    let response = client.get("/hello").dispatch().await;
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(
+        response.into_string().await.as_deref(),
+        Some("managed-context")
+    );
+    timeout(Duration::from_secs(1), closed.notified())
+        .await
+        .expect("managed context request scope close");
 }
 
 #[rocket::async_test]
