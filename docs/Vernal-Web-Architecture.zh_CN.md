@@ -310,7 +310,8 @@ Sa-Token-Rust。
 - **Hutool-Rust**：其 HTTP 客户端、序列化、缓存或其他工具可以注册为组件；
   出站客户端拦截与服务端 Adapter 是两个独立问题。
 - **Ddd4r**：由 `ddd4r-vernal` Starter/Bridge 绑定领域服务、应用服务、Repository
-  Port 和事务/审计拦截器。
+  Port 和事务/审计拦截器。当前 Bridge 已直接注册原生 Registry/CommandBus，
+  并以隔离快照进入 Ddd4r 的 Tokio task-local `ContextScope`。
 - 三方依赖方向始终是消费方指向 Vernal，Vernal 内核不感知具体业务生态。
 
 ## 11. 错误、安全与可观测性
@@ -377,7 +378,7 @@ Guardrails：
 - [ ] 非流式、流式、取消和 Scope 清理语义均被合同测试覆盖；
 - [ ] Tonic 被明确作为 RPC，而不是 HTTP Router；
 - [ ] Sa-Token-Rust 是唯一保留的安全集成目标；
-- [ ] Hutool-Rust、Sa-Token-Rust、Ddd4r 品牌和边界在中英文文档中一致；
+- [x] Hutool-Rust、Sa-Token-Rust、Ddd4r 品牌和边界在中英文文档中一致；
 - [ ] 骨架、可运行、合同通过、生产就绪四种状态从不混用。
 
 ---

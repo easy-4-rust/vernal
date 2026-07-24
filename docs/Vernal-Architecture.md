@@ -616,20 +616,38 @@ code that Vernal silently vendors.
 
 ### 12.3 Ddd4r
 
-Ddd4r should own a `ddd4r-vernal` bridge or starter. Vernal composes services
-and cross-cutting contracts; Ddd4r retains aggregates, domain events, CQRS,
-repositories, outbox, and transaction semantics.
+Ddd4r now owns an unpublished, consumer-side `ddd4r-vernal` bridge pinned to a
+verified Vernal Git revision. It atomically installs the caller's native
+`Registry` and `DefaultCommandBus` while preserving their exact `Arc`
+identities, producing an explicit
+`Registry + DefaultCommandBus -> VernalDdd4rBridge` graph.
+
+At each asynchronous entry point, the bridge creates an isolated shallow
+registry snapshot and enters Ddd4r's own Tokio task-local `ContextScope`.
+Request identities, tenants, transactions, and repository overrides remain
+visible across `.await` without leaking after scope exit. Vernal composes
+services and cross-cutting contracts; Ddd4r retains aggregates, domain events,
+CQRS, repositories, outbox, and transaction semantics, and `ddd4r-core` does
+not depend on Vernal.
 
 ```mermaid
 flowchart LR
-    Starter["ddd4r-vernal starter"] --> VC["Vernal Context"]
-    Starter --> Domain["Ddd4r domain/application"]
-    Starter --> Security["Sa-Token-Rust bridge"]
-    Starter --> Web["Ddd4r web adapter"]
-    VC --> Domain
-    Web --> VC
-    Security --> VC
+    Components["Ddd4rComponents"] --> VC["Vernal Context"]
+    VC --> Registry["Ddd4r Registry"]
+    VC --> Bus["DefaultCommandBus"]
+    Registry --> Bridge["VernalDdd4rBridge"]
+    Bus --> Bridge
+    Bridge -->|"snapshot per async entry"| Scope["Tokio ContextScope"]
+    Scope --> Domain["Repository / Event / Runtime facades"]
 ```
+
+A real Tokio test in an isolated dependency graph proves native `Arc` identity,
+task-local resolution after `yield_now().await`, request-service cleanup after
+scope exit, and atomic duplicate-bundle rejection. Clippy with `-D warnings`
+and Rustdoc also pass for the target crate. Full Ddd4r workspace verification
+remains blocked by a pre-existing, currently unavailable `rbatis-r2dbc` Git
+revision; this is neither reported as a bridge failure nor as a passing
+workspace gate.
 
 ## 13. Security, privacy, and global state
 
@@ -736,12 +754,12 @@ No phase is complete merely because a crate exists or `cargo check` is green.
 ## 18. Definition of architecture done
 
 - [x] IoC and AOP can be depended on, built, and used independently.
-- [ ] Tokio usage and feature budgets are explicit; Context does not leak
+- [x] Tokio usage and feature budgets are explicit; Context does not leak
   configuration formats or concrete web/ORM types into generic kernels.
 - [ ] Graph, interception, and lifecycle include success/failure/rollback tests.
 - [ ] No pointer-address chain map, normal-flow panic, or hidden cross-context state.
 - [ ] Web adapters pass one conformance suite while preserving native semantics.
-- [ ] Hutool-Rust, Sa-Token-Rust, and Ddd4r boundaries are proven by consumer examples.
+- [x] Hutool-Rust, Sa-Token-Rust, and Ddd4r boundaries are proven by consumer examples.
 - [ ] English and Chinese docs share commands, crate names, status, and diagrams.
 - [ ] SemVer, MSRV, security policy, and registry verification precede release.
 

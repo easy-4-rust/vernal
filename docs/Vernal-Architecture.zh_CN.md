@@ -626,19 +626,33 @@ Vernal Adapter 矩阵的输入证据，不表示 Vernal 会静默复制或内嵌
 
 ### 12.3 Ddd4r
 
-推荐由 Ddd4r 提供 `ddd4r-vernal` Bridge 或 Starter。Vernal 只负责装配与横切合同；
-聚合、领域事件、CQRS、Repository、Outbox 和事务边界继续由 Ddd4r 定义。
+Ddd4r 仓库现已提供消费方持有、暂不发布的 `ddd4r-vernal` Bridge。它固定到
+已验证的 Vernal Git Revision，将调用方创建的原生 `Registry` 和
+`DefaultCommandBus` 以原始 `Arc` 身份原子装入 Vernal，并生成显式
+`Registry + DefaultCommandBus -> VernalDdd4rBridge` 依赖关系。
+
+Bridge 在每个异步入口创建应用 Registry 的隔离浅快照，再复用 Ddd4r 自己的
+Tokio task-local `ContextScope`。请求级身份、租户、事务和 Repository 覆盖可写入
+该快照，跨 `.await` 保持可见，作用域结束后不泄漏。Vernal 只负责装配与横切合同；
+聚合、领域事件、CQRS、Repository、Outbox 和事务边界继续由 Ddd4r 定义，
+`ddd4r-core` 不反向依赖 Vernal。
 
 ```mermaid
 flowchart LR
-    Starter["ddd4r-vernal starter"] --> VC["Vernal Context"]
-    Starter --> Domain["Ddd4r domain/application services"]
-    Starter --> Security["Sa-Token-Rust bridge"]
-    Starter --> Web["Ddd4r web adapter"]
-    VC --> Domain
-    Web --> VC
-    Security --> VC
+    Components["Ddd4rComponents"] --> VC["Vernal Context"]
+    VC --> Registry["Ddd4r Registry"]
+    VC --> Bus["DefaultCommandBus"]
+    Registry --> Bridge["VernalDdd4rBridge"]
+    Bus --> Bridge
+    Bridge -->|"snapshot per async entry"| Scope["Tokio ContextScope"]
+    Scope --> Domain["Repository / Event / Runtime facades"]
 ```
+
+独立依赖图的真实 Tokio 测试已证明：两个原生对象保留 `Arc` 身份，应用服务跨
+`yield_now().await` 可从 task-local Context 解析，请求级服务在作用域退出后不可见，
+重复组件包被原子拒绝；目标 crate 的 Clippy `-D warnings` 和 Rustdoc 同时通过。
+Ddd4r 全 Workspace 验证仍被既有、当前不可获取的 `rbatis-r2dbc` Git Revision
+阻断，这一外部依赖问题不等同于 Bridge 编译失败，也不算全仓门禁通过。
 
 ## 13. 安全、隐私与全局状态
 
@@ -744,12 +758,12 @@ Phase 3 内核另有 9 个合同测试，覆盖依赖顺序启动、逆序关闭
 ## 18. 架构完成定义
 
 - [x] IoC 与 AOP 能分别独立依赖、构建和使用；
-- [ ] Tokio 使用范围和 feature 预算明确，Context 不向通用内核泄漏配置格式或
+- [x] Tokio 使用范围和 feature 预算明确，Context 不向通用内核泄漏配置格式或
   具体 Web/ORM 类型；
 - [ ] 组件图、拦截链和生命周期都有成功、失败与回滚测试；
 - [ ] 无指针地址全局链、无正常控制流 panic、无隐式跨 Context 状态；
 - [ ] Web Adapter 通过统一合同套件，并保留各框架原生语义；
-- [ ] Hutool-Rust、Sa-Token-Rust 和 Ddd4r 的责任边界由消费方示例证明；
+- [x] Hutool-Rust、Sa-Token-Rust 和 Ddd4r 的责任边界由消费方示例证明；
 - [ ] 中英文 README、架构、命令、crate 名和状态保持一致；
 - [ ] 发布前补齐 SemVer、MSRV、Security Policy 和 crates.io 验证。
 

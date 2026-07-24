@@ -340,6 +340,8 @@ increment. Vernal never depends on Sa-Token-Rust.
   server adapters.
 - **Ddd4r:** a Ddd4r-owned `ddd4r-vernal` starter binds domain services,
   application services, repository ports, and transaction/audit interceptors.
+  The current bridge registers native Registry/CommandBus objects and enters
+  Ddd4r's Tokio task-local `ContextScope` with an isolated snapshot.
 - All ecosystem dependencies point from the consumer to Vernal.
 
 ## 11. Errors, security, and observability
@@ -406,7 +408,7 @@ change updates the manifest, bilingual docs, and compatibility matrix together.
 - [ ] Non-streaming, streaming, cancellation, and cleanup semantics have tests.
 - [ ] Tonic is classified as RPC, not an HTTP router.
 - [ ] Sa-Token-Rust is the sole retained security integration target.
-- [ ] Hutool-Rust, Sa-Token-Rust, and Ddd4r names and boundaries match in both languages.
+- [x] Hutool-Rust, Sa-Token-Rust, and Ddd4r names and boundaries match in both languages.
 - [ ] Skeleton, runnable, contract-passing, and production-ready are never conflated.
 
 ---

@@ -393,8 +393,10 @@ flowchart LR
   request-level `SaTokenContext` across Tokio futures. `SaTokenComponents`
   atomically installs the caller's exact `Arc<SaTokenManager>` and its bridge
   into a validated Vernal dependency graph.
-- **Ddd4r** may use Vernal to compose domain services, application services,
-  policies, and adapters while retaining its own DDD/CQRS semantics.
+- **Ddd4r** uses its consumer-owned `ddd4r-vernal` bridge to register the
+  native `Registry` and `DefaultCommandBus`, then enters Ddd4r's own Tokio
+  task-local `ContextScope` with an isolated snapshot. Aggregates, events,
+  CQRS, repositories, outbox, and transaction semantics remain Ddd4r-owned.
 - **Web frameworks** retain ownership of routing, request/response types,
   transport limits, and server lifecycle.
 
@@ -439,7 +441,11 @@ Phase 5 is in progress: Sa-Token-Rust owns a tested and remotely integrated
 and Hutool-Rust locally owns a tested `hutool-vernal` HTTP component bridge;
 both pin verified Vernal Git revisions. The Hutool-Rust checkout is currently
 under a separate history-rewrite/refactor stream, so its clean remote
-integration is still pending. Ddd4r remains a target.
+integration is still pending. Ddd4r now locally owns `ddd4r-vernal`; its real
+Tokio test, Clippy gate, and documentation build pass in an isolated dependency
+graph. The full Ddd4r workspace gate remains blocked by its pre-existing,
+currently unavailable `rbatis-r2dbc` Git revision and is not reported as
+passing.
 
 Phase 1 was completed with tests for 1,000-node deterministic planning,
 structured graph diagnostics, concurrent singleton construction, container

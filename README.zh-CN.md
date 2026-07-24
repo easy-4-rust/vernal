@@ -254,8 +254,9 @@ flowchart LR
   授权语义；Vernal 只提供组件生命周期与拦截编排，不重复建设安全内核。由
   Sa-Token-Rust 持有的 `sa-token-vernal` 已实现 `HttpRequestSnapshot` 适配、
   `SecurityPrincipal` 投影及跨 Tokio Future 的请求级 `SaTokenContext`。
-- **Ddd4r** 可以使用 Vernal 装配领域服务、应用服务、策略和适配器，同时保留
-  自己的 DDD/CQRS 语义。
+- **Ddd4r** 通过消费方持有的 `ddd4r-vernal` 直接注册原生 `Registry` 和
+  `DefaultCommandBus`，并以隔离快照进入 Ddd4r 自己的 Tokio task-local
+  `ContextScope`；聚合、事件、CQRS、Repository、Outbox 和事务语义仍归 Ddd4r。
 - **Web 框架** 继续拥有路由、Request/Response 类型、传输限制和服务器生命周期。
 
 ## 8. 本地开发
@@ -294,8 +295,10 @@ crates.io 安装命令，也没有稳定 API 承诺。
 | Phase 5 | Hutool-Rust、Sa-Token-Rust 和 Ddd4r 桥接 | 由消费方拥有的集成示例 |
 | Phase 6 | Preview 发布 | MSRV、SemVer、安全、docs.rs 和打包门禁 |
 
-Phase 5 正在进行：Sa-Token-Rust 已持有经过测试、固定到 Vernal 已验证 Git
-Revision 的 `sa-token-vernal`；Hutool-Rust 与 Ddd4r Bridge 仍待实现。
+Phase 5 正在进行：Sa-Token-Rust 已远端集成 `sa-token-vernal`；Hutool-Rust
+本地持有经过测试的 `hutool-vernal`；Ddd4r 本地已实现 `ddd4r-vernal`，其真实
+Tokio 测试、Clippy 和文档构建已在独立依赖图通过。Ddd4r 全 Workspace 门禁仍被
+既有、当前不可获取的 `rbatis-r2dbc` Git Revision 阻断，不能据此宣称全仓通过。
 
 Phase 1 已通过 1,000 节点确定性规划、结构化图诊断、并发 Singleton、
 双 Container 隔离、Transient、qualifier 和隐藏依赖拒绝测试。
