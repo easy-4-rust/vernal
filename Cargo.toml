@@ -16,6 +16,7 @@ actix-web = { version = "=4.11.0", default-features = false, features = ["macros
 axum = { version = "0.8.9", default-features = false, features = ["http1", "json", "tokio"] }
 bytes = "1.11.1"
 futures-core = "0.3.32"
+futures-lite = "2.6.1"
 futures-util = "0.3.32"
 gotham = { version = "=0.8.0", default-features = false }
 http = "1.4.0"
@@ -32,6 +33,7 @@ tokio = { version = "1.48.0", features = ["io-util", "macros", "net", "rt-multi-
 tokio-util = { version = "0.7.16", features = ["rt"] }
 tonic = { version = "0.12.3", default-features = false }
 tower = { version = "0.5.3", features = ["util"] }
+tide = { version = "=0.17.0-beta.1", default-features = false }
 warp = { version = "=0.4.3", default-features = false }
 
 [workspace.lints.rust]
