@@ -8,7 +8,14 @@ description = "Poem integration for Vernal."
 publish = false
 
 [dependencies]
+bytes.workspace = true
+futures-core.workspace = true
+poem.workspace = true
+tokio.workspace = true
+tokio-util.workspace = true
+vernal-context = { path = "../vernal-context" }
 vernal-http = { path = "../vernal-http" }
+vernal-ioc = { path = "../vernal-ioc" }
 vernal-web = { path = "../vernal-web" }
 
 [lints]

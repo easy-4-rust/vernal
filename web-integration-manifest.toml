@@ -93,7 +93,7 @@ observed_version = "3.1.12"
 category = "http-framework"
 protocol = "http"
 source_evidence = ["Sa-Token-Rust"]
-status = "skeleton"
+status = "phase-5-adapter"
 
 [[integrations]]
 priority = 7

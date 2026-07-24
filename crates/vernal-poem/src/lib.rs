@@ -1,13 +1,28 @@
 #![forbid(unsafe_code)]
-#![doc = "Poem integration for Vernal."]
+#![doc = "Vernal 的 Poem 3 原生集成。"]
 
+mod poem_rejection;
+mod poem_scoped_stream;
+mod vernal_poem_component;
+mod vernal_poem_context;
+mod vernal_poem_endpoint;
+mod vernal_poem_middleware;
+mod vernal_poem_request_scope;
+
+pub use poem_rejection::PoemRejection;
+pub use poem_scoped_stream::PoemScopedStream;
+pub use vernal_poem_component::VernalPoemComponent;
+pub use vernal_poem_context::VernalPoemContext;
+pub use vernal_poem_endpoint::VernalPoemEndpoint;
+pub use vernal_poem_middleware::VernalPoemMiddleware;
+pub use vernal_poem_request_scope::VernalPoemRequestScope;
 use vernal_web::{IntegrationDescriptor, IntegrationRole, TransportKind};
 
-/// Design-stage descriptor for the Poem adapter.
+/// Poem 适配器的静态集成描述。
 pub const INTEGRATION: IntegrationDescriptor = IntegrationDescriptor::new(
     "vernal-poem",
     "poem",
     IntegrationRole::HttpFramework,
     TransportKind::Http,
-    "skeleton",
+    "phase-5-adapter",
 );

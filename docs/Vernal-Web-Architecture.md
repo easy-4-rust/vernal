@@ -33,9 +33,11 @@ Axum depends on Axum 0.8 and implements native Router assembly plus typed
 Context, component, and request-scope extractors. Actix Web uses the
 MSRV-compatible 4.11/actix-http 3.11 line and implements native
 Transform/Service middleware, App Data/Extension extractors, and body-bound
+Scope cleanup. Poem uses the MSRV-aligned 3.1.12 release and implements native
+Middleware/Endpoint composition, request extension extractors, and body-bound
 Scope cleanup. Tonic uses the MSRV-compatible 0.12 line and implements a
 Context interceptor, typed Request extensions, `GrpcMethod` routing metadata,
-stable `Status` mapping, and Tower composition. The other seven application
+stable `Status` mapping, and Tower composition. The other six application
 adapters remain descriptors.
 
 The versioned selection is recorded in
@@ -228,7 +230,7 @@ This crate implements HTTP transport concerns only:
 | 3 | Rocket | `vernal-rocket` | HTTP | Fairing, Request Guard, Managed State, Responder | Skeleton |
 | 4 | Warp | `vernal-warp` | HTTP | Filter, Rejection, Reply | Skeleton |
 | 5 | Salvo | `vernal-salvo` | HTTP | Handler, Hoop, Depot, Writer | Skeleton |
-| 6 | Poem | `vernal-poem` | HTTP | Middleware, Endpoint, Data, IntoResponse | Skeleton |
+| 6 | Poem | `vernal-poem` | HTTP | Middleware, Endpoint, Data, IntoResponse | Phase 5 adapter |
 | 7 | Ntex | `vernal-ntex` | HTTP | Service/Middleware, App State, Extractor | Skeleton |
 | 8 | Gotham | `vernal-gotham` | HTTP | State Middleware, Pipeline, Handler | Skeleton |
 | 9 | Tide | `vernal-tide` | HTTP | Middleware, Request State, Response | Skeleton |
@@ -246,7 +248,12 @@ This crate implements HTTP transport concerns only:
   rejection rather than panic.
 - **Salvo:** hoops wrap the invocation, the depot carries request context, and
   handlers retain native signatures.
-- **Poem:** middleware wraps endpoints, while data/extensions carry context.
+- **Poem:** native middleware wraps endpoints and request extensions carry
+  context, components, and scope. The response byte stream preserves errors
+  and backpressure and closes scope on completion or cancellation. Poem 3's
+  public `into_bytes_stream()` does not expose trailers, so this adapter cannot
+  promise trailer fidelity; use `vernal-hyper` when frame/trailer fidelity is
+  required.
 - **Ntex:** preserve service-factory and worker lifecycles; do not silently
   share non-`Send` state across workers.
 - **Gotham:** state carries request context and middleware pipelines bound scope.

@@ -55,9 +55,11 @@
 - `[Confirmed]` `vernal-axum` provides native Router assembly and typed
   Context, component, and request-scope extractors; `vernal-actix-web` provides
   native Transform/Service middleware and body-bound Scope cleanup;
-  `vernal-tonic` provides a Context interceptor, typed Request extensions,
-  `Status` mapping, and Tower composition.
-- `[Skeleton]` Macros and the remaining seven framework adapters still validate
+  `vernal-poem` provides native Middleware/Endpoint composition, typed
+  extractors, and body-bound Scope cleanup; `vernal-tonic` provides a Context
+  interceptor, typed Request extensions, `Status` mapping, and Tower
+  composition.
+- `[Skeleton]` Macros and the remaining six framework adapters still validate
   crate boundaries only.
 - `[Target]` Phase 2 macros, Context AOP-plan aggregation, framework adapters,
   and later production gates remain.
@@ -467,9 +469,10 @@ The workspace has fourteen web-related crates: `vernal-web`, `vernal-http`,
 Tower/Hyper, and ten adapters. The four foundations now provide callable
 request-scope, HTTP frame/trailer, cancellation, Tower lifecycle, and Hyper
 transport behavior. Axum adds native Router assembly and typed extractors;
-Actix Web adds App Data/Extensions and native body-aware middleware; Tonic adds
-native Request/Metadata/Status and Tower integration. The remaining seven
-upstream framework adapters are compile-checked descriptors.
+Actix Web adds App Data/Extensions and native body-aware middleware; Poem adds
+Middleware/Endpoint, request-extension extractors, and body lifecycle
+integration; Tonic adds native Request/Metadata/Status and Tower integration.
+The remaining six upstream framework adapters are compile-checked descriptors.
 The detailed contract is
 [Vernal Web Architecture](./Vernal-Web-Architecture.md).
 

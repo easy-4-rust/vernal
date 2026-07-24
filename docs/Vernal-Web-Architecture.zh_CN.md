@@ -32,9 +32,10 @@
 Axum 已引入 Axum 0.8，实现原生 Router 装配与类型化 Context、组件、请求 Scope
 提取器；Actix Web 采用兼容 MSRV 的 4.11/actix-http 3.11 版本线，实现原生
 Transform/Service Middleware、App Data/Extension 提取器和 Body 绑定 Scope
-释放；Tonic 采用兼容 MSRV 的 0.12 版本线，实现 Context Interceptor、类型化
-Request 扩展、`GrpcMethod` 路由元数据、稳定 `Status` 映射和 Tower 组合。其余
-七个应用 Adapter 仍是描述符。
+释放；Poem 采用与 MSRV 一致的 3.1.12 版本，实现原生 Middleware/Endpoint、
+Request Extension 提取器和 Body 绑定 Scope 释放；Tonic 采用兼容 MSRV 的
+0.12 版本线，实现 Context Interceptor、类型化 Request 扩展、`GrpcMethod`
+路由元数据、稳定 `Status` 映射和 Tower 组合。其余六个应用 Adapter 仍是描述符。
 
 版本化选择清单由
 [`web-integration-manifest.toml`](../web-integration-manifest.toml) 维护。
@@ -215,7 +216,7 @@ Trace -> Context -> RequestScope -> Security/AOP -> Handler -> ErrorMapping
 | 3 | Rocket | `vernal-rocket` | HTTP | Fairing、Request Guard、Managed State、Responder | 骨架 |
 | 4 | Warp | `vernal-warp` | HTTP | Filter、Rejection、Reply | 骨架 |
 | 5 | Salvo | `vernal-salvo` | HTTP | Handler、Hoop、Depot、Writer | 骨架 |
-| 6 | Poem | `vernal-poem` | HTTP | Middleware、Endpoint、Data、IntoResponse | 骨架 |
+| 6 | Poem | `vernal-poem` | HTTP | Middleware、Endpoint、Data、IntoResponse | Phase 5 适配已实现 |
 | 7 | Ntex | `vernal-ntex` | HTTP | Service/Middleware、App State、Extractor | 骨架 |
 | 8 | Gotham | `vernal-gotham` | HTTP | State Middleware、Pipeline、Handler | 骨架 |
 | 9 | Tide | `vernal-tide` | HTTP | Middleware、Request State、Response | 骨架 |
@@ -231,7 +232,10 @@ Trace -> Context -> RequestScope -> Security/AOP -> Handler -> ErrorMapping
   Fairing 只处理生命周期或全局请求流程。
 - **Warp**：用组合 Filter 注入 Context；策略拒绝映射为明确 Rejection，不能 panic。
 - **Salvo**：Hoop 包裹调用链，Depot 携带请求上下文；Handler 保持 Salvo 原生签名。
-- **Poem**：Middleware 包裹 Endpoint，Data/Extension 传递 Context。
+- **Poem**：原生 Middleware 包裹 Endpoint，Request Extension 传递 Context、
+  组件与 Scope；响应字节流保持错误和背压，Body 完成或取消后关闭 Scope。
+  Poem 3 公共 `into_bytes_stream()` 不暴露 Trailer，因此该适配器不能承诺
+  Trailer 保真；需要 Frame/Trailer 保真的场景使用 `vernal-hyper`。
 - **Ntex**：尊重 Service Factory 与 Worker 生命周期，禁止跨 Worker 隐式共享
   非 `Send` 状态。
 - **Gotham**：通过 State 传递请求上下文，Middleware Pipeline 负责 Scope 边界。
