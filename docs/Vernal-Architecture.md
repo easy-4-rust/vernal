@@ -656,6 +656,36 @@ register → freeze → validate graph and pointcuts
 Failures record completed steps and roll back only successful components.
 `close()` is idempotent.
 
+### Application close ownership
+
+`ApplicationContext::close()` starts and observes shutdown, while one
+Context-local Tokio coordinator owns the component stack and the actual
+release flow. Cancelling a caller Future therefore does not cancel resource
+release. Concurrent and later callers subscribe to the same cloneable result
+and never execute `stop` twice.
+
+```mermaid
+sequenceDiagram
+    participant Caller as "First close caller"
+    participant Coordinator as "Close coordinator"
+    participant Tasks as "ManagedTaskSupervisor"
+    participant Components as "Reverse component stack"
+    participant Later as "Later caller"
+    Caller->>Coordinator: Start unique Tokio close task
+    Caller--xCaller: Waiting Future is cancelled
+    Coordinator->>Tasks: Cancel + drain / abort
+    Coordinator->>Components: Run isolated stop hooks
+    Note over Coordinator,Components: A panicking hook becomes an error; later hooks continue
+    Coordinator->>Coordinator: Publish Closed and shared result
+    Later->>Coordinator: close()
+    Coordinator-->>Later: Return the same result
+```
+
+`run_until_cancelled()` is the explicit service run-loop boundary. OS signal
+integration may cancel the application token, while managed task failures
+cancel that same token; both sources enter the close coordinator above. No
+global runtime or process-wide Context is introduced.
+
 ### Managed Tokio task ownership
 
 `ManagedTaskSupervisor` is the Context-owned boundary for long-running workers,
@@ -992,14 +1022,16 @@ receivers. Phase 2 now has a callable loop, while broader
 signatures, diagnostic coverage, benchmarks, and stability guarantees remain
 open.
 
-The Phase 3 kernel has nineteen contract tests for dependency-order
+The Phase 3 kernel has twenty-two contract tests for dependency-order
 startup, reverse shutdown, initialize/start rollback, invalid transitions,
 idempotent close, concurrent close serialization, and context-local typed
 event isolation, plus runtime-unavailable diagnostics, same-instance injection
 of the eight built-in resources, application-owned Scope cancellation,
 task failure/panic propagation, cancellation-safe shared task shutdown,
-timeout abort, task-before-component stop ordering, and owned/redacted
-serialization of successful and failed startup reports.
+timeout abort, task-before-component stop ordering, cancelled close-waiter
+recovery, failure-driven `run_until_cancelled()` shutdown, stop-hook panic
+isolation, and owned/redacted serialization of successful and failed startup
+reports.
 
 ## 16. Delivery roadmap
 

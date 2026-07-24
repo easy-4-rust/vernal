@@ -1,18 +1,24 @@
 //! 应用级 Tokio 任务监督、失败传播与停机合同测试。
 
+#[path = "managed_task_support/cancellation_safe_lifecycle.rs"]
+mod cancellation_safe_lifecycle;
+#[path = "managed_task_support/stop_probe_lifecycle.rs"]
+mod stop_probe_lifecycle;
 #[path = "managed_task_support/task_owning_lifecycle.rs"]
 mod task_owning_lifecycle;
 
 use std::{future, io, sync::Arc, time::Duration};
 
+use cancellation_safe_lifecycle::CancellationSafeLifecycle;
+use stop_probe_lifecycle::StopProbeLifecycle;
 use task_owning_lifecycle::TaskOwningLifecycle;
 use tokio::{runtime::Handle, sync::Notify};
 use tokio_util::sync::CancellationToken;
 use vernal_context::{
-    ContextError, ManagedTaskError, ManagedTaskSupervisor, TaskShutdownPolicy,
+    ContextError, ContextState, ManagedTaskError, ManagedTaskSupervisor, TaskShutdownPolicy,
     VernalApplicationBuilder,
 };
-use vernal_ioc::ComponentDefinition;
+use vernal_ioc::{ComponentDefinition, Qualifier};
 
 #[tokio::test]
 async fn task_failure_cancels_application_and_returns_one_shared_result() {
@@ -223,4 +229,117 @@ async fn context_reports_task_failure_with_only_a_redacted_warning_code() {
             .iter()
             .all(|warning| !warning.contains("secret") && !warning.contains("token"))
     );
+}
+
+#[tokio::test]
+async fn cancelling_close_waiter_does_not_abandon_component_stop() {
+    let stop_entered = Arc::new(Notify::new());
+    let stop_release = Arc::new(Notify::new());
+    let component = Arc::new(CancellationSafeLifecycle::new(
+        Arc::clone(&stop_entered),
+        Arc::clone(&stop_release),
+    ));
+    let mut builder = VernalApplicationBuilder::new(Handle::current());
+    builder
+        .register(ComponentDefinition::shared_arc(Arc::clone(&component)))
+        .expect("lifecycle component definition");
+    builder.lifecycle::<CancellationSafeLifecycle>();
+    let context = Arc::new(builder.build().expect("context build"));
+    context.refresh().await.expect("context refresh");
+    context.start().await.expect("context start");
+
+    let first_waiter = {
+        let context = Arc::clone(&context);
+        tokio::spawn(async move { context.close().await })
+    };
+    stop_entered.notified().await;
+    first_waiter.abort();
+    assert!(
+        first_waiter
+            .await
+            .expect_err("first close waiter should be cancelled")
+            .is_cancelled()
+    );
+    assert_eq!(context.state().await, ContextState::Draining);
+    assert!(!component.stopped());
+
+    stop_release.notify_one();
+    context
+        .close()
+        .await
+        .expect("second waiter should join the same close coordinator");
+    assert!(component.stopped());
+    assert_eq!(context.state().await, ContextState::Closed);
+}
+
+#[tokio::test]
+async fn managed_task_failure_drives_run_until_cancelled_to_closed() {
+    let context = VernalApplicationBuilder::new(Handle::current())
+        .build()
+        .expect("context build");
+    context.refresh().await.expect("context refresh");
+    context.start().await.expect("context start");
+    context
+        .managed_tasks()
+        .expect("managed task supervisor")
+        .spawn("test.run-loop-failure", async {
+            Err::<(), _>(io::Error::other("worker failed"))
+        })
+        .expect("task accepted");
+
+    assert!(matches!(
+        context.run_until_cancelled().await,
+        Err(ContextError::ManagedTask {
+            source: ManagedTaskError::TaskFailed {
+                task: "test.run-loop-failure",
+                ..
+            }
+        })
+    ));
+    assert_eq!(context.state().await, ContextState::Closed);
+}
+
+#[tokio::test]
+async fn panicking_stop_hook_does_not_abandon_remaining_components() {
+    let events = Arc::new(tokio::sync::Mutex::new(Vec::new()));
+    let healthy = Qualifier::new("healthy").expect("healthy qualifier");
+    let panicking = Qualifier::new("panicking").expect("panicking qualifier");
+    let mut builder = VernalApplicationBuilder::new(Handle::current());
+    let healthy_events = Arc::clone(&events);
+    builder
+        .register(
+            ComponentDefinition::singleton(move |_| {
+                StopProbeLifecycle::new("test.healthy-stop", Arc::clone(&healthy_events), false)
+            })
+            .qualified(healthy.clone()),
+        )
+        .expect("healthy lifecycle definition");
+    let panicking_events = Arc::clone(&events);
+    builder
+        .register(
+            ComponentDefinition::singleton(move |_| {
+                StopProbeLifecycle::new("test.panicking-stop", Arc::clone(&panicking_events), true)
+            })
+            .qualified(panicking.clone()),
+        )
+        .expect("panicking lifecycle definition");
+    builder
+        .lifecycle_qualified::<StopProbeLifecycle>(healthy)
+        .lifecycle_qualified::<StopProbeLifecycle>(panicking);
+    let context = builder.build().expect("context build");
+    context.refresh().await.expect("context refresh");
+    context.start().await.expect("context start");
+
+    assert!(matches!(
+        context.close().await,
+        Err(ContextError::Lifecycle {
+            component: "test.panicking-stop",
+            ..
+        })
+    ));
+    assert_eq!(
+        *events.lock().await,
+        ["test.panicking-stop", "test.healthy-stop"]
+    );
+    assert_eq!(context.state().await, ContextState::Closed);
 }

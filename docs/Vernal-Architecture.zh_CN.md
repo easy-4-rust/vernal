@@ -644,7 +644,34 @@ register
 任何阶段失败都要记录已完成步骤，只回滚已经成功的组件。关闭必须幂等；多次
 `close()` 返回相同终态，不重复执行不可重入副作用。
 
-### 10.4 受管 Tokio 任务
+### 10.4 Context 关闭所有权
+
+`ApplicationContext::close()` 只负责启动并等待关闭，组件栈与实际释放流程由
+Context-local 的唯一 Tokio 协调对象持有。这样调用方取消 Future 不会等价于取消
+资源释放；后续和并发调用者订阅同一个可克隆 `Result`，不会再次执行 `stop`。
+
+```mermaid
+sequenceDiagram
+    participant Caller as "首个 close 调用者"
+    participant Coordinator as "关闭协调器"
+    participant Tasks as "ManagedTaskSupervisor"
+    participant Components as "逆序组件栈"
+    participant Later as "后续调用者"
+    Caller->>Coordinator: 启动唯一 Tokio 关闭任务
+    Caller--xCaller: 等待 Future 被取消
+    Coordinator->>Tasks: cancel + drain / abort
+    Coordinator->>Components: 逐个隔离执行 stop
+    Note over Coordinator,Components: 单个 stop panic 转为结构化错误，继续释放
+    Coordinator->>Coordinator: 发布 Closed 与共享结果
+    Later->>Coordinator: close()
+    Coordinator-->>Later: 返回同一结果
+```
+
+`run_until_cancelled()` 为服务主循环提供显式等待入口：系统信号可以取消应用
+令牌，受管任务失败也会取消同一个令牌；两种来源最终都进入上述关闭协调链。该
+能力不建立全局 Runtime 或进程级 Context，应用仍显式持有自己的对象。
+
+### 10.5 受管 Tokio 任务
 
 `ManagedTaskSupervisor` 是 Context 对长期 Worker、消息消费、配置监听和
 Hutool-Rust Cron 驱动任务的所有权边界。它不实现这些业务或工具能力，只管理其
@@ -943,11 +970,13 @@ Singleton Component 注入、Transient 构造、Trait Object 注入和 Context-l
 非异步方法和借用接收器。Phase 2 已具备可调用
 闭环，但更广泛的方法签名、诊断矩阵、性能基准和稳定性承诺仍未完成。
 
-Phase 3 内核另有 19 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
+Phase 3 内核另有 22 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
 回滚、非法转换、幂等关闭、并发关闭串行化、Context-local 类型化事件隔离，
 高层构建器的 Runtime 缺失诊断、八类内建组件同实例注入、应用 Scope 取消树、
-任务错误/panic 传播、取消安全共享停机、超时 abort、任务先于组件 stop 的顺序，
-以及成功/失败启动报告的只读快照、Serde 序列化与业务错误正文脱敏。
+任务错误/panic 传播、取消安全共享停机、超时 abort、任务先于组件 stop 的顺序、
+关闭等待者取消后继续完成组件释放、任务失败驱动 `run_until_cancelled()` 进入
+`Closed`、stop 钩子 panic 隔离，以及成功/失败启动报告的只读快照、Serde
+序列化与业务错误正文脱敏。
 
 ## 16. 实施路线
 

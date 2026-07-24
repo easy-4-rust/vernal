@@ -2,6 +2,7 @@
 #![doc = "Vernal 的 Tokio-first 应用上下文与生命周期编排。"]
 
 mod application_build_error;
+mod application_close_coordinator;
 mod application_context;
 mod application_context_builder;
 mod component_lifecycle;

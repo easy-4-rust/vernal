@@ -2,13 +2,13 @@
 
 use std::{error::Error, fmt};
 
-use vernal_core::BoxError;
+use vernal_core::SharedError;
 use vernal_ioc::{ComponentKey, ResolveError};
 
 use crate::{ContextState, LifecyclePhase, ManagedTaskError};
 
 /// 应用上下文状态转换、组件解析或生命周期执行失败。
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 #[non_exhaustive]
 pub enum ContextError {
     /// 当前状态不允许执行请求操作。
@@ -42,12 +42,19 @@ pub enum ContextError {
         /// 失败阶段。
         phase: LifecyclePhase,
         /// 原始组件错误。
-        source: BoxError,
+        source: SharedError,
     },
     /// 应用受管 Tokio 任务执行或停机失败。
     ManagedTask {
         /// 任务监督器返回的结构化错误。
         source: ManagedTaskError,
+    },
+    /// 提交或观察 Tokio 生命周期协调任务失败。
+    LifecycleCoordinator {
+        /// 正在协调的 Context 操作。
+        operation: &'static str,
+        /// Runtime 缺失、协调任务 panic 或结果通道异常等原始错误。
+        source: SharedError,
     },
 }
 
@@ -86,6 +93,12 @@ impl fmt::Display for ContextError {
             Self::ManagedTask { source } => {
                 write!(formatter, "managed task lifecycle failed: {source}")
             }
+            Self::LifecycleCoordinator { operation, source } => {
+                write!(
+                    formatter,
+                    "context lifecycle coordinator failed during {operation}: {source}"
+                )
+            }
         }
     }
 }
@@ -96,7 +109,9 @@ impl Error for ContextError {
             Self::ContainerWarmUp { source } | Self::ComponentResolution { source, .. } => {
                 Some(source.as_ref())
             }
-            Self::Lifecycle { source, .. } => Some(source.as_ref()),
+            Self::Lifecycle { source, .. } | Self::LifecycleCoordinator { source, .. } => {
+                Some(source.as_ref())
+            }
             Self::ManagedTask { source } => Some(source),
             _ => None,
         }
