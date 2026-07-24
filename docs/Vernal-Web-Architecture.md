@@ -342,10 +342,18 @@ Sa-Token-Rust now owns the experimental `sa-token-vernal` bridge:
 - adapt `HttpRequestSnapshot` to `SaRequest` and reuse `run_auth_flow`;
 - project login identity and roles into `RequestContext::SecurityPrincipal`;
 - run downstream futures inside the request's `SaTokenContext`;
+- atomically register the manager, bridge, and authentication Advisor through
+  `SaTokenComponents`; `VernalSaTokenPointcut` covers declared operations and
+  `VernalSaTokenInterceptor` authenticates or short-circuits before handlers;
+- align exactly with Axum `Operation(path_template, http_method)` and Tonic
+  `Operation(service_name, method_name)`, mapping rejection through
+  `WebFailure` into native framework responses;
 - preserve native web plugins for users who do not use Vernal.
 
-Authentication AOP pointcuts and permission interceptors remain a later bridge
-increment. Vernal never depends on Sa-Token-Rust.
+The authentication AOP pointcut and interceptor are implemented. Fine-grained
+role and permission policies based on operation metadata remain a later
+increment. Sa-Token-Rust `PathAuthConfig` remains the sole source of path login
+policy, and Vernal never depends on Sa-Token-Rust.
 
 ## 10. Hutool-Rust and Ddd4r
 

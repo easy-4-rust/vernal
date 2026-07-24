@@ -129,7 +129,7 @@ adapter crates contain runnable native integrations:
 
 | Priority | Framework | Vernal crate | Protocol | Status |
 |:---:|:---|:---|:---|:---:|
-| 1 | Axum | `vernal-axum` | HTTP + Tower | Phase 5 adapter |
+| 1 | Axum | `vernal-axum` | HTTP + Tower | Phase 5 adapter + strict AOP |
 | 2 | Actix Web | `vernal-actix-web` | HTTP | Phase 5 adapter |
 | 3 | Rocket | `vernal-rocket` | HTTP | Phase 5 adapter |
 | 4 | Warp | `vernal-warp` | HTTP | Phase 5 adapter |
@@ -138,10 +138,11 @@ adapter crates contain runnable native integrations:
 | 7 | Ntex | `vernal-ntex` | HTTP | Phase 5 adapter |
 | 8 | Gotham | `vernal-gotham` | HTTP | Phase 5 adapter |
 | 9 | Tide | `vernal-tide` | HTTP | Phase 5 adapter |
-| 10 | Tonic | `vernal-tonic` | RPC streaming + Tower | Phase 5 adapter |
+| 10 | Tonic | `vernal-tonic` | RPC streaming + Tower | Phase 5 adapter + strict AOP |
 
-Axum provides native Router assembly plus Context, component, and request-scope
-extractors. Actix Web provides App Data/Extension extractors and a native
+Axum provides native Router assembly plus Context, component, request-scope
+extractors, matched-route operation identity, and fail-closed AOP assembly.
+Actix Web provides App Data/Extension extractors and a native
 `Transform`/`Service` whose Scope follows the response body. Rocket provides
 Managed State, Request Guards, and a body-aware Fairing. Warp provides native
 extension filters over its official Tower Service boundary. Salvo provides a
@@ -153,7 +154,8 @@ native `Middleware`/`Service`, App State/Extension extractors, and a
 type-safe State extension, Pipeline middleware, and frame/trailer-preserving
 body cleanup. Tide provides native `Middleware`, typed Request Extension access,
 and response-reader-bound Scope cleanup. Tonic provides a Context interceptor,
-typed Request extensions, stable `Status` mapping, and reusable Tower layers.
+typed Request extensions, exact service/method operation identity, stable
+`Status` mapping, and a fail-closed AOP Tower layer.
 
 “Ten” is a versioned coverage priority derived from the reviewed local
 integration superset and current registry availability, not a claim of an
@@ -424,8 +426,9 @@ flowchart LR
   competing security kernel. Its consumer-owned `sa-token-vernal` bridge now
   adapts `HttpRequestSnapshot`, projects `SecurityPrincipal`, and preserves
   request-level `SaTokenContext` across Tokio futures. `SaTokenComponents`
-  atomically installs the caller's exact `Arc<SaTokenManager>` and its bridge
-  into a validated Vernal dependency graph.
+  atomically installs the caller's exact `Arc<SaTokenManager>` and bridge into
+  a validated Vernal dependency graph and registers an authentication Advisor
+  that may short-circuit before Axum/Tonic handlers.
 - **Ddd4r** uses its consumer-owned `ddd4r-vernal` bridge to register the
   native `Registry` and `DefaultCommandBus`, then enters Ddd4r's own Tokio
   task-local `ContextScope` with an isolated snapshot. Aggregates, events,
@@ -470,7 +473,7 @@ under design. There is no crates.io installation command or stable API yet.
 | 6 | Preview release | MSRV, SemVer, security, docs.rs, and package gates |
 
 Phase 5 is in progress: Sa-Token-Rust owns a tested and remotely integrated
-`sa-token-vernal` bridge,
+`sa-token-vernal` authentication AOP bridge,
 and Hutool-Rust locally owns a tested `hutool-vernal` HTTP component bridge;
 both pin verified Vernal Git revisions. The Hutool-Rust checkout is currently
 under a separate history-rewrite/refactor stream, so its clean remote

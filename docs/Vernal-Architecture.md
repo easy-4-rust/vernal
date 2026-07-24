@@ -647,10 +647,15 @@ consumer-owned, unpublished bridge. It pins a verified Vernal Git revision,
 adapts `HttpRequestSnapshot` to `SaRequest`, projects authenticated roles into
 `SecurityPrincipal`, and runs downstream futures inside request-level
 `SaTokenContext`. `SaTokenComponents` additionally preserves the caller's exact
-`Arc<SaTokenManager>` identity and atomically installs it with the bridge as a
-validated `SaTokenManager -> VernalSaTokenBridge` component graph. Its existing
-ten plugin families remain input evidence for the Vernal adapter matrix, not
-code that Vernal silently vendors.
+`Arc<SaTokenManager>` and bridge identities, atomically installs them as a
+validated `SaTokenManager -> VernalSaTokenBridge` component graph, and
+registers an authentication Advisor. `VernalSaTokenInterceptor` reuses that
+bridge inside the Tokio asynchronous invocation chain and may short-circuit
+before the handler; Axum and Tonic adapters translate its `WebFailure` into
+native HTTP/gRPC failures. `PathAuthConfig` remains the sole source of path
+login policy, while operation-level role and permission policies remain a
+later increment. Its existing ten plugin families remain input evidence for
+the Vernal adapter matrix, not code that Vernal silently vendors.
 
 ### 12.3 Ddd4r
 

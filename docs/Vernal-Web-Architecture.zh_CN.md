@@ -311,10 +311,17 @@ Sa-Token-Rust 现已持有实验性的 `sa-token-vernal` Bridge：
 - 将 `HttpRequestSnapshot` 适配为 `SaRequest` 并复用 `run_auth_flow`；
 - 把登录身份和角色投影到 `RequestContext::SecurityPrincipal`；
 - 让下游 Future 运行在当前请求的 `SaTokenContext` 中；
+- 由 `SaTokenComponents` 原子注册 Manager、Bridge 与认证 Advisor，Advisor
+  通过 `VernalSaTokenPointcut` 覆盖声明的操作，并由
+  `VernalSaTokenInterceptor` 在 Handler 前认证或短路；
+- 与 Axum 的 `Operation(path_template, http_method)`、Tonic 的
+  `Operation(service_name, method_name)` 精确对齐，拒绝结果经 `WebFailure`
+  映射为框架原生响应；
 - 保留各 Web 插件的原生入口，允许用户不使用 Vernal。
 
-认证 AOP Pointcut 与权限 Interceptor 仍是后续 Bridge 增量。Vernal 不反向依赖
-Sa-Token-Rust。
+认证 AOP Pointcut 与 Interceptor 已完成；基于方法元数据的角色、权限细粒度
+策略仍是后续增量。路径是否需要登录继续只由 Sa-Token-Rust 的
+`PathAuthConfig` 决定。Vernal 不反向依赖 Sa-Token-Rust。
 
 ## 10. Hutool-Rust 与 Ddd4r
 
