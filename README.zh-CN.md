@@ -251,7 +251,9 @@ flowchart LR
 - **Hutool-Rust** 继续承担通用工具库职责，可以消费 Vernal 能力，但 Vernal
   不成为 Hutool-Rust 的子模块。
 - **Sa-Token-Rust** 是唯一保留的安全集成目标，继续拥有认证、Session 和
-  授权语义；Vernal 只提供组件生命周期与拦截编排，不重复建设安全内核。
+  授权语义；Vernal 只提供组件生命周期与拦截编排，不重复建设安全内核。由
+  Sa-Token-Rust 持有的 `sa-token-vernal` 已实现 `HttpRequestSnapshot` 适配、
+  `SecurityPrincipal` 投影及跨 Tokio Future 的请求级 `SaTokenContext`。
 - **Ddd4r** 可以使用 Vernal 装配领域服务、应用服务、策略和适配器，同时保留
   自己的 DDD/CQRS 语义。
 - **Web 框架** 继续拥有路由、Request/Response 类型、传输限制和服务器生命周期。
@@ -263,8 +265,9 @@ flowchart LR
 - 声明的 MSRV：Rust `1.85.0` 或更高版本
 - 支持 Edition 2024 与 Resolver 3 的 Cargo
 
-本轮本地门禁使用 Rust `1.97.1` 执行；独立 MSRV CI 尚待建设，因此 1.85.0 基线
-还不是已经完成发布验证的兼容性承诺。
+本轮本地门禁使用 Rust `1.97.1` 执行，并已显式通过
+`cargo +1.85.0 check --workspace --all-targets`。独立 MSRV CI 尚待建设，因此
+这项本地结果仍不是发布级兼容性承诺。
 
 已验证的 Workspace 命令：
 
@@ -290,6 +293,9 @@ crates.io 安装命令，也没有稳定 API 承诺。
 | Phase 4 | Web/HTTP 合同、Tower/Hyper 与十个 Adapter | 跨框架一致性测试套件 |
 | Phase 5 | Hutool-Rust、Sa-Token-Rust 和 Ddd4r 桥接 | 由消费方拥有的集成示例 |
 | Phase 6 | Preview 发布 | MSRV、SemVer、安全、docs.rs 和打包门禁 |
+
+Phase 5 正在进行：Sa-Token-Rust 已持有经过测试、固定到 Vernal 已验证 Git
+Revision 的 `sa-token-vernal`；Hutool-Rust 与 Ddd4r Bridge 仍待实现。
 
 Phase 1 已通过 1,000 节点确定性规划、结构化图诊断、并发 Singleton、
 双 Container 隔离、Transient、qualifier 和隐藏依赖拒绝测试。

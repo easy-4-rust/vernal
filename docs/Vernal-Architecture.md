@@ -506,8 +506,12 @@ authentication flow as framework middleware or interceptors, and propagate the
 result through request scope. Token, session, role, permission, cookie, and
 401/403 semantics remain owned by Sa-Token-Rust.
 
-Its existing ten plugin families are input evidence for the Vernal adapter
-matrix, not code that Vernal silently vendors.
+`sa-token-vernal` is now implemented in the Sa-Token-Rust repository as a
+consumer-owned, unpublished bridge. It pins a verified Vernal Git revision,
+adapts `HttpRequestSnapshot` to `SaRequest`, projects authenticated roles into
+`SecurityPrincipal`, and runs downstream futures inside request-level
+`SaTokenContext`. Its existing ten plugin families remain input evidence for
+the Vernal adapter matrix, not code that Vernal silently vendors.
 
 ### 12.3 Ddd4r
 

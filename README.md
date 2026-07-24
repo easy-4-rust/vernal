@@ -271,7 +271,9 @@ flowchart LR
 - **Sa-Token-Rust** is the single retained security integration target and
   remains the authority for authentication, sessions, and
   authorization. Vernal supplies component lifecycle and interception, not a
-  competing security kernel.
+  competing security kernel. Its consumer-owned `sa-token-vernal` bridge now
+  adapts `HttpRequestSnapshot`, projects `SecurityPrincipal`, and preserves
+  request-level `SaTokenContext` across Tokio futures.
 - **Ddd4r** may use Vernal to compose domain services, application services,
   policies, and adapters while retaining its own DDD/CQRS semantics.
 - **Web frameworks** retain ownership of routing, request/response types,
@@ -284,8 +286,9 @@ Prerequisites:
 - Declared MSRV: Rust `1.85.0` or newer
 - Cargo with Edition 2024 and resolver 3 support
 
-The current local gates were run with Rust `1.97.1`; a dedicated MSRV CI job
-is planned and the 1.85.0 baseline is not yet release-verified.
+The current local gates were run with Rust `1.97.1`, including an explicit
+`cargo +1.85.0 check --workspace --all-targets`. A dedicated MSRV CI job is
+still planned; this local result is not yet a release compatibility promise.
 
 Verified workspace commands:
 
@@ -311,6 +314,10 @@ under design. There is no crates.io installation command or stable API yet.
 | 4 | Web/HTTP contracts, Tower/Hyper, and ten adapters | Cross-framework conformance suite |
 | 5 | Hutool-Rust, Sa-Token-Rust, and Ddd4r bridges | Consumer-owned integration examples |
 | 6 | Preview release | MSRV, SemVer, security, docs.rs, and package gates |
+
+Phase 5 is in progress: Sa-Token-Rust now owns a tested `sa-token-vernal`
+bridge pinned to a verified Vernal Git revision. Hutool-Rust and Ddd4r bridges
+remain targets.
 
 Phase 1 was completed with tests for 1,000-node deterministic planning,
 structured graph diagnostics, concurrent singleton construction, container

@@ -521,8 +521,11 @@ Sa-Token-Rust 是唯一保留的安全集成目标。Vernal 将其 Manager/Runti
 Request Scope 传播鉴权结果。Token、Session、Role、Permission、Cookie 以及
 401/403 语义继续由 Sa-Token-Rust 拥有。
 
-Sa-Token-Rust 现有十类 Plugin 是 Vernal Adapter 矩阵的输入证据，不表示 Vernal
-会静默复制或内嵌这些源码。
+Sa-Token-Rust 仓库现已实现消费方持有、暂不发布的 `sa-token-vernal`。它固定到
+已经验证的 Vernal Git Revision，把 `HttpRequestSnapshot` 适配为 `SaRequest`，
+将已认证角色投影为 `SecurityPrincipal`，并让下游 Future 运行在请求级
+`SaTokenContext` 中。现有十类 Plugin 仍是 Vernal Adapter 矩阵的输入证据，
+不表示 Vernal 会静默复制或内嵌这些源码。
 
 ### 12.3 Ddd4r
 

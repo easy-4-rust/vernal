@@ -294,14 +294,16 @@ flowchart LR
     HANDLER --> RESP["框架原生响应"]
 ```
 
-建议由 Sa-Token-Rust 持有 `sa-token-vernal` Bridge：
+Sa-Token-Rust 现已持有实验性的 `sa-token-vernal` Bridge：
 
-- 依赖 `vernal-aop`、`vernal-web` 和需要支持的 Adapter；
-- 将 Token、主体和权限信息写入 `RequestContext` 扩展；
-- 提供认证/授权 Pointcut 与 Interceptor；
+- 依赖已经验证的 Vernal Git Revision，不产生内核反向依赖；
+- 将 `HttpRequestSnapshot` 适配为 `SaRequest` 并复用 `run_auth_flow`；
+- 把登录身份和角色投影到 `RequestContext::SecurityPrincipal`；
+- 让下游 Future 运行在当前请求的 `SaTokenContext` 中；
 - 保留各 Web 插件的原生入口，允许用户不使用 Vernal。
 
-Vernal 不反向依赖 Sa-Token-Rust。
+认证 AOP Pointcut 与权限 Interceptor 仍是后续 Bridge 增量。Vernal 不反向依赖
+Sa-Token-Rust。
 
 ## 10. Hutool-Rust 与 Ddd4r
 

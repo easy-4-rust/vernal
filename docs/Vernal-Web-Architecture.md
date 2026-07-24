@@ -321,14 +321,17 @@ flowchart LR
     HANDLER --> RESP["Native response"]
 ```
 
-The recommended ownership is a Sa-Token-Rust `sa-token-vernal` bridge:
+Sa-Token-Rust now owns the experimental `sa-token-vernal` bridge:
 
-- depend on `vernal-aop`, `vernal-web`, and selected adapters;
-- place token, principal, and permission data in `RequestContext` extensions;
-- expose authentication and authorization pointcuts/interceptors;
+- depend on a verified Vernal Git revision without creating a kernel reverse
+  dependency;
+- adapt `HttpRequestSnapshot` to `SaRequest` and reuse `run_auth_flow`;
+- project login identity and roles into `RequestContext::SecurityPrincipal`;
+- run downstream futures inside the request's `SaTokenContext`;
 - preserve native web plugins for users who do not use Vernal.
 
-Vernal never depends on Sa-Token-Rust.
+Authentication AOP pointcuts and permission interceptors remain a later bridge
+increment. Vernal never depends on Sa-Token-Rust.
 
 ## 10. Hutool-Rust and Ddd4r
 
