@@ -8,8 +8,17 @@ description = "Actix Web integration for Vernal."
 publish = false
 
 [dependencies]
+actix-http.workspace = true
+actix-web.workspace = true
+futures-util.workspace = true
+tokio-util.workspace = true
+vernal-context = { path = "../vernal-context" }
 vernal-http = { path = "../vernal-http" }
+vernal-ioc = { path = "../vernal-ioc" }
 vernal-web = { path = "../vernal-web" }
+
+[dev-dependencies]
+tokio.workspace = true
 
 [lints]
 workspace = true

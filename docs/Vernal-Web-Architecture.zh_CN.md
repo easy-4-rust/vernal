@@ -30,9 +30,11 @@
   TCP/HTTP 连接验证。
 
 Axum 已引入 Axum 0.8，实现原生 Router 装配与类型化 Context、组件、请求 Scope
-提取器；Tonic 采用兼容 MSRV 的 0.12 版本线，实现 Context Interceptor、类型化
+提取器；Actix Web 采用兼容 MSRV 的 4.11/actix-http 3.11 版本线，实现原生
+Transform/Service Middleware、App Data/Extension 提取器和 Body 绑定 Scope
+释放；Tonic 采用兼容 MSRV 的 0.12 版本线，实现 Context Interceptor、类型化
 Request 扩展、`GrpcMethod` 路由元数据、稳定 `Status` 映射和 Tower 组合。其余
-八个应用 Adapter 仍是描述符。
+七个应用 Adapter 仍是描述符。
 
 版本化选择清单由
 [`web-integration-manifest.toml`](../web-integration-manifest.toml) 维护。
@@ -209,7 +211,7 @@ Trace -> Context -> RequestScope -> Security/AOP -> Handler -> ErrorMapping
 | # | 框架 | Crate | 协议 | 目标原生扩展点 | 当前状态 |
 |:--:|:---|:---|:---|:---|:---:|
 | 1 | Axum | `vernal-axum` | HTTP + Tower | `Layer`、State/Extension、Extractor、IntoResponse | Phase 5 适配已实现 |
-| 2 | Actix Web | `vernal-actix-web` | HTTP | `Transform`/`Service`、App Data、Extractor、Responder | 骨架 |
+| 2 | Actix Web | `vernal-actix-web` | HTTP | `Transform`/`Service`、App Data、Extractor、Responder | Phase 5 适配已实现 |
 | 3 | Rocket | `vernal-rocket` | HTTP | Fairing、Request Guard、Managed State、Responder | 骨架 |
 | 4 | Warp | `vernal-warp` | HTTP | Filter、Rejection、Reply | 骨架 |
 | 5 | Salvo | `vernal-salvo` | HTTP | Handler、Hoop、Depot、Writer | 骨架 |

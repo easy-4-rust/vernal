@@ -35,8 +35,8 @@ Hutool-Rust · Sa-Token-Rust · Ddd4r · general Rust applications
 
 > **Project status:** experimental. Phase 1 IoC, the Tokio-first Phase 2 AOP
 > kernel, Phase 3 application context, and the Phase 4 Web/HTTP/Tower/Hyper
-> foundations are callable and contract-tested. Axum and Tonic are runnable
-> framework adapters; procedural macros and the other eight adapters remain
+> foundations are callable and contract-tested. Axum, Actix Web, and Tonic are
+> runnable framework adapters; procedural macros and the other seven adapters remain
 > skeletons. Nothing is published yet.
 
 ## 1. Vision
@@ -130,7 +130,7 @@ upstream middleware implementations:
 | Priority | Framework | Vernal crate | Protocol | Status |
 |:---:|:---|:---|:---|:---:|
 | 1 | Axum | `vernal-axum` | HTTP + Tower | Phase 5 adapter |
-| 2 | Actix Web | `vernal-actix-web` | HTTP | Skeleton |
+| 2 | Actix Web | `vernal-actix-web` | HTTP | Phase 5 adapter |
 | 3 | Rocket | `vernal-rocket` | HTTP | Skeleton |
 | 4 | Warp | `vernal-warp` | HTTP | Skeleton |
 | 5 | Salvo | `vernal-salvo` | HTTP | Skeleton |
@@ -141,9 +141,10 @@ upstream middleware implementations:
 | 10 | Tonic | `vernal-tonic` | RPC streaming + Tower | Phase 5 adapter |
 
 Axum provides native Router assembly plus Context, component, and request-scope
-extractors. Tonic provides a Context interceptor, typed Request extensions,
-stable `Status` mapping, and reusable Tower layers. The remaining eight
-adapters are descriptors.
+extractors. Actix Web provides App Data/Extension extractors and a native
+`Transform`/`Service` whose Scope follows the response body. Tonic provides a
+Context interceptor, typed Request extensions, stable `Status` mapping, and
+reusable Tower layers. The remaining seven adapters are descriptors.
 
 “Ten” is a versioned coverage priority derived from the reviewed local
 integration superset and current registry availability, not a claim of an

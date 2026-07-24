@@ -30,10 +30,13 @@ The four shared/foundation crates now expose callable contracts:
   buffering and is verified over a real TCP/HTTP connection.
 
 Axum depends on Axum 0.8 and implements native Router assembly plus typed
-Context, component, and request-scope extractors. Tonic uses the MSRV-compatible
-0.12 line and implements a Context interceptor, typed Request extensions,
-`GrpcMethod` routing metadata, stable `Status` mapping, and Tower composition.
-The other eight application adapters remain descriptors.
+Context, component, and request-scope extractors. Actix Web uses the
+MSRV-compatible 4.11/actix-http 3.11 line and implements native
+Transform/Service middleware, App Data/Extension extractors, and body-bound
+Scope cleanup. Tonic uses the MSRV-compatible 0.12 line and implements a
+Context interceptor, typed Request extensions, `GrpcMethod` routing metadata,
+stable `Status` mapping, and Tower composition. The other seven application
+adapters remain descriptors.
 
 The versioned selection is recorded in
 [`web-integration-manifest.toml`](../web-integration-manifest.toml).
@@ -221,7 +224,7 @@ This crate implements HTTP transport concerns only:
 | # | Framework | Crate | Protocol | Native integration seam | Current state |
 |:--:|:---|:---|:---|:---|:---:|
 | 1 | Axum | `vernal-axum` | HTTP + Tower | `Layer`, State/Extension, Extractor, IntoResponse | Phase 5 adapter |
-| 2 | Actix Web | `vernal-actix-web` | HTTP | `Transform`/`Service`, App Data, Extractor, Responder | Skeleton |
+| 2 | Actix Web | `vernal-actix-web` | HTTP | `Transform`/`Service`, App Data, Extractor, Responder | Phase 5 adapter |
 | 3 | Rocket | `vernal-rocket` | HTTP | Fairing, Request Guard, Managed State, Responder | Skeleton |
 | 4 | Warp | `vernal-warp` | HTTP | Filter, Rejection, Reply | Skeleton |
 | 5 | Salvo | `vernal-salvo` | HTTP | Handler, Hoop, Depot, Writer | Skeleton |
