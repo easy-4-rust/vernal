@@ -6,21 +6,27 @@ use tokio::runtime::Handle;
 use tokio_util::sync::CancellationToken;
 use vernal_aop::{InvocationPlanCatalog, LocalInvocationPlanCatalog};
 
-use crate::{EventBus, ScopeCleanupPolicy, diagnostic_configuration::DiagnosticConfiguration};
+use crate::{
+    EventBus, ManagedTaskSupervisor, ScopeCleanupPolicy, TaskShutdownPolicy,
+    diagnostic_configuration::DiagnosticConfiguration,
+};
 
 /// 聚合一个 `ApplicationContext` 独占或共享的基础运行资源。
 ///
 /// 该对象只在 Context 内部传递，公开 API 仍直接暴露 Rust 原生类型。高层应用
-/// 建造器会把其中的 Tokio Handle、取消令牌、事件总线，以及线程安全与本地
-/// AOP 计划目录同时注册到 `IoC` 容器，使业务组件与 Context 使用相同实例。
+/// 建造器会把其中的 Tokio Handle、取消令牌、任务监督器、事件总线，以及线程
+/// 安全与本地 AOP 计划目录同时注册到 `IoC` 容器，使业务组件与 Context 使用
+/// 相同实例。
 pub(crate) struct ContextResources {
-    runtime: Option<Arc<Handle>>,
-    cancellation: Arc<CancellationToken>,
-    events: Arc<EventBus>,
-    scope_cleanup_policy: Arc<ScopeCleanupPolicy>,
-    invocation_plans: Arc<InvocationPlanCatalog>,
-    local_invocation_plans: Arc<LocalInvocationPlanCatalog>,
-    diagnostics: DiagnosticConfiguration,
+    pub(crate) runtime: Option<Arc<Handle>>,
+    pub(crate) cancellation: Arc<CancellationToken>,
+    pub(crate) managed_tasks: Option<Arc<ManagedTaskSupervisor>>,
+    pub(crate) task_shutdown_policy: Arc<TaskShutdownPolicy>,
+    pub(crate) events: Arc<EventBus>,
+    pub(crate) scope_cleanup_policy: Arc<ScopeCleanupPolicy>,
+    pub(crate) invocation_plans: Arc<InvocationPlanCatalog>,
+    pub(crate) local_invocation_plans: Arc<LocalInvocationPlanCatalog>,
+    pub(crate) diagnostics: DiagnosticConfiguration,
 }
 
 impl ContextResources {
@@ -31,32 +37,13 @@ impl ContextResources {
         Self {
             runtime: None,
             cancellation: Arc::new(CancellationToken::new()),
+            managed_tasks: None,
+            task_shutdown_policy: Arc::new(TaskShutdownPolicy::default()),
             events: Arc::new(EventBus::new()),
             scope_cleanup_policy: Arc::new(ScopeCleanupPolicy::default()),
             invocation_plans: Arc::new(InvocationPlanCatalog::default()),
             local_invocation_plans: Arc::new(LocalInvocationPlanCatalog::default()),
             diagnostics: DiagnosticConfiguration::default(),
-        }
-    }
-
-    /// 使用高层建造器已经注册到 `IoC` 的同一组资源创建集合。
-    pub(crate) fn managed(
-        runtime: Arc<Handle>,
-        cancellation: Arc<CancellationToken>,
-        events: Arc<EventBus>,
-        scope_cleanup_policy: Arc<ScopeCleanupPolicy>,
-        invocation_plans: Arc<InvocationPlanCatalog>,
-        local_invocation_plans: Arc<LocalInvocationPlanCatalog>,
-        diagnostics: DiagnosticConfiguration,
-    ) -> Self {
-        Self {
-            runtime: Some(runtime),
-            cancellation,
-            events,
-            scope_cleanup_policy,
-            invocation_plans,
-            local_invocation_plans,
-            diagnostics,
         }
     }
 
@@ -68,6 +55,16 @@ impl ContextResources {
     /// 返回应用级共享取消令牌。
     pub(crate) fn cancellation(&self) -> &CancellationToken {
         &self.cancellation
+    }
+
+    /// 返回高层构建路径创建的应用级任务监督器。
+    pub(crate) fn managed_tasks(&self) -> Option<&Arc<ManagedTaskSupervisor>> {
+        self.managed_tasks.as_ref()
+    }
+
+    /// 返回应用级受管任务停机策略。
+    pub(crate) fn task_shutdown_policy(&self) -> &TaskShutdownPolicy {
+        &self.task_shutdown_policy
     }
 
     /// 返回 Context 独占的类型化事件总线。

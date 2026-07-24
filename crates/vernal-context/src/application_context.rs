@@ -10,14 +10,16 @@ use vernal_ioc::{ComponentKey, Container, ResolveError, ScopeContext};
 
 use crate::{
     ContextError, ContextState, DiagnosticOutcome, DiagnosticPhase, EventBus, Lifecycle,
-    LifecyclePhase, StartupObservation, StartupReport,
-    application_context_builder::LifecycleResolver, context_resources::ContextResources,
+    LifecyclePhase, ManagedTaskError, ManagedTaskSupervisor, StartupObservation, StartupReport,
+    TaskShutdownPolicy, application_context_builder::LifecycleResolver,
+    context_resources::ContextResources,
 };
 
 /// 组合 `IoC` 容器与 Tokio 生命周期状态机的应用上下文。
 ///
 /// 所有状态转换由异步互斥锁串行化；组件按依赖顺序 initialize/start，按逆序
-/// stop。关闭先触发共享取消令牌，再继续释放所有组件，即使某个 stop 失败。
+/// stop。关闭先触发共享取消令牌并排空受管 Tokio 任务，再继续释放所有组件，
+/// 即使任务或某个 stop 失败也会推进到 Closed。
 pub struct ApplicationContext {
     container: Container,
     lifecycle_resolvers: Arc<[(ComponentKey, Arc<LifecycleResolver>)]>,
@@ -73,6 +75,8 @@ impl ApplicationContext {
                 warm_up_started,
             )
             .await;
+            self.resources.cancellation().cancel();
+            let _ = self.shutdown_managed_tasks().await;
             self.set_state(ContextState::Failed).await;
             return Err(ContextError::ContainerWarmUp {
                 source: Box::new(source),
@@ -108,7 +112,9 @@ impl ApplicationContext {
                         resolution_started,
                     )
                     .await;
+                    self.resources.cancellation().cancel();
                     self.set_state(ContextState::RollingBack).await;
+                    let _ = self.shutdown_managed_tasks().await;
                     self.stop_all(&initialized).await;
                     self.set_state(ContextState::Closed).await;
                     return Err(ContextError::ComponentResolution {
@@ -132,6 +138,8 @@ impl ApplicationContext {
                     phase: LifecyclePhase::Initialize,
                     source,
                 };
+                self.resources.cancellation().cancel();
+                let _ = self.shutdown_managed_tasks().await;
                 let _ = self.stop_component(&component).await;
                 self.stop_all(&initialized).await;
                 self.set_state(ContextState::Closed).await;
@@ -181,6 +189,7 @@ impl ApplicationContext {
                 };
                 self.resources.cancellation().cancel();
                 self.set_state(ContextState::RollingBack).await;
+                let _ = self.shutdown_managed_tasks().await;
                 self.stop_all(&components).await;
                 self.components.lock().await.clear();
                 self.set_state(ContextState::Closed).await;
@@ -203,7 +212,7 @@ impl ApplicationContext {
     ///
     /// # Errors
     ///
-    /// 返回第一个 stop 错误，但仍会尝试关闭其余组件并最终进入 Closed。
+    /// 返回第一个受管任务或 stop 错误，但仍会尝试关闭其余组件并最终进入 Closed。
     pub async fn close(&self) -> Result<(), ContextError> {
         let _operation = self.operation.lock().await;
         if self.state().await == ContextState::Closed {
@@ -218,10 +227,16 @@ impl ApplicationContext {
         };
         self.set_state(draining_state).await;
 
+        // 长期任务可能正在使用生命周期组件提供的连接池、消费者或调度器。
+        // 因此先取消并等待任务退出，再按依赖逆序调用组件 stop。
+        let task_error = self.shutdown_managed_tasks().await;
         let components = std::mem::take(&mut *self.components.lock().await);
-        let error = self.stop_all(&components).await;
+        let lifecycle_error = self.stop_all(&components).await;
         self.set_state(ContextState::Closed).await;
-        error.map_or(Ok(()), Err)
+        task_error
+            .map(|source| ContextError::ManagedTask { source })
+            .or(lifecycle_error)
+            .map_or(Ok(()), Err)
     }
 
     /// 返回当前状态快照。
@@ -252,6 +267,21 @@ impl ApplicationContext {
     #[must_use]
     pub fn cancellation_token(&self) -> CancellationToken {
         self.resources.cancellation().clone()
+    }
+
+    /// 返回高层应用建造器创建的 Tokio 任务监督器。
+    ///
+    /// 低层 `ApplicationContextBuilder` 不捕获 Runtime，因此返回 `None`。高层
+    /// 路径返回的对象与注册到 `IoC` 的 `Arc<ManagedTaskSupervisor>` 是同一实例。
+    #[must_use]
+    pub fn managed_tasks(&self) -> Option<&Arc<ManagedTaskSupervisor>> {
+        self.resources.managed_tasks()
+    }
+
+    /// 返回受管任务的两阶段停机策略。
+    #[must_use]
+    pub fn task_shutdown_policy(&self) -> &TaskShutdownPolicy {
+        self.resources.task_shutdown_policy()
     }
 
     /// 返回当前 Context 独占的类型化事件总线。
@@ -304,6 +334,20 @@ impl ApplicationContext {
     /// 敏感值进入可序列化诊断。相同代码自动去重，多个应用 Context 之间互不共享。
     pub async fn record_runtime_warning(&self, warning: &'static str) {
         self.diagnostics.lock().await.record_warning(warning);
+    }
+
+    /// 停止应用监督器并记录不含任务错误正文的静态诊断代码。
+    async fn shutdown_managed_tasks(&self) -> Option<ManagedTaskError> {
+        let supervisor = self.resources.managed_tasks()?;
+        let error = supervisor
+            .shutdown(*self.resources.task_shutdown_policy())
+            .await
+            .err();
+        if error.is_some() {
+            self.record_runtime_warning("context.managed-task.shutdown-failed")
+                .await;
+        }
+        error
     }
 
     /// 校验当前状态是否符合操作前置条件。

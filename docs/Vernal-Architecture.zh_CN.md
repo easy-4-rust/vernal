@@ -579,8 +579,12 @@ Web server 和外部配置中心仍属于独立适配器；应用可以把它们
 |:---|:---|
 | `tokio::runtime::Handle` | 绑定当前应用 Runtime，供后台组件派生 task |
 | `CancellationToken` | Context 关闭时统一取消，由组件监听或派生子令牌 |
+| `ManagedTaskSupervisor` | 持有后台任务句柄并传播任务失败 |
+| `TaskShutdownPolicy` | 约束优雅等待与 abort 后收口时间 |
 | `EventBus` | 每个 Context 独占的类型化广播事件 |
-| `InvocationPlanCatalog` | 应用构建阶段匹配 Pointcut 后生成的只读 AOP 计划目录 |
+| `ScopeCleanupPolicy` | 约束应用拥有的 Web Scope 清理等待 |
+| `InvocationPlanCatalog` | 构建阶段生成的只读 Send-AOP 计划目录 |
+| `LocalInvocationPlanCatalog` | 构建阶段生成的只读 Worker-local AOP 计划目录 |
 
 业务组件通过普通 `depends_on::<T>()` 声明这些依赖，构造器通过 `Resolver`
 解析。Context 与组件持有的是同一组 `Arc<T>`，因此关闭取消、事件发布和计划
@@ -597,7 +601,7 @@ sequenceDiagram
 
     App->>Builder: register definitions, advisors, operations
     Builder->>AOP: compile plan catalog
-    Builder->>Graph: register Tokio/cancellation/events/catalog
+    Builder->>Graph: 注册 Tokio/任务/策略/事件/AOP 资源
     Builder->>Graph: freeze and validate complete graph
     Graph-->>Builder: Registry
     Builder->>Context: create with identical shared resources
@@ -632,13 +636,40 @@ register
   → initialize in dependency order
   → start in dependency order
   → publish Ready
-  → drain
+  → cancel and drain managed tasks
   → stop in reverse dependency order
   → release scopes
 ```
 
 任何阶段失败都要记录已完成步骤，只回滚已经成功的组件。关闭必须幂等；多次
 `close()` 返回相同终态，不重复执行不可重入副作用。
+
+### 10.4 受管 Tokio 任务
+
+`ManagedTaskSupervisor` 是 Context 对长期 Worker、消息消费、配置监听和
+Hutool-Rust Cron 驱动任务的所有权边界。它不实现这些业务或工具能力，只管理其
+Tokio task 生命周期。
+
+```mermaid
+flowchart LR
+    Component["IoC 组件"] -->|"spawn(静态任务名, Future)"| Supervisor["ManagedTaskSupervisor"]
+    Supervisor --> Runtime["Tokio Handle"]
+    Runtime --> Task["用户任务"]
+    Task -->|"Ok"| Completed["移出活动任务表"]
+    Task -->|"Err / panic / 异常取消"| Failure["保存第一个结构化失败"]
+    Failure --> Cancel["取消应用令牌"]
+    Context["ApplicationContext.close"] --> Cancel
+    Cancel --> Grace["优雅等待"]
+    Grace -->|"超时"| Abort["abort 剩余任务"]
+    Grace -->|"完成"| Stop["逆序 stop 组件"]
+    Abort --> Stop
+```
+
+第一个任务失败会停止接收新任务并取消应用。停机自身也必须取消安全：唯一 Tokio
+协调任务负责两阶段等待，所有调用者订阅同一结果。默认在取消后优雅等待 30 秒，
+再 abort 剩余任务，并给观察器 1 秒完成收口。任务名只能使用低基数静态字符串；
+诊断只记录 `context.managed-task.shutdown-failed`，原始错误正文只存在于显式
+`ManagedTaskError` 错误链。
 
 ## 11. Web、HTTP 与框架集成
 
@@ -912,9 +943,10 @@ Singleton Component 注入、Transient 构造、Trait Object 注入和 Context-l
 非异步方法和借用接收器。Phase 2 已具备可调用
 闭环，但更广泛的方法签名、诊断矩阵、性能基准和稳定性承诺仍未完成。
 
-Phase 3 内核另有 12 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
+Phase 3 内核另有 19 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
 回滚、非法转换、幂等关闭、并发关闭串行化、Context-local 类型化事件隔离，
-高层构建器的 Runtime 缺失诊断、六类内建组件同实例注入、应用 Scope 取消树，
+高层构建器的 Runtime 缺失诊断、八类内建组件同实例注入、应用 Scope 取消树、
+任务错误/panic 传播、取消安全共享停机、超时 abort、任务先于组件 stop 的顺序，
 以及成功/失败启动报告的只读快照、Serde 序列化与业务错误正文脱敏。
 
 ## 16. 实施路线

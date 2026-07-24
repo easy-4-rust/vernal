@@ -275,7 +275,9 @@ let json = serde_json::to_string(&startup_report)?;
 无法再返回原生错误时也能留下 Context-local 诊断证据。Scope 清理由取消安全的
 Tokio 协调任务负责：某个等待者被丢弃或等待超时都不会遗弃关闭钩子。作为应用
 内建组件注册的 `ScopeCleanupPolicy` 默认让应用拥有的 Scope 最多等待 30 秒；
-等待超时后协调器仍在后台继续完成清理。
+等待超时后协调器仍在后台继续完成清理。受管任务执行或停机失败同样只追加
+`context.managed-task.shutdown-failed`，任务错误正文只存在于调用方显式取得的
+错误链。
 
 ## 6. 能力状态
 
@@ -288,6 +290,7 @@ Tokio 协调任务负责：某个等待者被丢弃或等待超时都不会遗�
 | 拦截器链 | 有序 Around/Next、短路及结果/错误改写 | Phase 2 内核 |
 | 切点 | 操作匹配并编译成不可变调用计划 | Phase 2 内核 |
 | ApplicationContext | 串行生命周期、回滚、逆序关闭和 Context-local 类型化事件 | Phase 3 内核 |
+| 受管 Tokio 任务 | Context 持有任务句柄、失败取消、优雅等待、有界 abort 与共享停机结果 | Phase 3 内核 |
 | 事件 | Context 内部隔离的类型化事件发布 | Phase 3 内核 |
 | 异步集成 | Tokio 原生取消、deadline 与类型化调用上下文 | Phase 2 内核 |
 | Web 上下文 | 请求 Context、请求 Scope、Handler 调用和错误映射 | Phase 4 合同 |
@@ -382,10 +385,11 @@ Phase 2 AOP 内核现有 9 个 Send 合同测试，覆盖顺序进入/逆序退�
 非 `Send` 返回值、顺序、短路、取消、计划目录和借用型本地目标。性能基准仍未
 完成。宏前端另有 5 个运行时合同测试（包含类型驱动自定义 Scope）和 4 个
 compile-fail 用例。
-Phase 3 内核现有 12 个测试，覆盖依赖顺序启动、逆序关闭、initialize/start
+Phase 3 内核现有 19 个测试，覆盖依赖顺序启动、逆序关闭、initialize/start
 回滚、非法状态转换、幂等关闭、并发关闭串行化和 Context-local 类型化事件
-隔离、高层构建器内建资源注入、应用 Scope 取消树，以及成功/失败启动报告的
-只读性、序列化和业务错误正文脱敏。
+隔离、高层构建器八类内建资源注入、应用 Scope 取消树、任务错误/panic 传播、
+取消安全的共享任务停机、超时 abort、任务先于组件 stop 的顺序，以及成功/失败
+启动报告的只读性、序列化和业务错误正文脱敏。
 
 Phase 4 已把 `WebRequestScope` 收敛为 IoC `ScopeContext` 的 Web 门面，十个
 Adapter 的组件提取器均在当前请求 Scope 内解析 Singleton、Transient 或请求级

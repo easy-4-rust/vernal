@@ -593,11 +593,22 @@ tasks, synchronization, time, cancellation, and signals. Configuration
 formats, web servers, and external configuration centers remain adapters whose
 native objects may still be registered as ordinary components.
 
-Before graph freezing, `VernalApplicationBuilder` automatically registers the
-current `tokio::runtime::Handle`, the application `CancellationToken`, the
-context-local `EventBus`, and the immutable `InvocationPlanCatalog`. Components
-declare them with ordinary `depends_on::<T>()` metadata, and the context plus
-container receive the same `Arc<T>` instances. The lower-level
+Before graph freezing, `VernalApplicationBuilder` automatically registers
+eight framework-native components:
+
+| Built-in component | Lifecycle responsibility |
+|:---|:---|
+| `tokio::runtime::Handle` | Spawn work on the application runtime |
+| `CancellationToken` | One application cancellation tree |
+| `ManagedTaskSupervisor` | Own task handles and propagate task failures |
+| `TaskShutdownPolicy` | Bound graceful wait and post-abort settlement |
+| `EventBus` | Context-local typed events |
+| `ScopeCleanupPolicy` | Bound application-owned Web scope cleanup waits |
+| `InvocationPlanCatalog` | Immutable Send-AOP invocation plans |
+| `LocalInvocationPlanCatalog` | Immutable worker-local AOP invocation plans |
+
+Components declare them with ordinary `depends_on::<T>()` metadata, and the
+context plus container receive the same `Arc<T>` instances. The lower-level
 `Registry -> ApplicationContextBuilder` path remains available for library
 composition that does not want runtime capture or built-in registration.
 
@@ -611,7 +622,7 @@ sequenceDiagram
 
     App->>Builder: register definitions, advisors, operations
     Builder->>AOP: compile plan catalog
-    Builder->>Graph: register Tokio/cancellation/events/catalog
+    Builder->>Graph: register Tokio/task/policy/event/AOP resources
     Builder->>Graph: freeze and validate complete graph
     Graph-->>Builder: Registry
     Builder->>Context: create with identical shared resources
@@ -639,11 +650,41 @@ Lifecycle order:
 ```text
 register → freeze → validate graph and pointcuts
 → construct singletons → initialize → start → Ready
-→ drain → reverse stop → release scopes
+→ cancel and drain managed tasks → reverse stop → release scopes
 ```
 
 Failures record completed steps and roll back only successful components.
 `close()` is idempotent.
+
+### Managed Tokio task ownership
+
+`ManagedTaskSupervisor` is the Context-owned boundary for long-running workers,
+message consumers, configuration watchers, and utility schedulers such as a
+Hutool-Rust Cron driver. It does not implement those products; it owns their
+Tokio task lifecycle.
+
+```mermaid
+flowchart LR
+    Component["IoC component"] -->|"spawn(static name, Future)"| Supervisor["ManagedTaskSupervisor"]
+    Supervisor --> Runtime["Tokio Handle"]
+    Runtime --> Task["User task"]
+    Task -->|"Ok"| Completed["Remove from active table"]
+    Task -->|"Err / panic / unexpected cancel"| Failure["Store first structured failure"]
+    Failure --> Cancel["Cancel application token"]
+    Context["ApplicationContext.close"] --> Cancel
+    Cancel --> Grace["Graceful wait"]
+    Grace -->|"timeout"| Abort["Abort remaining tasks"]
+    Grace -->|"settled"| Stop["Reverse component stop"]
+    Abort --> Stop
+```
+
+The first failure stops new task admission and cancels the application.
+Shutdown is itself cancellation-safe: one Tokio coordinator owns the two-stage
+wait, while all callers subscribe to one result. The default policy waits 30
+seconds after cancellation, aborts remaining tasks, then allows one second for
+their observers to settle. Task names are static low-cardinality strings.
+Diagnostics record only `context.managed-task.shutdown-failed`; raw error text
+stays in the explicit `ManagedTaskError` chain.
 
 ## 11. Web, HTTP, and framework integration
 
@@ -951,12 +992,14 @@ receivers. Phase 2 now has a callable loop, while broader
 signatures, diagnostic coverage, benchmarks, and stability guarantees remain
 open.
 
-The Phase 3 kernel has twelve contract tests for dependency-order
+The Phase 3 kernel has nineteen contract tests for dependency-order
 startup, reverse shutdown, initialize/start rollback, invalid transitions,
 idempotent close, concurrent close serialization, and context-local typed
 event isolation, plus runtime-unavailable diagnostics, same-instance injection
-of the six built-in resources, application-owned Scope cancellation, and
-owned/redacted serialization of successful and failed startup reports.
+of the eight built-in resources, application-owned Scope cancellation,
+task failure/panic propagation, cancellation-safe shared task shutdown,
+timeout abort, task-before-component stop ordering, and owned/redacted
+serialization of successful and failed startup reports.
 
 ## 16. Delivery roadmap
 

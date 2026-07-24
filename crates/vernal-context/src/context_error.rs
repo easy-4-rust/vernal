@@ -5,7 +5,7 @@ use std::{error::Error, fmt};
 use vernal_core::BoxError;
 use vernal_ioc::{ComponentKey, ResolveError};
 
-use crate::{ContextState, LifecyclePhase};
+use crate::{ContextState, LifecyclePhase, ManagedTaskError};
 
 /// 应用上下文状态转换、组件解析或生命周期执行失败。
 #[derive(Debug)]
@@ -44,6 +44,11 @@ pub enum ContextError {
         /// 原始组件错误。
         source: BoxError,
     },
+    /// 应用受管 Tokio 任务执行或停机失败。
+    ManagedTask {
+        /// 任务监督器返回的结构化错误。
+        source: ManagedTaskError,
+    },
 }
 
 impl fmt::Display for ContextError {
@@ -78,6 +83,9 @@ impl fmt::Display for ContextError {
                 formatter,
                 "lifecycle component {component} failed during {phase}: {source}"
             ),
+            Self::ManagedTask { source } => {
+                write!(formatter, "managed task lifecycle failed: {source}")
+            }
         }
     }
 }
@@ -89,6 +97,7 @@ impl Error for ContextError {
                 Some(source.as_ref())
             }
             Self::Lifecycle { source, .. } => Some(source.as_ref()),
+            Self::ManagedTask { source } => Some(source),
             _ => None,
         }
     }

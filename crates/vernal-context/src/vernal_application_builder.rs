@@ -14,8 +14,8 @@ use vernal_ioc::{ComponentDefinition, DefinitionError, Qualifier, RegistryBuilde
 
 use crate::{
     ApplicationBuildError, ApplicationContext, ApplicationContextBuilder, DiagnosticState,
-    EventBus, Lifecycle, SubsystemStatus, context_resources::ContextResources,
-    diagnostic_configuration::DiagnosticConfiguration,
+    EventBus, Lifecycle, ManagedTaskSupervisor, SubsystemStatus, TaskShutdownPolicy,
+    context_resources::ContextResources, diagnostic_configuration::DiagnosticConfiguration,
 };
 
 type LifecycleRegistrar = dyn FnOnce(&mut ApplicationContextBuilder) + Send + Sync + 'static;
@@ -23,10 +23,12 @@ type LifecycleRegistrar = dyn FnOnce(&mut ApplicationContextBuilder) + Send + Sy
 /// 统一收集组件、生命周期、切面和 Tokio Context 资源的应用建造器。
 ///
 /// 与接收冻结 [`vernal_ioc::Registry`] 的低层 [`ApplicationContextBuilder`]
-/// 不同，该建造器在依赖图冻结前自动注册六类框架内建组件：
+/// 不同，该建造器在依赖图冻结前自动注册八类框架内建组件：
 ///
 /// - [`Handle`]：应用绑定的 Tokio Runtime；
 /// - [`CancellationToken`]：应用关闭与后台任务协作取消；
+/// - [`ManagedTaskSupervisor`]：后台 Tokio 任务所有权与失败传播；
+/// - [`TaskShutdownPolicy`]：受管任务的两阶段停机预算；
 /// - [`EventBus`]：Context 内类型化事件；
 /// - [`crate::ScopeCleanupPolicy`]：应用 Scope 的有界异步释放策略；
 /// - [`vernal_aop::InvocationPlanCatalog`]：预编译 AOP 调用计划。
@@ -42,6 +44,8 @@ pub struct VernalApplicationBuilder {
     operations: Vec<Operation>,
     runtime: Arc<Handle>,
     cancellation: Arc<CancellationToken>,
+    managed_tasks: Arc<ManagedTaskSupervisor>,
+    task_shutdown_policy: Arc<TaskShutdownPolicy>,
     events: Arc<EventBus>,
     scope_cleanup_policy: Arc<crate::ScopeCleanupPolicy>,
     enabled_features: BTreeSet<String>,
@@ -54,14 +58,20 @@ impl VernalApplicationBuilder {
     /// 使用显式 Tokio Runtime Handle 创建应用建造器。
     #[must_use]
     pub fn new(runtime: Handle) -> Self {
+        let runtime = Arc::new(runtime);
+        let cancellation = Arc::new(CancellationToken::new());
+        let managed_tasks =
+            ManagedTaskSupervisor::new(Arc::clone(&runtime), Arc::clone(&cancellation));
         Self {
             registry: RegistryBuilder::new(),
             lifecycle_registrars: Vec::new(),
             invocation_plans: InvocationPlanBuilder::new(),
             local_invocation_plans: LocalInvocationPlanBuilder::new(),
             operations: Vec::new(),
-            runtime: Arc::new(runtime),
-            cancellation: Arc::new(CancellationToken::new()),
+            runtime,
+            cancellation,
+            managed_tasks,
+            task_shutdown_policy: Arc::new(TaskShutdownPolicy::default()),
             events: Arc::new(EventBus::new()),
             scope_cleanup_policy: Arc::new(crate::ScopeCleanupPolicy::default()),
             enabled_features: BTreeSet::new(),
@@ -86,7 +96,8 @@ impl VernalApplicationBuilder {
     /// 注册一个业务或基础设施组件定义。
     ///
     /// 内建类型由 [`Self::build`] 自动注册；业务代码不应重复注册同类型的
-    /// `Handle`、`CancellationToken`、`EventBus` 或两类调用计划目录。
+    /// `Handle`、`CancellationToken`、`ManagedTaskSupervisor`、
+    /// `TaskShutdownPolicy`、`EventBus` 或两类调用计划目录。
     ///
     /// # Errors
     ///
@@ -198,6 +209,15 @@ impl VernalApplicationBuilder {
         self
     }
 
+    /// 设置应用受管 Tokio 任务的两阶段停机预算。
+    ///
+    /// 该策略与 [`ManagedTaskSupervisor`] 一同注册为 `IoC` 内建组件，长期 Worker
+    /// 和基础设施适配器可以注入同一只读策略；构建完成后不会运行期漂移。
+    pub fn task_shutdown_policy(&mut self, policy: TaskShutdownPolicy) -> &mut Self {
+        self.task_shutdown_policy = Arc::new(policy);
+        self
+    }
+
     /// 声明一个需要在应用构建阶段预编译调用计划的组件操作。
     pub fn operation(&mut self, operation: Operation) -> &mut Self {
         self.operations.push(operation);
@@ -267,6 +287,14 @@ impl VernalApplicationBuilder {
                 &self.cancellation,
             )))?;
         self.registry
+            .register(ComponentDefinition::shared_arc(Arc::clone(
+                &self.managed_tasks,
+            )))?;
+        self.registry
+            .register(ComponentDefinition::shared_arc(Arc::clone(
+                &self.task_shutdown_policy,
+            )))?;
+        self.registry
             .register(ComponentDefinition::shared_arc(Arc::clone(&self.events)))?;
         self.registry
             .register(ComponentDefinition::shared_arc(Arc::clone(
@@ -281,14 +309,16 @@ impl VernalApplicationBuilder {
                 &local_invocation_plans,
             )))?;
 
-        let resources = ContextResources::managed(
-            self.runtime,
-            self.cancellation,
-            self.events,
-            self.scope_cleanup_policy,
+        let resources = ContextResources {
+            runtime: Some(self.runtime),
+            cancellation: self.cancellation,
+            managed_tasks: Some(self.managed_tasks),
+            task_shutdown_policy: self.task_shutdown_policy,
+            events: self.events,
+            scope_cleanup_policy: self.scope_cleanup_policy,
             invocation_plans,
             local_invocation_plans,
-            DiagnosticConfiguration::new(
+            diagnostics: DiagnosticConfiguration::new(
                 self.enabled_features.into_iter().collect(),
                 self.adapters
                     .into_iter()
@@ -300,7 +330,7 @@ impl VernalApplicationBuilder {
                     .collect(),
                 self.warnings.into_iter().collect(),
             ),
-        );
+        };
         let registry = self.registry.build()?;
         let mut context = ApplicationContextBuilder::managed(registry, resources);
         for registrar in self.lifecycle_registrars {

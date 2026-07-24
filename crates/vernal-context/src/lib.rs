@@ -15,10 +15,15 @@ mod diagnostic_state;
 mod event_bus;
 mod lifecycle_future;
 mod lifecycle_phase;
+mod managed_task_error;
+mod managed_task_id;
+mod managed_task_registry;
+mod managed_task_supervisor;
 mod scope_cleanup_policy;
 mod startup_observation;
 mod startup_report;
 mod subsystem_status;
+mod task_shutdown_policy;
 mod vernal_application_builder;
 
 pub use application_build_error::ApplicationBuildError;
@@ -33,10 +38,14 @@ pub use diagnostic_state::DiagnosticState;
 pub use event_bus::EventBus;
 pub use lifecycle_future::LifecycleFuture;
 pub use lifecycle_phase::LifecyclePhase;
+pub use managed_task_error::ManagedTaskError;
+pub use managed_task_id::ManagedTaskId;
+pub use managed_task_supervisor::ManagedTaskSupervisor;
 pub use scope_cleanup_policy::ScopeCleanupPolicy;
 pub use startup_observation::StartupObservation;
 pub use startup_report::StartupReport;
 pub use subsystem_status::SubsystemStatus;
+pub use task_shutdown_policy::TaskShutdownPolicy;
 pub use vernal_application_builder::VernalApplicationBuilder;
 
 /// 返回应用上下文当前成熟度状态。
