@@ -33,10 +33,10 @@ Application components
 Hutool-Rust · Sa-Token-Rust · Ddd4r · general Rust applications
 ```
 
-> **Project status:** experimental. Phase 1 IoC is implemented, and the
-> Tokio-first Phase 2 AOP kernel now has a callable `Around + Next` chain.
-> Macros, application context, and framework adapters remain skeletons.
-> Nothing is published yet.
+> **Project status:** experimental. Phase 1 IoC, the Tokio-first Phase 2 AOP
+> kernel, Phase 3 application context, and the Phase 4 Web/HTTP/Tower/Hyper
+> foundations are callable and contract-tested. Procedural macros and the ten
+> framework adapters remain skeletons. Nothing is published yet.
 
 ## 1. Vision
 
@@ -116,10 +116,10 @@ Detailed decisions, flows, failure semantics, and acceptance criteria are in:
 | `vernal-aop` | Phase 2 kernel implemented | Around/Next, pointcuts, immutable plans, cancellation |
 | `vernal-context` | Phase 3 kernel implemented | Lifecycle, rollback, reverse shutdown, typed events |
 | `vernal-macros` | Skeleton | Thin procedural macro entry points |
-| `vernal-web` | Skeleton | Framework-neutral context, request scope, handler, and error contracts |
-| `vernal-http` | Skeleton | HTTP request, response, body, streaming, cancellation, and backpressure |
-| `vernal-tower` | Skeleton | Tower `Layer`/`Service` foundation |
-| `vernal-hyper` | Skeleton | Hyper transport foundation |
+| `vernal-web` | Phase 4 contract implemented | Framework-neutral context, request scope, handler, and error contracts |
+| `vernal-http` | Phase 4 contract implemented | HTTP request, response, body, streaming, cancellation, and backpressure |
+| `vernal-tower` | Phase 4 foundation implemented | Tower context injection and request-scope lifecycle |
+| `vernal-hyper` | Phase 4 foundation implemented | Lossless Hyper request/body-frame transport bridge |
 
 The target integration set is recorded in
 [`web-integration-manifest.toml`](./web-integration-manifest.toml). The ten
@@ -224,11 +224,12 @@ in the application or integration crate that registers them.
 | Interceptor chain | Ordered Around/Next composition with short circuit and result/error transformation | Phase 2 kernel |
 | Pointcuts | Operation matching compiled into immutable invocation plans | Phase 2 kernel |
 | Application context | Serialized lifecycle, rollback, reverse shutdown, context-local typed events | Phase 3 kernel |
-| Events | Context-local typed event publication | Planned |
+| Events | Context-local typed event publication | Phase 3 kernel |
 | Async integration | Tokio-native cancellation, deadlines, and typed invocation context | Phase 2 kernel |
-| Web context | Request context, request scope, handler invocation, error mapping | Skeleton |
-| HTTP | Request/response, body streams, cancellation, backpressure | Skeleton |
-| Web integration | Tower-first where possible, native adapters where necessary | Adapter skeletons |
+| Web context | Request context, request scope, handler invocation, error mapping | Phase 4 contract |
+| HTTP | Request/response, body frames/trailers, explicit bounded collection, cancellation, backpressure | Phase 4 contract |
+| Web integration foundation | Tower context/scope layers and Hyper streaming bridge | Phase 4 foundation |
+| Framework adapters | Tower-first where possible, native adapters where necessary | Adapter skeletons |
 | Diagnostics | Introspectable graph and startup report without secret leakage | Planned |
 
 “Phase 1” and “Phase 2 kernel” mean callable implementation and contract tests

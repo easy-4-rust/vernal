@@ -1,63 +1,34 @@
 #![forbid(unsafe_code)]
-#![doc = "Framework-neutral web integration contracts for Vernal."]
+#![doc = "Vernal 的框架中立 Web 应用层合同。"]
 
-/// The transport family exposed by an integration.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TransportKind {
-    /// The contract or foundation is independent of a transport protocol.
-    FrameworkNeutral,
-    /// HTTP request, response, and body semantics.
-    Http,
-    /// RPC unary and streaming semantics.
-    Rpc,
-}
+mod context_carrier;
+mod handler_invocation;
+mod integration_descriptor;
+mod integration_role;
+mod problem_details;
+mod problem_kind;
+mod request_context;
+mod request_id;
+mod route_metadata;
+mod scope_error;
+mod scope_future;
+mod scope_state;
+mod security_principal;
+mod transport_kind;
+mod web_request_scope;
 
-/// The role played by an integration crate.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum IntegrationRole {
-    /// A framework-neutral web application contract.
-    ApplicationContract,
-    /// A protocol-level contract.
-    ProtocolContract,
-    /// A lower-level service or transport foundation.
-    Foundation,
-    /// An HTTP application framework adapter.
-    HttpFramework,
-    /// An RPC framework adapter.
-    RpcFramework,
-}
-
-/// Static metadata for a Vernal web integration.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct IntegrationDescriptor {
-    /// Vernal adapter crate.
-    pub crate_name: &'static str,
-    /// Upstream framework or abstraction.
-    pub upstream: &'static str,
-    /// Integration role.
-    pub role: IntegrationRole,
-    /// Primary transport family.
-    pub transport: TransportKind,
-    /// Current implementation maturity.
-    pub status: &'static str,
-}
-
-impl IntegrationDescriptor {
-    /// Creates an immutable integration descriptor.
-    #[must_use]
-    pub const fn new(
-        crate_name: &'static str,
-        upstream: &'static str,
-        role: IntegrationRole,
-        transport: TransportKind,
-        status: &'static str,
-    ) -> Self {
-        Self {
-            crate_name,
-            upstream,
-            role,
-            transport,
-            status,
-        }
-    }
-}
+pub use context_carrier::ContextCarrier;
+pub use handler_invocation::HandlerInvocation;
+pub use integration_descriptor::IntegrationDescriptor;
+pub use integration_role::IntegrationRole;
+pub use problem_details::ProblemDetails;
+pub use problem_kind::ProblemKind;
+pub use request_context::RequestContext;
+pub use request_id::RequestId;
+pub use route_metadata::RouteMetadata;
+pub use scope_error::ScopeError;
+pub use scope_future::ScopeFuture;
+pub use scope_state::ScopeState;
+pub use security_principal::SecurityPrincipal;
+pub use transport_kind::TransportKind;
+pub use web_request_scope::WebRequestScope;

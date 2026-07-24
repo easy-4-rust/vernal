@@ -5,7 +5,7 @@
 > 遵守的重构边界。
 >
 > **架构版本**：0.1.0<br>
-> **适用代码版本**：`0.0.0-dev` Phase 1 IoC + Phase 2 AOP 内核<br>
+> **适用代码版本**：`0.0.0-dev` Phase 1–4 可调用底座<br>
 > **文档状态**：草案，待架构评审<br>
 > **最后更新**：2026-07-24
 
@@ -34,7 +34,8 @@
 
 - `[已确认]` 根 Workspace manifest 声明 Edition 2024、Resolver 3、MSRV 1.85.0；
   本轮本地门禁使用 Rust 1.97.1，MSRV CI 仍是目标态。
-- `[已确认]` 已创建六个内核/组合层骨架，以及十四个 Web 相关骨架 crate。
+- `[已确认]` 已创建六个内核/组合层 crate 与十四个 Web 相关 crate，其中四个
+  Web 底座 crate 已提供可调用行为。
 - `[已确认]` 所有 crate 设置 `publish = false`，没有 crates.io 或稳定 API 声明。
 - `[已确认]` `vernal-core` 与 `vernal-ioc` 已提供显式 Registry、确定性图规划、
   Container 隔离、Singleton/Transient 和结构化错误。
@@ -42,8 +43,12 @@
   不可变计划、类型化扩展、取消和 deadline。
 - `[已确认]` `vernal-context` 已提供串行 Tokio 生命周期状态机、依赖顺序
   initialize/start、取消、失败回滚、逆序幂等关闭和 Context-local 类型化事件。
-- `[骨架]` 宏及 Web Adapter 仍只验证 crate 边界与依赖方向。
-- `[设计目标]` Phase 2 宏、Context AOP 计划聚合与 Phase 4–6 仍需实现和验收。
+- `[已确认]` `vernal-web`、`vernal-http`、`vernal-tower` 与
+  `vernal-hyper` 已提供请求 Scope、标准 HTTP Body Frame/Trailer、Tower
+  生命周期 Layer 和真实 Hyper 传输桥接。
+- `[骨架]` 宏及十个框架 Adapter 仍只验证 crate 边界与依赖方向。
+- `[设计目标]` Phase 2 宏、Context AOP 计划聚合、框架 Adapter 与后续生产
+  门禁仍需实现和验收。
 
 ## 2. 品牌寓意与架构主张
 
@@ -472,9 +477,10 @@ Tower 与 Hyper 是公共底座，不占十种目标名额；Tonic 明确属于 
 该集合是根据本地源码集成并集和当前 registry 可用性形成的版本化覆盖优先级，不是
 对全世界 Rust 框架热度的绝对排名。
 
-当前 Workspace 包含十四个 Web 相关骨架 crate：`vernal-web`、`vernal-http`、
-Tower/Hyper 和十个 Adapter。它们目前只提供通过编译的描述符；协议合同、上游
-Middleware、Extractor 和 Streaming Bridge 仍属于后续实现。详细合同见
+当前 Workspace 包含十四个 Web 相关 crate：`vernal-web`、`vernal-http`、
+Tower/Hyper 和十个 Adapter。四个底座已提供可调用的请求 Scope、HTTP
+Frame/Trailer、取消、Tower 生命周期和 Hyper 传输能力；十个上游框架 Adapter
+仍是可编译描述符，原生 Middleware 与 Extractor 是下一层实现。详细合同见
 [Vernal Web 集成架构](./Vernal-Web-Architecture.zh_CN.md)。
 
 ## 12. Hutool-Rust、Sa-Token-Rust 与 Ddd4r 集成

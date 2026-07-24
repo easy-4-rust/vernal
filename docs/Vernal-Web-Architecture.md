@@ -11,16 +11,27 @@
 
 ## 1. Current facts
 
-The workspace contains fourteen web-related skeleton crates:
+The workspace contains fourteen web-related crates:
 
 - two shared contracts: `vernal-web` and `vernal-http`;
 - two foundations: `vernal-tower` and `vernal-hyper`;
 - ten adapters: Axum, Actix Web, Rocket, Warp, Salvo, Poem, Ntex, Gotham,
   Tide, and Tonic.
 
-Their sources currently expose static `IntegrationDescriptor` values only. No
-adapter yet depends on its upstream framework or implements runnable
-middleware, layers, extractors, guards, or interceptors.
+The four shared/foundation crates now expose callable contracts:
+
+- `vernal-web` owns typed request context, request scope, invocation bridging,
+  security-principal carriage, and stable problem details;
+- `vernal-http` uses standard `http`/`http-body` types, preserves frames and
+  trailers, supports cancellation, and only buffers through an explicit limit;
+- `vernal-tower` injects `ApplicationContext` and closes request scopes after
+  body completion, upstream error, or dropped request futures;
+- `vernal-hyper` converts `Incoming` into the same frame stream without
+  buffering and is verified over a real TCP/HTTP connection.
+
+The ten application/RPC adapters remain descriptors. None yet depends on its
+upstream framework or implements native middleware, extractors, guards, or
+interceptors.
 
 The versioned selection is recorded in
 [`web-integration-manifest.toml`](../web-integration-manifest.toml).
@@ -176,10 +187,14 @@ stateDiagram-v2
 
 ### 7.1 `vernal-tower`
 
-Target reusable facilities for Axum, Tonic, and other Tower services:
+Implemented reusable facilities for Axum, Tonic, and other Tower services:
 
 - `VernalLayer` injects the context handle;
-- `RequestScopeLayer` opens and closes request scopes;
+- `RequestScopeLayer` opens and closes request scopes across response body
+  completion, service error, cancellation, and dropped futures;
+
+Remaining Phase 4/adapter facilities:
+
 - `AopLayer` turns service calls into invocations;
 - `ContextPropagationLayer` carries metadata and cancellation;
 - configurable error mapping to `Service::Error`.
@@ -192,11 +207,11 @@ Trace -> Context -> RequestScope -> Security/AOP -> Handler -> ErrorMapping
 
 ### 7.2 `vernal-hyper`
 
-This crate handles HTTP transport concerns only:
+This crate implements HTTP transport concerns only:
 
 - lightweight bridges for Hyper requests and responses;
-- body-frame and trailer fidelity;
-- connection-close and request-cancellation signals;
+- body-frame and trailer fidelity, verified on a real chunked request;
+- request-cancellation signals shared by the request and body;
 - no application router and no place in the ten-framework count.
 
 ## 8. Ten framework adapters

@@ -11,15 +11,26 @@
 
 ## 1. 当前事实
 
-当前 Workspace 包含十四个 Web 相关骨架 crate：
+当前 Workspace 包含十四个 Web 相关 crate：
 
 - 两个公共合同：`vernal-web`、`vernal-http`；
 - 两个底层能力：`vernal-tower`、`vernal-hyper`；
 - 十个框架适配器：Axum、Actix Web、Rocket、Warp、Salvo、Poem、Ntex、
   Gotham、Tide、Tonic。
 
-这些 crate 当前只发布静态 `IntegrationDescriptor`。所有 Adapter 尚未引入上游
-框架，也没有实现可运行的 Middleware、Layer、Extractor、Guard 或 Interceptor。
+四个公共合同/底座 crate 已提供可调用能力：
+
+- `vernal-web` 提供类型化请求上下文、请求 Scope、Invocation 桥接、安全主体载体
+  与稳定问题详情；
+- `vernal-http` 直接使用标准 `http`/`http-body` 类型，保留 Frame 和 Trailer，
+  支持取消，并且只在调用方给出明确上限时缓冲；
+- `vernal-tower` 注入 `ApplicationContext`，并在 Body 完成、Service 错误或请求
+  Future 被丢弃时关闭 Scope；
+- `vernal-hyper` 不缓冲地把 `Incoming` 转换为同一 Frame 流，并已通过真实
+  TCP/HTTP 连接验证。
+
+十个应用/RPC Adapter 仍是描述符，尚未引入上游框架或实现原生 Middleware、
+Extractor、Guard、Interceptor。
 
 版本化选择清单由
 [`web-integration-manifest.toml`](../web-integration-manifest.toml) 维护。
@@ -164,10 +175,14 @@ stateDiagram-v2
 
 ### 7.1 `vernal-tower`
 
-提供可被 Axum、Tonic 和其他 Tower 生态复用的能力：
+已实现可被 Axum、Tonic 和其他 Tower 生态复用的能力：
 
 - `VernalLayer`：向 Service 注入 Context Handle；
-- `RequestScopeLayer`：创建并关闭请求作用域；
+- `RequestScopeLayer`：在响应 Body 完成、Service 错误、取消或请求 Future
+  被丢弃时关闭请求作用域；
+
+仍待后续 Phase 4/Adapter 实现：
+
 - `AopLayer`：把 Service 调用纳入统一 Invocation；
 - `ContextPropagationLayer`：传播请求元数据和取消；
 - 错误分类到 Tower `Service::Error` 的可配置映射。
@@ -180,11 +195,11 @@ Trace -> Context -> RequestScope -> Security/AOP -> Handler -> ErrorMapping
 
 ### 7.2 `vernal-hyper`
 
-只处理 HTTP 传输共性：
+已实现且只处理 HTTP 传输共性：
 
 - Hyper Request/Response 与 Vernal 合同的轻量桥接；
-- Body 帧和 Trailer 保真；
-- 连接关闭与请求取消信号；
+- Body 帧和 Trailer 保真，并通过真实 Chunked 请求验证；
+- 请求与 Body 共享的取消信号；
 - 不提供应用 Router，也不计入十个应用框架。
 
 ## 8. 十类框架 Adapter

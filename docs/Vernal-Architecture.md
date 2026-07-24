@@ -6,7 +6,7 @@
 > `tx-di`.
 >
 > **Architecture version:** 0.1.0<br>
-> **Applicable code:** `0.0.0-dev` Phase 1 IoC + Phase 2 AOP kernel<br>
+> **Applicable code:** `0.0.0-dev` Phase 1–4 callable foundations<br>
 > **Status:** Draft, awaiting architecture review<br>
 > **Last updated:** 2026-07-24
 
@@ -35,8 +35,8 @@
 
 - `[Confirmed]` The manifest declares Edition 2024, resolver 3, and MSRV
   1.85.0. Current local gates use Rust 1.97.1; MSRV CI remains a target.
-- `[Confirmed]` Six kernel/composition skeleton crates and fourteen
-  web-related skeleton crates exist.
+- `[Confirmed]` Six kernel/composition crates and fourteen web-related crates
+  exist; four web foundation crates now expose callable behavior.
 - `[Confirmed]` Every crate is `publish = false`; no crates.io or stable API
   claim is made.
 - `[Confirmed]` `vernal-core` and `vernal-ioc` provide an explicit registry,
@@ -48,8 +48,13 @@
 - `[Confirmed]` `vernal-context` provides a serialized Tokio lifecycle state
   machine, dependency-order initialize/start, cancellation, rollback,
   reverse idempotent shutdown, and context-local typed events.
-- `[Skeleton]` Macros and web adapters still validate crate boundaries only.
-- `[Target]` Phase 2 macros, Context AOP-plan aggregation, and Phases 4–6 remain.
+- `[Confirmed]` `vernal-web`, `vernal-http`, `vernal-tower`, and
+  `vernal-hyper` provide request scope, standard HTTP body frames/trailers,
+  Tower lifecycle layers, and a real Hyper transport bridge.
+- `[Skeleton]` Macros and the ten framework adapters still validate crate
+  boundaries only.
+- `[Target]` Phase 2 macros, Context AOP-plan aggregation, framework adapters,
+  and later production gates remain.
 
 ## 2. Brand meaning and architecture thesis
 
@@ -452,10 +457,12 @@ versioned coverage priority derived from the reviewed local integration
 superset and current registry presence, not an objective universal popularity
 ranking.
 
-The workspace has fourteen web-related skeleton crates: `vernal-web`,
-`vernal-http`, Tower/Hyper, and ten adapters. They currently expose
-compile-checked descriptors only; protocol contracts, upstream middleware,
-extractors, and streaming bridges remain implementation work. The detailed contract is
+The workspace has fourteen web-related crates: `vernal-web`, `vernal-http`,
+Tower/Hyper, and ten adapters. The four foundations now provide callable
+request-scope, HTTP frame/trailer, cancellation, Tower lifecycle, and Hyper
+transport behavior. The ten upstream framework adapters remain
+compile-checked descriptors; native middleware and extractors are the next
+implementation layer. The detailed contract is
 [Vernal Web Architecture](./Vernal-Web-Architecture.md).
 
 ## 12. Consumer integrations

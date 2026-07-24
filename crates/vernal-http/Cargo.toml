@@ -8,7 +8,18 @@ description = "Framework-neutral HTTP protocol contracts for Vernal."
 publish = false
 
 [dependencies]
+bytes.workspace = true
+futures-core.workspace = true
+http.workspace = true
+http-body.workspace = true
+http-body-util.workspace = true
+tokio-util.workspace = true
+vernal-core = { path = "../vernal-core" }
 vernal-web = { path = "../vernal-web" }
+
+[dev-dependencies]
+futures-util.workspace = true
+tokio.workspace = true
 
 [lints]
 workspace = true

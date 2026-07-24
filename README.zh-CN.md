@@ -31,9 +31,9 @@ Vernal 是 **句芒** 的英文品牌。句芒在中国古代文化中与春天�
 Hutool-Rust · Sa-Token-Rust · Ddd4r · 通用 Rust 应用
 ```
 
-> **项目状态**：实验阶段。Phase 1 IoC 已实现，Tokio-first 的 Phase 2 AOP
-> 内核也已提供可调用的 `Around + Next` 链；宏、应用上下文和框架适配器仍是
-> 骨架。当前尚未发布。
+> **项目状态**：实验阶段。Phase 1 IoC、Tokio-first 的 Phase 2 AOP 内核、
+> Phase 3 应用上下文，以及 Phase 4 Web/HTTP/Tower/Hyper 底座已有可调用实现
+> 和合同测试；过程宏及十个框架适配器仍是骨架。当前尚未发布。
 
 ## 1. 愿景
 
@@ -105,10 +105,10 @@ Vernal 遵守四条不可退化的规则：
 | `vernal-aop` | Phase 2 内核已实现 | Around/Next、切点、不可变计划和取消 |
 | `vernal-context` | Phase 3 内核已实现 | 生命周期、回滚、逆序关闭和类型化事件 |
 | `vernal-macros` | 骨架 | 薄过程宏入口 |
-| `vernal-web` | 骨架 | 框架中立的 Context、请求 Scope、Handler 和错误合同 |
-| `vernal-http` | 骨架 | HTTP 请求、响应、Body、流、取消和背压合同 |
-| `vernal-tower` | 骨架 | Tower `Layer`/`Service` 公共底座 |
-| `vernal-hyper` | 骨架 | Hyper HTTP 传输底座 |
+| `vernal-web` | Phase 4 合同已实现 | 框架中立的 Context、请求 Scope、Handler 和错误合同 |
+| `vernal-http` | Phase 4 合同已实现 | HTTP 请求、响应、Body、流、取消和背压合同 |
+| `vernal-tower` | Phase 4 底座已实现 | Tower Context 注入与请求 Scope 生命周期 |
+| `vernal-hyper` | Phase 4 底座已实现 | Hyper 请求与 Body Frame 无损传输桥接 |
 
 目标集成集合记录在
 [`web-integration-manifest.toml`](./web-integration-manifest.toml)。十个 Adapter
@@ -209,11 +209,12 @@ Singleton 状态属于具体 Container，而不是进程级全局 Store。
 | 拦截器链 | 有序 Around/Next、短路及结果/错误改写 | Phase 2 内核 |
 | 切点 | 操作匹配并编译成不可变调用计划 | Phase 2 内核 |
 | ApplicationContext | 串行生命周期、回滚、逆序关闭和 Context-local 类型化事件 | Phase 3 内核 |
-| 事件 | Context 内部隔离的类型化事件发布 | 计划 |
+| 事件 | Context 内部隔离的类型化事件发布 | Phase 3 内核 |
 | 异步集成 | Tokio 原生取消、deadline 与类型化调用上下文 | Phase 2 内核 |
-| Web 上下文 | 请求 Context、请求 Scope、Handler 调用和错误映射 | 骨架 |
-| HTTP | 请求/响应、Body 流、取消和背压 | 骨架 |
-| Web 集成 | 能复用 Tower 时优先 Tower，必要时原生适配 | Adapter 骨架 |
+| Web 上下文 | 请求 Context、请求 Scope、Handler 调用和错误映射 | Phase 4 合同 |
+| HTTP | 请求/响应、Body Frame/Trailer、显式限量收集、取消和背压 | Phase 4 合同 |
+| Web 集成底座 | Tower Context/Scope Layer 与 Hyper 流式桥接 | Phase 4 底座 |
+| 框架适配器 | 能复用 Tower 时优先 Tower，必要时原生适配 | Adapter 骨架 |
 | 诊断 | 可检查的依赖图与不泄露秘密的启动报告 | 计划 |
 
 “Phase 1”和“Phase 2 内核”表示已有可调用实现与合同测试，但 API 仍处于实验

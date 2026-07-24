@@ -8,7 +8,20 @@ description = "Tower service and layer foundation for Vernal."
 publish = false
 
 [dependencies]
+bytes.workspace = true
+http.workspace = true
+http-body.workspace = true
+tokio.workspace = true
+tokio-util.workspace = true
+tower.workspace = true
+vernal-context = { path = "../vernal-context" }
+vernal-core = { path = "../vernal-core" }
 vernal-web = { path = "../vernal-web" }
+
+[dev-dependencies]
+http-body-util.workspace = true
+vernal-http = { path = "../vernal-http" }
+vernal-ioc = { path = "../vernal-ioc" }
 
 [lints]
 workspace = true
