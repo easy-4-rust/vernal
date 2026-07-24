@@ -63,12 +63,13 @@
   cleanup; `vernal-ntex` provides native Middleware/Service composition,
   App State/Extension extractors, and body-bound Scope cleanup;
   `vernal-gotham` provides StateData, type-safe State access, Pipeline
-  middleware, and frame/trailer-preserving body cleanup; `vernal-tonic`
-  provides a Context interceptor, typed Request extensions, `Status` mapping,
-  and Tower composition.
-- `[Skeleton]` Macros and the Tide adapter still validate crate boundaries only.
-- `[Target]` Phase 2 macros, Context AOP-plan aggregation, framework adapters,
-  and later production gates remain.
+  middleware, and frame/trailer-preserving body cleanup; `vernal-tide` provides
+  native Middleware, typed Request Extension access, and reader-bound Scope
+  cleanup; `vernal-tonic` provides a Context interceptor, typed Request
+  extensions, `Status` mapping, and Tower composition.
+- `[Skeleton]` Macros still validate crate boundaries only.
+- `[Target]` Phase 2 macros, Context AOP-plan aggregation, consumer ecosystem
+  bridges, and later production gates remain.
 
 ## 2. Brand meaning and architecture thesis
 
@@ -481,10 +482,11 @@ filters and an official Tower Service lifecycle; Salvo adds a Hoop, typed Depot
 access, and frame/trailer-preserving body lifecycle; Poem adds
 Middleware/Endpoint, request-extension extractors, and body lifecycle
 integration; Ntex adds native Middleware/Service, App State/Extensions, typed
-extractors, and response-body lifecycle integration; Gotham adds native
-StateData, type-safe State access, Pipeline middleware, and a frame/trailer
-body lifecycle; Tonic adds native Request/Metadata/Status and Tower integration.
-Tide remains a compile-checked descriptor.
+  extractors, and response-body lifecycle integration; Gotham adds native
+  StateData, type-safe State access, Pipeline middleware, and a frame/trailer
+  body lifecycle; Tide adds native Middleware, typed Request Extension access,
+  and reader-bound Scope cleanup; Tonic adds native Request/Metadata/Status and
+  Tower integration.
 The detailed contract is
 [Vernal Web Architecture](./Vernal-Web-Architecture.md).
 

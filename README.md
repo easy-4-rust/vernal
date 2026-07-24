@@ -35,9 +35,9 @@ Hutool-Rust · Sa-Token-Rust · Ddd4r · general Rust applications
 
 > **Project status:** experimental. Phase 1 IoC, the Tokio-first Phase 2 AOP
 > kernel, Phase 3 application context, and the Phase 4 Web/HTTP/Tower/Hyper
-> foundations are callable and contract-tested. Axum, Actix Web, Rocket, Warp,
-> Salvo, Poem, Ntex, Gotham, and Tonic are runnable framework adapters;
-> procedural macros and the Tide adapter remain skeletons. Nothing is published
+> foundations are callable and contract-tested. All ten selected framework
+> adapters—Axum, Actix Web, Rocket, Warp, Salvo, Poem, Ntex, Gotham, Tide, and
+> Tonic—are runnable; procedural macros remain a skeleton. Nothing is published
 > yet.
 
 ## 1. Vision
@@ -124,9 +124,8 @@ Detailed decisions, flows, failure semantics, and acceptance criteria are in:
 | `vernal-hyper` | Phase 4 foundation implemented | Lossless Hyper request/body-frame transport bridge |
 
 The target integration set is recorded in
-[`web-integration-manifest.toml`](./web-integration-manifest.toml). The ten
-adapter crates exist; nine contain runnable native integrations and Tide
-remains a compile-checked descriptor:
+[`web-integration-manifest.toml`](./web-integration-manifest.toml). All ten
+adapter crates contain runnable native integrations:
 
 | Priority | Framework | Vernal crate | Protocol | Status |
 |:---:|:---|:---|:---|:---:|
@@ -138,7 +137,7 @@ remains a compile-checked descriptor:
 | 6 | Poem | `vernal-poem` | HTTP | Phase 5 adapter |
 | 7 | Ntex | `vernal-ntex` | HTTP | Phase 5 adapter |
 | 8 | Gotham | `vernal-gotham` | HTTP | Phase 5 adapter |
-| 9 | Tide | `vernal-tide` | HTTP | Skeleton |
+| 9 | Tide | `vernal-tide` | HTTP | Phase 5 adapter |
 | 10 | Tonic | `vernal-tonic` | RPC streaming + Tower | Phase 5 adapter |
 
 Axum provides native Router assembly plus Context, component, and request-scope
@@ -152,8 +151,9 @@ Context/component/scope extractors, and body-bound cleanup. Ntex provides
 native `Middleware`/`Service`, App State/Extension extractors, and a
 `MessageBody`-bound request scope. Gotham provides native `StateData`, a
 type-safe State extension, Pipeline middleware, and frame/trailer-preserving
-body cleanup. Tonic provides a Context interceptor, typed Request extensions,
-stable `Status` mapping, and reusable Tower layers. Tide remains a descriptor.
+body cleanup. Tide provides native `Middleware`, typed Request Extension access,
+and response-reader-bound Scope cleanup. Tonic provides a Context interceptor,
+typed Request extensions, stable `Status` mapping, and reusable Tower layers.
 
 “Ten” is a versioned coverage priority derived from the reviewed local
 integration superset and current registry availability, not a claim of an
@@ -245,7 +245,7 @@ in the application or integration crate that registers them.
 | Web context | Request context, request scope, handler invocation, error mapping | Phase 4 contract |
 | HTTP | Request/response, body frames/trailers, explicit bounded collection, cancellation, backpressure | Phase 4 contract |
 | Web integration foundation | Tower context/scope layers and Hyper streaming bridge | Phase 4 foundation |
-| Framework adapters | Tower-first where possible, native adapters where necessary | Adapter skeletons |
+| Framework adapters | Tower-first where possible, native adapters where necessary | Phase 5 adapters |
 | Diagnostics | Introspectable graph and startup report without secret leakage | Planned |
 
 “Phase 1” and “Phase 2 kernel” mean callable implementation and contract tests

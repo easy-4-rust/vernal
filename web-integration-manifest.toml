@@ -126,7 +126,7 @@ observed_version = "0.17.0-beta.1"
 category = "http-framework"
 protocol = "http"
 source_evidence = ["Sa-Token-Rust"]
-status = "skeleton"
+status = "phase-5-adapter"
 
 [[integrations]]
 priority = 10

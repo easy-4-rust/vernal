@@ -43,7 +43,9 @@ Request 扩展、`GrpcMethod` 路由元数据、稳定 `Status` 映射和 Tower 
 Ntex 采用兼容 Rust 1.85 的 2.18.0 版本线，实现原生 Middleware/Service、
 App State/Extension 提取器与 `MessageBody` 绑定请求 Scope。Gotham 0.8
 实现原生 StateData、类型安全 State 访问、Pipeline Middleware 与
-Frame/Trailer 保真的 Body 释放。仅 Tide 仍是描述符。
+Frame/Trailer 保真的 Body 释放。Tide 0.17.0-beta.1 已实现原生 Middleware、
+类型化 Request Extension 访问，以及基于 Vernal Tokio 运行时的响应 Reader
+绑定 Scope 释放。
 
 版本化选择清单由
 [`web-integration-manifest.toml`](../web-integration-manifest.toml) 维护。
@@ -227,7 +229,7 @@ Trace -> Context -> RequestScope -> Security/AOP -> Handler -> ErrorMapping
 | 6 | Poem | `vernal-poem` | HTTP | Middleware、Endpoint、Data、IntoResponse | Phase 5 适配已实现 |
 | 7 | Ntex | `vernal-ntex` | HTTP | Service/Middleware、App State、Extractor | Phase 5 适配已实现 |
 | 8 | Gotham | `vernal-gotham` | HTTP | State Middleware、Pipeline、Handler | Phase 5 适配已实现 |
-| 9 | Tide | `vernal-tide` | HTTP | Middleware、Request State、Response | 骨架 |
+| 9 | Tide | `vernal-tide` | HTTP | Middleware、Request Extension、Response | Phase 5 适配已实现 |
 | 10 | Tonic | `vernal-tonic` | RPC Streaming + Tower | Layer、Interceptor、Extension、Status、Streaming | Phase 5 适配已实现 |
 
 ### 8.1 框架特定约束
@@ -266,8 +268,13 @@ Trace -> Context -> RequestScope -> Security/AOP -> Handler -> ErrorMapping
   Gotham Pipeline 合同，中间件工厂仅对受同步保护的
   `Arc<ApplicationContext>` 持有端明确标记 unwind-safe，不放宽 Context 锁与
   线程安全要求。
-- **Tide**：通过 Request State 与 Middleware 集成；因当前 registry 版本仍为
-  beta，放在兼容性优先级，不作为首批稳定发布阻塞项。
+- **Tide**：原生 Middleware 将显式应用 Context 与请求 Scope 注入 Request
+  Extension，类型化请求扩展直接解析 IoC 组件，不建立 Service Locator；响应
+  `AsyncBufRead` Wrapper 让 Scope 持续到 EOF、上游错误或取消，并保留字节、
+  已知长度、错误和背压。Tide 公共 Body API 不暴露 HTTP Trailer，因此该适配器
+  不能承诺 Trailer 保真；为了确定性执行异步 Scope 关闭，适配器要求存在活跃
+  Tokio Runtime。Tide 0.17.0-beta.1 仍是 beta，Vernal 稳定发布前必须重新验证
+  兼容面。
 - **Tonic**：Unary 与 Streaming 都使用 Tower 路径；Vernal 错误映射为稳定
   `Status`，Metadata 与 Extension 保真。
 

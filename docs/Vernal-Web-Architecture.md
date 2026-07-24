@@ -47,7 +47,9 @@ Ntex uses the Rust-1.85-compatible 2.18.0 line and implements native
 Middleware/Service composition, App State/Extension extractors, and a
 MessageBody-bound request scope. Gotham 0.8 implements native StateData,
 type-safe State access, Pipeline middleware, and frame/trailer-preserving body
-cleanup. Tide remains a descriptor.
+cleanup. Tide 0.17.0-beta.1 implements native Middleware, typed Request
+Extension access, and response-reader-bound Scope cleanup on Vernal's Tokio
+runtime.
 
 The versioned selection is recorded in
 [`web-integration-manifest.toml`](../web-integration-manifest.toml).
@@ -242,7 +244,7 @@ This crate implements HTTP transport concerns only:
 | 6 | Poem | `vernal-poem` | HTTP | Middleware, Endpoint, Data, IntoResponse | Phase 5 adapter |
 | 7 | Ntex | `vernal-ntex` | HTTP | Service/Middleware, App State, Extractor | Phase 5 adapter |
 | 8 | Gotham | `vernal-gotham` | HTTP | State Middleware, Pipeline, Handler | Phase 5 adapter |
-| 9 | Tide | `vernal-tide` | HTTP | Middleware, Request State, Response | Skeleton |
+| 9 | Tide | `vernal-tide` | HTTP | Middleware, Request Extension, Response | Phase 5 adapter |
 | 10 | Tonic | `vernal-tonic` | RPC Streaming + Tower | Layer, Interceptor, Extension, Status, Streaming | Phase 5 adapter |
 
 ### 8.1 Framework-specific constraints
@@ -290,9 +292,15 @@ This crate implements HTTP transport concerns only:
   factory narrowly marks its synchronized `Arc<ApplicationContext>` holder as
   unwind-safe to satisfy Gotham's pipeline contract; it does not weaken
   Context locking or thread-safety requirements.
-- **Tide:** integrate through request state and middleware. Its current registry
-  release remains beta, so it is a compatibility target rather than a first
-  stable-release blocker.
+- **Tide:** native Middleware injects the explicit application context and
+  per-request scope into Request Extensions; a typed request extension resolves
+  IoC components without a service locator. The response `AsyncBufRead` wrapper
+  retains scope through EOF, upstream failure, or cancellation while preserving
+  bytes, known length, errors, and backpressure. Tide's public body API does not
+  expose HTTP trailers, so this adapter cannot promise trailer fidelity. The
+  adapter requires an active Tokio runtime for deterministic asynchronous scope
+  closure. Tide 0.17.0-beta.1 remains beta, so its compatibility surface must be
+  revalidated before a stable Vernal release.
 - **Tonic:** unary and streaming calls use the Tower path; Vernal errors map to
   stable `Status` values without losing metadata or extensions.
 
