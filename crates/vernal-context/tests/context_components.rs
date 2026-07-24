@@ -7,7 +7,7 @@ use tokio_util::sync::CancellationToken;
 use vernal_aop::{InvocationPlanCatalog, LocalInvocationPlanCatalog, Operation};
 use vernal_context::{
     ApplicationBuildError, EventBus, Lifecycle, LifecycleExecutionPolicy, ManagedTaskSupervisor,
-    ScopeCleanupPolicy, TaskShutdownPolicy, VernalApplicationBuilder,
+    ScopeCleanupPolicy, SystemShutdownSignalListener, TaskShutdownPolicy, VernalApplicationBuilder,
 };
 use vernal_core::BoxError;
 use vernal_ioc::ComponentDefinition;
@@ -20,6 +20,7 @@ struct RuntimeAwareService {
     managed_tasks: Arc<ManagedTaskSupervisor>,
     task_shutdown_policy: Arc<TaskShutdownPolicy>,
     lifecycle_execution_policy: Arc<LifecycleExecutionPolicy>,
+    shutdown_signals: Arc<SystemShutdownSignalListener>,
     scope_cleanup_policy: Arc<ScopeCleanupPolicy>,
     invocation_plans: Arc<InvocationPlanCatalog>,
     local_invocation_plans: Arc<LocalInvocationPlanCatalog>,
@@ -69,6 +70,36 @@ fn assert_lifecycle_execution_component(
     ));
 }
 
+/// 构造声明全部十类框架内建依赖的业务组件定义。
+fn runtime_aware_definition() -> ComponentDefinition {
+    ComponentDefinition::try_singleton::<RuntimeAwareService, _>(
+        |resolver| -> Result<RuntimeAwareService, BoxError> {
+            Ok(RuntimeAwareService {
+                runtime: resolver.resolve::<Handle>()?,
+                cancellation: resolver.resolve::<CancellationToken>()?,
+                events: resolver.resolve::<EventBus>()?,
+                managed_tasks: resolver.resolve::<ManagedTaskSupervisor>()?,
+                task_shutdown_policy: resolver.resolve::<TaskShutdownPolicy>()?,
+                lifecycle_execution_policy: resolver.resolve::<LifecycleExecutionPolicy>()?,
+                shutdown_signals: resolver.resolve::<SystemShutdownSignalListener>()?,
+                scope_cleanup_policy: resolver.resolve::<ScopeCleanupPolicy>()?,
+                invocation_plans: resolver.resolve::<InvocationPlanCatalog>()?,
+                local_invocation_plans: resolver.resolve::<LocalInvocationPlanCatalog>()?,
+            })
+        },
+    )
+    .depends_on::<Handle>()
+    .depends_on::<CancellationToken>()
+    .depends_on::<EventBus>()
+    .depends_on::<ManagedTaskSupervisor>()
+    .depends_on::<TaskShutdownPolicy>()
+    .depends_on::<LifecycleExecutionPolicy>()
+    .depends_on::<SystemShutdownSignalListener>()
+    .depends_on::<ScopeCleanupPolicy>()
+    .depends_on::<InvocationPlanCatalog>()
+    .depends_on::<LocalInvocationPlanCatalog>()
+}
+
 #[test]
 fn current_builder_rejects_threads_without_a_tokio_runtime() {
     assert!(matches!(
@@ -96,33 +127,7 @@ async fn managed_context_injects_tokio_events_cancellation_and_aop_plans() {
     application.operation(operation.clone());
     application.lifecycle::<RuntimeAwareService>();
     application
-        .register(
-            ComponentDefinition::try_singleton::<RuntimeAwareService, _>(
-                |resolver| -> Result<RuntimeAwareService, BoxError> {
-                    Ok(RuntimeAwareService {
-                        runtime: resolver.resolve::<Handle>()?,
-                        cancellation: resolver.resolve::<CancellationToken>()?,
-                        events: resolver.resolve::<EventBus>()?,
-                        managed_tasks: resolver.resolve::<ManagedTaskSupervisor>()?,
-                        task_shutdown_policy: resolver.resolve::<TaskShutdownPolicy>()?,
-                        lifecycle_execution_policy: resolver
-                            .resolve::<LifecycleExecutionPolicy>()?,
-                        scope_cleanup_policy: resolver.resolve::<ScopeCleanupPolicy>()?,
-                        invocation_plans: resolver.resolve::<InvocationPlanCatalog>()?,
-                        local_invocation_plans: resolver.resolve::<LocalInvocationPlanCatalog>()?,
-                    })
-                },
-            )
-            .depends_on::<Handle>()
-            .depends_on::<CancellationToken>()
-            .depends_on::<EventBus>()
-            .depends_on::<ManagedTaskSupervisor>()
-            .depends_on::<TaskShutdownPolicy>()
-            .depends_on::<LifecycleExecutionPolicy>()
-            .depends_on::<ScopeCleanupPolicy>()
-            .depends_on::<InvocationPlanCatalog>()
-            .depends_on::<LocalInvocationPlanCatalog>(),
-        )
+        .register(runtime_aware_definition())
         .expect("runtime-aware service definition should be valid");
 
     let context = application
@@ -147,6 +152,10 @@ async fn managed_context_injects_tokio_events_cancellation_and_aop_plans() {
     assert!(std::ptr::eq(service.events.as_ref(), context.events()));
     assert_managed_task_components(&service, &context);
     assert_lifecycle_execution_component(&service, &context);
+    assert!(std::ptr::eq(
+        service.shutdown_signals.as_ref(),
+        context.shutdown_signal_listener()
+    ));
     assert_eq!(
         service.scope_cleanup_policy.timeout(),
         Some(Duration::from_secs(7))

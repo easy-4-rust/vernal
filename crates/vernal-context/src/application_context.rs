@@ -8,8 +8,9 @@ use vernal_aop::InvocationPlanCatalog;
 use vernal_ioc::{ComponentKey, Container, ScopeContext};
 
 use crate::{
-    ContextError, ContextState, EventBus, LifecycleExecutionPolicy, ManagedTaskSupervisor,
-    StartupReport, TaskShutdownPolicy, application_close_coordinator::ApplicationCloseCoordinator,
+    ApplicationShutdownSignal, ContextError, ContextState, EventBus, LifecycleExecutionPolicy,
+    ManagedTaskSupervisor, StartupReport, SystemShutdownSignalListener, TaskShutdownPolicy,
+    application_close_coordinator::ApplicationCloseCoordinator,
     application_context_builder::LifecycleResolver,
     application_startup_coordinator::ApplicationStartupCoordinator,
     context_resources::ContextResources,
@@ -102,6 +103,60 @@ impl ApplicationContext {
         self.close().await
     }
 
+    /// 等待应用内部取消或当前平台的第一个操作系统关闭信号，再完整关闭 Context。
+    ///
+    /// 受管任务失败可能先取消应用；Ctrl-C、Unix SIGTERM/SIGHUP 或 Windows
+    /// 控制台信号也可能先到达。两条路径使用同一个取消令牌和关闭协调器，因而不会
+    /// 重复 stop。操作系统信号会先作为 [`ApplicationShutdownSignal`] 发布到
+    /// Context-local [`EventBus`]，随后立即取消应用；事件订阅方不能延迟关闭。
+    ///
+    /// # Errors
+    ///
+    /// 返回 [`Self::close`] 的错误；Tokio 无法注册或继续观察系统信号时，会先
+    /// 保守取消并关闭 Context，再返回 [`ContextError::ShutdownSignal`]。
+    pub async fn run_until_shutdown_signal(&self) -> Result<(), ContextError> {
+        let cancellation = self.cancellation_token();
+        tokio::select! {
+            biased;
+            () = cancellation.cancelled() => self.close().await,
+            signal = self.shutdown_signal_listener().wait() => {
+                match signal {
+                    Ok(signal) => self.shutdown_on_signal(signal).await,
+                    Err(source) => {
+                        self.record_runtime_warning("context.shutdown-signal.listener-failed")
+                            .await;
+                        cancellation.cancel();
+                        if self.close().await.is_err() {
+                            self.record_runtime_warning("context.shutdown-signal.close-failed")
+                                .await;
+                        }
+                        Err(ContextError::ShutdownSignal {
+                            source: Arc::new(source),
+                        })
+                    }
+                }
+            }
+        }
+    }
+
+    /// 处理框架适配器或测试已经识别出的关闭信号。
+    ///
+    /// 该入口允许嵌入式宿主复用 Vernal 的信号事件、取消树与关闭顺序，而无需让
+    /// Vernal 再次安装进程级监听器。信号事件先发布，随后取消应用并等待唯一关闭
+    /// 协调器完成。
+    ///
+    /// # Errors
+    ///
+    /// 返回 [`Self::close`] 的第一个受管任务、组件停止或协调器错误。
+    pub async fn shutdown_on_signal(
+        &self,
+        signal: ApplicationShutdownSignal,
+    ) -> Result<(), ContextError> {
+        let _delivered = self.events().publish(signal).await;
+        self.cancellation_token().cancel();
+        self.close().await
+    }
+
     /// 返回当前状态快照。
     pub async fn state(&self) -> ContextState {
         self.lifecycle().state().await
@@ -154,6 +209,15 @@ impl ApplicationContext {
     #[must_use]
     pub fn lifecycle_execution_policy(&self) -> &LifecycleExecutionPolicy {
         self.lifecycle().resources().lifecycle_execution_policy()
+    }
+
+    /// 返回当前应用共享的 Tokio 操作系统关闭信号监听器。
+    ///
+    /// 高层建造器会把同一对象注册为普通 `IoC` 组件，基础设施服务可以显式注入并
+    /// 与 Context 共享跨平台信号语义。
+    #[must_use]
+    pub fn shutdown_signal_listener(&self) -> &SystemShutdownSignalListener {
+        self.lifecycle().resources().shutdown_signals()
     }
 
     /// 返回当前 Context 独占的类型化事件总线。

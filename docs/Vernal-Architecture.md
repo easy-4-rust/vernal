@@ -594,7 +594,7 @@ formats, web servers, and external configuration centers remain adapters whose
 native objects may still be registered as ordinary components.
 
 Before graph freezing, `VernalApplicationBuilder` automatically registers
-nine framework-native components:
+ten framework-native components:
 
 | Built-in component | Lifecycle responsibility |
 |:---|:---|
@@ -603,6 +603,7 @@ nine framework-native components:
 | `ManagedTaskSupervisor` | Own task handles and propagate task failures |
 | `TaskShutdownPolicy` | Bound graceful wait and post-abort settlement |
 | `LifecycleExecutionPolicy` | Bound initialize/start/stop and post-abort settlement |
+| `SystemShutdownSignalListener` | Observe cross-platform Tokio process signals |
 | `EventBus` | Context-local typed events |
 | `ScopeCleanupPolicy` | Bound application-owned Web scope cleanup waits |
 | `InvocationPlanCatalog` | Immutable Send-AOP invocation plans |
@@ -720,10 +721,27 @@ sequenceDiagram
     Coordinator-->>Later: Return the same result
 ```
 
-`run_until_cancelled()` is the explicit service run-loop boundary. OS signal
-integration may cancel the application token, while managed task failures
-cancel that same token; both sources enter the close coordinator above. No
-global runtime or process-wide Context is introduced.
+`run_until_cancelled()` is the minimal service run-loop boundary.
+`run_until_shutdown_signal()` adds a race between the same application token
+and `SystemShutdownSignalListener`: Ctrl-C, Unix SIGTERM/SIGHUP, and Windows
+console events enter one close coordinator. A received signal is first
+published as a typed `ApplicationShutdownSignal` event, then cancellation is
+broadcast immediately. Signal registration and stream failures become
+`ContextError::ShutdownSignal`; Vernal still cancels and closes conservatively
+instead of panicking or leaving a running application without supervision.
+The listener is the tenth framework-native IoC component, not a global runtime
+or process-wide Context.
+
+```mermaid
+flowchart LR
+    Managed["Managed task failure"] --> Cancel["Application CancellationToken"]
+    Host["Embedded host cancellation"] --> Cancel
+    OS["Ctrl-C / SIGTERM / SIGHUP / Windows"] --> Listener["SystemShutdownSignalListener"]
+    Listener --> Event["Publish ApplicationShutdownSignal"]
+    Event --> Cancel
+    Cancel --> Close["Unique close coordinator"]
+    Close --> Drain["Drain tasks + reverse stop"]
+```
 
 ### Managed Tokio task ownership
 
@@ -1061,18 +1079,19 @@ receivers. Phase 2 now has a callable loop, while broader
 signatures, diagnostic coverage, benchmarks, and stability guarantees remain
 open.
 
-The Phase 3 kernel has twenty-eight contract tests for dependency-order
+The Phase 3 kernel has thirty contract tests for dependency-order
 startup, reverse shutdown, initialize/start rollback, invalid transitions,
 idempotent close, concurrent close serialization, and context-local typed
 event isolation, plus runtime-unavailable diagnostics, same-instance injection
-of the nine built-in resources, application-owned Scope cancellation,
+of the ten built-in resources, application-owned Scope cancellation,
 task failure/panic propagation, cancellation-safe shared task shutdown,
 timeout abort, task-before-component stop ordering, cancelled close-waiter
 recovery, cancelled refresh/start waiter rollback, pre-start application
 cancellation, failure-driven `run_until_cancelled()` shutdown, bounded
-initialize/start timeout rollback, stop-timeout continuation, stop-hook panic
-isolation, and owned/redacted serialization of successful and failed startup
-reports.
+initialize/start timeout rollback, stop-timeout continuation, typed OS-signal
+publication, application cancellation winning the signal race, stop-hook
+panic isolation, and owned/redacted serialization of successful and failed
+startup reports.
 
 ## 16. Delivery roadmap
 

@@ -8,7 +8,8 @@ use vernal_aop::{InvocationPlanCatalog, LocalInvocationPlanCatalog};
 
 use crate::{
     EventBus, LifecycleExecutionPolicy, ManagedTaskSupervisor, ScopeCleanupPolicy,
-    TaskShutdownPolicy, diagnostic_configuration::DiagnosticConfiguration,
+    SystemShutdownSignalListener, TaskShutdownPolicy,
+    diagnostic_configuration::DiagnosticConfiguration,
 };
 
 /// 聚合一个 `ApplicationContext` 独占或共享的基础运行资源。
@@ -23,6 +24,7 @@ pub(crate) struct ContextResources {
     pub(crate) managed_tasks: Option<Arc<ManagedTaskSupervisor>>,
     pub(crate) task_shutdown_policy: Arc<TaskShutdownPolicy>,
     pub(crate) lifecycle_execution_policy: Arc<LifecycleExecutionPolicy>,
+    pub(crate) shutdown_signals: Arc<SystemShutdownSignalListener>,
     pub(crate) events: Arc<EventBus>,
     pub(crate) scope_cleanup_policy: Arc<ScopeCleanupPolicy>,
     pub(crate) invocation_plans: Arc<InvocationPlanCatalog>,
@@ -41,6 +43,7 @@ impl ContextResources {
             managed_tasks: None,
             task_shutdown_policy: Arc::new(TaskShutdownPolicy::default()),
             lifecycle_execution_policy: Arc::new(LifecycleExecutionPolicy::default()),
+            shutdown_signals: Arc::new(SystemShutdownSignalListener::new()),
             events: Arc::new(EventBus::new()),
             scope_cleanup_policy: Arc::new(ScopeCleanupPolicy::default()),
             invocation_plans: Arc::new(InvocationPlanCatalog::default()),
@@ -72,6 +75,11 @@ impl ContextResources {
     /// 返回组件生命周期钩子的执行与 abort 收口预算。
     pub(crate) fn lifecycle_execution_policy(&self) -> &LifecycleExecutionPolicy {
         &self.lifecycle_execution_policy
+    }
+
+    /// 返回当前 Context 使用的 Tokio 操作系统关闭信号监听对象。
+    pub(crate) fn shutdown_signals(&self) -> &SystemShutdownSignalListener {
+        &self.shutdown_signals
     }
 
     /// 返回 Context 独占的类型化事件总线。

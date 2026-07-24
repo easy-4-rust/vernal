@@ -72,6 +72,11 @@ pub enum ContextError {
         /// 被取消的生命周期操作。
         operation: &'static str,
     },
+    /// Tokio 无法注册或继续观察操作系统关闭信号。
+    ShutdownSignal {
+        /// 原始操作系统信号监听错误。
+        source: SharedError,
+    },
 }
 
 impl fmt::Display for ContextError {
@@ -131,6 +136,12 @@ impl fmt::Display for ContextError {
                     "context lifecycle operation {operation} was cancelled and rolled back"
                 )
             }
+            Self::ShutdownSignal { source } => {
+                write!(
+                    formatter,
+                    "failed to observe system shutdown signal: {source}"
+                )
+            }
         }
     }
 }
@@ -141,9 +152,9 @@ impl Error for ContextError {
             Self::ContainerWarmUp { source } | Self::ComponentResolution { source, .. } => {
                 Some(source.as_ref())
             }
-            Self::Lifecycle { source, .. } | Self::LifecycleCoordinator { source, .. } => {
-                Some(source.as_ref())
-            }
+            Self::Lifecycle { source, .. }
+            | Self::LifecycleCoordinator { source, .. }
+            | Self::ShutdownSignal { source } => Some(source.as_ref()),
             Self::ManagedTask { source } => Some(source),
             _ => None,
         }

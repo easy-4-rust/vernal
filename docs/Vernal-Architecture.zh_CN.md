@@ -582,6 +582,7 @@ Web server 和外部配置中心仍属于独立适配器；应用可以把它们
 | `ManagedTaskSupervisor` | 持有后台任务句柄并传播任务失败 |
 | `TaskShutdownPolicy` | 约束优雅等待与 abort 后收口时间 |
 | `LifecycleExecutionPolicy` | 约束 initialize/start/stop 与 abort 后收口时间 |
+| `SystemShutdownSignalListener` | 监听跨平台 Tokio 进程关闭信号 |
 | `EventBus` | 每个 Context 独占的类型化广播事件 |
 | `ScopeCleanupPolicy` | 约束应用拥有的 Web Scope 清理等待 |
 | `InvocationPlanCatalog` | 构建阶段生成的只读 Send-AOP 计划目录 |
@@ -701,9 +702,25 @@ sequenceDiagram
     Coordinator-->>Later: 返回同一结果
 ```
 
-`run_until_cancelled()` 为服务主循环提供显式等待入口：系统信号可以取消应用
-令牌，受管任务失败也会取消同一个令牌；两种来源最终都进入上述关闭协调链。该
-能力不建立全局 Runtime 或进程级 Context，应用仍显式持有自己的对象。
+`run_until_cancelled()` 是服务主循环的最小等待入口；
+`run_until_shutdown_signal()` 在同一应用令牌与
+`SystemShutdownSignalListener` 之间竞速，让 Ctrl-C、Unix SIGTERM/SIGHUP 和
+Windows 控制台事件进入同一个关闭协调器。收到信号后先发布类型化
+`ApplicationShutdownSignal` 事件，再立即广播取消。信号注册或 stream 异常会
+变成 `ContextError::ShutdownSignal`；Vernal 仍执行保守取消与关闭，不 panic，
+也不会让失去监督的应用继续运行。监听器是第十个框架原生 IoC 组件，不建立全局
+Runtime 或进程级 Context。
+
+```mermaid
+flowchart LR
+    Managed["受管任务失败"] --> Cancel["应用 CancellationToken"]
+    Host["嵌入式宿主取消"] --> Cancel
+    OS["Ctrl-C / SIGTERM / SIGHUP / Windows"] --> Listener["SystemShutdownSignalListener"]
+    Listener --> Event["发布 ApplicationShutdownSignal"]
+    Event --> Cancel
+    Cancel --> Close["唯一关闭协调器"]
+    Close --> Drain["排空任务并逆序 stop"]
+```
 
 ### 10.5 受管 Tokio 任务
 
@@ -1004,14 +1021,15 @@ Singleton Component 注入、Transient 构造、Trait Object 注入和 Context-l
 非异步方法和借用接收器。Phase 2 已具备可调用
 闭环，但更广泛的方法签名、诊断矩阵、性能基准和稳定性承诺仍未完成。
 
-Phase 3 内核另有 28 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
+Phase 3 内核另有 30 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
 回滚、非法转换、幂等关闭、并发关闭串行化、Context-local 类型化事件隔离，
-高层构建器的 Runtime 缺失诊断、九类内建组件同实例注入、应用 Scope 取消树、
+高层构建器的 Runtime 缺失诊断、十类内建组件同实例注入、应用 Scope 取消树、
 任务错误/panic 传播、取消安全共享停机、超时 abort、任务先于组件 stop 的顺序、
 关闭等待者取消后继续完成组件释放、refresh/start 等待者取消后继续失败回滚、
 start 前应用取消、任务失败驱动 `run_until_cancelled()` 进入 `Closed`、stop
 钩子 panic 隔离、initialize/start 超时回滚、stop 超时后继续逆序释放，以及
-成功/失败启动报告的只读快照、Serde 序列化与业务错误正文脱敏。
+类型化 OS 信号发布、应用取消优先结束信号等待，以及成功/失败启动报告的只读
+快照、Serde 序列化与业务错误正文脱敏。
 
 ## 16. 实施路线
 
