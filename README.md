@@ -36,8 +36,9 @@ Hutool-Rust · Sa-Token-Rust · Ddd4r · general Rust applications
 > **Project status:** experimental. Phase 1 IoC, the Tokio-first Phase 2 AOP
 > kernel, Phase 3 application context, and the Phase 4 Web/HTTP/Tower/Hyper
 > foundations are callable and contract-tested. Axum, Actix Web, Rocket, Warp,
-> Salvo, Poem, Ntex, and Tonic are runnable framework adapters; procedural
-> macros and the other two adapters remain skeletons. Nothing is published yet.
+> Salvo, Poem, Ntex, Gotham, and Tonic are runnable framework adapters;
+> procedural macros and the Tide adapter remain skeletons. Nothing is published
+> yet.
 
 ## 1. Vision
 
@@ -124,8 +125,8 @@ Detailed decisions, flows, failure semantics, and acceptance criteria are in:
 
 The target integration set is recorded in
 [`web-integration-manifest.toml`](./web-integration-manifest.toml). The ten
-adapter crates exist; eight contain runnable native integrations and two remain
-compile-checked descriptors:
+adapter crates exist; nine contain runnable native integrations and Tide
+remains a compile-checked descriptor:
 
 | Priority | Framework | Vernal crate | Protocol | Status |
 |:---:|:---|:---|:---|:---:|
@@ -136,7 +137,7 @@ compile-checked descriptors:
 | 5 | Salvo | `vernal-salvo` | HTTP | Phase 5 adapter |
 | 6 | Poem | `vernal-poem` | HTTP | Phase 5 adapter |
 | 7 | Ntex | `vernal-ntex` | HTTP | Phase 5 adapter |
-| 8 | Gotham | `vernal-gotham` | HTTP | Skeleton |
+| 8 | Gotham | `vernal-gotham` | HTTP | Phase 5 adapter |
 | 9 | Tide | `vernal-tide` | HTTP | Skeleton |
 | 10 | Tonic | `vernal-tonic` | RPC streaming + Tower | Phase 5 adapter |
 
@@ -149,9 +150,10 @@ native Hoop, typed Depot access, and frame/trailer-preserving body cleanup.
 Poem provides native `Middleware`/`Endpoint` composition, typed
 Context/component/scope extractors, and body-bound cleanup. Ntex provides
 native `Middleware`/`Service`, App State/Extension extractors, and a
-`MessageBody`-bound request scope. Tonic provides a Context interceptor, typed
-Request extensions, stable `Status` mapping, and reusable Tower layers. The
-remaining two adapters are descriptors.
+`MessageBody`-bound request scope. Gotham provides native `StateData`, a
+type-safe State extension, Pipeline middleware, and frame/trailer-preserving
+body cleanup. Tonic provides a Context interceptor, typed Request extensions,
+stable `Status` mapping, and reusable Tower layers. Tide remains a descriptor.
 
 “Ten” is a versioned coverage priority derived from the reviewed local
 integration superset and current registry availability, not a claim of an

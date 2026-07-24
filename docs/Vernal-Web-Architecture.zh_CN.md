@@ -41,8 +41,9 @@ Frame/Trailer 保真的 Body Scope；Poem 采用与 MSRV 一致的 3.1.12 版本
 释放；Tonic 采用兼容 MSRV 的 0.12 版本线，实现 Context Interceptor、类型化
 Request 扩展、`GrpcMethod` 路由元数据、稳定 `Status` 映射和 Tower 组合。
 Ntex 采用兼容 Rust 1.85 的 2.18.0 版本线，实现原生 Middleware/Service、
-App State/Extension 提取器与 `MessageBody` 绑定请求 Scope。其余两个应用
-Adapter 仍是描述符。
+App State/Extension 提取器与 `MessageBody` 绑定请求 Scope。Gotham 0.8
+实现原生 StateData、类型安全 State 访问、Pipeline Middleware 与
+Frame/Trailer 保真的 Body 释放。仅 Tide 仍是描述符。
 
 版本化选择清单由
 [`web-integration-manifest.toml`](../web-integration-manifest.toml) 维护。
@@ -225,7 +226,7 @@ Trace -> Context -> RequestScope -> Security/AOP -> Handler -> ErrorMapping
 | 5 | Salvo | `vernal-salvo` | HTTP | Handler、Hoop、Depot、Writer | Phase 5 适配已实现 |
 | 6 | Poem | `vernal-poem` | HTTP | Middleware、Endpoint、Data、IntoResponse | Phase 5 适配已实现 |
 | 7 | Ntex | `vernal-ntex` | HTTP | Service/Middleware、App State、Extractor | Phase 5 适配已实现 |
-| 8 | Gotham | `vernal-gotham` | HTTP | State Middleware、Pipeline、Handler | 骨架 |
+| 8 | Gotham | `vernal-gotham` | HTTP | State Middleware、Pipeline、Handler | Phase 5 适配已实现 |
 | 9 | Tide | `vernal-tide` | HTTP | Middleware、Request State、Response | 骨架 |
 | 10 | Tonic | `vernal-tonic` | RPC Streaming + Tower | Layer、Interceptor、Extension、Status、Streaming | Phase 5 适配已实现 |
 
@@ -258,7 +259,13 @@ Trace -> Context -> RequestScope -> Security/AOP -> Handler -> ErrorMapping
   Vernal 启用 Ntex 的 Tokio 后端并固定 2.18.0，因为当前 3.x 已超过 Workspace
   的 Rust 1.85 MSRV；Worker-local 的非 `Send` 状态不会被隐式提升为跨 Worker
   Singleton。
-- **Gotham**：通过 State 传递请求上下文，Middleware Pipeline 负责 Scope 边界。
+- **Gotham**：原生 `StateData` Wrapper 携带显式应用 Context 与请求 Scope，
+  类型化 State 扩展直接解析 IoC 组件，不建立 Service Locator；
+  `Middleware`/`NewMiddleware` 将 Scope 绑定到 Gotham 的 `http-body` 1.0
+  响应，保留 Data Frame、Trailer、Size Hint、上游错误、背压与取消。为满足
+  Gotham Pipeline 合同，中间件工厂仅对受同步保护的
+  `Arc<ApplicationContext>` 持有端明确标记 unwind-safe，不放宽 Context 锁与
+  线程安全要求。
 - **Tide**：通过 Request State 与 Middleware 集成；因当前 registry 版本仍为
   beta，放在兼容性优先级，不作为首批稳定发布阻塞项。
 - **Tonic**：Unary 与 Streaming 都使用 Tower 路径；Vernal 错误映射为稳定

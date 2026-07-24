@@ -8,7 +8,17 @@ description = "Gotham integration for Vernal."
 publish = false
 
 [dependencies]
+bytes.workspace = true
+futures-util.workspace = true
+gotham.workspace = true
+http.workspace = true
+http-body.workspace = true
+http-body-util.workspace = true
+tokio.workspace = true
+tokio-util.workspace = true
+vernal-context = { path = "../vernal-context" }
 vernal-http = { path = "../vernal-http" }
+vernal-ioc = { path = "../vernal-ioc" }
 vernal-web = { path = "../vernal-web" }
 
 [lints]

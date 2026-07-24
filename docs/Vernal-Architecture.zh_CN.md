@@ -55,9 +55,10 @@
   Frame/Trailer 保真的 Body Scope；`vernal-poem` 已提供原生
   Middleware/Endpoint、类型化提取器与 Body 绑定 Scope 释放；`vernal-ntex`
   已提供原生 Middleware/Service、App State/Extension 提取器与 Body 绑定 Scope
-  释放；`vernal-tonic` 已提供 Context Interceptor、类型化 Request 扩展、
-  `Status` 映射与 Tower 组合。
-- `[骨架]` 宏及其余两个框架 Adapter 仍只验证 crate 边界与依赖方向。
+  释放；`vernal-gotham` 已提供 StateData、类型安全 State 访问、Pipeline
+  Middleware 与 Frame/Trailer 保真的 Body 释放；`vernal-tonic` 已提供 Context
+  Interceptor、类型化 Request 扩展、`Status` 映射与 Tower 组合。
+- `[骨架]` 宏及 Tide Adapter 仍只验证 crate 边界与依赖方向。
 - `[设计目标]` Phase 2 宏、Context AOP 计划聚合、框架 Adapter 与后续生产
   门禁仍需实现和验收。
 
@@ -497,8 +498,9 @@ Warp 已增加 Extension Filter 与官方 Tower Service 生命周期，Salvo 已
 Hoop、Depot 与 Frame/Trailer 保真的 Body 生命周期，Poem 已增加
 Middleware/Endpoint、Request Extension 提取器与 Body 生命周期集成，Ntex
 已增加原生 Middleware/Service、App State/Extension、类型化提取器与响应 Body
-生命周期，Tonic 已增加原生 Request/Metadata/Status 与 Tower 集成；其余两个
-上游框架 Adapter 仍是可编译描述符。详细合同见
+生命周期，Gotham 已增加原生 StateData、类型安全 State 访问、Pipeline
+Middleware 与 Frame/Trailer Body 生命周期，Tonic 已增加原生
+Request/Metadata/Status 与 Tower 集成；仅 Tide 仍是可编译描述符。详细合同见
 [Vernal Web 集成架构](./Vernal-Web-Architecture.zh_CN.md)。
 
 ## 12. Hutool-Rust、Sa-Token-Rust 与 Ddd4r 集成

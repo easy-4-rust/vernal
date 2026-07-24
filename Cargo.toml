@@ -17,6 +17,7 @@ axum = { version = "0.8.9", default-features = false, features = ["http1", "json
 bytes = "1.11.1"
 futures-core = "0.3.32"
 futures-util = "0.3.32"
+gotham = { version = "=0.8.0", default-features = false }
 http = "1.4.0"
 http-body = "1.0.1"
 http-body-util = "0.1.3"

@@ -33,8 +33,8 @@ Hutool-Rust · Sa-Token-Rust · Ddd4r · 通用 Rust 应用
 
 > **项目状态**：实验阶段。Phase 1 IoC、Tokio-first 的 Phase 2 AOP 内核、
 > Phase 3 应用上下文，以及 Phase 4 Web/HTTP/Tower/Hyper 底座已有可调用实现
-> 和合同测试；Axum、Actix Web、Rocket、Warp、Salvo、Poem、Ntex 与 Tonic
-> 已具备可运行适配，过程宏及其余两个 Adapter 仍是骨架。当前尚未发布。
+> 和合同测试；Axum、Actix Web、Rocket、Warp、Salvo、Poem、Ntex、Gotham
+> 与 Tonic 已具备可运行适配，过程宏及 Tide Adapter 仍是骨架。当前尚未发布。
 
 ## 1. 愿景
 
@@ -113,7 +113,7 @@ Vernal 遵守四条不可退化的规则：
 
 目标集成集合记录在
 [`web-integration-manifest.toml`](./web-integration-manifest.toml)。十个 Adapter
-crate 均已存在，其中八个具备可运行的原生集成，两个仍是可编译描述符：
+crate 均已存在，其中九个具备可运行的原生集成，仅 Tide 仍是可编译描述符：
 
 | 优先级 | 框架 | Vernal crate | 协议 | 状态 |
 |:---:|:---|:---|:---|:---:|
@@ -124,7 +124,7 @@ crate 均已存在，其中八个具备可运行的原生集成，两个仍是�
 | 5 | Salvo | `vernal-salvo` | HTTP | Phase 5 适配已实现 |
 | 6 | Poem | `vernal-poem` | HTTP | Phase 5 适配已实现 |
 | 7 | Ntex | `vernal-ntex` | HTTP | Phase 5 适配已实现 |
-| 8 | Gotham | `vernal-gotham` | HTTP | 骨架 |
+| 8 | Gotham | `vernal-gotham` | HTTP | Phase 5 适配已实现 |
 | 9 | Tide | `vernal-tide` | HTTP | 骨架 |
 | 10 | Tonic | `vernal-tonic` | RPC Streaming + Tower | Phase 5 适配已实现 |
 
@@ -136,8 +136,9 @@ Salvo 已提供原生 Hoop、类型化 Depot 访问以及 Frame/Trailer 保真�
 Poem 已提供原生 `Middleware`/`Endpoint` 组合、类型化 Context/组件/Scope
 提取器和 Body 绑定释放；Ntex 已提供原生 `Middleware`/`Service`、App
 State/Extension 提取器和 `MessageBody` 绑定请求 Scope；Tonic 已提供 Context
-Interceptor、类型化 Request 扩展、稳定 `Status` 映射和可复用 Tower Layer。
-其余两个 Adapter 仍是描述符。
+Interceptor、类型化 Request 扩展、稳定 `Status` 映射和可复用 Tower Layer；
+Gotham 已提供原生 `StateData`、类型安全 State 扩展、Pipeline Middleware 与
+Frame/Trailer 保真的 Body 释放。仅 Tide 仍是描述符。
 
 这里的“十种”是基于本地源码集成并集和当前 registry 可用性形成的版本化覆盖优先级，
 不是对全世界 Rust 框架热度的绝对排名。Tonic 明确属于 RPC 集成；Tower 和 Hyper
