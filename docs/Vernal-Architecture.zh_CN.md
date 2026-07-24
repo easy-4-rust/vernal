@@ -7,7 +7,7 @@
 > **架构版本**：0.1.0<br>
 > **适用代码版本**：`0.0.0-dev` Phase 1–4 可调用底座<br>
 > **文档状态**：草案，待架构评审<br>
-> **最后更新**：2026-07-24
+> **最后更新**：2026-07-25
 
 ## 1. 文档控制与状态
 
@@ -188,12 +188,12 @@ flowchart TB
 
 | 项目 | 已检查源码 | 已确认结论 |
 |:---|:---|:---|
-| `tx-di` | `tx-di-core/src/{component,registry,store,scope,topology,lifecycle,aop}.rs`、`tx-di-macros/src/intercept_macro.rs` | 类型元数据、拓扑、作用域、生命周期和拦截链已形成实现 |
-| `Sa-Token-Rust` | Router 流程、Adapter 合同与十类 Web/RPC plugin | 同一鉴权流通过框架 Request/Response 端口复用 |
+| `tx-di` | `tx-di-core/src/{component,registry,store,scope,topology,lifecycle,aop,config}.rs`、`tx-di-macros/src/intercept_macro.rs` | 类型元数据、拓扑、作用域、生命周期、拦截链和点路径配置已形成实现；配置仍绑定全局 TOML 与 panic |
+| `Sa-Token-Rust` | Router 流程、Adapter 合同、`sa-token-core/src/config.rs` 与十类 Web/RPC plugin | 同一鉴权流通过框架端口复用；强类型 Builder 需要稳定的外部属性输入 |
 | `Ddd4r` | 根 manifest 与实施计划 | 需要 request context bridge，同时保留 DDD/CQRS 责任 |
-| `Hutool-Rust` | AOP 符号与基于 Reqwest 的 HTTP Client 合同 | 工具/客户端拦截可作为参考，但不构成服务端框架集成 |
+| `Hutool-Rust` | AOP、Reqwest HTTP Client、`hutool-setting` 的 `Profile`/`SettingLoader` | Profile、变量展开和配置文件解析可作为 PropertySource Adapter，文件格式不进入 Context |
 
-以上是 2026-07-24 的本地源码快照，不等于这些项目当前分支已经对 Vernal 完成集成。
+以上是 2026-07-25 的本地源码快照，不等于这些项目当前分支已经对 Vernal 完成集成。
 
 ### 5.2 可吸收能力
 
@@ -206,6 +206,7 @@ flowchart TB
 | `debug_registry()` 日志表格 | 升级为复用冻结计划、可 Serde 序列化的只读快照 | `vernal-ioc` / `vernal-context` |
 | Singleton / Prototype | 已实现为 Singleton / Transient / 类型化 Scope SPI | `vernal-ioc` |
 | 生命周期钩子 | 抽离为 Context 管理的状态机 | `vernal-context` |
+| 点分配置读取 | 升级为 Context-local PropertySource 优先级、Profile、占位符和类型化读取；格式加载留给 Adapter | `vernal-context` |
 | 正序 `before`、逆序 `after` | 保留栈式顺序语义，升级为真正 Around 链 | `vernal-aop` |
 | `#[intercept]` 生成包装代码 | 保留编译期生成方向，移除硬编码 crate 与 panic | `vernal-macros` |
 
@@ -214,6 +215,7 @@ flowchart TB
 | tx-di 当前设计 | 风险 | Vernal 处理 |
 |:---|:---|:---|
 | `tx-di-core` 混合配置、tracing、公共工具和统一错误 | 无关能力扩大内核边界 | 保留 Tokio 基础能力；配置格式、日志实现和工具能力下沉 |
+| `AppAllConfig` 绑定全局 TOML、默认可执行文件路径与 panic | 多 Context 冲突，库无法选择来源和失败策略 | `ApplicationEnvironment` 只接收显式 PropertySource，全部失败结构化返回 |
 | 全局 `HashMap<usize, Arc<InterceptorChain>>` | 地址复用、清理、锁竞争、Context 隔离风险 | 链随 Wrapper/Definition/Context 所有，不用裸地址做身份 |
 | 宏在链缺失或 before 失败时 panic | 业务失败不可组合 | 返回调用者声明的结构化错误 |
 | 参数统一 `Debug` 字符串化 | 敏感信息泄漏、分配和类型丢失 | 元数据默认不采集值；值捕获显式 opt-in 并支持脱敏 |
@@ -564,14 +566,15 @@ sequenceDiagram
 `vernal-context` 只负责：
 
 - 聚合 Registry、Container 与 AOP Plan；
+- 冻结 Context-local PropertySource 顺序与 Profile；
 - 执行 refresh、初始化、启动、就绪、排空和关闭；
 - 发布 Context 内类型化事件；
 - 协调失败回滚与逆序资源释放；
 - 提供只读诊断快照。
 
 Context 直接使用 Tokio 任务、同步、时间、取消与 signal 能力。配置格式加载、
-Web server 和外部配置中心仍属于独立适配器；应用可以把它们产生的原生对象注册
-为普通组件。
+Web server 和外部配置中心仍属于独立适配器；它们可以把结果实现为
+`PropertySource` 或注册为普通组件。
 
 高层 `VernalApplicationBuilder` 在依赖图冻结前自动注册以下 Rust 原生对象：
 
@@ -583,6 +586,7 @@ Web server 和外部配置中心仍属于独立适配器；应用可以把它们
 | `TaskShutdownPolicy` | 约束优雅等待与 abort 后收口时间 |
 | `LifecycleExecutionPolicy` | 约束 initialize/start/stop 与 abort 后收口时间 |
 | `SystemShutdownSignalListener` | 监听跨平台 Tokio 进程关闭信号 |
+| `ApplicationEnvironment` | 冻结属性来源优先级、Profile 与类型化解析语义 |
 | `EventBus` | 每个 Context 独占的类型化广播事件 |
 | `ScopeCleanupPolicy` | 约束应用拥有的 Web Scope 清理等待 |
 | `InvocationPlanCatalog` | 构建阶段生成的只读 Send-AOP 计划目录 |
@@ -603,14 +607,54 @@ sequenceDiagram
 
     App->>Builder: register definitions, advisors, operations
     Builder->>AOP: compile plan catalog
-    Builder->>Graph: 注册 Tokio/任务/策略/事件/AOP 资源
+    Builder->>Graph: 注册 Tokio/任务/环境/策略/事件/AOP 资源
     Builder->>Graph: freeze and validate complete graph
     Graph-->>Builder: Registry
     Builder->>Context: create with identical shared resources
     Context-->>App: refresh/start
 ```
 
-### 10.2 状态机
+### 10.2 应用环境
+
+`ApplicationEnvironment` 是第十一个框架原生组件。它吸收 Spring Environment
+可复用的核心语义，同时拒绝复制 Java 配置生态或 tx-di 的全局 TOML：
+
+- `ApplicationEnvironmentBuilder::add_first/add_last` 显式声明来源优先级；
+- `PropertySource` 是格式中立端口，TOML、YAML、Hutool `.setting`、进程环境和
+  Nacos 等实现留在 Adapter；
+- Active Profile 非空时覆盖默认 Profile；没有 Active Profile 时使用
+  `default` 及应用显式添加的默认集合；
+- `property/get/require` 支持 `${key:default}`、嵌套默认值、跨来源引用和
+  `FromStr` 类型转换；
+- 缺失、类型错误、非法键、重复来源、来源读取失败、循环占位符和递归超限均返回
+  `EnvironmentError`，正常控制流不 panic；
+- `EnvironmentSnapshot` 只序列化来源名和 Profile，不枚举属性键和值；
+- Environment 与 Context、IoC 组件持有同一 `Arc`，同进程多个 Context 完全隔离。
+
+```mermaid
+flowchart LR
+    Loader["格式/系统 Adapter<br/>TOML · YAML · Hutool · Env · Nacos"]
+    Source["PropertySource[]<br/>显式 add_first / add_last"]
+    Profiles["Active / Default Profiles"]
+    Environment["ApplicationEnvironment<br/>Context-local immutable"]
+    Resolve["占位符展开<br/>循环与深度保护"]
+    Typed["FromStr 类型转换"]
+    Component["IoC 组件 / Adapter"]
+    Snapshot["EnvironmentSnapshot<br/>仅来源名与 Profile"]
+
+    Loader --> Source
+    Source --> Environment
+    Profiles --> Environment
+    Environment --> Resolve --> Typed --> Component
+    Environment --> Snapshot
+```
+
+Hutool-Rust 可以把 `Profile/SettingLoader` 的结果转换成
+`MapPropertySource`；Sa-Token-Rust Bridge 可以从 Environment 读取所需键，再
+构造自身 `SaTokenConfigBuilder`。Vernal 不认识 Hutool 文件对象或 Sa-Token
+配置类型，从而保持消费方拥有集成。
+
+### 10.3 状态机
 
 ```mermaid
 stateDiagram-v2
@@ -628,7 +672,7 @@ stateDiagram-v2
     Closed --> [*]
 ```
 
-### 10.3 生命周期顺序
+### 10.4 生命周期顺序
 
 ```text
 register
@@ -646,7 +690,7 @@ register
 任何阶段失败都要记录已完成步骤，只回滚已经成功的组件。关闭必须幂等；多次
 `close()` 返回相同终态，不重复执行不可重入副作用。
 
-### 10.4 Context 生命周期所有权
+### 10.5 Context 生命周期所有权
 
 `ApplicationContext` 是公开门面，不让某个临时调用者 Future 直接拥有生命周期。
 `ApplicationStartupCoordinator` 在独立 Tokio task 中执行 refresh/initialize/
@@ -708,8 +752,8 @@ sequenceDiagram
 Windows 控制台事件进入同一个关闭协调器。收到信号后先发布类型化
 `ApplicationShutdownSignal` 事件，再立即广播取消。信号注册或 stream 异常会
 变成 `ContextError::ShutdownSignal`；Vernal 仍执行保守取消与关闭，不 panic，
-也不会让失去监督的应用继续运行。监听器是第十个框架原生 IoC 组件，不建立全局
-Runtime 或进程级 Context。
+也不会让失去监督的应用继续运行。监听器作为十一类框架原生 IoC 组件之一，不建立
+全局 Runtime 或进程级 Context。
 
 ```mermaid
 flowchart LR
@@ -722,7 +766,7 @@ flowchart LR
     Close --> Drain["排空任务并逆序 stop"]
 ```
 
-### 10.5 受管 Tokio 任务
+### 10.6 受管 Tokio 任务
 
 `ManagedTaskSupervisor` 是 Context 对长期 Worker、消息消费、配置监听和
 Hutool-Rust Cron 驱动任务的所有权边界。它不实现这些业务或工具能力，只管理其
@@ -933,6 +977,7 @@ Vernal 不保证第三方依赖完全无 unsafe；`forbid` 只约束 Workspace �
 Context refresh 现已产生可序列化、只读且脱敏的诊断快照：
 
 - Vernal 版本、MSRV 与启用 feature；
+- PropertySource 名称与 Active/Default/Effective Profile；
 - Definition 数量、Scope 数量与依赖图摘要；
 - 匹配的 Pointcut 和拦截器数量；
 - 生命周期阶段、耗时和失败组件；
@@ -943,6 +988,7 @@ Context refresh 现已产生可序列化、只读且脱敏的诊断快照：
 flowchart LR
     Registry["Registry<br/>definitions + bindings + BuildPlan"]
     Catalog["InvocationPlanCatalog"]
+    Environment["ApplicationEnvironment<br/>来源名 + Profile"]
     Static["静态诊断配置<br/>feature / adapter / external / warning"]
     Lifecycle["Context 状态机<br/>warm-up / resolve / init / start / stop"]
     Snapshot["RegistrySnapshot<br/>只读值对象"]
@@ -952,6 +998,7 @@ flowchart LR
     Registry -->|"复用已验证顺序"| Snapshot
     Snapshot --> Report
     Catalog -->|"plan 与 interceptor slot 计数"| Report
+    Environment -->|"EnvironmentSnapshot<br/>不含属性键和值"| Report
     Static --> Report
     Lifecycle -->|"阶段、结果、微秒耗时"| Report
     Report --> Output
@@ -963,6 +1010,8 @@ flowchart LR
   运行拓扑算法，也不会暴露工厂、upcast 闭包、实例或地址；
 - `ApplicationContext::startup_report().await` 返回拥有自身数据的克隆快照，后续
   start/close 不会反向修改已经取得的报告；
+- `EnvironmentSnapshot` 只包含 PropertySource 名称和 Profile；属性键、值及
+  占位符解析结果均不会进入 `StartupReport`；
 - warm-up、组件解析、initialize、start 和 stop 均记录稳定阶段、组件名、
   成功/失败与微秒耗时；
 - 原始错误链只通过 `ContextError::source` 返回，`StartupReport` 类型中不存在
@@ -1021,15 +1070,16 @@ Singleton Component 注入、Transient 构造、Trait Object 注入和 Context-l
 非异步方法和借用接收器。Phase 2 已具备可调用
 闭环，但更广泛的方法签名、诊断矩阵、性能基准和稳定性承诺仍未完成。
 
-Phase 3 内核另有 30 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
+Phase 3 内核另有 37 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
 回滚、非法转换、幂等关闭、并发关闭串行化、Context-local 类型化事件隔离，
-高层构建器的 Runtime 缺失诊断、十类内建组件同实例注入、应用 Scope 取消树、
+高层构建器的 Runtime 缺失诊断、十一类内建组件同实例注入、应用 Scope 取消树、
 任务错误/panic 传播、取消安全共享停机、超时 abort、任务先于组件 stop 的顺序、
 关闭等待者取消后继续完成组件释放、refresh/start 等待者取消后继续失败回滚、
 start 前应用取消、任务失败驱动 `run_until_cancelled()` 进入 `Closed`、stop
 钩子 panic 隔离、initialize/start 超时回滚、stop 超时后继续逆序释放，以及
-类型化 OS 信号发布、应用取消优先结束信号等待，以及成功/失败启动报告的只读
-快照、Serde 序列化与业务错误正文脱敏。
+类型化 OS 信号发布、应用取消优先结束信号等待，PropertySource 优先级、
+Profile、类型转换、嵌套占位符、循环/来源失败，以及成功/失败启动报告的只读
+快照、Serde 序列化、环境属性值隔离与业务错误正文脱敏。
 
 ## 16. 实施路线
 
@@ -1061,6 +1111,8 @@ start 前应用取消、任务失败驱动 `run_until_cancelled()` 进入 `Close
 - [x] IoC 与 AOP 能分别独立依赖、构建和使用；
 - [x] Tokio 使用范围和 feature 预算明确，Context 不向通用内核泄漏配置格式或
   具体 Web/ORM 类型；
+- [x] ApplicationEnvironment 保持 Context 隔离，配置格式与消费方类型留在
+  Adapter，并提供不含属性键和值的诊断快照；
 - [ ] 组件图、拦截链和生命周期都有成功、失败与回滚测试；
 - [ ] 无指针地址全局链、无正常控制流 panic、无隐式跨 Context 状态；
 - [ ] Web Adapter 通过统一合同套件，并保留各框架原生语义；
@@ -1071,5 +1123,5 @@ start 前应用取消、任务失败驱动 `run_until_cancelled()` 进入 `Close
 ---
 
 **文档版本**：0.1.0<br>
-**最后更新**：2026-07-24<br>
+**最后更新**：2026-07-25<br>
 **文档状态**：草案，待架构评审

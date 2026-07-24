@@ -13,10 +13,10 @@ use vernal_aop::{
 use vernal_ioc::{ComponentDefinition, DefinitionError, Qualifier, RegistryBuilder, TraitBinding};
 
 use crate::{
-    ApplicationBuildError, ApplicationContext, ApplicationContextBuilder, DiagnosticState,
-    EventBus, Lifecycle, LifecycleExecutionPolicy, ManagedTaskSupervisor, SubsystemStatus,
-    SystemShutdownSignalListener, TaskShutdownPolicy, context_resources::ContextResources,
-    diagnostic_configuration::DiagnosticConfiguration,
+    ApplicationBuildError, ApplicationContext, ApplicationContextBuilder,
+    ApplicationEnvironmentBuilder, DiagnosticState, EventBus, Lifecycle, LifecycleExecutionPolicy,
+    ManagedTaskSupervisor, SubsystemStatus, SystemShutdownSignalListener, TaskShutdownPolicy,
+    context_resources::ContextResources, diagnostic_configuration::DiagnosticConfiguration,
 };
 
 type LifecycleRegistrar = dyn FnOnce(&mut ApplicationContextBuilder) + Send + Sync + 'static;
@@ -24,7 +24,7 @@ type LifecycleRegistrar = dyn FnOnce(&mut ApplicationContextBuilder) + Send + Sy
 /// 统一收集组件、生命周期、切面和 Tokio Context 资源的应用建造器。
 ///
 /// 与接收冻结 [`vernal_ioc::Registry`] 的低层 [`ApplicationContextBuilder`]
-/// 不同，该建造器在依赖图冻结前自动注册十类框架内建组件：
+/// 不同，该建造器在依赖图冻结前自动注册十一类框架内建组件：
 ///
 /// - [`Handle`]：应用绑定的 Tokio Runtime；
 /// - [`CancellationToken`]：应用关闭与后台任务协作取消；
@@ -32,6 +32,7 @@ type LifecycleRegistrar = dyn FnOnce(&mut ApplicationContextBuilder) + Send + Sy
 /// - [`TaskShutdownPolicy`]：受管任务的两阶段停机预算；
 /// - [`LifecycleExecutionPolicy`]：生命周期钩子的执行与 abort 收口预算；
 /// - [`SystemShutdownSignalListener`]：跨平台 Tokio 关闭信号监听；
+/// - [`crate::ApplicationEnvironment`]：不可变 `PropertySource` 与 Profile 解析环境；
 /// - [`EventBus`]：Context 内类型化事件；
 /// - [`crate::ScopeCleanupPolicy`]：应用 Scope 的有界异步释放策略；
 /// - [`vernal_aop::InvocationPlanCatalog`]：预编译 AOP 调用计划。
@@ -51,6 +52,7 @@ pub struct VernalApplicationBuilder {
     task_shutdown_policy: Arc<TaskShutdownPolicy>,
     lifecycle_execution_policy: Arc<LifecycleExecutionPolicy>,
     shutdown_signals: Arc<SystemShutdownSignalListener>,
+    environment: ApplicationEnvironmentBuilder,
     events: Arc<EventBus>,
     scope_cleanup_policy: Arc<crate::ScopeCleanupPolicy>,
     enabled_features: BTreeSet<String>,
@@ -79,6 +81,7 @@ impl VernalApplicationBuilder {
             task_shutdown_policy: Arc::new(TaskShutdownPolicy::default()),
             lifecycle_execution_policy: Arc::new(LifecycleExecutionPolicy::default()),
             shutdown_signals: Arc::new(SystemShutdownSignalListener::new()),
+            environment: ApplicationEnvironmentBuilder::new(),
             events: Arc::new(EventBus::new()),
             scope_cleanup_policy: Arc::new(crate::ScopeCleanupPolicy::default()),
             enabled_features: BTreeSet::new(),
@@ -105,7 +108,8 @@ impl VernalApplicationBuilder {
     /// 内建类型由 [`Self::build`] 自动注册；业务代码不应重复注册同类型的
     /// `Handle`、`CancellationToken`、`ManagedTaskSupervisor`、
     /// `TaskShutdownPolicy`、`LifecycleExecutionPolicy`、
-    /// `SystemShutdownSignalListener`、`EventBus` 或两类调用计划目录。
+    /// `SystemShutdownSignalListener`、`ApplicationEnvironment`、`EventBus` 或两类
+    /// 调用计划目录。
     ///
     /// # Errors
     ///
@@ -235,6 +239,15 @@ impl VernalApplicationBuilder {
         self
     }
 
+    /// 返回应用环境建造器，供装配代码显式声明来源优先级和 Profile。
+    ///
+    /// 具体 TOML/YAML、Hutool `.setting`、进程环境变量或配置中心适配器应先实现
+    /// [`crate::PropertySource`]，再通过该建造器加入。Vernal 不隐式读取进程全局
+    /// 配置，因而同进程的多个 Context 可以拥有完全不同的环境。
+    pub fn environment(&mut self) -> &mut ApplicationEnvironmentBuilder {
+        &mut self.environment
+    }
+
     /// 声明一个需要在应用构建阶段预编译调用计划的组件操作。
     pub fn operation(&mut self, operation: Operation) -> &mut Self {
         self.operations.push(operation);
@@ -294,6 +307,7 @@ impl VernalApplicationBuilder {
         );
         let local_invocation_plans =
             Arc::new(self.local_invocation_plans.build_catalog(self.operations));
+        let environment = Arc::new(self.environment.build());
 
         // 内建原生对象必须在图冻结前进入注册表，业务组件对它们的依赖才会被
         // GraphPlanner 与其他依赖完全一致地校验。
@@ -320,6 +334,8 @@ impl VernalApplicationBuilder {
                 &self.shutdown_signals,
             )))?;
         self.registry
+            .register(ComponentDefinition::shared_arc(Arc::clone(&environment)))?;
+        self.registry
             .register(ComponentDefinition::shared_arc(Arc::clone(&self.events)))?;
         self.registry
             .register(ComponentDefinition::shared_arc(Arc::clone(
@@ -341,6 +357,7 @@ impl VernalApplicationBuilder {
             task_shutdown_policy: self.task_shutdown_policy,
             lifecycle_execution_policy: self.lifecycle_execution_policy,
             shutdown_signals: self.shutdown_signals,
+            environment,
             events: self.events,
             scope_cleanup_policy: self.scope_cleanup_policy,
             invocation_plans,

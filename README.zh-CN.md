@@ -105,7 +105,7 @@ Vernal 遵守四条不可退化的规则：
 | `vernal-core` | 实验性 | Tokio-first 框架的公共合同 |
 | `vernal-ioc` | Phase 1/诊断内核已实现 | 定义、作用域、解析、依赖图和只读快照 |
 | `vernal-aop` | Phase 2 内核已实现 | Send/Local Around/Next、切点、不可变计划和取消 |
-| `vernal-context` | Phase 3/诊断内核已实现 | 生命周期、回滚、事件和脱敏启动报告 |
+| `vernal-context` | Phase 3/诊断内核已实现 | 应用环境、生命周期、回滚、事件和脱敏启动报告 |
 | `vernal-macros` | Phase 2 宏已实现 | 显式注入元数据与 Context-local 异步方法织入 |
 | `vernal-web` | Phase 4 合同已实现 | 框架中立的 Context、请求 Scope、Handler 和错误合同 |
 | `vernal-web-testkit` | Phase 4 绑定/生命周期合同已实现 | 十个 Adapter 共享 Context/Scope/组件绑定及成功、错误、Drop 清理断言 |
@@ -284,7 +284,12 @@ Tokio 协调任务负责：某个等待者被丢弃或等待超时都不会遗�
 在应用取消与 Ctrl-C、Unix SIGTERM/SIGHUP、Windows 控制台信号之间竞速。
 `SystemShutdownSignalListener` 是普通可注入组件；OS 信号会先发布成类型化
 `ApplicationShutdownSignal` 事件再取消应用，信号注册失败则转成结构化错误并
-执行保守关闭。`refresh()` 与 `start()` 由另一个 Context-local Tokio 协调器
+执行保守关闭。高层建造器还会注册 Context-local `ApplicationEnvironment`：
+应用显式添加 `PropertySource` 并声明高低优先级和 Profile，组件可以读取
+`${key:default}` 占位符或转换成 `u16`、`bool` 等 Rust 类型。TOML、YAML、
+Hutool `.setting`、进程环境变量和配置中心仍由 Adapter 加载；Vernal 不建立
+tx-di 式全局配置，也不会在启动报告中序列化属性键和值。`refresh()` 与
+`start()` 由另一个 Context-local Tokio 协调器
 持有：取消等待者不会遗弃初始化或启动，任一阶段收到应用取消都会执行结构化回滚，
 而不会错误发布 `Ready`。每个 initialize/start/stop 钩子还受
 `LifecycleExecutionPolicy` 约束：默认单钩子 30 秒、abort 后收口 1 秒；超时
@@ -304,6 +309,7 @@ Tokio 协调任务负责：某个等待者被丢弃或等待超时都不会遗�
 | 切点 | 操作匹配并编译成不可变调用计划 | Phase 2 内核 |
 | ApplicationContext | Tokio 持有 refresh/start/close、系统信号关闭、有界生命周期钩子、确定性回滚和 Context-local 类型化事件 | Phase 3 内核 |
 | 受管 Tokio 任务 | Context 持有任务句柄、失败取消、优雅等待、有界 abort 与共享停机结果 | Phase 3 内核 |
+| 应用环境 | 显式 PropertySource 优先级、Profile、占位符、类型化读取与脱敏快照 | Phase 3 内核 |
 | 事件 | Context 内部隔离的类型化事件发布 | Phase 3 内核 |
 | 异步集成 | Tokio 原生取消、deadline 与类型化调用上下文 | Phase 2 内核 |
 | Web 上下文 | 请求 Context、请求 Scope、Handler 调用和错误映射 | Phase 4 合同 |
@@ -398,14 +404,16 @@ Phase 2 AOP 内核现有 9 个 Send 合同测试，覆盖顺序进入/逆序退�
 非 `Send` 返回值、顺序、短路、取消、计划目录和借用型本地目标。性能基准仍未
 完成。宏前端另有 5 个运行时合同测试（包含类型驱动自定义 Scope）和 4 个
 compile-fail 用例。
-Phase 3 内核现有 30 个测试，覆盖依赖顺序启动、逆序关闭、initialize/start
+Phase 3 内核现有 37 个测试，覆盖依赖顺序启动、逆序关闭、initialize/start
 回滚、非法状态转换、幂等关闭、并发关闭串行化和 Context-local 类型化事件
-隔离、高层构建器十类内建资源注入、应用 Scope 取消树、任务错误/panic 传播、
+隔离、高层构建器十一类内建资源注入、应用 Scope 取消树、任务错误/panic 传播、
 取消安全的共享任务停机、超时 abort、任务先于组件 stop 的顺序、关闭等待者取消
 后的继续释放、refresh/start 等待者取消后的继续回滚、start 前应用取消、任务
 失败驱动 `run_until_cancelled()` 关闭、initialize/start 有界超时回滚、stop
-超时后继续逆序释放、类型化关闭信号发布、应用取消优先结束 OS 信号等待，以及
-成功/失败启动报告的只读性、序列化、stop 钩子 panic 隔离和业务错误正文脱敏。
+超时后继续逆序释放、类型化关闭信号发布、应用取消优先结束 OS 信号等待，
+PropertySource 优先级、Profile、类型转换、嵌套占位符、循环/来源失败，以及
+成功/失败启动报告的只读性、序列化、环境属性值隔离、stop 钩子 panic 隔离和
+业务错误正文脱敏。
 
 Phase 4 已把 `WebRequestScope` 收敛为 IoC `ScopeContext` 的 Web 门面，十个
 Adapter 的组件提取器均在当前请求 Scope 内解析 Singleton、Transient 或请求级

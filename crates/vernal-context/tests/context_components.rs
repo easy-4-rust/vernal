@@ -6,8 +6,9 @@ use tokio::runtime::Handle;
 use tokio_util::sync::CancellationToken;
 use vernal_aop::{InvocationPlanCatalog, LocalInvocationPlanCatalog, Operation};
 use vernal_context::{
-    ApplicationBuildError, EventBus, Lifecycle, LifecycleExecutionPolicy, ManagedTaskSupervisor,
-    ScopeCleanupPolicy, SystemShutdownSignalListener, TaskShutdownPolicy, VernalApplicationBuilder,
+    ApplicationBuildError, ApplicationEnvironment, EventBus, Lifecycle, LifecycleExecutionPolicy,
+    ManagedTaskSupervisor, MapPropertySource, ScopeCleanupPolicy, SystemShutdownSignalListener,
+    TaskShutdownPolicy, VernalApplicationBuilder,
 };
 use vernal_core::BoxError;
 use vernal_ioc::ComponentDefinition;
@@ -21,6 +22,7 @@ struct RuntimeAwareService {
     task_shutdown_policy: Arc<TaskShutdownPolicy>,
     lifecycle_execution_policy: Arc<LifecycleExecutionPolicy>,
     shutdown_signals: Arc<SystemShutdownSignalListener>,
+    environment: Arc<ApplicationEnvironment>,
     scope_cleanup_policy: Arc<ScopeCleanupPolicy>,
     invocation_plans: Arc<InvocationPlanCatalog>,
     local_invocation_plans: Arc<LocalInvocationPlanCatalog>,
@@ -70,7 +72,47 @@ fn assert_lifecycle_execution_component(
     ));
 }
 
-/// 构造声明全部十类框架内建依赖的业务组件定义。
+/// 配置并校验 Context-local 应用环境的 `IoC` 身份与类型化读取。
+fn configure_environment(application: &mut VernalApplicationBuilder) {
+    application
+        .environment()
+        .active_profile("production")
+        .expect("valid active profile")
+        .add_last(Arc::new(
+            MapPropertySource::new(
+                "application",
+                [("service.port", "8088"), ("service.name", "vernal")],
+            )
+            .expect("valid property source"),
+        ))
+        .expect("unique property source");
+}
+
+/// 校验业务组件与 Context 使用完全相同的应用环境。
+fn assert_environment_component(
+    service: &RuntimeAwareService,
+    context: &vernal_context::ApplicationContext,
+) {
+    assert!(std::ptr::eq(
+        service.environment.as_ref(),
+        context.environment()
+    ));
+    assert_eq!(
+        service
+            .environment
+            .require::<u16>("service.port")
+            .expect("typed property"),
+        8088
+    );
+    assert!(
+        service
+            .environment
+            .is_profile_active("production")
+            .expect("valid profile")
+    );
+}
+
+/// 构造声明全部十一类框架内建依赖的业务组件定义。
 fn runtime_aware_definition() -> ComponentDefinition {
     ComponentDefinition::try_singleton::<RuntimeAwareService, _>(
         |resolver| -> Result<RuntimeAwareService, BoxError> {
@@ -82,6 +124,7 @@ fn runtime_aware_definition() -> ComponentDefinition {
                 task_shutdown_policy: resolver.resolve::<TaskShutdownPolicy>()?,
                 lifecycle_execution_policy: resolver.resolve::<LifecycleExecutionPolicy>()?,
                 shutdown_signals: resolver.resolve::<SystemShutdownSignalListener>()?,
+                environment: resolver.resolve::<ApplicationEnvironment>()?,
                 scope_cleanup_policy: resolver.resolve::<ScopeCleanupPolicy>()?,
                 invocation_plans: resolver.resolve::<InvocationPlanCatalog>()?,
                 local_invocation_plans: resolver.resolve::<LocalInvocationPlanCatalog>()?,
@@ -95,6 +138,7 @@ fn runtime_aware_definition() -> ComponentDefinition {
     .depends_on::<TaskShutdownPolicy>()
     .depends_on::<LifecycleExecutionPolicy>()
     .depends_on::<SystemShutdownSignalListener>()
+    .depends_on::<ApplicationEnvironment>()
     .depends_on::<ScopeCleanupPolicy>()
     .depends_on::<InvocationPlanCatalog>()
     .depends_on::<LocalInvocationPlanCatalog>()
@@ -124,6 +168,7 @@ async fn managed_context_injects_tokio_events_cancellation_and_aop_plans() {
         Duration::from_secs(13),
         Duration::from_secs(3),
     ));
+    configure_environment(&mut application);
     application.operation(operation.clone());
     application.lifecycle::<RuntimeAwareService>();
     application
@@ -156,6 +201,7 @@ async fn managed_context_injects_tokio_events_cancellation_and_aop_plans() {
         service.shutdown_signals.as_ref(),
         context.shutdown_signal_listener()
     ));
+    assert_environment_component(&service, &context);
     assert_eq!(
         service.scope_cleanup_policy.timeout(),
         Some(Duration::from_secs(7))

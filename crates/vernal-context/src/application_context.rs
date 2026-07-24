@@ -8,9 +8,9 @@ use vernal_aop::InvocationPlanCatalog;
 use vernal_ioc::{ComponentKey, Container, ScopeContext};
 
 use crate::{
-    ApplicationShutdownSignal, ContextError, ContextState, EventBus, LifecycleExecutionPolicy,
-    ManagedTaskSupervisor, StartupReport, SystemShutdownSignalListener, TaskShutdownPolicy,
-    application_close_coordinator::ApplicationCloseCoordinator,
+    ApplicationEnvironment, ApplicationShutdownSignal, ContextError, ContextState, EventBus,
+    LifecycleExecutionPolicy, ManagedTaskSupervisor, StartupReport, SystemShutdownSignalListener,
+    TaskShutdownPolicy, application_close_coordinator::ApplicationCloseCoordinator,
     application_context_builder::LifecycleResolver,
     application_startup_coordinator::ApplicationStartupCoordinator,
     context_resources::ContextResources,
@@ -37,6 +37,7 @@ impl ApplicationContext {
         let lifecycle_resolvers = Arc::from(lifecycle_resolvers);
         let diagnostics = StartupReport::new(
             ContextState::Created.as_str().to_owned(),
+            resources.environment(),
             container.registry().snapshot(),
             resources.invocation_plans(),
             resources.local_invocation_plans(),
@@ -218,6 +219,16 @@ impl ApplicationContext {
     #[must_use]
     pub fn shutdown_signal_listener(&self) -> &SystemShutdownSignalListener {
         self.lifecycle().resources().shutdown_signals()
+    }
+
+    /// 返回当前 Context 冻结的应用环境。
+    ///
+    /// 高层建造器把同一 [`ApplicationEnvironment`] 注册为普通 `IoC` Singleton；
+    /// 配置组件可以在同步构造阶段读取类型化属性，生命周期组件和 Adapter 也可以
+    /// 通过 Context 门面读取相同的 `PropertySource` 顺序与 Profile。
+    #[must_use]
+    pub fn environment(&self) -> &ApplicationEnvironment {
+        self.lifecycle().resources().environment()
     }
 
     /// 返回当前 Context 独占的类型化事件总线。

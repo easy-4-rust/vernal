@@ -7,17 +7,17 @@ use tokio_util::sync::CancellationToken;
 use vernal_aop::{InvocationPlanCatalog, LocalInvocationPlanCatalog};
 
 use crate::{
-    EventBus, LifecycleExecutionPolicy, ManagedTaskSupervisor, ScopeCleanupPolicy,
-    SystemShutdownSignalListener, TaskShutdownPolicy,
+    ApplicationEnvironment, EventBus, LifecycleExecutionPolicy, ManagedTaskSupervisor,
+    ScopeCleanupPolicy, SystemShutdownSignalListener, TaskShutdownPolicy,
     diagnostic_configuration::DiagnosticConfiguration,
 };
 
 /// 聚合一个 `ApplicationContext` 独占或共享的基础运行资源。
 ///
 /// 该对象只在 Context 内部传递，公开 API 仍直接暴露 Rust 原生类型。高层应用
-/// 建造器会把其中的 Tokio Handle、取消令牌、任务监督器、事件总线，以及线程
-/// 安全与本地 AOP 计划目录同时注册到 `IoC` 容器，使业务组件与 Context 使用
-/// 相同实例。
+/// 建造器会把其中的 Tokio Handle、取消令牌、任务监督器、应用环境、事件总线，
+/// 以及线程安全与本地 AOP 计划目录同时注册到 `IoC` 容器，使业务组件与 Context
+/// 使用相同实例。
 pub(crate) struct ContextResources {
     pub(crate) runtime: Option<Arc<Handle>>,
     pub(crate) cancellation: Arc<CancellationToken>,
@@ -25,6 +25,7 @@ pub(crate) struct ContextResources {
     pub(crate) task_shutdown_policy: Arc<TaskShutdownPolicy>,
     pub(crate) lifecycle_execution_policy: Arc<LifecycleExecutionPolicy>,
     pub(crate) shutdown_signals: Arc<SystemShutdownSignalListener>,
+    pub(crate) environment: Arc<ApplicationEnvironment>,
     pub(crate) events: Arc<EventBus>,
     pub(crate) scope_cleanup_policy: Arc<ScopeCleanupPolicy>,
     pub(crate) invocation_plans: Arc<InvocationPlanCatalog>,
@@ -44,6 +45,7 @@ impl ContextResources {
             task_shutdown_policy: Arc::new(TaskShutdownPolicy::default()),
             lifecycle_execution_policy: Arc::new(LifecycleExecutionPolicy::default()),
             shutdown_signals: Arc::new(SystemShutdownSignalListener::new()),
+            environment: Arc::new(ApplicationEnvironment::empty()),
             events: Arc::new(EventBus::new()),
             scope_cleanup_policy: Arc::new(ScopeCleanupPolicy::default()),
             invocation_plans: Arc::new(InvocationPlanCatalog::default()),
@@ -80,6 +82,11 @@ impl ContextResources {
     /// 返回当前 Context 使用的 Tokio 操作系统关闭信号监听对象。
     pub(crate) fn shutdown_signals(&self) -> &SystemShutdownSignalListener {
         &self.shutdown_signals
+    }
+
+    /// 返回当前 Context 冻结的应用属性来源与 Profile。
+    pub(crate) fn environment(&self) -> &ApplicationEnvironment {
+        &self.environment
     }
 
     /// 返回 Context 独占的类型化事件总线。

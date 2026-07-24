@@ -2,16 +2,35 @@
 
 mod diagnostic_support;
 
+use std::sync::Arc;
+
 use diagnostic_support::{
     FailingLifecycle, HealthyLifecycle, PassThroughInterceptor, PassThroughLocalInterceptor,
 };
 use vernal_aop::{Advisor, LocalAdvisor, Operation};
-use vernal_context::{ContextState, DiagnosticOutcome, DiagnosticState, VernalApplicationBuilder};
+use vernal_context::{
+    ContextState, DiagnosticOutcome, DiagnosticState, MapPropertySource, VernalApplicationBuilder,
+};
 use vernal_ioc::ComponentDefinition;
 
 #[tokio::test]
 async fn report_tracks_registry_aop_subsystems_and_lifecycle_without_mutability() {
     let mut builder = VernalApplicationBuilder::new(tokio::runtime::Handle::current());
+    builder
+        .environment()
+        .active_profile("production")
+        .expect("active profile")
+        .add_last(Arc::new(
+            MapPropertySource::new(
+                "application",
+                [
+                    ("database.url", "postgres://secret-user:secret-password@db"),
+                    ("service.port", "8080"),
+                ],
+            )
+            .expect("property source"),
+        ))
+        .expect("environment source");
     builder
         .register(ComponentDefinition::singleton(|_| HealthyLifecycle))
         .expect("healthy lifecycle definition");
@@ -41,6 +60,10 @@ async fn report_tracks_registry_aop_subsystems_and_lifecycle_without_mutability(
     assert_eq!(ready.context_state(), ContextState::Ready.as_str());
     assert_eq!(ready.framework_version(), env!("CARGO_PKG_VERSION"));
     assert_eq!(ready.minimum_rust_version(), "1.85.0");
+    assert_eq!(ready.environment().property_sources(), ["application"]);
+    assert_eq!(ready.environment().active_profiles(), ["production"]);
+    assert_eq!(ready.environment().default_profiles(), ["default"]);
+    assert_eq!(ready.environment().effective_profiles(), ["production"]);
     assert_eq!(ready.aop_plan_count(), 1);
     assert_eq!(ready.aop_interceptor_count(), 1);
     assert_eq!(ready.local_aop_plan_count(), 1);
@@ -53,7 +76,7 @@ async fn report_tracks_registry_aop_subsystems_and_lifecycle_without_mutability(
     );
     assert_eq!(ready.warnings(), ["preview-api"]);
     assert!(ready.unused_definitions().is_empty());
-    assert_eq!(ready.registry().summary().definition_count(), 11);
+    assert_eq!(ready.registry().summary().definition_count(), 12);
     assert_eq!(ready.observations().len(), 4);
     assert!(
         ready
@@ -78,7 +101,11 @@ async fn report_tracks_registry_aop_subsystems_and_lifecycle_without_mutability(
     let json = serde_json::to_string(&ready).expect("serializable startup report");
     assert!(json.contains("\"context_state\":\"ready\""));
     assert!(json.contains("\"state\":\"degraded\""));
+    assert!(json.contains("\"property_sources\":[\"application\"]"));
     assert!(!json.contains("0x"));
+    assert!(!json.contains("database.url"));
+    assert!(!json.contains("secret-user"));
+    assert!(!json.contains("secret-password"));
 
     context.close().await.expect("close");
     let closed = context.startup_report().await;

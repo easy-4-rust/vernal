@@ -8,7 +8,7 @@
 > **Architecture version:** 0.1.0<br>
 > **Applicable code:** `0.0.0-dev` Phase 1–4 callable foundations<br>
 > **Status:** Draft, awaiting architecture review<br>
-> **Last updated:** 2026-07-24
+> **Last updated:** 2026-07-25
 
 ## 1. Document control and status
 
@@ -209,12 +209,12 @@ flowchart TB
 
 | Project | Reviewed source | Confirmed finding |
 |:---|:---|:---|
-| `tx-di` | core component, registry, store, scope, topology, lifecycle, AOP, and intercept macro files | Typed metadata, topological construction, scopes, lifecycle, and interceptor chains exist |
-| `Sa-Token-Rust` | Router flow, adapter contracts, and ten Web/RPC plugin families | One auth flow is reused through framework request/response ports |
+| `tx-di` | core component, registry, store, scope, topology, lifecycle, AOP, config, and intercept macro files | Typed metadata, construction, lifecycle, and interception exist; configuration remains coupled to global TOML and panic |
+| `Sa-Token-Rust` | Router flow, adapter contracts, core config builder, and ten Web/RPC plugin families | One auth flow is reused through framework ports; typed builders need stable external property inputs |
 | `Ddd4r` | Root manifest and implementation plan | Target stack needs a request-context bridge while retaining DDD/CQRS ownership |
-| `Hutool-Rust` | AOP symbols and Reqwest-based HTTP client contracts | Utility/client interception is reusable evidence, but it does not provide server framework integration |
+| `Hutool-Rust` | AOP, Reqwest client, and `hutool-setting` Profile/SettingLoader | Profiles, variable expansion, and parsed settings can feed an adapter without coupling file formats to Context |
 
-This is a local source snapshot from 2026-07-24, not evidence that any consumer
+This is a local source snapshot from 2026-07-25, not evidence that any consumer
 already integrates Vernal.
 
 ### 5.2 Adopted ideas
@@ -228,6 +228,7 @@ already integrates Vernal.
 | `debug_registry()` log table | Upgrade to serializable read-only snapshots that reuse the frozen plan | `vernal-ioc` / `vernal-context` |
 | Singleton / Prototype | Implemented as Singleton / Transient / typed Scope SPI | `vernal-ioc` |
 | Lifecycle hooks | Move to a Context-owned state machine | `vernal-context` |
+| Dot-path configuration lookup | Context-local PropertySource precedence, profiles, placeholders, and typed lookup; format loading stays in adapters | `vernal-context` |
 | Forward before / reverse after | Preserve stack order through a true Around chain | `vernal-aop` |
 | Generated interception wrapper | Keep compile-time generation; remove hard-coded paths and panic | `vernal-macros` |
 
@@ -236,6 +237,7 @@ already integrates Vernal.
 | Current tx-di design | Risk | Vernal response |
 |:---|:---|:---|
 | Core mixes config, tracing, utilities, and shared errors | Unrelated concerns expand the kernel | Keep Tokio foundations; move config formats, logging implementations, and utilities outward |
+| `AppAllConfig` hard-wires global TOML, executable-relative defaults, and panic | Multi-context conflicts and caller-controlled failure are impossible | `ApplicationEnvironment` accepts explicit PropertySource objects and returns structured errors |
 | Global `HashMap<usize, Arc<InterceptorChain>>` | Address reuse, cleanup, locking, context isolation | Chain owned by wrapper/definition/context |
 | Macro panics on missing chain or rejected before | Failure cannot compose | Structured caller-visible errors |
 | Every argument becomes a Debug string | Secret leakage, allocation, lost type | No values by default; explicit redacted opt-in |
@@ -587,14 +589,15 @@ sequenceDiagram
 
 ## 10. ApplicationContext and lifecycle
 
-The context composes registry, container, AOP plans, local typed events,
-rollback, reverse cleanup, and read-only diagnostics. It directly uses Tokio
-tasks, synchronization, time, cancellation, and signals. Configuration
-formats, web servers, and external configuration centers remain adapters whose
-native objects may still be registered as ordinary components.
+The context composes registry, container, AOP plans, ordered property sources,
+profiles, local typed events, rollback, reverse cleanup, and read-only
+diagnostics. It directly uses Tokio tasks, synchronization, time, cancellation,
+and signals. Configuration formats, web servers, and external configuration
+centers remain adapters whose results can implement `PropertySource` or be
+registered as ordinary components.
 
 Before graph freezing, `VernalApplicationBuilder` automatically registers
-ten framework-native components:
+eleven framework-native components:
 
 | Built-in component | Lifecycle responsibility |
 |:---|:---|
@@ -604,10 +607,50 @@ ten framework-native components:
 | `TaskShutdownPolicy` | Bound graceful wait and post-abort settlement |
 | `LifecycleExecutionPolicy` | Bound initialize/start/stop and post-abort settlement |
 | `SystemShutdownSignalListener` | Observe cross-platform Tokio process signals |
+| `ApplicationEnvironment` | Freeze source precedence, profiles, and typed property semantics |
 | `EventBus` | Context-local typed events |
 | `ScopeCleanupPolicy` | Bound application-owned Web scope cleanup waits |
 | `InvocationPlanCatalog` | Immutable Send-AOP invocation plans |
 | `LocalInvocationPlanCatalog` | Immutable worker-local AOP invocation plans |
+
+`ApplicationEnvironment` adopts the reusable center of Spring Environment
+without importing Java's configuration ecosystem or tx-di's global TOML:
+
+- `add_first` and `add_last` make precedence explicit;
+- `PropertySource` is format-neutral, so TOML, YAML, Hutool `.setting`,
+  process-environment, and Nacos loaders remain adapters;
+- active profiles replace defaults; otherwise `default` and explicit default
+  profiles apply;
+- `property`, `get`, and `require` support `${key:default}`, nested defaults,
+  cross-source references, and Rust `FromStr` conversion;
+- missing/invalid values, duplicate sources, read failures, cycles, and depth
+  limits are structured `EnvironmentError` values, never normal-flow panics;
+- `EnvironmentSnapshot` serializes only source names and profiles, not
+  property keys or values;
+- the Context and IoC components share one `Arc<ApplicationEnvironment>`, with
+  no state shared across application contexts.
+
+```mermaid
+flowchart LR
+    Loader["Format/system adapters<br/>TOML · YAML · Hutool · Env · Nacos"]
+    Source["PropertySource[]<br/>explicit add_first / add_last"]
+    Profiles["Active / Default profiles"]
+    Environment["ApplicationEnvironment<br/>context-local immutable"]
+    Resolve["Placeholder expansion<br/>cycle and depth guards"]
+    Typed["FromStr conversion"]
+    Component["IoC component / adapter"]
+    Snapshot["EnvironmentSnapshot<br/>source/profile names only"]
+
+    Loader --> Source
+    Source --> Environment
+    Profiles --> Environment
+    Environment --> Resolve --> Typed --> Component
+    Environment --> Snapshot
+```
+
+Hutool-Rust may convert `Profile`/`SettingLoader` output into a
+`MapPropertySource`; a Sa-Token-Rust bridge may read its keys and then construct
+`SaTokenConfigBuilder`. Vernal knows neither consumer type.
 
 Components declare them with ordinary `depends_on::<T>()` metadata, and the
 context plus container receive the same `Arc<T>` instances. The lower-level
@@ -624,7 +667,7 @@ sequenceDiagram
 
     App->>Builder: register definitions, advisors, operations
     Builder->>AOP: compile plan catalog
-    Builder->>Graph: register Tokio/task/policy/event/AOP resources
+    Builder->>Graph: register Tokio/task/environment/policy/event/AOP resources
     Builder->>Graph: freeze and validate complete graph
     Graph-->>Builder: Registry
     Builder->>Context: create with identical shared resources
@@ -729,8 +772,8 @@ published as a typed `ApplicationShutdownSignal` event, then cancellation is
 broadcast immediately. Signal registration and stream failures become
 `ContextError::ShutdownSignal`; Vernal still cancels and closes conservatively
 instead of panicking or leaving a running application without supervision.
-The listener is the tenth framework-native IoC component, not a global runtime
-or process-wide Context.
+The listener is one of eleven framework-native IoC components, not a global
+runtime or process-wide Context.
 
 ```mermaid
 flowchart LR
@@ -977,14 +1020,15 @@ The unsafe rule covers Vernal-owned source, not the entire third-party graph.
 | Adapter | Conversion or missing context | Return stable native error |
 
 A context refresh now produces a serializable, read-only, redacted report
-containing version/features, definition and scope counts, graph summary,
-pointcut matches, lifecycle timing/failures, adapter state, warnings, and
-unused definitions.
+containing version/features, PropertySource/profile names, definition and scope
+counts, graph summary, pointcut matches, lifecycle timing/failures, adapter
+state, warnings, and unused definitions.
 
 ```mermaid
 flowchart LR
     Registry["Registry<br/>definitions + bindings + BuildPlan"]
     Catalog["InvocationPlanCatalog"]
+    Environment["ApplicationEnvironment<br/>source names + profiles"]
     Static["Static diagnostics<br/>features / adapters / external / warnings"]
     Lifecycle["Context state machine<br/>warm-up / resolve / init / start / stop"]
     Snapshot["RegistrySnapshot<br/>owned read-only value"]
@@ -994,6 +1038,7 @@ flowchart LR
     Registry -->|"reuse validated order"| Snapshot
     Snapshot --> Report
     Catalog -->|"plan and interceptor slot counts"| Report
+    Environment -->|"EnvironmentSnapshot<br/>no keys or values"| Report
     Static --> Report
     Lifecycle -->|"phase, outcome, microseconds"| Report
     Report --> Output
@@ -1006,6 +1051,9 @@ The implemented contract is:
   or addresses.
 - `ApplicationContext::startup_report().await` returns an owned clone that
   later start/close operations cannot mutate.
+- `EnvironmentSnapshot` contains only PropertySource names and profiles;
+  property keys, values, and resolved placeholder results never enter
+  `StartupReport`.
 - warm-up, component resolution, initialize, start, and stop record stable
   phases, subjects, outcomes, and microsecond durations.
 - raw error chains remain available through `ContextError::source`; the report
@@ -1079,19 +1127,20 @@ receivers. Phase 2 now has a callable loop, while broader
 signatures, diagnostic coverage, benchmarks, and stability guarantees remain
 open.
 
-The Phase 3 kernel has thirty contract tests for dependency-order
+The Phase 3 kernel has thirty-seven contract tests for dependency-order
 startup, reverse shutdown, initialize/start rollback, invalid transitions,
 idempotent close, concurrent close serialization, and context-local typed
 event isolation, plus runtime-unavailable diagnostics, same-instance injection
-of the ten built-in resources, application-owned Scope cancellation,
+of the eleven built-in resources, application-owned Scope cancellation,
 task failure/panic propagation, cancellation-safe shared task shutdown,
 timeout abort, task-before-component stop ordering, cancelled close-waiter
 recovery, cancelled refresh/start waiter rollback, pre-start application
 cancellation, failure-driven `run_until_cancelled()` shutdown, bounded
 initialize/start timeout rollback, stop-timeout continuation, typed OS-signal
 publication, application cancellation winning the signal race, stop-hook
-panic isolation, and owned/redacted serialization of successful and failed
-startup reports.
+panic isolation, PropertySource precedence, profiles, typed conversion, nested
+placeholders, cycle/source failures, and owned/redacted serialization of
+successful and failed startup reports without environment keys or values.
 
 ## 16. Delivery roadmap
 
@@ -1123,6 +1172,8 @@ No phase is complete merely because a crate exists or `cargo check` is green.
 - [x] IoC and AOP can be depended on, built, and used independently.
 - [x] Tokio usage and feature budgets are explicit; Context does not leak
   configuration formats or concrete web/ORM types into generic kernels.
+- [x] ApplicationEnvironment is context-local, keeps format/consumer types in
+  adapters, and exposes a snapshot without property keys or values.
 - [ ] Graph, interception, and lifecycle include success/failure/rollback tests.
 - [ ] No pointer-address chain map, normal-flow panic, or hidden cross-context state.
 - [ ] Web adapters pass one conformance suite while preserving native semantics.
@@ -1133,5 +1184,5 @@ No phase is complete merely because a crate exists or `cargo check` is green.
 ---
 
 **Document version:** 0.1.0<br>
-**Last updated:** 2026-07-24<br>
+**Last updated:** 2026-07-25<br>
 **Status:** Draft, awaiting architecture review

@@ -116,7 +116,7 @@ Detailed decisions, flows, failure semantics, and acceptance criteria are in:
 | `vernal-core` | Experimental | Shared contracts for the Tokio-first framework |
 | `vernal-ioc` | Phase 1/diagnostics kernel implemented | Definitions, scopes, resolution, graph validation, read-only snapshots |
 | `vernal-aop` | Phase 2 kernel implemented | Send/Local Around/Next, pointcuts, immutable plans, cancellation |
-| `vernal-context` | Phase 3/diagnostics kernel implemented | Managed bootstrap, lifecycle, events, redacted startup reports |
+| `vernal-context` | Phase 3/diagnostics kernel implemented | Managed bootstrap, application environment, lifecycle, events, redacted startup reports |
 | `vernal-macros` | Phase 2 macros implemented | Explicit `Arc<T>` injection metadata and context-local async method weaving |
 | `vernal-web` | Phase 4 contract implemented | Framework-neutral context, request scope, handler, and error contracts |
 | `vernal-web-testkit` | Phase 4 binding/lifecycle contracts implemented | Shared Context/scope/component binding and success/error/drop cleanup assertions for all ten adapters |
@@ -372,8 +372,9 @@ cancellation; Vernal does not introduce a second runtime abstraction.
 the dependency graph it registers the current Tokio `Handle`, the application
 `CancellationToken`, `ManagedTaskSupervisor`, `TaskShutdownPolicy`,
 `LifecycleExecutionPolicy`, `SystemShutdownSignalListener`,
-`ScopeCleanupPolicy`, the context-local `EventBus`, and both precompiled Send
-and Local AOP plan catalogs as ordinary typed components:
+`ApplicationEnvironment`, `ScopeCleanupPolicy`, the context-local `EventBus`,
+and both precompiled Send and Local AOP plan catalogs as ordinary typed
+components:
 
 ```rust
 use vernal_aop::Operation;
@@ -436,7 +437,14 @@ cancellation against Ctrl-C, Unix SIGTERM/SIGHUP, and Windows console signals.
 The listener is a normal injectable component; an OS signal is published as a
 typed `ApplicationShutdownSignal` event before cancellation, while signal
 registration failures become structured errors and still trigger conservative
-shutdown. `refresh()` and `start()` use a separate Context-local Tokio
+shutdown. The high-level builder also registers a Context-local
+`ApplicationEnvironment`: applications add ordered `PropertySource` objects
+and profiles explicitly, while components can resolve `${key:default}`
+placeholders or parse values into Rust types such as `u16` and `bool`. TOML,
+YAML, Hutool `.setting`, process environments, and configuration centers
+remain adapter concerns. Vernal creates no tx-di-style global configuration,
+and startup diagnostics serialize source/profile names but never property keys
+or values. `refresh()` and `start()` use a separate Context-local Tokio
 coordinator: cancelling a waiter cannot abandon initialization or startup,
 and application cancellation during either phase produces a structured
 rollback rather than publishing `Ready`. Every initialize/start/stop hook also
@@ -458,6 +466,7 @@ or a no-yield loop inside an async task.
 | Pointcuts | Operation matching compiled into immutable invocation plans | Phase 2 kernel |
 | Application context | Tokio-owned refresh/start/close, OS signal shutdown, bounded lifecycle hooks, deterministic rollback, context-local typed events | Phase 3 kernel |
 | Managed Tokio tasks | Context-owned task handles, failure-driven cancellation, graceful wait, bounded abort, shared shutdown result | Phase 3 kernel |
+| Application environment | Explicit PropertySource precedence, profiles, placeholders, typed lookup, and redacted snapshots | Phase 3 kernel |
 | Events | Context-local typed event publication | Phase 3 kernel |
 | Async integration | Tokio-native cancellation, deadlines, and typed invocation context | Phase 2 kernel |
 | Web context | Request context, request scope, handler invocation, error mapping | Phase 4 contract |
@@ -580,18 +589,20 @@ compile-fail cases for invalid component
 fields, invalid collection qualifiers, non-async interception, and borrowed
 receivers. Broader signature support, expanded
 macro diagnostics, and AOP benchmarks remain open.
-The Phase 3 kernel has thirty tests covering dependency-order startup,
+The Phase 3 kernel has thirty-seven tests covering dependency-order startup,
 reverse shutdown, initialize/start rollback, invalid transitions, idempotent
 close, concurrent close serialization, and context-local typed event
-isolation, plus managed injection of ten framework resources,
+isolation, plus managed injection of eleven framework resources,
 application-owned Scope cancellation, task failure/panic propagation,
 cancellation-safe shared task shutdown, timeout abort, task-before-component
 stop ordering, cancelled close-waiter recovery, failure-driven
 `run_until_cancelled()` shutdown, cancelled refresh/start waiter recovery,
 pre-start application cancellation, bounded initialize/start rollback,
 stop-timeout continuation, typed shutdown-signal publication, application
-cancellation winning the OS-signal race, stop-hook panic isolation, and
-read-only/redacted serialization of successful and failed startup reports.
+cancellation winning the OS-signal race, PropertySource precedence, profiles,
+typed conversion, nested placeholders, cycle/source failures, stop-hook panic
+isolation, and read-only/redacted startup reports that exclude environment
+keys and values.
 
 Phase 4 now makes `WebRequestScope` the Web facade over IoC `ScopeContext`.
 All ten adapters resolve singleton, transient, and request-scoped components

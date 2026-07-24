@@ -5,7 +5,8 @@ use vernal_aop::{InvocationPlanCatalog, LocalInvocationPlanCatalog};
 use vernal_ioc::RegistrySnapshot;
 
 use crate::{
-    StartupObservation, SubsystemStatus, diagnostic_configuration::DiagnosticConfiguration,
+    ApplicationEnvironment, EnvironmentSnapshot, StartupObservation, SubsystemStatus,
+    diagnostic_configuration::DiagnosticConfiguration,
 };
 
 /// `ApplicationContext` 的可序列化、只读、脱敏诊断快照。
@@ -19,6 +20,7 @@ pub struct StartupReport {
     minimum_rust_version: String,
     project_status: String,
     context_state: String,
+    environment: EnvironmentSnapshot,
     registry: RegistrySnapshot,
     aop_plan_count: usize,
     aop_interceptor_count: usize,
@@ -36,6 +38,7 @@ impl StartupReport {
     /// 创建尚未执行 refresh 的初始报告。
     pub(crate) fn new(
         context_state: String,
+        environment: &ApplicationEnvironment,
         registry: RegistrySnapshot,
         invocation_plans: &InvocationPlanCatalog,
         local_invocation_plans: &LocalInvocationPlanCatalog,
@@ -46,6 +49,7 @@ impl StartupReport {
             minimum_rust_version: vernal_core::MINIMUM_RUST_VERSION.to_owned(),
             project_status: vernal_core::PROJECT_STATUS.to_owned(),
             context_state,
+            environment: environment.snapshot(),
             registry,
             aop_plan_count: invocation_plans.len(),
             aop_interceptor_count: invocation_plans.interceptor_count(),
@@ -84,6 +88,12 @@ impl StartupReport {
     #[must_use]
     pub fn context_state(&self) -> &str {
         &self.context_state
+    }
+
+    /// 返回不包含属性键和值的应用环境快照。
+    #[must_use]
+    pub const fn environment(&self) -> &EnvironmentSnapshot {
+        &self.environment
     }
 
     /// 返回 `IoC` 注册表诊断快照。
