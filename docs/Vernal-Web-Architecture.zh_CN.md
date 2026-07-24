@@ -32,12 +32,14 @@
 Axum 已引入 Axum 0.8，实现原生 Router 装配与类型化 Context、组件、请求 Scope
 提取器；Actix Web 采用兼容 MSRV 的 4.11/actix-http 3.11 版本线，实现原生
 Transform/Service Middleware、App Data/Extension 提取器和 Body 绑定 Scope
-释放；Salvo 采用最后一个兼容 Rust 1.85 的 0.85.0 版本，实现原生 Hoop、
-类型化 Depot 访问和 Frame/Trailer 保真的 Body Scope；Poem 采用与 MSRV
-一致的 3.1.12 版本，实现原生 Middleware/Endpoint、Request Extension
-提取器和 Body 绑定 Scope 释放；Tonic 采用兼容 MSRV 的 0.12 版本线，实现
-Context Interceptor、类型化 Request 扩展、`GrpcMethod` 路由元数据、稳定
-`Status` 映射和 Tower 组合。其余五个应用 Adapter 仍是描述符。
+释放；Warp 0.4.3 通过 `warp::ext` Filter 和官方 `warp::service` Tower 边界
+实现 Context/组件/Scope 提取与完整 Body 生命周期；Salvo 采用最后一个兼容
+Rust 1.85 的 0.85.0 版本，实现原生 Hoop、类型化 Depot 访问和 Frame/Trailer
+保真的 Body Scope；Poem 采用与 MSRV 一致的 3.1.12 版本，实现原生
+Middleware/Endpoint、Request Extension 提取器和 Body 绑定 Scope 释放；Tonic
+采用兼容 MSRV 的 0.12 版本线，实现 Context Interceptor、类型化 Request
+扩展、`GrpcMethod` 路由元数据、稳定 `Status` 映射和 Tower 组合。其余四个
+应用 Adapter 仍是描述符。
 
 版本化选择清单由
 [`web-integration-manifest.toml`](../web-integration-manifest.toml) 维护。
@@ -216,7 +218,7 @@ Trace -> Context -> RequestScope -> Security/AOP -> Handler -> ErrorMapping
 | 1 | Axum | `vernal-axum` | HTTP + Tower | `Layer`、State/Extension、Extractor、IntoResponse | Phase 5 适配已实现 |
 | 2 | Actix Web | `vernal-actix-web` | HTTP | `Transform`/`Service`、App Data、Extractor、Responder | Phase 5 适配已实现 |
 | 3 | Rocket | `vernal-rocket` | HTTP | Fairing、Request Guard、Managed State、Responder | 骨架 |
-| 4 | Warp | `vernal-warp` | HTTP | Filter、Rejection、Reply | 骨架 |
+| 4 | Warp | `vernal-warp` | HTTP | Filter、Rejection、Reply | Phase 5 适配已实现 |
 | 5 | Salvo | `vernal-salvo` | HTTP | Handler、Hoop、Depot、Writer | Phase 5 适配已实现 |
 | 6 | Poem | `vernal-poem` | HTTP | Middleware、Endpoint、Data、IntoResponse | Phase 5 适配已实现 |
 | 7 | Ntex | `vernal-ntex` | HTTP | Service/Middleware、App State、Extractor | 骨架 |
@@ -232,7 +234,10 @@ Trace -> Context -> RequestScope -> Security/AOP -> Handler -> ErrorMapping
   Request Scope 的边界。
 - **Rocket**：使用 Managed State 持有 Context；Request Guard 负责解析组件，
   Fairing 只处理生命周期或全局请求流程。
-- **Warp**：用组合 Filter 注入 Context；策略拒绝映射为明确 Rejection，不能 panic。
+- **Warp**：用 `warp::ext` 组合 Filter 提取 Context、组件与 Scope，策略失败映射
+  为明确 Rejection，不能 panic。Warp 0.4 的公开 Reply 使用私有 Body 类型，
+  因此完整 Body Scope 必须通过官方 `warp::service(route)` 与
+  `VernalWarpLayer` 组合；该 Service 边界保留 Frame、Trailer、背压与取消。
 - **Salvo**：Hoop 包裹调用链，Depot 类型化携带 Context、组件与请求 Scope；
   Handler 保持 Salvo 原生签名。`ResBody` 直接按 `http_body::Body` 包装，保留
   Data Frame、Trailer、上游错误与背压，并在完成或取消后关闭 Scope。0.85.0

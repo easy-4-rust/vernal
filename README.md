@@ -35,9 +35,9 @@ Hutool-Rust · Sa-Token-Rust · Ddd4r · general Rust applications
 
 > **Project status:** experimental. Phase 1 IoC, the Tokio-first Phase 2 AOP
 > kernel, Phase 3 application context, and the Phase 4 Web/HTTP/Tower/Hyper
-> foundations are callable and contract-tested. Axum, Actix Web, Salvo, Poem,
-> and Tonic are runnable framework adapters; procedural macros and the other five
-> adapters remain skeletons. Nothing is published yet.
+> foundations are callable and contract-tested. Axum, Actix Web, Warp, Salvo,
+> Poem, and Tonic are runnable framework adapters; procedural macros and the
+> other four adapters remain skeletons. Nothing is published yet.
 
 ## 1. Vision
 
@@ -132,7 +132,7 @@ upstream middleware implementations:
 | 1 | Axum | `vernal-axum` | HTTP + Tower | Phase 5 adapter |
 | 2 | Actix Web | `vernal-actix-web` | HTTP | Phase 5 adapter |
 | 3 | Rocket | `vernal-rocket` | HTTP | Skeleton |
-| 4 | Warp | `vernal-warp` | HTTP | Skeleton |
+| 4 | Warp | `vernal-warp` | HTTP | Phase 5 adapter |
 | 5 | Salvo | `vernal-salvo` | HTTP | Phase 5 adapter |
 | 6 | Poem | `vernal-poem` | HTTP | Phase 5 adapter |
 | 7 | Ntex | `vernal-ntex` | HTTP | Skeleton |
@@ -142,12 +142,13 @@ upstream middleware implementations:
 
 Axum provides native Router assembly plus Context, component, and request-scope
 extractors. Actix Web provides App Data/Extension extractors and a native
-`Transform`/`Service` whose Scope follows the response body. Salvo provides a
-native Hoop, typed Depot access, and frame/trailer-preserving body cleanup.
-Poem provides native `Middleware`/`Endpoint` composition, typed
+`Transform`/`Service` whose Scope follows the response body. Warp provides
+native extension filters over its official Tower Service boundary. Salvo
+provides a native Hoop, typed Depot access, and frame/trailer-preserving body
+cleanup. Poem provides native `Middleware`/`Endpoint` composition, typed
 Context/component/scope extractors, and body-bound cleanup. Tonic provides a
 Context interceptor, typed Request extensions, stable `Status` mapping, and
-reusable Tower layers. The remaining five adapters are descriptors.
+reusable Tower layers. The remaining four adapters are descriptors.
 
 “Ten” is a versioned coverage priority derived from the reviewed local
 integration superset and current registry availability, not a claim of an

@@ -8,8 +8,18 @@ description = "Warp integration for Vernal."
 publish = false
 
 [dependencies]
+tokio.workspace = true
+tower.workspace = true
+vernal-context = { path = "../vernal-context" }
 vernal-http = { path = "../vernal-http" }
+vernal-ioc = { path = "../vernal-ioc" }
+vernal-tower = { path = "../vernal-tower" }
 vernal-web = { path = "../vernal-web" }
+warp.workspace = true
+
+[dev-dependencies]
+bytes.workspace = true
+http-body-util.workspace = true
 
 [lints]
 workspace = true

@@ -49,12 +49,13 @@
   生命周期 Layer 和真实 Hyper 传输桥接。
 - `[已确认]` `vernal-axum` 已提供原生 Router 装配与类型化 Context、组件、
   请求 Scope 提取器；`vernal-actix-web` 已提供原生 Transform/Service 中间件和
-  Body 绑定 Scope 释放；`vernal-salvo` 已提供原生 Hoop、类型化 Depot 和
+  Body 绑定 Scope 释放；`vernal-warp` 已提供原生 Extension Filter 与 Tower
+  Service Body Scope；`vernal-salvo` 已提供原生 Hoop、类型化 Depot 和
   Frame/Trailer 保真的 Body Scope；`vernal-poem` 已提供原生
   Middleware/Endpoint、类型化提取器与 Body 绑定 Scope 释放；`vernal-tonic`
   已提供 Context Interceptor、类型化 Request 扩展、`Status` 映射与 Tower
   组合。
-- `[骨架]` 宏及其余五个框架 Adapter 仍只验证 crate 边界与依赖方向。
+- `[骨架]` 宏及其余四个框架 Adapter 仍只验证 crate 边界与依赖方向。
 - `[设计目标]` Phase 2 宏、Context AOP 计划聚合、框架 Adapter 与后续生产
   门禁仍需实现和验收。
 
@@ -489,10 +490,11 @@ Tower 与 Hyper 是公共底座，不占十种目标名额；Tonic 明确属于 
 Tower/Hyper 和十个 Adapter。四个底座已提供可调用的请求 Scope、HTTP
 Frame/Trailer、取消、Tower 生命周期和 Hyper 传输能力；Axum 已增加原生 Router
 装配与类型化提取器，Actix Web 已增加 App Data/Extensions 与原生 Body 感知
-Middleware，Salvo 已增加 Hoop、Depot 与 Frame/Trailer 保真的 Body 生命周期，
-Poem 已增加 Middleware/Endpoint、Request Extension 提取器与 Body 生命周期
-集成，Tonic 已增加原生 Request/Metadata/Status 与 Tower 集成，其余五个上游
-框架 Adapter 仍是可编译描述符。详细合同见
+Middleware，Warp 已增加 Extension Filter 与官方 Tower Service 生命周期，
+Salvo 已增加 Hoop、Depot 与 Frame/Trailer 保真的 Body 生命周期，Poem 已增加
+Middleware/Endpoint、Request Extension 提取器与 Body 生命周期集成，Tonic
+已增加原生 Request/Metadata/Status 与 Tower 集成，其余四个上游框架 Adapter
+仍是可编译描述符。详细合同见
 [Vernal Web 集成架构](./Vernal-Web-Architecture.zh_CN.md)。
 
 ## 12. Hutool-Rust、Sa-Token-Rust 与 Ddd4r 集成
