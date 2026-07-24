@@ -4,7 +4,7 @@ use std::{any::Any, sync::Arc};
 
 use tide::Request;
 use vernal_context::ApplicationContext;
-use vernal_web::WebRequestScope;
+use vernal_web::{RequestContext, WebRequestScope};
 
 use crate::TideRejection;
 
@@ -32,6 +32,13 @@ pub trait VernalTideRequestExt {
     ///
     /// 未安装 [`VernalTideMiddleware`](crate::VernalTideMiddleware) 时返回拒绝。
     fn vernal_request_scope(&self) -> Result<Arc<WebRequestScope>, TideRejection>;
+
+    /// 读取严格 AOP 为当前请求创建的类型化请求上下文。
+    ///
+    /// # Errors
+    ///
+    /// 使用普通 Middleware，或严格调用尚未建立上下文时返回脱敏拒绝。
+    fn vernal_request_context(&self) -> Result<Arc<RequestContext>, TideRejection>;
 }
 
 impl<State> VernalTideRequestExt for Request<State> {
@@ -55,5 +62,11 @@ impl<State> VernalTideRequestExt for Request<State> {
         self.ext::<Arc<WebRequestScope>>()
             .cloned()
             .ok_or(TideRejection::MissingRequestScope)
+    }
+
+    fn vernal_request_context(&self) -> Result<Arc<RequestContext>, TideRejection> {
+        self.ext::<Arc<RequestContext>>()
+            .cloned()
+            .ok_or(TideRejection::MissingRequestContext)
     }
 }

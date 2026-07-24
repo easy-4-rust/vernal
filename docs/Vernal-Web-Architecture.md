@@ -50,8 +50,8 @@ MessageBody-bound request scope. Its strict Local-AOP path uses an explicit
 resource pattern and a borrowed worker-local target. Gotham 0.8 implements native StateData,
 type-safe State access, Pipeline middleware, and frame/trailer-preserving body
 cleanup. Tide 0.17.0-beta.1 implements native Middleware, typed Request
-Extension access, and response-reader-bound Scope cleanup on Vernal's Tokio
-runtime.
+Extension access, response-reader-bound Scope cleanup, and strict Send-AOP over
+borrowed `Next` on Vernal's Tokio runtime.
 
 The versioned selection is recorded in
 [`web-integration-manifest.toml`](../web-integration-manifest.toml).
@@ -260,7 +260,7 @@ This crate implements HTTP transport concerns only:
 | 6 | Poem | `vernal-poem` | HTTP | Middleware, Endpoint, Data, IntoResponse | Adapter + strict AOP |
 | 7 | Ntex | `vernal-ntex` | HTTP | Service/Middleware, App State, Extractor | Adapter + strict Local-AOP |
 | 8 | Gotham | `vernal-gotham` | HTTP | State Middleware, Pipeline, Handler | Phase 5 adapter |
-| 9 | Tide | `vernal-tide` | HTTP | Middleware, Request Extension, Response | Phase 5 adapter |
+| 9 | Tide | `vernal-tide` | HTTP | Middleware, Request Extension, Response | Adapter + strict AOP |
 | 10 | Tonic | `vernal-tonic` | RPC Streaming + Tower | Layer, Interceptor, Extension, Status, Streaming | Phase 5 adapter |
 
 ### 8.1 Framework-specific constraints
@@ -338,9 +338,16 @@ This crate implements HTTP transport concerns only:
   IoC components without a service locator. The response `AsyncBufRead` wrapper
   retains scope through EOF, upstream failure, or cancellation while preserving
   bytes, known length, errors, and backpressure. Tide's public body API does not
-  expose HTTP trailers, so this adapter cannot promise trailer fidelity. The
-  adapter requires an active Tokio runtime for deterministic asynchronous scope
-  closure. Tide 0.17.0-beta.1 remains beta, so its compatibility surface must be
+  expose HTTP trailers, so this adapter cannot promise trailer fidelity. Tide
+  exposes route parameter values but not the matched template, so strict
+  middleware is installed on a concrete Route and receives the same full
+  low-cardinality pattern explicitly. It combines that pattern with the real
+  method, converts `http-types` metadata into an owned `http` 1.x snapshot, and
+  drives the complete Middleware/Endpoint chain through
+  `BorrowedInvocationTarget`. Empty patterns and missing plans fail closed;
+  native responses retain status, headers, extensions, and Body. The adapter
+  requires an active Tokio runtime for deterministic asynchronous scope closure.
+  Tide 0.17.0-beta.1 remains beta, so its compatibility surface must be
   revalidated before a stable Vernal release.
 - **Tonic:** unary and streaming calls use the Tower path; Vernal errors map to
   stable `Status` values without losing metadata or extensions.

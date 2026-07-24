@@ -47,7 +47,7 @@ App State/Extension 提取器与 `MessageBody` 绑定请求 Scope；严格 Local
 实现原生 StateData、类型安全 State 访问、Pipeline Middleware 与
 Frame/Trailer 保真的 Body 释放。Tide 0.17.0-beta.1 已实现原生 Middleware、
 类型化 Request Extension 访问，以及基于 Vernal Tokio 运行时的响应 Reader
-绑定 Scope 释放。
+绑定 Scope 释放和覆盖借用型 `Next` 的严格 Send-AOP。
 
 版本化选择清单由
 [`web-integration-manifest.toml`](../web-integration-manifest.toml) 维护。
@@ -242,7 +242,7 @@ Trace -> Context -> RequestScope -> Security/AOP -> Handler -> ErrorMapping
 | 6 | Poem | `vernal-poem` | HTTP | Middleware、Endpoint、Data、IntoResponse | Adapter + 严格 AOP 已实现 |
 | 7 | Ntex | `vernal-ntex` | HTTP | Service/Middleware、App State、Extractor | Adapter + 严格 Local-AOP 已实现 |
 | 8 | Gotham | `vernal-gotham` | HTTP | State Middleware、Pipeline、Handler | Phase 5 适配已实现 |
-| 9 | Tide | `vernal-tide` | HTTP | Middleware、Request Extension、Response | Phase 5 适配已实现 |
+| 9 | Tide | `vernal-tide` | HTTP | Middleware、Request Extension、Response | Adapter + 严格 AOP 已实现 |
 | 10 | Tonic | `vernal-tonic` | RPC Streaming + Tower | Layer、Interceptor、Extension、Status、Streaming | Phase 5 适配已实现 |
 
 ### 8.1 框架特定约束
@@ -304,9 +304,13 @@ Trace -> Context -> RequestScope -> Security/AOP -> Handler -> ErrorMapping
   Extension，类型化请求扩展直接解析 IoC 组件，不建立 Service Locator；响应
   `AsyncBufRead` Wrapper 让 Scope 持续到 EOF、上游错误或取消，并保留字节、
   已知长度、错误和背压。Tide 公共 Body API 不暴露 HTTP Trailer，因此该适配器
-  不能承诺 Trailer 保真；为了确定性执行异步 Scope 关闭，适配器要求存在活跃
-  Tokio Runtime。Tide 0.17.0-beta.1 仍是 beta，Vernal 稳定发布前必须重新验证
-  兼容面。
+  不能承诺 Trailer 保真。Tide 只暴露路由参数值而不暴露匹配模板，所以严格
+  中间件安装在具体 Route 上并显式接收同一条低基数完整模式；它结合真实方法，
+  把 `http-types` 元数据转换成 owned `http` 1.x 快照，并通过
+  `BorrowedInvocationTarget` 驱动完整 Middleware/Endpoint 链。空模式或缺少
+  计划时 fail-closed，原生响应的状态、Header、Extension 与 Body 保持不变。
+  为了确定性执行异步 Scope 关闭，适配器要求存在活跃 Tokio Runtime。Tide
+  0.17.0-beta.1 仍是 beta，Vernal 稳定发布前必须重新验证兼容面。
 - **Tonic**：Unary 与 Streaming 都使用 Tower 路径；Vernal 错误映射为稳定
   `Status`，Metadata 与 Extension 保真。
 

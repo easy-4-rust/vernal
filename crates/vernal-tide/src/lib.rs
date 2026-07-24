@@ -1,14 +1,20 @@
 #![forbid(unsafe_code)]
 #![doc = "Vernal 的 Tide 0.17 beta 原生集成。"]
 
+mod tide_aop_error;
 mod tide_body_error;
+mod tide_borrowed_target;
 mod tide_rejection;
+mod tide_request_snapshot;
+mod tide_response;
 mod tide_scoped_reader;
 mod vernal_tide_middleware;
 mod vernal_tide_request_ext;
 
+pub use tide_aop_error::TideAopError;
 pub use tide_body_error::TideBodyError;
 pub use tide_rejection::TideRejection;
+pub use tide_response::TideResponse;
 pub use tide_scoped_reader::TideScopedReader;
 pub use vernal_tide_middleware::VernalTideMiddleware;
 pub use vernal_tide_request_ext::VernalTideRequestExt;

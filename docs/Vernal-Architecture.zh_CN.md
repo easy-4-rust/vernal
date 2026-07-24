@@ -63,7 +63,8 @@
   释放、显式资源模式操作身份，以及覆盖借用型 Worker-local 目标的 fail-closed
   严格 Local-AOP；`vernal-gotham` 已提供 StateData、类型安全 State 访问、Pipeline
   Middleware 与 Frame/Trailer 保真的 Body 释放；`vernal-tide` 已提供原生
-  Middleware、类型化 Request Extension 访问和 Reader 绑定 Scope 释放；
+  Middleware、类型化 Request Extension 访问、Reader 绑定 Scope 释放、显式
+  路由模式身份，以及覆盖借用型 `Next` 的 fail-closed 严格 Send-AOP；
   `vernal-tonic` 已提供 Context Interceptor、类型化 Request 扩展、`Status`
   映射与 Tower 组合。
 - `[已确认]` `vernal-macros` 已提供显式 `Arc<T>`、`Arc<dyn Trait>` 和
@@ -454,7 +455,8 @@ Rust Web 框架并不保证所有 Service Future 都满足 `Send`。Vernal 不�
 仍满足 Send 的框架目标实现 `BorrowedInvocationTarget`。其 Future 生命周期
 绑定到独占 `&mut self`，不能逃逸 `InvocationPlan::invoke_borrowed`，因此 Salvo
 仍使用普通 `Interceptor` 合同，无需克隆
-`Request`、`Depot`、`Response` 或 `FlowCtrl`。
+`Request`、`Depot`、`Response` 或 `FlowCtrl`；Tide 使用同一合同，把借用自
+Router 的 `Next` 限定在单次计划调用内。
 
 静态本地闭包目标继续使用 `LocalInvocationTarget`。仅在单次调用中借用
 Worker-local 状态的框架 Service 则实现对象安全的
@@ -636,7 +638,7 @@ flowchart TD
 | 6 | Poem | `vernal-poem` | HTTP、Body Streaming、严格 AOP | Middleware、Endpoint、Request Data |
 | 7 | Ntex | `vernal-ntex` | Network HTTP、Body Streaming、严格 Local-AOP | Service/Middleware、显式资源模式、借用型 Worker-local 目标 |
 | 8 | Gotham | `vernal-gotham` | HTTP 请求/响应 | State Middleware 与 Handler Pipeline |
-| 9 | Tide | `vernal-tide` | HTTP、Body Streaming | Middleware、Request State、Endpoint |
+| 9 | Tide | `vernal-tide` | HTTP、Body Streaming、严格 AOP | Middleware、显式路由模式、借用型 Next |
 | 10 | Tonic | `vernal-tonic` | gRPC / RPC Streaming | Tower Service、Interceptor、Extensions |
 
 Tower 与 Hyper 是公共底座，不占十种目标名额；Tonic 明确属于 RPC，而不是 HTTP Router。
@@ -664,8 +666,9 @@ Middleware/Endpoint、Request Extension 提取器、Body 生命周期集成，�
 低基数完整路径模式；缺少计划时 fail-closed，请求不会被克隆，原生 Service
 错误保持原有语义。Gotham 已增加原生 StateData、类型安全 State 访问、Pipeline
   Middleware 与 Frame/Trailer Body 生命周期，Tide 已增加原生 Middleware、
-  类型化 Request Extension 访问和 Reader 绑定 Scope 释放，Tonic 已增加原生
-  Request/Metadata/Status 与 Tower 集成。详细合同见
+  类型化 Request Extension 访问、Reader 绑定 Scope 释放、跨模型 owned 请求
+  快照，以及基于显式低基数路由模式、覆盖借用型 `Next` 的 fail-closed 严格
+  Send-AOP。Tonic 已增加原生 Request/Metadata/Status 与 Tower 集成。详细合同见
   [Vernal Web 集成架构](./Vernal-Web-Architecture.zh_CN.md)。
 
 ## 12. Hutool-Rust、Sa-Token-Rust 与 Ddd4r 集成

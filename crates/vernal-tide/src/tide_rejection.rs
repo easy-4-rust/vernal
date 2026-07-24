@@ -12,6 +12,8 @@ pub enum TideRejection {
     MissingContext,
     /// Request Extensions 中没有请求作用域。
     MissingRequestScope,
+    /// Request Extensions 中没有严格 AOP 创建的请求上下文。
+    MissingRequestContext,
     /// `IoC` 容器无法解析目标组件。
     ComponentResolution {
         /// 原始解析错误，仅供服务端错误链使用。
@@ -34,6 +36,7 @@ impl TideRejection {
         match self {
             Self::MissingContext => "Vernal application context is unavailable",
             Self::MissingRequestScope => "Vernal request scope is unavailable",
+            Self::MissingRequestContext => "Vernal request context is unavailable",
             Self::ComponentResolution { .. } => "Vernal component resolution failed",
         }
     }
@@ -53,6 +56,9 @@ impl fmt::Display for TideRejection {
             Self::MissingContext => formatter.write_str("Tide request has no Vernal context"),
             Self::MissingRequestScope => {
                 formatter.write_str("Tide request has no Vernal request scope")
+            }
+            Self::MissingRequestContext => {
+                formatter.write_str("Tide request has no Vernal request context")
             }
             Self::ComponentResolution { source } => {
                 write!(formatter, "Tide component resolution failed: {source}")

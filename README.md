@@ -137,7 +137,7 @@ adapter crates contain runnable native integrations:
 | 6 | Poem | `vernal-poem` | HTTP | Phase 5 adapter + strict AOP |
 | 7 | Ntex | `vernal-ntex` | HTTP | Phase 5 adapter + strict Local-AOP |
 | 8 | Gotham | `vernal-gotham` | HTTP | Phase 5 adapter |
-| 9 | Tide | `vernal-tide` | HTTP | Phase 5 adapter |
+| 9 | Tide | `vernal-tide` | HTTP | Phase 5 adapter + strict AOP |
 | 10 | Tonic | `vernal-tonic` | RPC streaming + Tower | Phase 5 adapter + strict AOP |
 
 Axum provides native Router assembly plus Context, component, request-scope
@@ -172,7 +172,13 @@ plans fail closed, the request is never cloned, and native Ntex Service errors
 remain native. Gotham provides native `StateData`, a
 type-safe State extension, Pipeline middleware, and frame/trailer-preserving
 body cleanup. Tide provides native `Middleware`, typed Request Extension access,
-and response-reader-bound Scope cleanup. Tonic provides a Context interceptor,
+response-reader-bound Scope cleanup, and strict Send-AOP over the complete
+Middleware/Endpoint chain. Because Tide exposes route parameters but not the
+matched template, strict middleware receives the same full low-cardinality
+route pattern explicitly; it combines that pattern with the real method,
+carries an owned cross-HTTP-model snapshot, fail-closes missing patterns or
+plans, and preserves native responses through `BorrowedInvocationTarget`.
+Tonic provides a Context interceptor,
 typed Request extensions, exact service/method operation identity, stable
 `Status` mapping, and a fail-closed AOP Tower layer.
 

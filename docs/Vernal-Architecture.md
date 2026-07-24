@@ -72,8 +72,9 @@
   borrowed worker-local targets;
   `vernal-gotham` provides StateData, type-safe State access, Pipeline
   middleware, and frame/trailer-preserving body cleanup; `vernal-tide` provides
-  native Middleware, typed Request Extension access, and reader-bound Scope
-  cleanup; `vernal-tonic` provides a Context interceptor, typed Request
+  native Middleware, typed Request Extension access, reader-bound Scope
+  cleanup, explicit route-pattern identity, and fail-closed strict Send-AOP
+  over borrowed `Next`; `vernal-tonic` provides a Context interceptor, typed Request
   extensions, `Status` mapping, and Tower composition.
 - `[Confirmed]` `vernal-macros` provides `#[derive(Component)]` for explicit
   `Arc<T>`, `Arc<dyn Trait>`, and `Vec<Arc<dyn Trait>>` constructor injection,
@@ -463,7 +464,8 @@ Static Send closures remain `InvocationTarget`; a Send framework Future that
 borrows call-local resources implements `BorrowedInvocationTarget`. Its Future
 lifetime is tied to exclusive `&mut self` and cannot escape
 `InvocationPlan::invoke_borrowed`, so Salvo retains normal `Interceptor`
-contracts without cloning `Request`, `Depot`, `Response`, or `FlowCtrl`.
+contracts without cloning `Request`, `Depot`, `Response`, or `FlowCtrl`; Tide
+uses the same contract to keep its borrowed router `Next` inside one plan call.
 
 Static local closure targets remain `LocalInvocationTarget`. A framework
 Service that borrows worker-local state for only one call instead implements
@@ -626,7 +628,7 @@ The versioned coverage set is owned by
 | 6 | Poem | `vernal-poem` | HTTP, body streaming, strict AOP | Middleware, Endpoint, request data |
 | 7 | Ntex | `vernal-ntex` | Network HTTP, body streaming, strict Local-AOP | Service/middleware, explicit resource pattern, borrowed worker-local target |
 | 8 | Gotham | `vernal-gotham` | HTTP request/response | State middleware and handler pipeline |
-| 9 | Tide | `vernal-tide` | HTTP, body streaming | Middleware, request state, endpoint |
+| 9 | Tide | `vernal-tide` | HTTP, body streaming, strict AOP | Middleware, explicit route pattern, borrowed Next |
 | 10 | Tonic | `vernal-tonic` | gRPC / RPC streaming | Tower Service, interceptor, extensions |
 
 Tower and Hyper are foundations and do not consume two slots in the ten-target
@@ -661,7 +663,9 @@ fail closed, the request is never cloned, and native Service errors are
 preserved. Gotham adds native
   StateData, type-safe State access, Pipeline middleware, and a frame/trailer
   body lifecycle; Tide adds native Middleware, typed Request Extension access,
-  and reader-bound Scope cleanup; Tonic adds native Request/Metadata/Status and
+  reader-bound Scope cleanup, owned cross-model request snapshots, and
+  fail-closed strict Send-AOP over a borrowed `Next` with an explicit
+  low-cardinality route pattern; Tonic adds native Request/Metadata/Status and
   Tower integration.
 The detailed contract is
 [Vernal Web Architecture](./Vernal-Web-Architecture.md).
