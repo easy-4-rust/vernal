@@ -135,7 +135,7 @@ adapter crates contain runnable native integrations:
 | 4 | Warp | `vernal-warp` | HTTP | Phase 5 adapter |
 | 5 | Salvo | `vernal-salvo` | HTTP | Phase 5 adapter |
 | 6 | Poem | `vernal-poem` | HTTP | Phase 5 adapter + strict AOP |
-| 7 | Ntex | `vernal-ntex` | HTTP | Phase 5 adapter |
+| 7 | Ntex | `vernal-ntex` | HTTP | Phase 5 adapter + strict Local-AOP |
 | 8 | Gotham | `vernal-gotham` | HTTP | Phase 5 adapter |
 | 9 | Tide | `vernal-tide` | HTTP | Phase 5 adapter |
 | 10 | Tonic | `vernal-tonic` | RPC streaming + Tower | Phase 5 adapter + strict AOP |
@@ -156,9 +156,15 @@ Poem provides native `Middleware`/`Endpoint` composition, typed
 Context/component/scope/request-context extractors, body-bound cleanup, and
 strict Around AOP over the complete Endpoint future. Operation identity comes
 from Poem's matched low-cardinality `PathPattern`; missing metadata or plans
-fail closed, while native Poem errors retain their original semantics. Ntex provides
-native `Middleware`/`Service`, App State/Extension extractors, and a
-`MessageBody`-bound request scope. Gotham provides native `StateData`, a
+fail closed, while native Poem errors retain their original semantics. Ntex
+provides native `Middleware`/`Service`, App State/Extension extractors, and a
+`MessageBody`-bound request scope. Its strict middleware wraps a concrete
+`web::resource(...)` and receives the same low-cardinality full path pattern
+explicitly because Ntex does not expose the matched `ResourceDef` through its
+public request API. It uses the real request method and drives the complete
+worker-local Service future through `BorrowedLocalInvocationTarget`; missing
+plans fail closed, the request is never cloned, and native Ntex Service errors
+remain native. Gotham provides native `StateData`, a
 type-safe State extension, Pipeline middleware, and frame/trailer-preserving
 body cleanup. Tide provides native `Middleware`, typed Request Extension access,
 and response-reader-bound Scope cleanup. Tonic provides a Context interceptor,

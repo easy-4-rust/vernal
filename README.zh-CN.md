@@ -123,7 +123,7 @@ crate 均已具备可运行的原生集成：
 | 4 | Warp | `vernal-warp` | HTTP | Phase 5 适配已实现 |
 | 5 | Salvo | `vernal-salvo` | HTTP | Phase 5 适配已实现 |
 | 6 | Poem | `vernal-poem` | HTTP | Phase 5 适配 + 严格 AOP 已实现 |
-| 7 | Ntex | `vernal-ntex` | HTTP | Phase 5 适配已实现 |
+| 7 | Ntex | `vernal-ntex` | HTTP | Phase 5 适配 + 严格 Local-AOP 已实现 |
 | 8 | Gotham | `vernal-gotham` | HTTP | Phase 5 适配已实现 |
 | 9 | Tide | `vernal-tide` | HTTP | Phase 5 适配已实现 |
 | 10 | Tonic | `vernal-tonic` | RPC Streaming + Tower | Phase 5 适配 + 严格 AOP 已实现 |
@@ -141,8 +141,12 @@ Poem 已提供原生 `Middleware`/`Endpoint` 组合、类型化
 Context/组件/Scope/RequestContext 提取器、Body 绑定释放，以及覆盖完整
 Endpoint Future 的严格 Around AOP；操作身份取自 Poem 匹配后的低基数
 `PathPattern`，缺少元数据或计划时 fail-closed，并保留 Poem 原生错误。Ntex
-已提供原生 `Middleware`/`Service`、App
-State/Extension 提取器和 `MessageBody` 绑定请求 Scope；Gotham 已提供原生
+已提供原生 `Middleware`/`Service`、App State/Extension 提取器和
+`MessageBody` 绑定请求 Scope。由于 Ntex 公共请求 API 不暴露匹配后的
+`ResourceDef`，严格中间件必须包裹具体 `web::resource(...)`，并显式接收相同的
+低基数完整路径模式；HTTP 方法取自真实请求，完整 Worker-local Service Future
+通过 `BorrowedLocalInvocationTarget` 执行。缺少计划时 fail-closed，请求不会
+被克隆，Ntex 原生 Service 错误仍保持原生语义；Gotham 已提供原生
 `StateData`、类型安全 State 扩展、Pipeline Middleware 与 Frame/Trailer
 保真的 Body 释放；Tide 已提供原生 `Middleware`、类型化 Request Extension
 访问和响应 Reader 绑定的 Scope 释放；Tonic 已提供 Context Interceptor、

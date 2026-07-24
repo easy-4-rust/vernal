@@ -58,8 +58,9 @@
   Frame/Trailer 保真的 Body Scope；`vernal-poem` 已提供原生
   Middleware/Endpoint、类型化提取器、Body 绑定 Scope 释放、匹配路由操作
   身份与 fail-closed 严格 Around AOP；`vernal-ntex`
-  已提供原生 Middleware/Service、App State/Extension 提取器与 Body 绑定 Scope
-  释放；`vernal-gotham` 已提供 StateData、类型安全 State 访问、Pipeline
+  已提供原生 Middleware/Service、App State/Extension 提取器、Body 绑定 Scope
+  释放、显式资源模式操作身份，以及覆盖借用型 Worker-local 目标的 fail-closed
+  严格 Local-AOP；`vernal-gotham` 已提供 StateData、类型安全 State 访问、Pipeline
   Middleware 与 Frame/Trailer 保真的 Body 释放；`vernal-tide` 已提供原生
   Middleware、类型化 Request Extension 访问和 Reader 绑定 Scope 释放；
   `vernal-tonic` 已提供 Context Interceptor、类型化 Request 扩展、`Status`
@@ -448,6 +449,13 @@ Rust Web 框架并不保证所有 Service Future 都满足 `Send`。Vernal 不�
 诊断会单独统计其计划与拦截器数量。消费方如需同时覆盖两类运行时，必须有意识地
 实现并注册两份合同；Vernal 不会假设任意 Send 拦截器自动支持本地目标。
 
+静态本地闭包目标继续使用 `LocalInvocationTarget`。仅在单次调用中借用
+Worker-local 状态的框架 Service 则实现对象安全的
+`BorrowedLocalInvocationTarget`；其 Future 生命周期绑定到 `&self`，不能逃逸
+`LocalInvocationPlan::invoke_borrowed`。因此 Ntex 的 `ServiceCtx` 始终留在
+当前 Pipeline 调用内，无需附加 `Send`、`Sync`、`'static`、克隆或不安全的
+生命周期扩展。
+
 ### 9.6 不采用实例指针 Map
 
 Vernal 不使用 `self as *const Self as usize` 作为长期身份。目标方案按场景选择：
@@ -619,7 +627,7 @@ flowchart TD
 | 4 | Warp | `vernal-warp` | HTTP、Body Streaming | Filter 组合与 Rejection 映射 |
 | 5 | Salvo | `vernal-salvo` | HTTP、Body Streaming | Handler、Hoop、Depot Scope |
 | 6 | Poem | `vernal-poem` | HTTP、Body Streaming、严格 AOP | Middleware、Endpoint、Request Data |
-| 7 | Ntex | `vernal-ntex` | Network HTTP、Body Streaming | Service/Middleware、Worker-local State |
+| 7 | Ntex | `vernal-ntex` | Network HTTP、Body Streaming、严格 Local-AOP | Service/Middleware、显式资源模式、借用型 Worker-local 目标 |
 | 8 | Gotham | `vernal-gotham` | HTTP 请求/响应 | State Middleware 与 Handler Pipeline |
 | 9 | Tide | `vernal-tide` | HTTP、Body Streaming | Middleware、Request State、Endpoint |
 | 10 | Tonic | `vernal-tonic` | gRPC / RPC Streaming | Tower Service、Interceptor、Extensions |
@@ -641,9 +649,12 @@ Rocket 已增加 Managed State、Request Guard
 Warp 已增加 Extension Filter 与官方 Tower Service 生命周期，Salvo 已增加
 Hoop、Depot 与 Frame/Trailer 保真的 Body 生命周期，Poem 已增加
 Middleware/Endpoint、Request Extension 提取器、Body 生命周期集成，以及基于
-匹配后低基数 `PathPattern` 的严格 Around AOP，Ntex
-已增加原生 Middleware/Service、App State/Extension、类型化提取器与响应 Body
-  生命周期，Gotham 已增加原生 StateData、类型安全 State 访问、Pipeline
+匹配后低基数 `PathPattern` 的严格 Around AOP。Ntex
+已增加原生 Middleware/Service、App State/Extension、类型化提取器、响应 Body
+生命周期，以及覆盖完整借用型 `ServiceCtx` Future 的严格 Local-AOP。由于 Ntex
+不公开匹配后的 `ResourceDef` 元数据，中间件需要包裹具体资源并显式接收同一条
+低基数完整路径模式；缺少计划时 fail-closed，请求不会被克隆，原生 Service
+错误保持原有语义。Gotham 已增加原生 StateData、类型安全 State 访问、Pipeline
   Middleware 与 Frame/Trailer Body 生命周期，Tide 已增加原生 Middleware、
   类型化 Request Extension 访问和 Reader 绑定 Scope 释放，Tonic 已增加原生
   Request/Metadata/Status 与 Tower 集成。详细合同见

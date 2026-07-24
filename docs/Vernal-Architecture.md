@@ -66,7 +66,9 @@
   Middleware/Endpoint composition, typed extractors, body-bound Scope cleanup,
   matched-route operation identity, and fail-closed strict Around AOP;
   `vernal-ntex` provides native Middleware/Service composition,
-  App State/Extension extractors, and body-bound Scope cleanup;
+  App State/Extension extractors, body-bound Scope cleanup, explicit
+  resource-pattern operation identity, and fail-closed strict Local-AOP over
+  borrowed worker-local targets;
   `vernal-gotham` provides StateData, type-safe State access, Pipeline
   middleware, and frame/trailer-preserving body cleanup; `vernal-tide` provides
   native Middleware, typed Request Extension access, and reader-bound Scope
@@ -456,6 +458,13 @@ that needs both planes deliberately implements and registers both contracts;
 Vernal never pretends that an arbitrary Send interceptor automatically
 supports a local target.
 
+Static local closure targets remain `LocalInvocationTarget`. A framework
+Service that borrows worker-local state for only one call instead implements
+the object-safe `BorrowedLocalInvocationTarget`; its returned Future lifetime
+is tied to `&self` and cannot escape `LocalInvocationPlan::invoke_borrowed`.
+This keeps Ntex's `ServiceCtx` inside the current Pipeline call without
+requiring `Send`, `Sync`, `'static`, cloning, or unsafe lifetime extension.
+
 ### 9.5 No instance-pointer map
 
 Vernal does not use `self as *const Self as usize` as durable identity:
@@ -608,7 +617,7 @@ The versioned coverage set is owned by
 | 4 | Warp | `vernal-warp` | HTTP, body streaming | Filter composition and rejection mapping |
 | 5 | Salvo | `vernal-salvo` | HTTP, body streaming | Handler, Hoop, Depot scope |
 | 6 | Poem | `vernal-poem` | HTTP, body streaming, strict AOP | Middleware, Endpoint, request data |
-| 7 | Ntex | `vernal-ntex` | Network HTTP, body streaming | Service/middleware and worker-local state |
+| 7 | Ntex | `vernal-ntex` | Network HTTP, body streaming, strict Local-AOP | Service/middleware, explicit resource pattern, borrowed worker-local target |
 | 8 | Gotham | `vernal-gotham` | HTTP request/response | State middleware and handler pipeline |
 | 9 | Tide | `vernal-tide` | HTTP, body streaming | Middleware, request state, endpoint |
 | 10 | Tonic | `vernal-tonic` | gRPC / RPC streaming | Tower Service, interceptor, extensions |
@@ -634,8 +643,13 @@ filters and an official Tower Service lifecycle; Salvo adds a Hoop, typed Depot
 access, and frame/trailer-preserving body lifecycle; Poem adds
 Middleware/Endpoint, request-extension extractors, body lifecycle integration,
 and strict Around AOP using matched low-cardinality `PathPattern` metadata;
-Ntex adds native Middleware/Service, App State/Extensions, typed
-  extractors, and response-body lifecycle integration; Gotham adds native
+Ntex adds native Middleware/Service, App State/Extensions, typed extractors,
+response-body lifecycle integration, and strict Local-AOP over the complete
+borrowed `ServiceCtx` future. Because Ntex does not expose matched
+`ResourceDef` metadata publicly, middleware wraps a concrete resource and
+receives the same full low-cardinality path pattern explicitly; missing plans
+fail closed, the request is never cloned, and native Service errors are
+preserved. Gotham adds native
   StateData, type-safe State access, Pipeline middleware, and a frame/trailer
   body lifecycle; Tide adds native Middleware, typed Request Extension access,
   and reader-bound Scope cleanup; Tonic adds native Request/Metadata/Status and

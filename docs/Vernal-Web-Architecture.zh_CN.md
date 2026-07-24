@@ -41,7 +41,8 @@ Frame/Trailer 保真的 Body Scope；Poem 采用与 MSRV 一致的 3.1.12 版本
 释放；Tonic 采用兼容 MSRV 的 0.12 版本线，实现 Context Interceptor、类型化
 Request 扩展、`GrpcMethod` 路由元数据、稳定 `Status` 映射和 Tower 组合。
 Ntex 采用兼容 Rust 1.85 的 2.18.0 版本线，实现原生 Middleware/Service、
-App State/Extension 提取器与 `MessageBody` 绑定请求 Scope。Gotham 0.8
+App State/Extension 提取器与 `MessageBody` 绑定请求 Scope；严格 Local-AOP
+路径使用显式资源模式和借用型 Worker-local 目标。Gotham 0.8
 实现原生 StateData、类型安全 State 访问、Pipeline Middleware 与
 Frame/Trailer 保真的 Body 释放。Tide 0.17.0-beta.1 已实现原生 Middleware、
 类型化 Request Extension 访问，以及基于 Vernal Tokio 运行时的响应 Reader
@@ -238,7 +239,7 @@ Trace -> Context -> RequestScope -> Security/AOP -> Handler -> ErrorMapping
 | 4 | Warp | `vernal-warp` | HTTP | Filter、Rejection、Reply | Phase 5 适配已实现 |
 | 5 | Salvo | `vernal-salvo` | HTTP | Handler、Hoop、Depot、Writer | Phase 5 适配已实现 |
 | 6 | Poem | `vernal-poem` | HTTP | Middleware、Endpoint、Data、IntoResponse | Adapter + 严格 AOP 已实现 |
-| 7 | Ntex | `vernal-ntex` | HTTP | Service/Middleware、App State、Extractor | Phase 5 适配已实现 |
+| 7 | Ntex | `vernal-ntex` | HTTP | Service/Middleware、App State、Extractor | Adapter + 严格 Local-AOP 已实现 |
 | 8 | Gotham | `vernal-gotham` | HTTP | State Middleware、Pipeline、Handler | Phase 5 适配已实现 |
 | 9 | Tide | `vernal-tide` | HTTP | Middleware、Request Extension、Response | Phase 5 适配已实现 |
 | 10 | Tonic | `vernal-tonic` | RPC Streaming + Tower | Layer、Interceptor、Extension、Status、Streaming | Phase 5 适配已实现 |
@@ -277,9 +278,14 @@ Trace -> Context -> RequestScope -> Security/AOP -> Handler -> ErrorMapping
 - **Ntex**：原生 Middleware/Service 将显式应用 Context 与请求 Scope 注入
   Extensions，提取器也可从 App State 读取共享 Context；原生 `MessageBody`
   Wrapper 让 Scope 持续到 EOF、上游错误或取消，并保留 Ntex Body Size 与背压。
-  Vernal 启用 Ntex 的 Tokio 后端并固定 2.18.0，因为当前 3.x 已超过 Workspace
-  的 Rust 1.85 MSRV；Worker-local 的非 `Send` 状态不会被隐式提升为跨 Worker
-  Singleton。
+  严格中间件必须包裹具体 `web::resource(...)`，并显式接收该资源的低基数完整
+  路径模式，因为 Ntex 2 公共请求 API 不暴露匹配后的 `ResourceDef`；HTTP 方法
+  仍取自真实请求。`BorrowedLocalInvocationTarget` 把完整 Service Future 的
+  生命周期绑定到当前 `ServiceCtx`，借用不能逃逸
+  `LocalInvocationPlan::invoke_borrowed`。缺少计划时 fail-closed，一次性请求
+  不会被克隆，原生 Service 错误会被恢复。Vernal 启用 Ntex 的 Tokio 后端并
+  固定 2.18.0，因为当前 3.x 已超过 Workspace 的 Rust 1.85 MSRV；Worker-local
+  的非 `Send` 状态不会被隐式提升为跨 Worker Singleton。
 - **Gotham**：原生 `StateData` Wrapper 携带显式应用 Context 与请求 Scope，
   类型化 State 扩展直接解析 IoC 组件，不建立 Service Locator；
   `Middleware`/`NewMiddleware` 将 Scope 绑定到 Gotham 的 `http-body` 1.0

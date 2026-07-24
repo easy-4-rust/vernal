@@ -45,7 +45,8 @@ line and implements a Context interceptor, typed Request extensions,
 `GrpcMethod` routing metadata, stable `Status` mapping, and Tower composition.
 Ntex uses the Rust-1.85-compatible 2.18.0 line and implements native
 Middleware/Service composition, App State/Extension extractors, and a
-MessageBody-bound request scope. Gotham 0.8 implements native StateData,
+MessageBody-bound request scope. Its strict Local-AOP path uses an explicit
+resource pattern and a borrowed worker-local target. Gotham 0.8 implements native StateData,
 type-safe State access, Pipeline middleware, and frame/trailer-preserving body
 cleanup. Tide 0.17.0-beta.1 implements native Middleware, typed Request
 Extension access, and response-reader-bound Scope cleanup on Vernal's Tokio
@@ -256,7 +257,7 @@ This crate implements HTTP transport concerns only:
 | 4 | Warp | `vernal-warp` | HTTP | Filter, Rejection, Reply | Phase 5 adapter |
 | 5 | Salvo | `vernal-salvo` | HTTP | Handler, Hoop, Depot, Writer | Phase 5 adapter |
 | 6 | Poem | `vernal-poem` | HTTP | Middleware, Endpoint, Data, IntoResponse | Adapter + strict AOP |
-| 7 | Ntex | `vernal-ntex` | HTTP | Service/Middleware, App State, Extractor | Phase 5 adapter |
+| 7 | Ntex | `vernal-ntex` | HTTP | Service/Middleware, App State, Extractor | Adapter + strict Local-AOP |
 | 8 | Gotham | `vernal-gotham` | HTTP | State Middleware, Pipeline, Handler | Phase 5 adapter |
 | 9 | Tide | `vernal-tide` | HTTP | Middleware, Request Extension, Response | Phase 5 adapter |
 | 10 | Tonic | `vernal-tonic` | RPC Streaming + Tower | Layer, Interceptor, Extension, Status, Streaming | Phase 5 adapter |
@@ -305,9 +306,17 @@ This crate implements HTTP transport concerns only:
   and per-request scope into Extensions; extractors may also read the shared
   context from App State. A native `MessageBody` wrapper retains the scope
   through EOF, upstream failure, or cancellation while preserving Ntex body
-  size and backpressure. Vernal enables Ntex's Tokio backend and pins 2.18.0:
-  the current 3.x release exceeds the workspace Rust 1.85 MSRV. Worker-local
-  non-`Send` state is never silently promoted to a cross-worker singleton.
+  size and backpressure. Strict middleware must wrap a concrete
+  `web::resource(...)` and receive that resource's full low-cardinality path
+  pattern explicitly: Ntex 2 does not expose the matched `ResourceDef` through
+  public request APIs. The HTTP method still comes from the real request.
+  `BorrowedLocalInvocationTarget` ties the complete Service future to the
+  current `ServiceCtx`; the borrow cannot escape
+  `LocalInvocationPlan::invoke_borrowed`. Missing plans fail closed, the
+  one-shot request is never cloned, and native Service errors are restored.
+  Vernal enables Ntex's Tokio backend and pins 2.18.0: the current 3.x release
+  exceeds the workspace Rust 1.85 MSRV. Worker-local non-`Send` state is never
+  silently promoted to a cross-worker singleton.
 - **Gotham:** native `StateData` wrappers carry the explicit application context
   and per-request scope, while a typed State extension resolves IoC components
   without a service locator. `Middleware`/`NewMiddleware` binds the scope to
