@@ -647,7 +647,7 @@ than a separate application model.
 |:---|:---|:---|:---|
 | Web application | `vernal-web` | Request context, request scope, handler invocation, extraction, validation, error mapping | No transport or framework types |
 | HTTP protocol | `vernal-http` | Request, response, body frames, streaming, cancellation, backpressure | Uses Rust `Future`/`Stream`; owns no runtime |
-| Conformance | `vernal-web-testkit` | Shared Context, IoC request-scope, and component-instance binding assertions | Adapter development dependency only; absent from runtime graphs |
+| Conformance | `vernal-web-testkit` | Shared Context/IoC binding plus success, policy-error, and response-drop scope cleanup assertions | Adapter development dependency only; absent from runtime graphs |
 
 ```mermaid
 flowchart TD
@@ -699,7 +699,9 @@ request-scope, HTTP frame/trailer, metadata/cancellation propagation, Tower
 lifecycle, AOP invocation, configurable native error recovery, and Hyper
 transport behavior. The shared testkit now makes all ten adapters verify that
 their native Context, scope, and extracted component share one IoC
-`ScopeContext`. Axum adds native
+`ScopeContext`. Its observation-only probe also verifies adapter-owned cleanup
+after normal body completion, policy short-circuit, and response-body drop.
+Axum adds native
 Router assembly and typed extractors;
 Actix Web adds App Data/Extensions, body-aware middleware, and strict Around
 interception for its `Rc`-based non-`Send` services through Vernal Local-AOP.

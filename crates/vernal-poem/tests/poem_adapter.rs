@@ -1,8 +1,5 @@
 //! Poem Middleware、Endpoint、Extractor、IoC 与请求作用域集成测试。
 
-#[path = "aop_support/policy_deny_interceptor.rs"]
-mod policy_deny_interceptor;
-
 use std::{
     sync::{
         Arc,
@@ -17,8 +14,6 @@ use poem::{
     error::NotFoundError,
     http::{Method, StatusCode, Uri},
 };
-use policy_deny_interceptor::PolicyDenyInterceptor;
-use tokio::{sync::Notify, time::timeout};
 use vernal_aop::{Advisor, Operation};
 use vernal_context::{ApplicationContextBuilder, VernalApplicationBuilder};
 use vernal_http::HttpRequestSnapshot;
@@ -28,7 +23,7 @@ use vernal_poem::{
     VernalPoemRequestScope,
 };
 use vernal_web::WebRequestScope;
-use vernal_web_testkit::WebAdapterContract;
+use vernal_web_testkit::{ScopeCloseProbe, ScopeRejectingInterceptor, WebAdapterContract};
 
 struct Greeting(&'static str);
 
@@ -69,11 +64,11 @@ async fn ready_aop_context(
 async fn endpoint_extracts_context_component_and_request_scope() {
     let context = ready_context().await;
     let expected = Arc::clone(&context);
-    let closed = Arc::new(Notify::new());
-    let handler_closed = Arc::clone(&closed);
+    let probe = Arc::new(ScopeCloseProbe::new());
+    let handler_probe = Arc::clone(&probe);
     let endpoint = make(move |request| {
         let expected = Arc::clone(&expected);
-        let handler_closed = Arc::clone(&handler_closed);
+        let handler_probe = Arc::clone(&handler_probe);
         async move {
             let VernalPoemContext(actual) =
                 VernalPoemContext::from_request_without_body(&request).await?;
@@ -83,12 +78,7 @@ async fn endpoint_extracts_context_component_and_request_scope() {
                 VernalPoemRequestScope::from_request_without_body(&request).await?;
 
             WebAdapterContract::assert_request_binding(&expected, &actual, &scope, &greeting);
-            scope
-                .on_close(move || async move {
-                    handler_closed.notify_one();
-                    Ok::<_, std::io::Error>(())
-                })
-                .expect("scope close hook");
+            handler_probe.observe(&scope);
             Ok::<_, poem::Error>(greeting.0)
         }
     })
@@ -99,6 +89,7 @@ async fn endpoint_extracts_context_component_and_request_scope() {
         .await
         .expect("endpoint response");
     assert_eq!(response.status(), StatusCode::OK);
+    probe.assert_open();
     assert_eq!(
         response
             .into_body()
@@ -107,7 +98,7 @@ async fn endpoint_extracts_context_component_and_request_scope() {
             .expect("response body"),
         "vernal-poem"
     );
-    closed.notified().await;
+    probe.assert_closed_within(Duration::from_secs(1)).await;
 }
 
 #[tokio::test]
@@ -133,19 +124,14 @@ async fn missing_vernal_middleware_returns_safe_rejection() {
 #[tokio::test]
 async fn dropping_response_body_closes_request_scope() {
     let context = ready_context().await;
-    let closed = Arc::new(Notify::new());
-    let handler_closed = Arc::clone(&closed);
+    let probe = Arc::new(ScopeCloseProbe::new());
+    let handler_probe = Arc::clone(&probe);
     let endpoint = make(move |request| {
-        let handler_closed = Arc::clone(&handler_closed);
+        let handler_probe = Arc::clone(&handler_probe);
         async move {
             let VernalPoemRequestScope(scope) =
                 VernalPoemRequestScope::from_request_without_body(&request).await?;
-            scope
-                .on_close(move || async move {
-                    handler_closed.notify_one();
-                    Ok::<_, std::io::Error>(())
-                })
-                .expect("scope close hook");
+            handler_probe.observe(&scope);
             Ok::<_, poem::Error>("stream is not consumed")
         }
     })
@@ -155,11 +141,10 @@ async fn dropping_response_body_closes_request_scope() {
         .call(Request::default())
         .await
         .expect("endpoint response");
+    probe.assert_open();
     drop(response);
 
-    timeout(Duration::from_secs(1), closed.notified())
-        .await
-        .expect("scope must close after response body cancellation");
+    probe.assert_closed_within(Duration::from_secs(1)).await;
 }
 
 #[tokio::test]
@@ -207,11 +192,12 @@ async fn strict_aop_endpoint_uses_matched_path_and_propagates_owned_snapshot() {
 #[tokio::test]
 async fn strict_aop_endpoint_maps_policy_failure_without_calling_handler() {
     let called = Arc::new(AtomicBool::new(false));
+    let probe = Arc::new(ScopeCloseProbe::new());
     let context = ready_aop_context(
         Operation::new("/protected", "GET"),
         Some(Advisor::new(
             |_: &Operation| true,
-            PolicyDenyInterceptor,
+            ScopeRejectingInterceptor::new(Arc::clone(&probe)),
             -1000,
         )),
     )
@@ -242,6 +228,7 @@ async fn strict_aop_endpoint_maps_policy_failure_without_calling_handler() {
         "Authentication is required"
     );
     assert!(!called.load(Ordering::SeqCst));
+    probe.assert_closed_within(Duration::from_secs(1)).await;
 }
 
 #[tokio::test]

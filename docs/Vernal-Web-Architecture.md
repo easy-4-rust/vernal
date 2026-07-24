@@ -466,12 +466,15 @@ Guardrails:
 
 ## 12. Cross-framework conformance
 
-Every adapter must reuse the same `vernal-web-testkit` contract suite. Its
-first shared request-binding contract is implemented: all ten adapters pass
-their native `ApplicationContext`, `WebRequestScope`, and request-scoped
-component to `WebAdapterContract`, which resolves again within the same scope
-and compares `Arc` identity. This catches adapters that bypass request scope.
-The remaining matrix continues incrementally:
+Every adapter must reuse the same `vernal-web-testkit` contract suite. The
+shared request-binding contract makes all ten adapters pass their native
+`ApplicationContext`, `WebRequestScope`, and request-scoped component to
+`WebAdapterContract`, which resolves again within the same scope and compares
+`Arc` identity. `ScopeCloseProbe` observes, but never closes, the real adapter
+scope. Together with `ScopeRejectingInterceptor`, it proves normal body
+completion, policy short-circuit, and response-body drop cleanup on all ten
+adapters. This catches both scope bypass and test-assisted cleanup. Streaming
+error/disconnect/timeout paths and the remaining matrix continue incrementally:
 
 | Contract | Required coverage |
 |:---|:---|
@@ -509,13 +512,13 @@ change updates the manifest, bilingual docs, and compatibility matrix together.
 ## 14. Definition of architecture done
 
 - [x] Web and HTTP contracts are implemented and independently tested.
-- [ ] Tower/Hyper do not enter Core, IoC, AOP, or Context.
+- [x] Tower/Hyper do not enter Core, IoC, AOP, or Context.
 - [x] All ten adapters use native extension points and no global context.
 - [ ] Non-streaming, streaming, cancellation, and cleanup semantics have tests.
-- [ ] Tonic is classified as RPC, not an HTTP router.
-- [ ] Sa-Token-Rust is the sole retained security integration target.
+- [x] Tonic is classified as RPC, not an HTTP router.
+- [x] Sa-Token-Rust is the sole retained security integration target.
 - [x] Hutool-Rust, Sa-Token-Rust, and Ddd4r names and boundaries match in both languages.
-- [ ] Skeleton, runnable, contract-passing, and production-ready are never conflated.
+- [x] Skeleton, runnable, contract-passing, and production-ready are never conflated.
 
 ---
 

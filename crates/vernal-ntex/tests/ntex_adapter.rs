@@ -1,8 +1,5 @@
 //! Ntex Middleware、Extractor、IoC 与请求作用域生命周期测试。
 
-#[path = "aop_support/policy_deny_local_interceptor.rs"]
-mod policy_deny_local_interceptor;
-
 use std::{
     sync::{
         Arc,
@@ -15,8 +12,6 @@ use ntex::{
     http::StatusCode,
     web::{self, App, DefaultError, Error, HttpResponse, error::ErrorNotFound, test},
 };
-use policy_deny_local_interceptor::PolicyDenyLocalInterceptor;
-use tokio::sync::Notify;
 use vernal_aop::{LocalAdvisor, Operation};
 use vernal_context::{ApplicationContextBuilder, VernalApplicationBuilder};
 use vernal_http::HttpRequestSnapshot;
@@ -26,7 +21,7 @@ use vernal_ntex::{
     VernalNtexRequestScope,
 };
 use vernal_web::WebRequestScope;
-use vernal_web_testkit::WebAdapterContract;
+use vernal_web_testkit::{ScopeCloseProbe, ScopeRejectingInterceptor, WebAdapterContract};
 
 struct Greeting(&'static str);
 
@@ -67,8 +62,8 @@ async fn ready_aop_context(
 async fn middleware_exposes_context_component_and_scope_until_body_finishes() {
     let context = ready_context().await;
     let expected = Arc::clone(&context);
-    let closed = Arc::new(Notify::new());
-    let handler_closed = Arc::clone(&closed);
+    let probe = Arc::new(ScopeCloseProbe::new());
+    let handler_probe = Arc::clone(&probe);
     let application = test::init_service(
         App::new()
             .state(Arc::clone(&context))
@@ -80,7 +75,7 @@ async fn middleware_exposes_context_component_and_scope_until_body_finishes() {
                           VernalNtexComponent(greeting): VernalNtexComponent<Greeting>,
                           VernalNtexRequestScope(scope): VernalNtexRequestScope| {
                         let expected = Arc::clone(&expected);
-                        let handler_closed = Arc::clone(&handler_closed);
+                        let handler_probe = Arc::clone(&handler_probe);
                         async move {
                             WebAdapterContract::assert_request_binding(
                                 &expected,
@@ -88,12 +83,7 @@ async fn middleware_exposes_context_component_and_scope_until_body_finishes() {
                                 &scope,
                                 &greeting,
                             );
-                            scope
-                                .on_close(move || async move {
-                                    handler_closed.notify_one();
-                                    Ok::<_, std::io::Error>(())
-                                })
-                                .expect("scope close hook");
+                            handler_probe.observe(&scope);
                             HttpResponse::Ok().body(greeting.0)
                         }
                     },
@@ -105,8 +95,9 @@ async fn middleware_exposes_context_component_and_scope_until_body_finishes() {
     let request = test::TestRequest::get().uri("/hello").to_request();
     let response = test::call_service(&application, request).await;
     assert_eq!(response.status(), StatusCode::OK);
+    probe.assert_open();
     assert_eq!(test::read_body(response).await, "vernal-ntex");
-    closed.notified().await;
+    probe.assert_closed_within(Duration::from_secs(1)).await;
 }
 
 #[ntex::test]
@@ -128,21 +119,16 @@ async fn missing_middleware_returns_safe_internal_server_error() {
 #[ntex::test]
 async fn dropping_response_body_closes_request_scope() {
     let context = ready_context().await;
-    let closed = Arc::new(Notify::new());
-    let handler_closed = Arc::clone(&closed);
+    let probe = Arc::new(ScopeCloseProbe::new());
+    let handler_probe = Arc::clone(&probe);
     let application =
         test::init_service(App::new().wrap(VernalNtexMiddleware::new(context)).route(
             "/drop",
             web::get().to(
                 move |VernalNtexRequestScope(scope): VernalNtexRequestScope| {
-                    let handler_closed = Arc::clone(&handler_closed);
+                    let handler_probe = Arc::clone(&handler_probe);
                     async move {
-                        scope
-                            .on_close(move || async move {
-                                handler_closed.notify_one();
-                                Ok::<_, std::io::Error>(())
-                            })
-                            .expect("scope close hook");
+                        handler_probe.observe(&scope);
                         HttpResponse::Ok().body("stream is not consumed")
                     }
                 },
@@ -152,11 +138,10 @@ async fn dropping_response_body_closes_request_scope() {
 
     let request = test::TestRequest::get().uri("/drop").to_request();
     let response = test::call_service(&application, request).await;
+    probe.assert_open();
     drop(response);
 
-    tokio::time::timeout(Duration::from_secs(1), closed.notified())
-        .await
-        .expect("scope must close after Ntex response body cancellation");
+    probe.assert_closed_within(Duration::from_secs(1)).await;
 }
 
 #[ntex::test]
@@ -201,12 +186,13 @@ async fn strict_local_aop_uses_declared_pattern_and_owned_snapshot() {
 #[ntex::test]
 async fn strict_local_aop_maps_policy_failure_without_calling_handler() {
     let called = Arc::new(AtomicBool::new(false));
+    let probe = Arc::new(ScopeCloseProbe::new());
     let operation = Operation::new("/protected", "GET");
     let context = ready_aop_context(
         operation,
         Some(LocalAdvisor::new(
             |_: &Operation| true,
-            PolicyDenyLocalInterceptor,
+            ScopeRejectingInterceptor::new(Arc::clone(&probe)),
             -1000,
         )),
     )
@@ -235,6 +221,7 @@ async fn strict_local_aop_maps_policy_failure_without_calling_handler() {
         "Authentication is required"
     );
     assert!(!called.load(Ordering::SeqCst));
+    probe.assert_closed_within(Duration::from_secs(1)).await;
 }
 
 #[ntex::test]

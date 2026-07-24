@@ -108,7 +108,7 @@ Vernal 遵守四条不可退化的规则：
 | `vernal-context` | Phase 3/诊断内核已实现 | 生命周期、回滚、事件和脱敏启动报告 |
 | `vernal-macros` | Phase 2 宏已实现 | 显式注入元数据与 Context-local 异步方法织入 |
 | `vernal-web` | Phase 4 合同已实现 | 框架中立的 Context、请求 Scope、Handler 和错误合同 |
-| `vernal-web-testkit` | Phase 4 首条公共合同已实现 | 十个 Adapter 共享 Context/Scope/组件绑定断言 |
+| `vernal-web-testkit` | Phase 4 绑定/生命周期合同已实现 | 十个 Adapter 共享 Context/Scope/组件绑定及成功、错误、Drop 清理断言 |
 | `vernal-http` | Phase 4 合同已实现 | HTTP 请求、响应、Body、流、取消和背压合同 |
 | `vernal-tower` | Phase 4 底座已实现 | Tower Context、请求 Scope、传播、AOP 与可配置原生错误恢复 |
 | `vernal-hyper` | Phase 4 底座已实现 | Hyper 请求与 Body Frame 无损传输桥接 |
@@ -288,7 +288,7 @@ let json = serde_json::to_string(&startup_report)?;
 | Web 上下文 | 请求 Context、请求 Scope、Handler 调用和错误映射 | Phase 4 合同 |
 | HTTP | 请求/响应、Body Frame/Trailer、显式限量收集、取消和背压 | Phase 4 合同 |
 | Web 集成底座 | Tower Context/Scope Layer 与 Hyper 流式桥接 | Phase 4 底座 |
-| 跨框架合同 | 同一请求 Scope 二次解析与组件 Arc 身份验证 | Phase 4 首条公共合同 |
+| 跨框架合同 | 同 Scope 组件身份及成功、策略错误、响应 Drop 清理 | Phase 4 公共合同 |
 | 框架适配器 | 能复用 Tower 时优先 Tower，必要时原生适配 | Phase 5 适配已实现 |
 | 诊断 | 可序列化 Registry 快照与不泄露错误正文的启动报告 | Phase 3 诊断内核 |
 
@@ -386,7 +386,10 @@ Phase 4 已把 `WebRequestScope` 收敛为 IoC `ScopeContext` 的 Web 门面，�
 Adapter 的组件提取器均在当前请求 Scope 内解析 Singleton、Transient 或请求级
 组件。`vernal-web-testkit::WebAdapterContract` 已被十个 Adapter 共同调用，
 验证原生 Context、Scope 所有权、Scope 身份、Open/取消状态及二次解析的
-组件 `Arc` 身份；Streaming、Security 和完整失败矩阵仍按架构清单继续补齐。
+组件 `Arc` 身份。`ScopeCloseProbe` 与 `ScopeRejectingInterceptor` 还让十个
+Adapter 共同验证正常 Body 完成、策略短路和响应 Body Drop 后由 Adapter 自身
+关闭真实 Scope，testkit 不参与清理。流式错误、断连、释放超时、Security 集成
+和完整失败矩阵仍按架构清单继续补齐。
 
 ## 10. 贡献与许可证
 

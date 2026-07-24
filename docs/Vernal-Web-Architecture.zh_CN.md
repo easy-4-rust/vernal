@@ -412,11 +412,14 @@ Guardrails：
 
 ## 12. 跨框架一致性测试
 
-每个 Adapter 必须复用同一 `vernal-web-testkit` 合同套件。当前已落地第一条
-公共请求绑定合同：十个 Adapter 都把原生获得的 `ApplicationContext`、
+每个 Adapter 必须复用同一 `vernal-web-testkit` 合同套件。共享请求绑定合同让
+十个 Adapter 都把原生获得的 `ApplicationContext`、
 `WebRequestScope` 和请求级组件交给 `WebAdapterContract`；合同会在同一 Scope
-二次解析并比较 `Arc` 身份，因此能发现绕过请求 Scope 的错误实现。下表其余矩阵
-仍按阶段继续补齐：
+二次解析并比较 `Arc` 身份。`ScopeCloseProbe` 只观察而不关闭 Adapter 的真实
+Scope；配合 `ScopeRejectingInterceptor`，十个 Adapter 已共同证明正常 Body
+完成、策略短路与响应 Body Drop 三条路径都会清理 Scope。这既能发现绕过请求
+Scope 的实现，也能阻止 testkit 替被测 Adapter 完成清理。流式错误、断连、
+释放超时和下表其余矩阵仍按阶段继续补齐：
 
 | 合同 | 必须覆盖 |
 |:---|:---|
@@ -454,13 +457,13 @@ Guardrails：
 ## 14. 架构完成定义
 
 - [x] Web 与 HTTP 公共合同已经实现并有独立测试；
-- [ ] Tower/Hyper 底座不进入 Core、IoC、AOP 或 Context；
+- [x] Tower/Hyper 底座不进入 Core、IoC、AOP 或 Context；
 - [x] 十个 Adapter 均使用框架原生扩展点，没有全局 Context；
 - [ ] 非流式、流式、取消和 Scope 清理语义均被合同测试覆盖；
-- [ ] Tonic 被明确作为 RPC，而不是 HTTP Router；
-- [ ] Sa-Token-Rust 是唯一保留的安全集成目标；
+- [x] Tonic 被明确作为 RPC，而不是 HTTP Router；
+- [x] Sa-Token-Rust 是唯一保留的安全集成目标；
 - [x] Hutool-Rust、Sa-Token-Rust、Ddd4r 品牌和边界在中英文文档中一致；
-- [ ] 骨架、可运行、合同通过、生产就绪四种状态从不混用。
+- [x] 骨架、可运行、合同通过、生产就绪四种状态从不混用。
 
 ---
 

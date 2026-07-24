@@ -644,7 +644,7 @@ Vernal 借鉴 Spring 的职责分离，不复制 JVM 产品命名。Rust Web 框
 |:---|:---|:---|:---|
 | Web 应用 | `vernal-web` | Request Context、请求 Scope、Handler 调用、提取、校验、错误映射 | 不包含传输层或框架类型 |
 | HTTP 协议 | `vernal-http` | Request、Response、Body Frame、Streaming、取消、背压 | 使用 Rust `Future`/`Stream`，不拥有 Runtime |
-| 合同测试 | `vernal-web-testkit` | 统一验证 Context、IoC 请求 Scope 与组件实例绑定 | 仅作为 Adapter 开发依赖，不进入运行时依赖图 |
+| 合同测试 | `vernal-web-testkit` | 统一验证 Context/IoC 绑定及成功、策略错误、响应 Drop 后的 Scope 清理 | 仅作为 Adapter 开发依赖，不进入运行时依赖图 |
 
 ```mermaid
 flowchart TD
@@ -691,7 +691,9 @@ Tower 与 Hyper 是公共底座，不占十种目标名额；Tonic 明确属于 
 Tower/Hyper、`vernal-web-testkit` 和十个 Adapter。四个运行时底座已提供可调用的请求 Scope、HTTP
 Frame/Trailer、元数据/取消传播、Tower 生命周期、AOP 调用链、可配置原生错误
 恢复和 Hyper 传输能力；共享 testkit 已让十个 Adapter 使用同一请求绑定合同，
-验证原生提取器暴露的 Context、Scope 和组件来自同一 IoC `ScopeContext`。
+验证原生提取器暴露的 Context、Scope 和组件来自同一 IoC `ScopeContext`，并用
+只观察、不清理的 Probe 验证正常 Body 完成、策略短路与响应 Body Drop 后均由
+Adapter 自身关闭 Scope。
 Axum 已增加原生 Router 装配与类型化提取器，Actix Web 已增加 App Data/Extensions
 与原生 Body 感知 Middleware，并通过 Vernal Local-AOP 为基于 `Rc`、不要求
 `Send` 的 Service 提供严格 Around。严格中间件在匹配后包裹具体 Resource，

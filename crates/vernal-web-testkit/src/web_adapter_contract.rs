@@ -15,6 +15,23 @@ use vernal_web::WebRequestScope;
 pub struct WebAdapterContract;
 
 impl WebAdapterContract {
+    /// 验证响应 Body 尚未结束时，请求作用域保持开放且未收到取消信号。
+    ///
+    /// # Panics
+    ///
+    /// Scope 已提前关闭或取消时 panic。
+    pub fn assert_scope_open(scope: &Arc<WebRequestScope>) {
+        assert_eq!(
+            scope.state(),
+            ScopeState::Open,
+            "request scope must remain open while the native response body is alive"
+        );
+        assert!(
+            !scope.cancellation().is_cancelled(),
+            "live response body must retain an uncancelled request scope"
+        );
+    }
+
     /// 验证一个正在执行的请求绑定了正确应用、IoC Scope 与组件实例。
     ///
     /// `component` 必须是 Adapter 通过原生提取器或扩展接口得到的对象。本方法会
@@ -49,15 +66,7 @@ impl WebAdapterContract {
             ScopeKey::of::<WebRequestScope>(),
             "request scope must use the shared WebRequestScope identity"
         );
-        assert_eq!(
-            scope.state(),
-            ScopeState::Open,
-            "request scope must remain open while the native handler runs"
-        );
-        assert!(
-            !scope.cancellation().is_cancelled(),
-            "request cancellation must not be signalled before handler completion"
-        );
+        Self::assert_scope_open(scope);
 
         // 第二次解析必须命中 ScopeContext 的同一个 OnceLock，借此证明 Adapter 的
         // 组件提取路径与公共 WebRequestScope 使用同一 IoC 缓存。

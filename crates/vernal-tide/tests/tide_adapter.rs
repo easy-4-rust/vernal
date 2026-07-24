@@ -1,10 +1,6 @@
 //! Tide Middleware、Request Extension、IoC 与 Body 生命周期测试。
 
-#[path = "aop_support/policy_deny_interceptor.rs"]
-mod policy_deny_interceptor;
-
 use std::{
-    io,
     sync::{
         Arc,
         atomic::{AtomicBool, Ordering},
@@ -12,19 +8,17 @@ use std::{
     time::Duration,
 };
 
-use policy_deny_interceptor::PolicyDenyInterceptor;
 use tide::{
     Request, Response, StatusCode,
     http::{Method, Request as HttpRequest, Url},
 };
-use tokio::sync::Notify;
 use vernal_aop::{Advisor, Operation};
 use vernal_context::{ApplicationContextBuilder, VernalApplicationBuilder};
 use vernal_http::{HttpRequestSnapshot, Method as SnapshotMethod};
 use vernal_ioc::{ComponentDefinition, RegistryBuilder};
 use vernal_tide::{VernalTideMiddleware, VernalTideRequestExt};
 use vernal_web::WebRequestScope;
-use vernal_web_testkit::WebAdapterContract;
+use vernal_web_testkit::{ScopeCloseProbe, ScopeRejectingInterceptor, WebAdapterContract};
 
 struct Greeting(&'static str);
 
@@ -80,13 +74,13 @@ fn request(path: &str) -> HttpRequest {
 async fn middleware_exposes_context_component_and_scope_until_body_finishes() {
     let context = ready_context().await;
     let expected = Arc::clone(&context);
-    let closed = Arc::new(Notify::new());
-    let handler_closed = Arc::clone(&closed);
+    let probe = Arc::new(ScopeCloseProbe::new());
+    let handler_probe = Arc::clone(&probe);
     let mut application = tide::new();
     application.with(VernalTideMiddleware::new(context));
     application.at("/hello").get(move |request: Request<()>| {
         let expected = Arc::clone(&expected);
-        let handler_closed = Arc::clone(&handler_closed);
+        let handler_probe = Arc::clone(&handler_probe);
         async move {
             let actual = request.vernal_context().expect("Vernal context");
             let greeting = request
@@ -94,12 +88,7 @@ async fn middleware_exposes_context_component_and_scope_until_body_finishes() {
                 .expect("Vernal component");
             let scope = request.vernal_request_scope().expect("request scope");
             WebAdapterContract::assert_request_binding(&expected, &actual, &scope, &greeting);
-            scope
-                .on_close(move || async move {
-                    handler_closed.notify_one();
-                    Ok::<_, io::Error>(())
-                })
-                .expect("scope close hook");
+            handler_probe.observe(&scope);
             Ok(greeting.0)
         }
     });
@@ -110,6 +99,7 @@ async fn middleware_exposes_context_component_and_scope_until_body_finishes() {
         .expect("Tide response");
     assert_eq!(response.status(), StatusCode::Ok);
     assert_eq!(response.len(), Some("vernal-tide".len()));
+    probe.assert_open();
     assert_eq!(
         response
             .take_body()
@@ -118,7 +108,7 @@ async fn middleware_exposes_context_component_and_scope_until_body_finishes() {
             .expect("response body"),
         "vernal-tide"
     );
-    closed.notified().await;
+    probe.assert_closed_within(Duration::from_secs(1)).await;
 }
 
 #[tokio::test]
@@ -151,20 +141,15 @@ async fn missing_middleware_returns_safe_internal_server_error() {
 #[tokio::test]
 async fn dropping_response_body_closes_request_scope() {
     let context = ready_context().await;
-    let closed = Arc::new(Notify::new());
-    let handler_closed = Arc::clone(&closed);
+    let probe = Arc::new(ScopeCloseProbe::new());
+    let handler_probe = Arc::clone(&probe);
     let mut application = tide::new();
     application.with(VernalTideMiddleware::new(context));
     application.at("/drop").get(move |request: Request<()>| {
-        let handler_closed = Arc::clone(&handler_closed);
+        let handler_probe = Arc::clone(&handler_probe);
         async move {
             let scope = request.vernal_request_scope().expect("request scope");
-            scope
-                .on_close(move || async move {
-                    handler_closed.notify_one();
-                    Ok::<_, io::Error>(())
-                })
-                .expect("scope close hook");
+            handler_probe.observe(&scope);
             Ok("stream is not consumed")
         }
     });
@@ -173,11 +158,10 @@ async fn dropping_response_body_closes_request_scope() {
         .respond(request("/drop"))
         .await
         .expect("Tide response");
+    probe.assert_open();
     drop(response);
 
-    tokio::time::timeout(Duration::from_secs(1), closed.notified())
-        .await
-        .expect("scope must close after Tide response body cancellation");
+    probe.assert_closed_within(Duration::from_secs(1)).await;
 }
 
 #[tokio::test]
@@ -220,11 +204,12 @@ async fn strict_aop_uses_declared_pattern_and_owned_snapshot() {
 #[tokio::test]
 async fn strict_aop_maps_policy_failure_without_calling_endpoint() {
     let called = Arc::new(AtomicBool::new(false));
+    let probe = Arc::new(ScopeCloseProbe::new());
     let context = ready_aop_context(
         Operation::new("/protected", "GET"),
         Some(Advisor::new(
             |_: &Operation| true,
-            PolicyDenyInterceptor,
+            ScopeRejectingInterceptor::new(Arc::clone(&probe)),
             -1000,
         )),
     )
@@ -253,6 +238,7 @@ async fn strict_aop_maps_policy_failure_without_calling_endpoint() {
         "Authentication is required"
     );
     assert!(!called.load(Ordering::SeqCst));
+    probe.assert_closed_within(Duration::from_secs(1)).await;
 }
 
 #[tokio::test]

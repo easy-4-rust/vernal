@@ -8,12 +8,11 @@ description = "Shared conformance assertions for Vernal Web adapters."
 publish = false
 
 [dependencies]
+tokio.workspace = true
+vernal-aop = { path = "../vernal-aop" }
 vernal-context = { path = "../vernal-context" }
 vernal-ioc = { path = "../vernal-ioc" }
 vernal-web = { path = "../vernal-web" }
-
-[dev-dependencies]
-tokio.workspace = true
 
 [lints]
 workspace = true

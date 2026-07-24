@@ -1,8 +1,5 @@
 //! Rocket Fairing、Managed State、Request Guard 与请求作用域集成测试。
 
-#[path = "aop_support/policy_deny_interceptor.rs"]
-mod policy_deny_interceptor;
-
 use std::{
     sync::{
         Arc,
@@ -11,7 +8,6 @@ use std::{
     time::Duration,
 };
 
-use policy_deny_interceptor::PolicyDenyInterceptor;
 use rocket::{
     Request, get,
     http::Status,
@@ -19,7 +15,6 @@ use rocket::{
     request::{FromRequest, Outcome as RequestOutcome},
     routes,
 };
-use tokio::{sync::Notify, time::timeout};
 use vernal_aop::{Advisor, Operation};
 use vernal_context::{ApplicationContextBuilder, VernalApplicationBuilder};
 use vernal_http::HttpRequestSnapshot;
@@ -29,11 +24,9 @@ use vernal_rocket::{
     VernalRocketRequestScope, VernalRocketRoutesExt,
 };
 use vernal_web::WebRequestScope;
-use vernal_web_testkit::WebAdapterContract;
+use vernal_web_testkit::{ScopeCloseProbe, ScopeRejectingInterceptor, WebAdapterContract};
 
 struct Greeting(&'static str);
-
-struct ScopeClosed(Arc<Notify>);
 
 static PROTECTED_CALLED: AtomicBool = AtomicBool::new(false);
 
@@ -41,27 +34,20 @@ static PROTECTED_CALLED: AtomicBool = AtomicBool::new(false);
 fn hello(
     context: VernalRocketContext,
     greeting: VernalRocketComponent<Greeting>,
+    probe: VernalRocketComponent<ScopeCloseProbe>,
     scope: VernalRocketRequestScope,
 ) -> &'static str {
     let VernalRocketContext(context) = context;
     let VernalRocketComponent(greeting) = greeting;
+    let VernalRocketComponent(probe) = probe;
     let VernalRocketRequestScope(scope) = scope;
     WebAdapterContract::assert_request_binding(&context, &context, &scope, &greeting);
-    let closed = context
-        .container()
-        .resolve::<ScopeClosed>()
-        .expect("scope notifier");
-    scope
-        .on_close(move || async move {
-            closed.0.notify_one();
-            Ok::<_, std::io::Error>(())
-        })
-        .expect("scope close hook");
+    probe.observe(&scope);
     greeting.0
 }
 
 async fn ready_context_with_greeting(
-    closed: Arc<Notify>,
+    probe: Arc<ScopeCloseProbe>,
     greeting: &'static str,
 ) -> Arc<vernal_context::ApplicationContext> {
     let mut registry = RegistryBuilder::new();
@@ -71,10 +57,8 @@ async fn ready_context_with_greeting(
         ))
         .expect("greeting registration");
     registry
-        .register(ComponentDefinition::singleton::<ScopeClosed, _>(
-            move |_| ScopeClosed(Arc::clone(&closed)),
-        ))
-        .expect("notifier registration");
+        .register(ComponentDefinition::shared_arc(probe))
+        .expect("scope probe registration");
     let registry = registry.build().expect("registry build");
     let context = Arc::new(
         ApplicationContextBuilder::new(registry)
@@ -86,8 +70,8 @@ async fn ready_context_with_greeting(
     context
 }
 
-async fn ready_context(closed: Arc<Notify>) -> Arc<vernal_context::ApplicationContext> {
-    ready_context_with_greeting(closed, "vernal-rocket").await
+async fn ready_context(probe: Arc<ScopeCloseProbe>) -> Arc<vernal_context::ApplicationContext> {
+    ready_context_with_greeting(probe, "vernal-rocket").await
 }
 
 async fn ready_aop_context(
@@ -174,8 +158,8 @@ fn guard_error(_guard: ErrorGuard) -> &'static str {
 
 #[rocket::async_test]
 async fn fairing_exposes_context_component_and_scope_until_body_finishes() {
-    let closed = Arc::new(Notify::new());
-    let context = ready_context(Arc::clone(&closed)).await;
+    let probe = Arc::new(ScopeCloseProbe::new());
+    let context = ready_context(Arc::clone(&probe)).await;
     let rocket = rocket::build()
         .attach(VernalRocketFairing::new(context))
         .mount("/", routes![hello]);
@@ -183,21 +167,21 @@ async fn fairing_exposes_context_component_and_scope_until_body_finishes() {
 
     let response = client.get("/hello").dispatch().await;
     assert_eq!(response.status(), Status::Ok);
+    probe.assert_open();
     assert_eq!(
         response.into_string().await.expect("response body"),
         "vernal-rocket"
     );
-    timeout(Duration::from_secs(1), closed.notified())
-        .await
-        .expect("scope close");
+    probe.assert_closed_within(Duration::from_secs(1)).await;
 }
 
 #[rocket::async_test]
 async fn existing_managed_context_is_the_authority_for_request_scope() {
-    let closed = Arc::new(Notify::new());
-    let managed_context = ready_context_with_greeting(Arc::clone(&closed), "managed-context").await;
+    let managed_probe = Arc::new(ScopeCloseProbe::new());
+    let managed_context =
+        ready_context_with_greeting(Arc::clone(&managed_probe), "managed-context").await;
     let fairing_context =
-        ready_context_with_greeting(Arc::new(Notify::new()), "fairing-context").await;
+        ready_context_with_greeting(Arc::new(ScopeCloseProbe::new()), "fairing-context").await;
     let rocket = rocket::build()
         .manage(Arc::clone(&managed_context))
         .attach(VernalRocketFairing::new(fairing_context))
@@ -208,13 +192,14 @@ async fn existing_managed_context_is_the_authority_for_request_scope() {
     // 的 Arc 身份，因此这里不仅验证字符串值，也验证三者使用同一组件图。
     let response = client.get("/hello").dispatch().await;
     assert_eq!(response.status(), Status::Ok);
+    managed_probe.assert_open();
     assert_eq!(
         response.into_string().await.as_deref(),
         Some("managed-context")
     );
-    timeout(Duration::from_secs(1), closed.notified())
-        .await
-        .expect("managed context request scope close");
+    managed_probe
+        .assert_closed_within(Duration::from_secs(1))
+        .await;
 }
 
 #[rocket::async_test]
@@ -231,8 +216,8 @@ async fn missing_fairing_rejects_request_without_leaking_internal_error() {
 
 #[rocket::async_test]
 async fn dropping_rocket_response_body_closes_request_scope() {
-    let closed = Arc::new(Notify::new());
-    let context = ready_context(Arc::clone(&closed)).await;
+    let probe = Arc::new(ScopeCloseProbe::new());
+    let context = ready_context(Arc::clone(&probe)).await;
     let rocket = rocket::build()
         .attach(VernalRocketFairing::new(context))
         .mount("/", routes![hello]);
@@ -240,11 +225,10 @@ async fn dropping_rocket_response_body_closes_request_scope() {
 
     let response = client.get("/hello").dispatch().await;
     assert_eq!(response.status(), Status::Ok);
+    probe.assert_open();
     drop(response);
 
-    timeout(Duration::from_secs(1), closed.notified())
-        .await
-        .expect("scope must close after Rocket response cancellation");
+    probe.assert_closed_within(Duration::from_secs(1)).await;
 }
 
 #[rocket::async_test]
@@ -263,11 +247,12 @@ async fn strict_aop_routes_use_route_template_and_owned_snapshot() {
 #[rocket::async_test]
 async fn strict_aop_maps_policy_failure_without_calling_handler() {
     PROTECTED_CALLED.store(false, Ordering::SeqCst);
+    let probe = Arc::new(ScopeCloseProbe::new());
     let context = ready_aop_context(
         [Operation::new("/protected", "GET")],
         Some(Advisor::new(
             |_: &Operation| true,
-            PolicyDenyInterceptor,
+            ScopeRejectingInterceptor::new(Arc::clone(&probe)),
             -1000,
         )),
     )
@@ -284,6 +269,7 @@ async fn strict_aop_maps_policy_failure_without_calling_handler() {
         Some("Authentication is required")
     );
     assert!(!PROTECTED_CALLED.load(Ordering::SeqCst));
+    probe.assert_closed_within(Duration::from_secs(1)).await;
 }
 
 #[rocket::async_test]

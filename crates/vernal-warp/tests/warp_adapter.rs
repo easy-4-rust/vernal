@@ -1,17 +1,15 @@
 //! Warp Filter、Tower Service、IoC 与请求作用域集成测试。
 
-#[path = "aop_support/policy_deny_interceptor.rs"]
-mod policy_deny_interceptor;
-
-use std::sync::{
-    Arc,
-    atomic::{AtomicBool, Ordering},
+use std::{
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
+    time::Duration,
 };
 
 use bytes::Bytes;
 use http_body_util::{BodyExt, Empty};
-use policy_deny_interceptor::PolicyDenyInterceptor;
-use tokio::sync::Notify;
 use tower::{Layer, ServiceExt};
 use vernal_aop::{Advisor, Operation};
 use vernal_context::{ApplicationContextBuilder, VernalApplicationBuilder};
@@ -22,7 +20,7 @@ use vernal_warp::{
     VernalWarpRequestContext, VernalWarpRequestScope, WarpRejection,
 };
 use vernal_web::WebRequestScope;
-use vernal_web_testkit::WebAdapterContract;
+use vernal_web_testkit::{ScopeCloseProbe, ScopeRejectingInterceptor, WebAdapterContract};
 use warp::{Filter, Rejection, Reply, http::StatusCode};
 
 struct Greeting(&'static str);
@@ -64,8 +62,8 @@ async fn ready_aop_context(
 async fn service_exposes_context_component_and_scope_until_body_finishes() {
     let context = ready_context().await;
     let expected = Arc::clone(&context);
-    let closed = Arc::new(Notify::new());
-    let handler_closed = Arc::clone(&closed);
+    let probe = Arc::new(ScopeCloseProbe::new());
+    let handler_probe = Arc::clone(&probe);
     let route = VernalWarpContext::filter()
         .and(VernalWarpComponent::<Greeting>::filter())
         .and(VernalWarpRequestScope::filter())
@@ -74,19 +72,13 @@ async fn service_exposes_context_component_and_scope_until_body_finishes() {
                   greeting: VernalWarpComponent<Greeting>,
                   scope: VernalWarpRequestScope| {
                 let expected = Arc::clone(&expected);
-                let handler_closed = Arc::clone(&handler_closed);
+                let handler_probe = Arc::clone(&handler_probe);
                 async move {
                     let greeting = greeting.into_inner();
                     WebAdapterContract::assert_request_binding(
                         &expected, &actual.0, &scope.0, &greeting,
                     );
-                    scope
-                        .0
-                        .on_close(move || async move {
-                            handler_closed.notify_one();
-                            Ok::<_, std::io::Error>(())
-                        })
-                        .expect("scope close hook");
+                    handler_probe.observe(&scope.0);
                     Ok::<_, Rejection>(greeting.0)
                 }
             },
@@ -100,6 +92,7 @@ async fn service_exposes_context_component_and_scope_until_body_finishes() {
 
     let response = service.oneshot(request).await.expect("service response");
     assert_eq!(response.status(), StatusCode::OK);
+    probe.assert_open();
     let body = response
         .into_body()
         .collect()
@@ -107,7 +100,32 @@ async fn service_exposes_context_component_and_scope_until_body_finishes() {
         .expect("response body")
         .to_bytes();
     assert_eq!(body, "vernal-warp");
-    closed.notified().await;
+    probe.assert_closed_within(Duration::from_secs(1)).await;
+}
+
+#[tokio::test]
+async fn dropping_response_body_closes_request_scope() {
+    let context = ready_context().await;
+    let probe = Arc::new(ScopeCloseProbe::new());
+    let handler_probe = Arc::clone(&probe);
+    let route = VernalWarpRequestScope::filter().and_then(move |scope: VernalWarpRequestScope| {
+        let handler_probe = Arc::clone(&handler_probe);
+        async move {
+            handler_probe.observe(&scope.0);
+            Ok::<_, Rejection>("stream is not consumed")
+        }
+    });
+    let service = VernalWarpLayer::new(context).layer(warp::service(route));
+    let request = warp::http::Request::builder()
+        .uri("/drop")
+        .body(Empty::<Bytes>::new())
+        .expect("request");
+
+    let response = service.oneshot(request).await.expect("service response");
+    probe.assert_open();
+    drop(response);
+
+    probe.assert_closed_within(Duration::from_secs(1)).await;
 }
 
 #[tokio::test]
@@ -200,11 +218,12 @@ async fn strict_aop_uses_declared_pattern_and_owned_snapshot() {
 #[tokio::test]
 async fn strict_aop_maps_policy_failure_without_calling_filter() {
     let called = Arc::new(AtomicBool::new(false));
+    let probe = Arc::new(ScopeCloseProbe::new());
     let context = ready_aop_context(
         Operation::new("/protected", "GET"),
         Some(Advisor::new(
             |_: &Operation| true,
-            PolicyDenyInterceptor,
+            ScopeRejectingInterceptor::new(Arc::clone(&probe)),
             -1000,
         )),
     )
@@ -230,6 +249,7 @@ async fn strict_aop_maps_policy_failure_without_calling_filter() {
         .to_bytes();
     assert_eq!(body, "Authentication is required");
     assert!(!called.load(Ordering::SeqCst));
+    probe.assert_closed_within(Duration::from_secs(1)).await;
 }
 
 #[tokio::test]

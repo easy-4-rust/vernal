@@ -1,7 +1,5 @@
 //! Salvo Handler、Depot、IoC 与请求作用域集成测试。
 
-#[path = "aop_support/policy_deny_interceptor.rs"]
-mod policy_deny_interceptor;
 #[path = "aop_support/strict_probe_handler.rs"]
 mod strict_probe_handler;
 
@@ -14,7 +12,6 @@ use std::{
 };
 
 use http_body_util::BodyExt;
-use policy_deny_interceptor::PolicyDenyInterceptor;
 use salvo::{
     Depot, FlowCtrl, Handler, Request, Response, Service,
     conn::SocketAddr,
@@ -22,19 +19,18 @@ use salvo::{
     routing::Router,
 };
 use strict_probe_handler::StrictProbeHandler;
-use tokio::{sync::Notify, time::timeout};
 use vernal_aop::{Advisor, Operation};
 use vernal_context::{ApplicationContextBuilder, VernalApplicationBuilder};
 use vernal_ioc::{ComponentDefinition, RegistryBuilder};
 use vernal_salvo::{VernalSalvoDepotExt, VernalSalvoHoop};
 use vernal_web::WebRequestScope;
-use vernal_web_testkit::WebAdapterContract;
+use vernal_web_testkit::{ScopeCloseProbe, ScopeRejectingInterceptor, WebAdapterContract};
 
 struct Greeting(&'static str);
 
 struct ProbeHandler {
     expected: Option<Arc<vernal_context::ApplicationContext>>,
-    closed: Option<Arc<Notify>>,
+    probe: Option<Arc<ScopeCloseProbe>>,
     stream_trailers: bool,
 }
 
@@ -67,14 +63,8 @@ impl Handler for ProbeHandler {
                         expected, &context, &scope, &greeting,
                     );
                 }
-                if let Some(closed) = &self.closed {
-                    let closed = Arc::clone(closed);
-                    scope
-                        .on_close(move || async move {
-                            closed.notify_one();
-                            Ok::<_, std::io::Error>(())
-                        })
-                        .expect("scope close hook");
+                if let Some(probe) = &self.probe {
+                    probe.observe(&scope);
                 }
                 if self.stream_trailers {
                     let (mut sender, body) = ResBody::channel();
@@ -163,12 +153,12 @@ async fn send_get(service: &Service, path: &str) -> Response {
 #[tokio::test]
 async fn hoop_exposes_context_component_and_scope_until_body_finishes() {
     let context = ready_context().await;
-    let closed = Arc::new(Notify::new());
+    let probe = Arc::new(ScopeCloseProbe::new());
     let handlers: Vec<Arc<dyn Handler>> = vec![
         Arc::new(VernalSalvoHoop::new(Arc::clone(&context))),
         Arc::new(ProbeHandler {
             expected: Some(Arc::clone(&context)),
-            closed: Some(Arc::clone(&closed)),
+            probe: Some(Arc::clone(&probe)),
             stream_trailers: false,
         }),
     ];
@@ -180,6 +170,7 @@ async fn hoop_exposes_context_component_and_scope_until_body_finishes() {
     control
         .call_next(&mut request, &mut depot, &mut response)
         .await;
+    probe.assert_open();
     let body = response
         .take_body()
         .collect()
@@ -187,16 +178,14 @@ async fn hoop_exposes_context_component_and_scope_until_body_finishes() {
         .expect("response body")
         .to_bytes();
     assert_eq!(body, "vernal-salvo");
-    timeout(Duration::from_secs(1), closed.notified())
-        .await
-        .expect("scope close");
+    probe.assert_closed_within(Duration::from_secs(1)).await;
 }
 
 #[tokio::test]
 async fn missing_vernal_hoop_renders_safe_rejection() {
     let mut control = FlowCtrl::new(vec![Arc::new(ProbeHandler {
         expected: None,
-        closed: None,
+        probe: None,
         stream_trailers: false,
     })]);
     let mut request = Request::new();
@@ -222,12 +211,12 @@ async fn missing_vernal_hoop_renders_safe_rejection() {
 #[tokio::test]
 async fn salvo_body_preserves_data_trailers_and_backpressure() {
     let context = ready_context().await;
-    let closed = Arc::new(Notify::new());
+    let probe = Arc::new(ScopeCloseProbe::new());
     let handlers: Vec<Arc<dyn Handler>> = vec![
         Arc::new(VernalSalvoHoop::new(Arc::clone(&context))),
         Arc::new(ProbeHandler {
             expected: Some(context),
-            closed: Some(Arc::clone(&closed)),
+            probe: Some(Arc::clone(&probe)),
             stream_trailers: true,
         }),
     ];
@@ -239,6 +228,7 @@ async fn salvo_body_preserves_data_trailers_and_backpressure() {
     control
         .call_next(&mut request, &mut depot, &mut response)
         .await;
+    probe.assert_open();
     let mut body = response.take_body();
     let data = body
         .frame()
@@ -257,20 +247,18 @@ async fn salvo_body_preserves_data_trailers_and_backpressure() {
         .expect("trailers");
     assert_eq!(trailers["x-vernal-scope"], "closed");
     assert!(body.frame().await.is_none());
-    timeout(Duration::from_secs(1), closed.notified())
-        .await
-        .expect("scope close");
+    probe.assert_closed_within(Duration::from_secs(1)).await;
 }
 
 #[tokio::test]
 async fn dropping_salvo_response_body_closes_request_scope() {
     let context = ready_context().await;
-    let closed = Arc::new(Notify::new());
+    let probe = Arc::new(ScopeCloseProbe::new());
     let handlers: Vec<Arc<dyn Handler>> = vec![
         Arc::new(VernalSalvoHoop::new(Arc::clone(&context))),
         Arc::new(ProbeHandler {
             expected: Some(context),
-            closed: Some(Arc::clone(&closed)),
+            probe: Some(Arc::clone(&probe)),
             stream_trailers: false,
         }),
     ];
@@ -282,11 +270,10 @@ async fn dropping_salvo_response_body_closes_request_scope() {
     control
         .call_next(&mut request, &mut depot, &mut response)
         .await;
+    probe.assert_open();
     drop(response);
 
-    timeout(Duration::from_secs(1), closed.notified())
-        .await
-        .expect("scope must close after response body cancellation");
+    probe.assert_closed_within(Duration::from_secs(1)).await;
 }
 
 #[tokio::test]
@@ -313,11 +300,12 @@ async fn strict_aop_uses_matched_path_and_owned_snapshot() {
 #[tokio::test]
 async fn strict_aop_maps_policy_failure_without_calling_handler() {
     let called = Arc::new(AtomicBool::new(false));
+    let probe = Arc::new(ScopeCloseProbe::new());
     let context = ready_aop_context(
         Operation::new("/protected", "GET"),
         Some(Advisor::new(
             |_: &Operation| true,
-            PolicyDenyInterceptor,
+            ScopeRejectingInterceptor::new(Arc::clone(&probe)),
             -1000,
         )),
     )
@@ -340,6 +328,7 @@ async fn strict_aop_maps_policy_failure_without_calling_handler() {
         "Authentication is required"
     );
     assert!(!called.load(Ordering::SeqCst));
+    probe.assert_closed_within(Duration::from_secs(1)).await;
 }
 
 #[tokio::test]

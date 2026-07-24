@@ -1,16 +1,14 @@
 //! Actix Web App Data、Middleware、Extractor 与 Scope 生命周期测试。
 
-#[path = "aop_support/policy_deny_local_interceptor.rs"]
-mod policy_deny_local_interceptor;
-
-use std::sync::{
-    Arc,
-    atomic::{AtomicBool, Ordering},
+use std::{
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
+    time::Duration,
 };
 
 use actix_web::{App, HttpResponse, error::ErrorNotFound, http::StatusCode, test, web};
-use policy_deny_local_interceptor::PolicyDenyLocalInterceptor;
-use tokio::sync::Notify;
 use vernal_actix_web::{
     VernalActixComponent, VernalActixContext, VernalActixMiddleware, VernalActixRequestContext,
     VernalActixRequestScope,
@@ -20,7 +18,7 @@ use vernal_context::{ApplicationContextBuilder, VernalApplicationBuilder};
 use vernal_http::HttpRequestSnapshot;
 use vernal_ioc::{ComponentDefinition, RegistryBuilder};
 use vernal_web::WebRequestScope;
-use vernal_web_testkit::WebAdapterContract;
+use vernal_web_testkit::{ScopeCloseProbe, ScopeRejectingInterceptor, WebAdapterContract};
 
 struct Greeting(&'static str);
 
@@ -61,8 +59,8 @@ async fn ready_aop_context(
 async fn middleware_exposes_context_component_and_scope_until_body_finishes() {
     let context = ready_context().await;
     let expected = Arc::clone(&context);
-    let closed = Arc::new(Notify::new());
-    let handler_closed = Arc::clone(&closed);
+    let probe = Arc::new(ScopeCloseProbe::new());
+    let handler_probe = Arc::clone(&probe);
     let application = test::init_service(
         App::new()
             .app_data(web::Data::from(Arc::clone(&context)))
@@ -74,7 +72,7 @@ async fn middleware_exposes_context_component_and_scope_until_body_finishes() {
                           VernalActixComponent(greeting): VernalActixComponent<Greeting>,
                           VernalActixRequestScope(scope): VernalActixRequestScope| {
                         let expected = Arc::clone(&expected);
-                        let handler_closed = Arc::clone(&handler_closed);
+                        let handler_probe = Arc::clone(&handler_probe);
                         async move {
                             WebAdapterContract::assert_request_binding(
                                 &expected,
@@ -82,12 +80,7 @@ async fn middleware_exposes_context_component_and_scope_until_body_finishes() {
                                 &scope,
                                 &greeting,
                             );
-                            scope
-                                .on_close(move || async move {
-                                    handler_closed.notify_one();
-                                    Ok::<_, std::io::Error>(())
-                                })
-                                .expect("scope close hook");
+                            handler_probe.observe(&scope);
                             HttpResponse::Ok().body(greeting.0)
                         }
                     },
@@ -99,8 +92,37 @@ async fn middleware_exposes_context_component_and_scope_until_body_finishes() {
     let request = test::TestRequest::get().uri("/hello").to_request();
     let response = test::call_service(&application, request).await;
     assert_eq!(response.status(), StatusCode::OK);
+    probe.assert_open();
     assert_eq!(test::read_body(response).await, "vernal-actix");
-    closed.notified().await;
+    probe.assert_closed_within(Duration::from_secs(1)).await;
+}
+
+#[actix_web::test]
+async fn dropping_response_body_closes_request_scope() {
+    let context = ready_context().await;
+    let probe = Arc::new(ScopeCloseProbe::new());
+    let handler_probe = Arc::clone(&probe);
+    let application =
+        test::init_service(App::new().wrap(VernalActixMiddleware::new(context)).route(
+            "/drop",
+            web::get().to(
+                move |VernalActixRequestScope(scope): VernalActixRequestScope| {
+                    let handler_probe = Arc::clone(&handler_probe);
+                    async move {
+                        handler_probe.observe(&scope);
+                        HttpResponse::Ok().body("stream is not consumed")
+                    }
+                },
+            ),
+        ))
+        .await;
+
+    let request = test::TestRequest::get().uri("/drop").to_request();
+    let response = test::call_service(&application, request).await;
+    probe.assert_open();
+    drop(response);
+
+    probe.assert_closed_within(Duration::from_secs(1)).await;
 }
 
 #[actix_web::test]
@@ -157,11 +179,12 @@ async fn strict_local_aop_uses_matched_pattern_and_owned_snapshot() {
 #[actix_web::test]
 async fn strict_local_aop_maps_policy_failure_without_calling_handler() {
     let called = Arc::new(AtomicBool::new(false));
+    let probe = Arc::new(ScopeCloseProbe::new());
     let context = ready_aop_context(
         Operation::new("/protected", "GET"),
         Some(LocalAdvisor::new(
             |_: &Operation| true,
-            PolicyDenyLocalInterceptor,
+            ScopeRejectingInterceptor::new(Arc::clone(&probe)),
             -1000,
         )),
     )
@@ -187,6 +210,7 @@ async fn strict_local_aop_maps_policy_failure_without_calling_handler() {
         "Authentication is required"
     );
     assert!(!called.load(Ordering::SeqCst));
+    probe.assert_closed_within(Duration::from_secs(1)).await;
 }
 
 #[actix_web::test]

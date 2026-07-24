@@ -2,8 +2,6 @@
 
 #[path = "aop_support/native_response_interceptor.rs"]
 mod native_response_interceptor;
-#[path = "aop_support/policy_deny_interceptor.rs"]
-mod policy_deny_interceptor;
 
 use std::{
     io,
@@ -27,15 +25,13 @@ use http::{HeaderMap, Request, Response, StatusCode};
 use http_body::Frame;
 use http_body_util::{BodyExt, Empty, StreamBody};
 use native_response_interceptor::NativeResponseInterceptor;
-use policy_deny_interceptor::PolicyDenyInterceptor;
-use tokio::sync::Notify;
 use vernal_aop::{Advisor, Operation};
 use vernal_context::{ApplicationContextBuilder, VernalApplicationBuilder};
 use vernal_gotham::{VernalGothamMiddleware, VernalGothamStateExt};
 use vernal_http::HttpRequestSnapshot;
 use vernal_ioc::{ComponentDefinition, RegistryBuilder};
 use vernal_web::WebRequestScope;
-use vernal_web_testkit::WebAdapterContract;
+use vernal_web_testkit::{ScopeCloseProbe, ScopeRejectingInterceptor, WebAdapterContract};
 
 struct Greeting(&'static str);
 
@@ -91,8 +87,8 @@ fn request_state(path: &str) -> State {
 async fn middleware_exposes_context_component_and_scope_until_body_finishes() {
     let context = ready_context().await;
     let expected = Arc::clone(&context);
-    let closed = Arc::new(Notify::new());
-    let handler_closed = Arc::clone(&closed);
+    let probe = Arc::new(ScopeCloseProbe::new());
+    let handler_probe = Arc::clone(&probe);
     let middleware = VernalGothamMiddleware::new(context);
 
     let result = middleware
@@ -104,12 +100,7 @@ async fn middleware_exposes_context_component_and_scope_until_body_finishes() {
                     .expect("Vernal component");
                 let scope = state.vernal_request_scope().expect("request scope");
                 WebAdapterContract::assert_request_binding(&expected, &actual, &scope, &greeting);
-                scope
-                    .on_close(move || async move {
-                        handler_closed.notify_one();
-                        Ok::<_, io::Error>(())
-                    })
-                    .expect("scope close hook");
+                handler_probe.observe(&scope);
                 Ok((state, Response::new(greeting.0.into_body())))
             })
         })
@@ -117,6 +108,7 @@ async fn middleware_exposes_context_component_and_scope_until_body_finishes() {
     let (_state, response) = expect_response(result);
 
     assert_eq!(response.status(), StatusCode::OK);
+    probe.assert_open();
     assert_eq!(
         response
             .into_body()
@@ -126,7 +118,7 @@ async fn middleware_exposes_context_component_and_scope_until_body_finishes() {
             .to_bytes(),
         "vernal-gotham"
     );
-    closed.notified().await;
+    probe.assert_closed_within(Duration::from_secs(1)).await;
 }
 
 #[tokio::test]
@@ -152,30 +144,24 @@ async fn missing_middleware_returns_safe_internal_server_error() {
 #[tokio::test]
 async fn dropping_response_body_closes_request_scope() {
     let context = ready_context().await;
-    let closed = Arc::new(Notify::new());
-    let handler_closed = Arc::clone(&closed);
+    let probe = Arc::new(ScopeCloseProbe::new());
+    let handler_probe = Arc::clone(&probe);
     let middleware = VernalGothamMiddleware::new(context);
 
     let result = middleware
         .call(request_state("/drop"), move |state| {
             Box::pin(async move {
                 let scope = state.vernal_request_scope().expect("request scope");
-                scope
-                    .on_close(move || async move {
-                        handler_closed.notify_one();
-                        Ok::<_, io::Error>(())
-                    })
-                    .expect("scope close hook");
+                handler_probe.observe(&scope);
                 Ok((state, Response::new("stream is not consumed".into_body())))
             })
         })
         .await;
     let (_state, response) = expect_response(result);
+    probe.assert_open();
     drop(response);
 
-    tokio::time::timeout(Duration::from_secs(1), closed.notified())
-        .await
-        .expect("scope must close after Gotham response body cancellation");
+    probe.assert_closed_within(Duration::from_secs(1)).await;
 }
 
 #[tokio::test]
@@ -261,11 +247,12 @@ async fn strict_aop_uses_declared_pattern_and_owned_snapshot() {
 #[tokio::test]
 async fn strict_aop_maps_policy_failure_without_calling_handler() {
     let called = Arc::new(AtomicBool::new(false));
+    let probe = Arc::new(ScopeCloseProbe::new());
     let context = ready_aop_context(
         Operation::new("/protected", "GET"),
         Some(Advisor::new(
             |_: &Operation| true,
-            PolicyDenyInterceptor,
+            ScopeRejectingInterceptor::new(Arc::clone(&probe)),
             -1000,
         )),
     )
@@ -292,6 +279,7 @@ async fn strict_aop_maps_policy_failure_without_calling_handler() {
         "Authentication is required"
     );
     assert!(!called.load(Ordering::SeqCst));
+    probe.assert_closed_within(Duration::from_secs(1)).await;
 }
 
 #[tokio::test]

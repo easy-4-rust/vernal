@@ -119,7 +119,7 @@ Detailed decisions, flows, failure semantics, and acceptance criteria are in:
 | `vernal-context` | Phase 3/diagnostics kernel implemented | Managed bootstrap, lifecycle, events, redacted startup reports |
 | `vernal-macros` | Phase 2 macros implemented | Explicit `Arc<T>` injection metadata and context-local async method weaving |
 | `vernal-web` | Phase 4 contract implemented | Framework-neutral context, request scope, handler, and error contracts |
-| `vernal-web-testkit` | First Phase 4 shared contract implemented | Shared Context/scope/component binding assertions for all ten adapters |
+| `vernal-web-testkit` | Phase 4 binding/lifecycle contracts implemented | Shared Context/scope/component binding and success/error/drop cleanup assertions for all ten adapters |
 | `vernal-http` | Phase 4 contract implemented | HTTP request, response, body, streaming, cancellation, and backpressure |
 | `vernal-tower` | Phase 4 foundation implemented | Tower context, request scope, propagation, AOP, and configurable native error recovery |
 | `vernal-hyper` | Phase 4 foundation implemented | Lossless Hyper request/body-frame transport bridge |
@@ -431,7 +431,7 @@ component, phase, and outcome; business error text is never serialized.
 | Web context | Request context, request scope, handler invocation, error mapping | Phase 4 contract |
 | HTTP | Request/response, body frames/trailers, explicit bounded collection, cancellation, backpressure | Phase 4 contract |
 | Web integration foundation | Tower context/scope layers and Hyper streaming bridge | Phase 4 foundation |
-| Cross-framework conformance | Same-scope re-resolution and component Arc identity | First Phase 4 shared contract |
+| Cross-framework conformance | Same-scope component identity plus success, policy-error, and response-drop cleanup | Phase 4 shared contracts |
 | Framework adapters | Tower-first where possible, native adapters where necessary | Phase 5 adapters |
 | Diagnostics | Serializable Registry snapshot and startup report without business error text | Phase 3 diagnostics kernel |
 
@@ -559,8 +559,12 @@ All ten adapters resolve singleton, transient, and request-scoped components
 inside the active request scope. Every adapter invokes
 `vernal-web-testkit::WebAdapterContract` to verify native Context identity,
 scope ownership/key/open state/cancellation, and component `Arc` identity after
-same-scope re-resolution. Streaming, security, and the full failure matrix
-remain incremental architecture work.
+same-scope re-resolution. `ScopeCloseProbe` and
+`ScopeRejectingInterceptor` additionally verify that every adapter closes the
+real scope after normal body completion, policy short-circuit, and response
+body drop without letting the testkit perform cleanup. Streaming errors,
+disconnects, cleanup timeouts, security integration, and the full failure
+matrix remain incremental architecture work.
 
 ## 10. Contributing and license
 
