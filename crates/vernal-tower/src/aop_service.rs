@@ -14,6 +14,7 @@ use tokio::sync::Mutex;
 use tower::Service;
 use vernal_aop::{InvocationError, InvocationTarget, InvocationValue};
 use vernal_context::ApplicationContext;
+use vernal_http::HttpRequestSnapshot;
 use vernal_web::{HandlerInvocation, RequestContext, WebRequestScope};
 
 use crate::tower_upstream_error::TowerUpstreamError;
@@ -95,6 +96,7 @@ where
             };
 
         let operation = request_context.route().aop_operation();
+        let request_snapshot = HttpRequestSnapshot::capture(&request);
         let plan = application_context
             .invocation_plans()
             .get(&operation)
@@ -115,6 +117,7 @@ where
         let inner = std::mem::replace(&mut self.inner, clone);
         let Some(plan) = plan else {
             return Box::pin(async move {
+                ensure_request_snapshot(&request_context, request_snapshot).await;
                 let mut inner = inner;
                 inner.call(request).await.map_err(AopServiceError::Upstream)
             });
@@ -144,6 +147,7 @@ where
         });
 
         Box::pin(async move {
+            ensure_request_snapshot(&request_context, request_snapshot).await;
             let invocation = handler_invocation.aop_invocation().await;
             let value = match plan.invoke(invocation, target).await {
                 Ok(value) => value,
@@ -167,5 +171,20 @@ where
                 .await
                 .ok_or(AopServiceError::ResponseAlreadyTaken)
         })
+    }
+}
+
+/// 确保安全与审计拦截器能读取 owned HTTP 元数据，且不覆盖上层 Adapter 已写入
+/// 的更精确快照。
+async fn ensure_request_snapshot(
+    request_context: &RequestContext,
+    request_snapshot: HttpRequestSnapshot,
+) {
+    if !request_context
+        .extensions()
+        .contains::<HttpRequestSnapshot>()
+        .await
+    {
+        request_context.extensions().insert(request_snapshot).await;
     }
 }

@@ -15,6 +15,8 @@ pub enum AxumRejection {
     MissingContext,
     /// 请求没有经过 `AxumRequestScope` 中间件。
     MissingRequestScope,
+    /// 请求没有经过严格 AOP/Context Propagation Layer。
+    MissingRequestContext,
     /// `IoC` 容器无法解析目标组件。
     ComponentResolution {
         /// 仅供日志和错误链检查的原始解析错误。
@@ -41,6 +43,7 @@ impl AxumRejection {
         match self {
             Self::MissingContext => "Vernal application context is unavailable",
             Self::MissingRequestScope => "Vernal request scope is unavailable",
+            Self::MissingRequestContext => "Vernal request context is unavailable",
             Self::ComponentResolution { .. } => "Vernal component resolution failed",
         }
     }
@@ -58,6 +61,9 @@ impl fmt::Display for AxumRejection {
             Self::MissingContext => formatter.write_str("Axum request has no Vernal context"),
             Self::MissingRequestScope => {
                 formatter.write_str("Axum request has no Vernal request scope")
+            }
+            Self::MissingRequestContext => {
+                formatter.write_str("Axum request has no Vernal request context")
             }
             Self::ComponentResolution { source } => {
                 write!(formatter, "Axum component resolution failed: {source}")

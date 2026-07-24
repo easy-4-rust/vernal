@@ -1,22 +1,32 @@
 //! Tonic Context、组件、Scope、方法元数据与 Status 映射合同测试。
 
-use std::sync::Arc;
+#[path = "aop_support/policy_deny_interceptor.rs"]
+mod policy_deny_interceptor;
+
+use std::sync::{
+    Arc,
+    atomic::{AtomicBool, Ordering},
+};
 
 use http::{Request as HttpRequest, Response};
 use http_body_util::BodyExt;
+use policy_deny_interceptor::PolicyDenyInterceptor;
 use tokio::sync::Notify;
 use tonic::{
     Code, GrpcMethod, Request,
+    body::empty_body,
     service::{Interceptor, interceptor},
 };
 use tower::{Layer, ServiceExt, service_fn};
-use vernal_context::ApplicationContextBuilder;
-use vernal_http::HttpBody;
+use vernal_aop::{Advisor, Operation};
+use vernal_context::{ApplicationContextBuilder, VernalApplicationBuilder};
+use vernal_http::{HttpBody, HttpRequestSnapshot};
 use vernal_ioc::{ComponentDefinition, RegistryBuilder};
 use vernal_tonic::{
-    RequestScopeLayer, TonicContextInterceptor, TonicRequestExt, TonicStatusMapper, VernalLayer,
+    RequestScopeLayer, TonicAopLayer, TonicContextInterceptor, TonicRequestExt, TonicStatusMapper,
+    VernalLayer,
 };
-use vernal_web::{ProblemDetails, ProblemKind, WebRequestScope};
+use vernal_web::{ProblemDetails, ProblemKind, RequestContext, WebRequestScope};
 
 struct Greeting(&'static str);
 
@@ -35,6 +45,21 @@ async fn ready_context() -> Arc<vernal_context::ApplicationContext> {
     );
     context.refresh().await.expect("context refresh");
     context.start().await.expect("context start");
+    context
+}
+
+async fn ready_aop_context(
+    operation: Operation,
+    advisor: Option<Advisor>,
+) -> Arc<vernal_context::ApplicationContext> {
+    let mut builder = VernalApplicationBuilder::new(tokio::runtime::Handle::current());
+    builder.operation(operation);
+    if let Some(advisor) = advisor {
+        builder.advisor(advisor);
+    }
+    let context = Arc::new(builder.build().expect("AOP context build"));
+    context.refresh().await.expect("AOP context refresh");
+    context.start().await.expect("AOP context start");
     context
 }
 
@@ -150,4 +175,85 @@ async fn tower_layers_preserve_context_and_scope_through_tonic_interceptor() {
         .to_bytes();
     assert_eq!(body, "grpc");
     closed.notified().await;
+}
+
+#[tokio::test]
+async fn tonic_aop_layer_resolves_grpc_uri_and_propagates_owned_snapshot() {
+    let context = ready_aop_context(Operation::new("greeter.Greeter", "SayHello"), None).await;
+    let inner = service_fn(|request: HttpRequest<HttpBody>| async move {
+        let context = request
+            .extensions()
+            .get::<Arc<RequestContext>>()
+            .expect("request context")
+            .clone();
+        let snapshot = context
+            .extensions()
+            .get::<HttpRequestSnapshot>()
+            .await
+            .expect("HTTP snapshot");
+        assert_eq!(context.route().handler(), "greeter.Greeter");
+        assert_eq!(context.route().operation_name(), "SayHello");
+        assert_eq!(context.route().path_template(), "/greeter.Greeter/SayHello");
+        assert_eq!(snapshot.uri().path(), "/greeter.Greeter/SayHello");
+        Ok::<_, std::convert::Infallible>(Response::new(empty_body()))
+    });
+    let service = TonicAopLayer::new().layer(inner);
+    let service = RequestScopeLayer::new().layer(service);
+    let service = VernalLayer::new(context).layer(service);
+
+    let response = service
+        .oneshot(
+            HttpRequest::builder()
+                .uri("/greeter.Greeter/SayHello")
+                .body(HttpBody::empty())
+                .expect("request"),
+        )
+        .await
+        .expect("gRPC AOP response");
+    assert_eq!(response.status(), http::StatusCode::OK);
+    response
+        .into_body()
+        .collect()
+        .await
+        .expect("empty gRPC response body");
+}
+
+#[tokio::test]
+async fn tonic_aop_layer_maps_policy_failure_to_grpc_status_without_calling_handler() {
+    let called = Arc::new(AtomicBool::new(false));
+    let context = ready_aop_context(
+        Operation::new("greeter.Greeter", "Protected"),
+        Some(Advisor::new(
+            |_: &Operation| true,
+            PolicyDenyInterceptor,
+            -1000,
+        )),
+    )
+    .await;
+    let handler_called = Arc::clone(&called);
+    let inner = service_fn(move |_request: HttpRequest<HttpBody>| {
+        handler_called.store(true, Ordering::SeqCst);
+        async { Ok::<_, std::convert::Infallible>(Response::new(empty_body())) }
+    });
+    let service = TonicAopLayer::new().layer(inner);
+    let service = RequestScopeLayer::new().layer(service);
+    let service = VernalLayer::new(context).layer(service);
+
+    let response = service
+        .oneshot(
+            HttpRequest::builder()
+                .uri("/greeter.Greeter/Protected")
+                .body(HttpBody::empty())
+                .expect("request"),
+        )
+        .await
+        .expect("gRPC status response");
+    assert_eq!(response.status(), http::StatusCode::OK);
+    assert_eq!(response.headers()["grpc-status"], "16");
+    assert!(!called.load(Ordering::SeqCst));
+    response
+        .into_body()
+        .collect()
+        .await
+        .expect("empty gRPC error body");
 }

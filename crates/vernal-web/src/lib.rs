@@ -15,6 +15,7 @@ mod scope_future;
 mod scope_state;
 mod security_principal;
 mod transport_kind;
+mod web_failure;
 mod web_request_scope;
 
 pub use context_carrier::ContextCarrier;
@@ -31,4 +32,5 @@ pub use scope_future::ScopeFuture;
 pub use scope_state::ScopeState;
 pub use security_principal::SecurityPrincipal;
 pub use transport_kind::TransportKind;
+pub use web_failure::WebFailure;
 pub use web_request_scope::WebRequestScope;

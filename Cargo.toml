@@ -13,7 +13,7 @@ description = "A lightweight IoC, AOP and application context framework for Rust
 [workspace.dependencies]
 actix-http = "=3.11.2"
 actix-web = { version = "=4.11.0", default-features = false, features = ["macros"] }
-axum = { version = "0.8.9", default-features = false, features = ["http1", "json", "tokio"] }
+axum = { version = "0.8.9", default-features = false, features = ["http1", "json", "matched-path", "tokio"] }
 bytes = "1.11.1"
 futures-core = "0.3.32"
 futures-lite = "2.6.1"

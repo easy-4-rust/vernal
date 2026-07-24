@@ -29,6 +29,7 @@ impl TonicStatusMapper {
         let message = match error {
             TonicRequestError::MissingContext => "Vernal application context is unavailable",
             TonicRequestError::MissingRequestScope => "Vernal request scope is unavailable",
+            TonicRequestError::MissingRequestContext => "Vernal request context is unavailable",
             TonicRequestError::MissingGrpcMethod => "Tonic gRPC method metadata is unavailable",
             TonicRequestError::ComponentResolution { .. } => "Vernal component resolution failed",
         };

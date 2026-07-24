@@ -4,7 +4,7 @@ use std::{any::Any, sync::Arc};
 
 use tonic::{GrpcMethod, Request};
 use vernal_context::ApplicationContext;
-use vernal_web::{RouteMetadata, WebRequestScope};
+use vernal_web::{RequestContext, RouteMetadata, WebRequestScope};
 
 use crate::TonicRequestError;
 
@@ -35,6 +35,13 @@ pub trait TonicRequestExt {
     ///
     /// 未安装 `RequestScopeLayer` 时返回 Internal Status。
     fn vernal_request_scope(&self) -> Result<Arc<WebRequestScope>, TonicRequestError>;
+
+    /// 返回严格 AOP Layer 创建或传播的请求上下文。
+    ///
+    /// # Errors
+    ///
+    /// 请求没有经过 `TonicAopLayer` 时返回 Internal Status。
+    fn vernal_request_context(&self) -> Result<Arc<RequestContext>, TonicRequestError>;
 
     /// 从 Tonic 的 `GrpcMethod` Extension 构建稳定路由元数据。
     ///
@@ -67,6 +74,13 @@ impl<T> TonicRequestExt for Request<T> {
             .get::<Arc<WebRequestScope>>()
             .cloned()
             .ok_or(TonicRequestError::MissingRequestScope)
+    }
+
+    fn vernal_request_context(&self) -> Result<Arc<RequestContext>, TonicRequestError> {
+        self.extensions()
+            .get::<Arc<RequestContext>>()
+            .cloned()
+            .ok_or(TonicRequestError::MissingRequestContext)
     }
 
     fn vernal_route_metadata(&self) -> Result<RouteMetadata, TonicRequestError> {

@@ -14,6 +14,8 @@ pub enum TonicRequestError {
     MissingContext,
     /// 请求没有请求作用域。
     MissingRequestScope,
+    /// 请求没有 Vernal 请求上下文。
+    MissingRequestContext,
     /// 请求没有 Tonic 方法元数据。
     MissingGrpcMethod,
     /// `IoC` 组件解析失败。
@@ -39,6 +41,9 @@ impl fmt::Display for TonicRequestError {
             Self::MissingContext => formatter.write_str("Tonic request has no Vernal context"),
             Self::MissingRequestScope => {
                 formatter.write_str("Tonic request has no Vernal request scope")
+            }
+            Self::MissingRequestContext => {
+                formatter.write_str("Tonic request has no Vernal request context")
             }
             Self::MissingGrpcMethod => {
                 formatter.write_str("Tonic request has no gRPC method metadata")
