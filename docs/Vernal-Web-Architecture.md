@@ -251,11 +251,11 @@ This crate implements HTTP transport concerns only:
 | # | Framework | Crate | Protocol | Native integration seam | Current state |
 |:--:|:---|:---|:---|:---|:---:|
 | 1 | Axum | `vernal-axum` | HTTP + Tower | `Layer`, State/Extension, Extractor, IntoResponse | Phase 5 adapter |
-| 2 | Actix Web | `vernal-actix-web` | HTTP | `Transform`/`Service`, App Data, Extractor, Responder | Phase 5 adapter |
+| 2 | Actix Web | `vernal-actix-web` | HTTP | `Transform`/`Service`, App Data, Extractor, Responder | Adapter; Local-AOP pending |
 | 3 | Rocket | `vernal-rocket` | HTTP | Fairing, Request Guard, Managed State, Responder | Phase 5 adapter |
 | 4 | Warp | `vernal-warp` | HTTP | Filter, Rejection, Reply | Phase 5 adapter |
 | 5 | Salvo | `vernal-salvo` | HTTP | Handler, Hoop, Depot, Writer | Phase 5 adapter |
-| 6 | Poem | `vernal-poem` | HTTP | Middleware, Endpoint, Data, IntoResponse | Phase 5 adapter |
+| 6 | Poem | `vernal-poem` | HTTP | Middleware, Endpoint, Data, IntoResponse | Adapter + strict AOP |
 | 7 | Ntex | `vernal-ntex` | HTTP | Service/Middleware, App State, Extractor | Phase 5 adapter |
 | 8 | Gotham | `vernal-gotham` | HTTP | State Middleware, Pipeline, Handler | Phase 5 adapter |
 | 9 | Tide | `vernal-tide` | HTTP | Middleware, Request Extension, Response | Phase 5 adapter |
@@ -266,7 +266,10 @@ This crate implements HTTP transport concerns only:
 - **Axum:** reuse `vernal-tower`; component extractors read router state or
   request extensions and never create a second container.
 - **Actix Web:** context lives in app data; multi-worker singleton and request
-  scope boundaries need explicit tests.
+  scope boundaries need explicit tests. Actix services commonly use `Rc` and
+  local non-`Send` futures, so full Around interception requires a separate
+  Local-AOP target/value/future contract. A pre-handler-only hook is not strict
+  AOP and is intentionally not advertised as such.
 - **Rocket:** the ignite fairing registers managed context, the request fairing
   creates scope, request guards resolve context/components/scope, and the
   response fairing retains scope until the native body reaches EOF or is
@@ -285,9 +288,13 @@ This crate implements HTTP transport concerns only:
   trailers, upstream errors, and backpressure while closing scope on completion
   or cancellation. Salvo 0.85.0 is the last release declaring Rust 1.85;
   version 0.86 and later require Rust 1.89 or newer.
-- **Poem:** native middleware wraps endpoints and request extensions carry
-  context, components, and scope. The response byte stream preserves errors
-  and backpressure and closes scope on completion or cancellation. Poem 3's
+- **Poem:** native middleware wraps the concrete endpoint after Route matching;
+  request extensions carry context, components, scope, and `RequestContext`.
+  Strict mode derives `Operation(path_pattern, http_method)` from Poem's
+  low-cardinality `PathPattern`, rejects missing metadata or plans, wraps the
+  complete Endpoint future, and preserves native Poem errors. The response byte
+  stream preserves errors and backpressure and closes scope on completion or
+  cancellation. Poem 3's
   public `into_bytes_stream()` does not expose trailers, so this adapter cannot
   promise trailer fidelity; use `vernal-hyper` when frame/trailer fidelity is
   required.
@@ -342,18 +349,23 @@ Sa-Token-Rust now owns the experimental `sa-token-vernal` bridge:
 - adapt `HttpRequestSnapshot` to `SaRequest` and reuse `run_auth_flow`;
 - project login identity and roles into `RequestContext::SecurityPrincipal`;
 - run downstream futures inside the request's `SaTokenContext`;
-- atomically register the manager, bridge, and authentication Advisor through
-  `SaTokenComponents`; `VernalSaTokenPointcut` covers declared operations and
-  `VernalSaTokenInterceptor` authenticates or short-circuits before handlers;
-- align exactly with Axum `Operation(path_template, http_method)` and Tonic
-  `Operation(service_name, method_name)`, mapping rejection through
+- atomically register the manager, bridge, policy, and authentication/
+  authorization Advisor through `SaTokenComponents`;
+  `VernalSaTokenPointcut` covers declared operations and
+  `VernalSaTokenInterceptor` authenticates before enforcing operation-scoped
+  all/any role and permission requirements;
+- align exactly with Axum/Poem `Operation(path_template, http_method)` and
+  Tonic `Operation(service_name, method_name)`, mapping rejection through
   `WebFailure` into native framework responses;
 - preserve native web plugins for users who do not use Vernal.
 
-The authentication AOP pointcut and interceptor are implemented. Fine-grained
-role and permission policies based on operation metadata remain a later
-increment. Sa-Token-Rust `PathAuthConfig` remains the sole source of path login
-policy, and Vernal never depends on Sa-Token-Rust.
+The bridge implements authentication plus immutable operation authorization.
+Role matching is exact; permissions preserve Sa-Token exact, global `*`, and
+prefix wildcard semantics. Empty declared requirements fail closed. Protected
+anonymous calls map to 401, insufficient authenticated identities to 403, and
+permission backend failures to an internal 500 without exposing the source.
+Sa-Token-Rust `PathAuthConfig` remains the sole source of path login policy,
+and Vernal never depends on Sa-Token-Rust.
 
 ## 10. Hutool-Rust and Ddd4r
 

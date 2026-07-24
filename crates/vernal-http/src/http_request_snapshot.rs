@@ -16,15 +16,34 @@ pub struct HttpRequestSnapshot {
 }
 
 impl HttpRequestSnapshot {
+    /// 从已经拆分出的标准 HTTP 元数据创建 owned 快照。
+    ///
+    /// Poem、Actix Web 等框架虽然使用标准 HTTP 类型，但不直接暴露
+    /// `http::Request<B>`；该构造器避免适配器为了捕获元数据而伪造请求 Body。
+    #[must_use]
+    pub const fn from_parts(
+        method: Method,
+        uri: Uri,
+        version: Version,
+        headers: HeaderMap,
+    ) -> Self {
+        Self {
+            method,
+            uri,
+            version,
+            headers,
+        }
+    }
+
     /// 从任意标准请求捕获元数据。
     #[must_use]
     pub fn capture<B>(request: &Request<B>) -> Self {
-        Self {
-            method: request.method().clone(),
-            uri: request.uri().clone(),
-            version: request.version(),
-            headers: request.headers().clone(),
-        }
+        Self::from_parts(
+            request.method().clone(),
+            request.uri().clone(),
+            request.version(),
+            request.headers().clone(),
+        )
     }
 
     /// 返回 HTTP 方法。

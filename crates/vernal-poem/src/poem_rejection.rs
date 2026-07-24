@@ -13,6 +13,8 @@ pub enum PoemRejection {
     MissingContext,
     /// 请求没有请求作用域。
     MissingRequestScope,
+    /// 请求没有经过严格 AOP Endpoint。
+    MissingRequestContext,
     /// `IoC` 组件解析失败。
     ComponentResolution {
         /// 原始解析错误，仅供服务端错误链使用。
@@ -46,6 +48,7 @@ impl PoemRejection {
         match self {
             Self::MissingContext => "Vernal application context is unavailable",
             Self::MissingRequestScope => "Vernal request scope is unavailable",
+            Self::MissingRequestContext => "Vernal request context is unavailable",
             Self::ComponentResolution { .. } => "Vernal component resolution failed",
             Self::ScopeClose { .. } => "Vernal request scope cleanup failed",
         }
@@ -58,6 +61,9 @@ impl fmt::Display for PoemRejection {
             Self::MissingContext => formatter.write_str("Poem request has no Vernal context"),
             Self::MissingRequestScope => {
                 formatter.write_str("Poem request has no Vernal request scope")
+            }
+            Self::MissingRequestContext => {
+                formatter.write_str("Poem request has no Vernal request context")
             }
             Self::ComponentResolution { source } => {
                 write!(formatter, "Poem component resolution failed: {source}")

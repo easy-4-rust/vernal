@@ -62,8 +62,9 @@
   fairing; `vernal-warp` provides native extension filters and a Tower Service
   body scope; `vernal-salvo` provides a native Hoop, typed Depot access, and
   frame/trailer-preserving body scope; `vernal-poem` provides native
-  Middleware/Endpoint composition, typed extractors, and body-bound Scope
-  cleanup; `vernal-ntex` provides native Middleware/Service composition,
+  Middleware/Endpoint composition, typed extractors, body-bound Scope cleanup,
+  matched-route operation identity, and fail-closed strict Around AOP;
+  `vernal-ntex` provides native Middleware/Service composition,
   App State/Extension extractors, and body-bound Scope cleanup;
   `vernal-gotham` provides StateData, type-safe State access, Pipeline
   middleware, and frame/trailer-preserving body cleanup; `vernal-tide` provides
@@ -581,11 +582,11 @@ The versioned coverage set is owned by
 | Priority | Framework | Crate | Protocol/capabilities | Target mechanism |
 |:---:|:---|:---|:---|:---|
 | 1 | Axum | `vernal-axum` | HTTP, body streaming, Tower | Tower Layer, Service, extractor/context bridge |
-| 2 | Actix Web | `vernal-actix-web` | HTTP, body streaming | Transform/Service middleware and app data |
+| 2 | Actix Web | `vernal-actix-web` | HTTP, body streaming | Transform/Service middleware and app data; Local-AOP pending |
 | 3 | Rocket | `vernal-rocket` | HTTP request/response, optional streaming | Fairing, request guard, managed state |
 | 4 | Warp | `vernal-warp` | HTTP, body streaming | Filter composition and rejection mapping |
 | 5 | Salvo | `vernal-salvo` | HTTP, body streaming | Handler, Hoop, Depot scope |
-| 6 | Poem | `vernal-poem` | HTTP, body streaming | Middleware, Endpoint, request data |
+| 6 | Poem | `vernal-poem` | HTTP, body streaming, strict AOP | Middleware, Endpoint, request data |
 | 7 | Ntex | `vernal-ntex` | Network HTTP, body streaming | Service/middleware and worker-local state |
 | 8 | Gotham | `vernal-gotham` | HTTP request/response | State middleware and handler pipeline |
 | 9 | Tide | `vernal-tide` | HTTP, body streaming | Middleware, request state, endpoint |
@@ -602,12 +603,16 @@ Tower/Hyper, and ten adapters. The four foundations now provide callable
 request-scope, HTTP frame/trailer, cancellation, Tower lifecycle, AOP
 invocation, and Hyper
 transport behavior. Axum adds native Router assembly and typed extractors;
-Actix Web adds App Data/Extensions and native body-aware middleware; Rocket adds
+Actix Web adds App Data/Extensions and native body-aware middleware. Its
+`Rc`-based non-`Send` services require a dedicated Local-AOP kernel before
+complete Around semantics can be exposed; no pre-handler-only substitute is
+claimed. Rocket adds
 managed state, request guards, and a body-aware fairing; Warp adds extension
 filters and an official Tower Service lifecycle; Salvo adds a Hoop, typed Depot
 access, and frame/trailer-preserving body lifecycle; Poem adds
-Middleware/Endpoint, request-extension extractors, and body lifecycle
-integration; Ntex adds native Middleware/Service, App State/Extensions, typed
+Middleware/Endpoint, request-extension extractors, body lifecycle integration,
+and strict Around AOP using matched low-cardinality `PathPattern` metadata;
+Ntex adds native Middleware/Service, App State/Extensions, typed
   extractors, and response-body lifecycle integration; Gotham adds native
   StateData, type-safe State access, Pipeline middleware, and a frame/trailer
   body lifecycle; Tide adds native Middleware, typed Request Extension access,
@@ -647,15 +652,17 @@ consumer-owned, unpublished bridge. It pins a verified Vernal Git revision,
 adapts `HttpRequestSnapshot` to `SaRequest`, projects authenticated roles into
 `SecurityPrincipal`, and runs downstream futures inside request-level
 `SaTokenContext`. `SaTokenComponents` additionally preserves the caller's exact
-`Arc<SaTokenManager>` and bridge identities, atomically installs them as a
-validated `SaTokenManager -> VernalSaTokenBridge` component graph, and
-registers an authentication Advisor. `VernalSaTokenInterceptor` reuses that
-bridge inside the Tokio asynchronous invocation chain and may short-circuit
-before the handler; Axum and Tonic adapters translate its `WebFailure` into
-native HTTP/gRPC failures. `PathAuthConfig` remains the sole source of path
-login policy, while operation-level role and permission policies remain a
-later increment. Its existing ten plugin families remain input evidence for
-the Vernal adapter matrix, not code that Vernal silently vendors.
+`Arc<SaTokenManager>`, bridge, and policy identities, atomically installs all
+three as a validated component graph, and registers an authentication and
+authorization Advisor. `VernalSaTokenInterceptor` authenticates, then enforces
+operation-scoped all/any role and permission requirements, including Sa-Token
+global and prefix wildcard semantics, across the complete Tokio invocation
+future. Anonymous protected calls return 401, authenticated but insufficient
+calls return 403, and backend failures remain internal 500 errors. Axum, Poem,
+and Tonic adapters translate these `WebFailure` values into native HTTP/gRPC
+failures. `PathAuthConfig` remains the sole source of path login policy. Its
+existing ten plugin families remain input evidence for the Vernal adapter
+matrix, not code that Vernal silently vendors.
 
 ### 12.3 Ddd4r
 

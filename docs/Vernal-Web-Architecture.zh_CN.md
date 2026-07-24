@@ -233,11 +233,11 @@ Trace -> Context -> RequestScope -> Security/AOP -> Handler -> ErrorMapping
 | # | 框架 | Crate | 协议 | 目标原生扩展点 | 当前状态 |
 |:--:|:---|:---|:---|:---|:---:|
 | 1 | Axum | `vernal-axum` | HTTP + Tower | `Layer`、State/Extension、Extractor、IntoResponse | Phase 5 适配已实现 |
-| 2 | Actix Web | `vernal-actix-web` | HTTP | `Transform`/`Service`、App Data、Extractor、Responder | Phase 5 适配已实现 |
+| 2 | Actix Web | `vernal-actix-web` | HTTP | `Transform`/`Service`、App Data、Extractor、Responder | Adapter 已实现；Local-AOP 待实现 |
 | 3 | Rocket | `vernal-rocket` | HTTP | Fairing、Request Guard、Managed State、Responder | Phase 5 适配已实现 |
 | 4 | Warp | `vernal-warp` | HTTP | Filter、Rejection、Reply | Phase 5 适配已实现 |
 | 5 | Salvo | `vernal-salvo` | HTTP | Handler、Hoop、Depot、Writer | Phase 5 适配已实现 |
-| 6 | Poem | `vernal-poem` | HTTP | Middleware、Endpoint、Data、IntoResponse | Phase 5 适配已实现 |
+| 6 | Poem | `vernal-poem` | HTTP | Middleware、Endpoint、Data、IntoResponse | Adapter + 严格 AOP 已实现 |
 | 7 | Ntex | `vernal-ntex` | HTTP | Service/Middleware、App State、Extractor | Phase 5 适配已实现 |
 | 8 | Gotham | `vernal-gotham` | HTTP | State Middleware、Pipeline、Handler | Phase 5 适配已实现 |
 | 9 | Tide | `vernal-tide` | HTTP | Middleware、Request Extension、Response | Phase 5 适配已实现 |
@@ -248,7 +248,9 @@ Trace -> Context -> RequestScope -> Security/AOP -> Handler -> ErrorMapping
 - **Axum**：优先复用 `vernal-tower`；Vernal 组件提取器只读取 Router State 或
   Request Extension，不建立第二个容器。
 - **Actix Web**：Context 属于 App Data；必须验证多 Worker 下 Singleton 与
-  Request Scope 的边界。
+  Request Scope 的边界。Actix Service 通常使用 `Rc` 与本地非 `Send` Future，
+  完整 Around 必须有独立的 Local-AOP Target/Value/Future 合同；仅在 Handler
+  前执行一次 Hook 不属于严格 AOP，因此不会这样宣传。
 - **Rocket**：Fairing 在 Ignite 阶段注册 Managed Context，在 Request 阶段建立
   Scope；Request Guard 负责解析 Context、组件与 Scope，Response Fairing
   包装原生 Body，直到读取结束或取消后才释放。Rocket 0.5 的公共 Body 只暴露
@@ -262,9 +264,12 @@ Trace -> Context -> RequestScope -> Security/AOP -> Handler -> ErrorMapping
   Handler 保持 Salvo 原生签名。`ResBody` 直接按 `http_body::Body` 包装，保留
   Data Frame、Trailer、上游错误与背压，并在完成或取消后关闭 Scope。0.85.0
   是最后一个声明 Rust 1.85 的 Salvo 版本；0.86 起要求 Rust 1.89。
-- **Poem**：原生 Middleware 包裹 Endpoint，Request Extension 传递 Context、
-  组件与 Scope；响应字节流保持错误和背压，Body 完成或取消后关闭 Scope。
-  Poem 3 公共 `into_bytes_stream()` 不暴露 Trailer，因此该适配器不能承诺
+- **Poem**：原生 Middleware 在 Route 匹配后包裹具体 Endpoint，Request
+  Extension 传递 Context、组件、Scope 与 `RequestContext`。严格模式从低基数
+  `PathPattern` 构建 `Operation(path_pattern, http_method)`，缺少元数据或计划
+  时拒绝请求，Around 覆盖完整 Endpoint Future，并保留 Poem 原生错误；响应
+  字节流保持错误和背压，Body 完成或取消后关闭 Scope。Poem 3 公共
+  `into_bytes_stream()` 不暴露 Trailer，因此该适配器不能承诺
   Trailer 保真；需要 Frame/Trailer 保真的场景使用 `vernal-hyper`。
 - **Ntex**：原生 Middleware/Service 将显式应用 Context 与请求 Scope 注入
   Extensions，提取器也可从 App State 读取共享 Context；原生 `MessageBody`
@@ -311,17 +316,20 @@ Sa-Token-Rust 现已持有实验性的 `sa-token-vernal` Bridge：
 - 将 `HttpRequestSnapshot` 适配为 `SaRequest` 并复用 `run_auth_flow`；
 - 把登录身份和角色投影到 `RequestContext::SecurityPrincipal`；
 - 让下游 Future 运行在当前请求的 `SaTokenContext` 中；
-- 由 `SaTokenComponents` 原子注册 Manager、Bridge 与认证 Advisor，Advisor
-  通过 `VernalSaTokenPointcut` 覆盖声明的操作，并由
-  `VernalSaTokenInterceptor` 在 Handler 前认证或短路；
-- 与 Axum 的 `Operation(path_template, http_method)`、Tonic 的
+- 由 `SaTokenComponents` 原子注册 Manager、Bridge、Policy 与认证/授权
+  Advisor；`VernalSaTokenPointcut` 覆盖声明的操作，
+  `VernalSaTokenInterceptor` 先认证，再执行 Operation 级角色/权限 all/any
+  规则；
+- 与 Axum/Poem 的 `Operation(path_template, http_method)`、Tonic 的
   `Operation(service_name, method_name)` 精确对齐，拒绝结果经 `WebFailure`
   映射为框架原生响应；
 - 保留各 Web 插件的原生入口，允许用户不使用 Vernal。
 
-认证 AOP Pointcut 与 Interceptor 已完成；基于方法元数据的角色、权限细粒度
-策略仍是后续增量。路径是否需要登录继续只由 Sa-Token-Rust 的
-`PathAuthConfig` 决定。Vernal 不反向依赖 Sa-Token-Rust。
+Bridge 已实现认证和不可变 Operation 授权。角色精确匹配；权限保留 Sa-Token
+精确、全局 `*` 与前缀通配符语义；声明了空要求时 fail-closed。匿名访问受保护
+操作映射为 401，已认证但权限不足映射为 403，权限后端失败映射为不泄露来源的
+内部 500。路径是否需要登录继续只由 Sa-Token-Rust 的 `PathAuthConfig` 决定。
+Vernal 不反向依赖 Sa-Token-Rust。
 
 ## 10. Hutool-Rust 与 Ddd4r
 

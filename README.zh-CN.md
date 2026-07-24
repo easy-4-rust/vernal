@@ -118,11 +118,11 @@ crate 均已具备可运行的原生集成：
 | 优先级 | 框架 | Vernal crate | 协议 | 状态 |
 |:---:|:---|:---|:---|:---:|
 | 1 | Axum | `vernal-axum` | HTTP + Tower | Phase 5 适配 + 严格 AOP 已实现 |
-| 2 | Actix Web | `vernal-actix-web` | HTTP | Phase 5 适配已实现 |
+| 2 | Actix Web | `vernal-actix-web` | HTTP | Phase 5 适配已实现；Local-AOP 待实现 |
 | 3 | Rocket | `vernal-rocket` | HTTP | Phase 5 适配已实现 |
 | 4 | Warp | `vernal-warp` | HTTP | Phase 5 适配已实现 |
 | 5 | Salvo | `vernal-salvo` | HTTP | Phase 5 适配已实现 |
-| 6 | Poem | `vernal-poem` | HTTP | Phase 5 适配已实现 |
+| 6 | Poem | `vernal-poem` | HTTP | Phase 5 适配 + 严格 AOP 已实现 |
 | 7 | Ntex | `vernal-ntex` | HTTP | Phase 5 适配已实现 |
 | 8 | Gotham | `vernal-gotham` | HTTP | Phase 5 适配已实现 |
 | 9 | Tide | `vernal-tide` | HTTP | Phase 5 适配已实现 |
@@ -131,11 +131,16 @@ crate 均已具备可运行的原生集成：
 Axum 已提供原生 Router 装配、Context/组件/请求 Scope 提取器、匹配路由操作
 身份和 fail-closed AOP 装配；Actix Web 已提供 App Data/Extension 提取器，以及
 Scope 跟随响应 Body 的原生
-`Transform`/`Service`；Rocket 已提供 Managed State、Request Guard 和 Body
+`Transform`/`Service`。由于 Actix Service 基于 `Rc` 且 Future 不要求
+`Send`，完整 Around 需要专用 Local-AOP 内核；当前不会以仅执行 Handler 前置
+逻辑的方式冒充严格 AOP。Rocket 已提供 Managed State、Request Guard 和 Body
 感知 Fairing；Warp 已通过官方 Tower Service 边界提供原生 Extension Filter；
 Salvo 已提供原生 Hoop、类型化 Depot 访问以及 Frame/Trailer 保真的 Body 释放；
-Poem 已提供原生 `Middleware`/`Endpoint` 组合、类型化 Context/组件/Scope
-提取器和 Body 绑定释放；Ntex 已提供原生 `Middleware`/`Service`、App
+Poem 已提供原生 `Middleware`/`Endpoint` 组合、类型化
+Context/组件/Scope/RequestContext 提取器、Body 绑定释放，以及覆盖完整
+Endpoint Future 的严格 Around AOP；操作身份取自 Poem 匹配后的低基数
+`PathPattern`，缺少元数据或计划时 fail-closed，并保留 Poem 原生错误。Ntex
+已提供原生 `Middleware`/`Service`、App
 State/Extension 提取器和 `MessageBody` 绑定请求 Scope；Gotham 已提供原生
 `StateData`、类型安全 State 扩展、Pipeline Middleware 与 Frame/Trailer
 保真的 Body 释放；Tide 已提供原生 `Middleware`、类型化 Request Extension
@@ -286,7 +291,9 @@ flowchart LR
   授权语义；Vernal 只提供组件生命周期与拦截编排，不重复建设安全内核。由
   Sa-Token-Rust 持有的 `sa-token-vernal` 已实现 `HttpRequestSnapshot` 适配、
   `SecurityPrincipal` 投影及跨 Tokio Future 的请求级 `SaTokenContext`；
-  `SaTokenComponents` 还会注册认证 Advisor，可在 Axum/Tonic Handler 前短路。
+  `SaTokenComponents` 将调用方原始 Manager、Bridge 与操作授权策略原子注册，
+  Advisor 在 Handler 前认证并执行角色/权限 all/any 规则，以及 Sa-Token
+  全局/前缀通配符语义，以稳定 401/403 短路。
 - **Ddd4r** 通过消费方持有的 `ddd4r-vernal` 直接注册原生 `Registry` 和
   `DefaultCommandBus`，并以隔离快照进入 Ddd4r 自己的 Tokio task-local
   `ContextScope`；聚合、事件、CQRS、Repository、Outbox 和事务语义仍归 Ddd4r。
@@ -328,7 +335,8 @@ crates.io 安装命令，也没有稳定 API 承诺。
 | Phase 5 | Hutool-Rust、Sa-Token-Rust 和 Ddd4r 桥接 | 由消费方拥有的集成示例 |
 | Phase 6 | Preview 发布 | MSRV、SemVer、安全、docs.rs 和打包门禁 |
 
-Phase 5 正在进行：Sa-Token-Rust 已远端集成 `sa-token-vernal` 认证 AOP Bridge；Hutool-Rust
+Phase 5 正在进行：Sa-Token-Rust 已远端集成 `sa-token-vernal` 认证与操作授权
+AOP Bridge；Hutool-Rust
 本地持有经过测试的 `hutool-vernal`；Ddd4r 本地已实现 `ddd4r-vernal`，其真实
 Tokio 测试、Clippy 和文档构建已在独立依赖图通过。Ddd4r 全 Workspace 门禁仍被
 既有、当前不可获取的 `rbatis-r2dbc` Git Revision 阻断，不能据此宣称全仓通过。

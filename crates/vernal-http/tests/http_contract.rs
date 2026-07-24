@@ -91,3 +91,23 @@ fn snapshot_owns_method_uri_version_and_headers_without_body() {
         Some(&HeaderValue::from_static("request-42"))
     );
 }
+
+#[test]
+fn snapshot_can_be_constructed_from_framework_native_request_parts() {
+    let request = http::Request::builder()
+        .method(Method::PATCH)
+        .uri("/orders/42")
+        .header("x-request-id", "request-43")
+        .body(())
+        .expect("valid request");
+    let (parts, ()) = request.into_parts();
+    let snapshot =
+        HttpRequestSnapshot::from_parts(parts.method, parts.uri, parts.version, parts.headers);
+
+    assert_eq!(snapshot.method(), Method::PATCH);
+    assert_eq!(snapshot.uri().path(), "/orders/42");
+    assert_eq!(
+        snapshot.headers().get("x-request-id"),
+        Some(&HeaderValue::from_static("request-43"))
+    );
+}

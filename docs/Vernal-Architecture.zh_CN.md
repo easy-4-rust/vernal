@@ -55,7 +55,8 @@
   与 Body 感知 Fairing；`vernal-warp` 已提供原生 Extension Filter 与 Tower
   Service Body Scope；`vernal-salvo` 已提供原生 Hoop、类型化 Depot 和
   Frame/Trailer 保真的 Body Scope；`vernal-poem` 已提供原生
-  Middleware/Endpoint、类型化提取器与 Body 绑定 Scope 释放；`vernal-ntex`
+  Middleware/Endpoint、类型化提取器、Body 绑定 Scope 释放、匹配路由操作
+  身份与 fail-closed 严格 Around AOP；`vernal-ntex`
   已提供原生 Middleware/Service、App State/Extension 提取器与 Body 绑定 Scope
   释放；`vernal-gotham` 已提供 StateData、类型安全 State 访问、Pipeline
   Middleware 与 Frame/Trailer 保真的 Body 释放；`vernal-tide` 已提供原生
@@ -596,11 +597,11 @@ flowchart TD
 | 优先级 | 框架 | Crate | 协议/能力 | 目标机制 |
 |:---:|:---|:---|:---|:---|
 | 1 | Axum | `vernal-axum` | HTTP、Body Streaming、Tower | Tower Layer、Service、Extractor/Context Bridge |
-| 2 | Actix Web | `vernal-actix-web` | HTTP、Body Streaming | Transform/Service Middleware、App Data |
+| 2 | Actix Web | `vernal-actix-web` | HTTP、Body Streaming | Transform/Service Middleware、App Data；Local-AOP 待实现 |
 | 3 | Rocket | `vernal-rocket` | HTTP 请求/响应、可选 Streaming | Fairing、Request Guard、Managed State |
 | 4 | Warp | `vernal-warp` | HTTP、Body Streaming | Filter 组合与 Rejection 映射 |
 | 5 | Salvo | `vernal-salvo` | HTTP、Body Streaming | Handler、Hoop、Depot Scope |
-| 6 | Poem | `vernal-poem` | HTTP、Body Streaming | Middleware、Endpoint、Request Data |
+| 6 | Poem | `vernal-poem` | HTTP、Body Streaming、严格 AOP | Middleware、Endpoint、Request Data |
 | 7 | Ntex | `vernal-ntex` | Network HTTP、Body Streaming | Service/Middleware、Worker-local State |
 | 8 | Gotham | `vernal-gotham` | HTTP 请求/响应 | State Middleware 与 Handler Pipeline |
 | 9 | Tide | `vernal-tide` | HTTP、Body Streaming | Middleware、Request State、Endpoint |
@@ -614,11 +615,14 @@ Tower 与 Hyper 是公共底座，不占十种目标名额；Tonic 明确属于 
 Tower/Hyper 和十个 Adapter。四个底座已提供可调用的请求 Scope、HTTP
 Frame/Trailer、取消、Tower 生命周期、AOP 调用链和 Hyper 传输能力；Axum
 已增加原生 Router 装配与类型化提取器，Actix Web 已增加 App Data/Extensions
-与原生 Body 感知 Middleware，Rocket 已增加 Managed State、Request Guard
+与原生 Body 感知 Middleware；其基于 `Rc`、不要求 `Send` 的 Service 必须等
+专用 Local-AOP 内核才能提供完整 Around，不以仅前置 Handler 的实现冒充。
+Rocket 已增加 Managed State、Request Guard
 与 Body 感知 Fairing，
 Warp 已增加 Extension Filter 与官方 Tower Service 生命周期，Salvo 已增加
 Hoop、Depot 与 Frame/Trailer 保真的 Body 生命周期，Poem 已增加
-Middleware/Endpoint、Request Extension 提取器与 Body 生命周期集成，Ntex
+Middleware/Endpoint、Request Extension 提取器、Body 生命周期集成，以及基于
+匹配后低基数 `PathPattern` 的严格 Around AOP，Ntex
 已增加原生 Middleware/Service、App State/Extension、类型化提取器与响应 Body
   生命周期，Gotham 已增加原生 StateData、类型安全 State 访问、Pipeline
   Middleware 与 Frame/Trailer Body 生命周期，Tide 已增加原生 Middleware、
@@ -651,14 +655,15 @@ Request Scope 传播鉴权结果。Token、Session、Role、Permission、Cookie 
 Sa-Token-Rust 仓库现已实现消费方持有、暂不发布的 `sa-token-vernal`。它固定到
 已经验证的 Vernal Git Revision，把 `HttpRequestSnapshot` 适配为 `SaRequest`，
 将已认证角色投影为 `SecurityPrincipal`，并让下游 Future 运行在请求级
-`SaTokenContext` 中。`SaTokenComponents` 还会保留调用方传入的原始
-`Arc<SaTokenManager>` 与 Bridge 身份，把二者原子安装为经过图校验的
-`SaTokenManager -> VernalSaTokenBridge` 组件关系，并注册认证 Advisor。
-`VernalSaTokenInterceptor` 在 Tokio 异步调用链中复用相同 Bridge，可在 Handler
-前短路；Axum/Tonic Adapter 将其 `WebFailure` 转为原生 HTTP/gRPC 失败响应。
-路径登录策略仍由 `PathAuthConfig` 唯一定义，后续只增量扩展基于操作元数据的
-角色与权限策略。现有十类 Plugin 仍是 Vernal Adapter 矩阵的输入证据，不表示
-Vernal 会静默复制或内嵌这些源码。
+`SaTokenContext` 中。`SaTokenComponents` 保留调用方传入的原始
+`Arc<SaTokenManager>`、Bridge 与 Policy 身份，把三者原子安装为经过图校验的
+组件关系，并注册认证与授权 Advisor。`VernalSaTokenInterceptor` 先认证，再在
+完整 Tokio 调用 Future 上执行按 Operation 声明的角色/权限 all/any 规则，并
+保留 Sa-Token 全局与前缀通配符语义：匿名访问受保护操作返回 401，已认证但权限
+不足返回 403，权限后端失败保持内部 500。Axum/Poem/Tonic Adapter 将这些
+`WebFailure` 转为原生 HTTP/gRPC 失败响应。路径登录策略仍由
+`PathAuthConfig` 唯一定义。现有十类 Plugin 仍是 Vernal Adapter 矩阵的输入
+证据，不表示 Vernal 会静默复制或内嵌这些源码。
 
 ### 12.3 Ddd4r
 

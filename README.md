@@ -130,11 +130,11 @@ adapter crates contain runnable native integrations:
 | Priority | Framework | Vernal crate | Protocol | Status |
 |:---:|:---|:---|:---|:---:|
 | 1 | Axum | `vernal-axum` | HTTP + Tower | Phase 5 adapter + strict AOP |
-| 2 | Actix Web | `vernal-actix-web` | HTTP | Phase 5 adapter |
+| 2 | Actix Web | `vernal-actix-web` | HTTP | Phase 5 adapter; Local-AOP pending |
 | 3 | Rocket | `vernal-rocket` | HTTP | Phase 5 adapter |
 | 4 | Warp | `vernal-warp` | HTTP | Phase 5 adapter |
 | 5 | Salvo | `vernal-salvo` | HTTP | Phase 5 adapter |
-| 6 | Poem | `vernal-poem` | HTTP | Phase 5 adapter |
+| 6 | Poem | `vernal-poem` | HTTP | Phase 5 adapter + strict AOP |
 | 7 | Ntex | `vernal-ntex` | HTTP | Phase 5 adapter |
 | 8 | Gotham | `vernal-gotham` | HTTP | Phase 5 adapter |
 | 9 | Tide | `vernal-tide` | HTTP | Phase 5 adapter |
@@ -143,12 +143,18 @@ adapter crates contain runnable native integrations:
 Axum provides native Router assembly plus Context, component, request-scope
 extractors, matched-route operation identity, and fail-closed AOP assembly.
 Actix Web provides App Data/Extension extractors and a native
-`Transform`/`Service` whose Scope follows the response body. Rocket provides
+`Transform`/`Service` whose Scope follows the response body. Its `Rc`-based,
+non-`Send` service contract requires a dedicated Local-AOP kernel for complete
+Around semantics; the adapter does not treat a pre-handler hook as equivalent.
+Rocket provides
 Managed State, Request Guards, and a body-aware Fairing. Warp provides native
 extension filters over its official Tower Service boundary. Salvo provides a
 native Hoop, typed Depot access, and frame/trailer-preserving body cleanup.
 Poem provides native `Middleware`/`Endpoint` composition, typed
-Context/component/scope extractors, and body-bound cleanup. Ntex provides
+Context/component/scope/request-context extractors, body-bound cleanup, and
+strict Around AOP over the complete Endpoint future. Operation identity comes
+from Poem's matched low-cardinality `PathPattern`; missing metadata or plans
+fail closed, while native Poem errors retain their original semantics. Ntex provides
 native `Middleware`/`Service`, App State/Extension extractors, and a
 `MessageBody`-bound request scope. Gotham provides native `StateData`, a
 type-safe State extension, Pipeline middleware, and frame/trailer-preserving
@@ -426,9 +432,11 @@ flowchart LR
   competing security kernel. Its consumer-owned `sa-token-vernal` bridge now
   adapts `HttpRequestSnapshot`, projects `SecurityPrincipal`, and preserves
   request-level `SaTokenContext` across Tokio futures. `SaTokenComponents`
-  atomically installs the caller's exact `Arc<SaTokenManager>` and bridge into
-  a validated Vernal dependency graph and registers an authentication Advisor
-  that may short-circuit before Axum/Tonic handlers.
+  atomically installs the caller's exact `Arc<SaTokenManager>`, bridge, and
+  operation policy into a validated Vernal dependency graph. Its Advisor
+  authenticates and enforces operation-scoped all/any role and permission
+  rules, including Sa-Token global and prefix wildcards, with stable 401/403
+  failures before handlers.
 - **Ddd4r** uses its consumer-owned `ddd4r-vernal` bridge to register the
   native `Registry` and `DefaultCommandBus`, then enters Ddd4r's own Tokio
   task-local `ContextScope` with an isolated snapshot. Aggregates, events,
@@ -473,7 +481,7 @@ under design. There is no crates.io installation command or stable API yet.
 | 6 | Preview release | MSRV, SemVer, security, docs.rs, and package gates |
 
 Phase 5 is in progress: Sa-Token-Rust owns a tested and remotely integrated
-`sa-token-vernal` authentication AOP bridge,
+`sa-token-vernal` authentication and operation-authorization AOP bridge,
 and Hutool-Rust locally owns a tested `hutool-vernal` HTTP component bridge;
 both pin verified Vernal Git revisions. The Hutool-Rust checkout is currently
 under a separate history-rewrite/refactor stream, so its clean remote
