@@ -22,7 +22,6 @@ vernal-web = { path = "../vernal-web" }
 
 [dev-dependencies]
 http-body-util.workspace = true
-salvo = { workspace = true, features = ["test"] }
 
 [lints]
 workspace = true

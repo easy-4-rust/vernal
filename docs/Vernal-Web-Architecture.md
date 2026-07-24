@@ -38,7 +38,8 @@ request/response body-aware fairing. Warp 0.4.3 combines native `warp::ext`
 filters with the official `warp::service` Tower boundary for typed extraction
 and full body lifecycle. Salvo uses 0.85.0, the last release compatible with
 Rust 1.85, and implements a native Hoop, typed Depot access, and a
-frame/trailer-preserving body scope. Poem uses the MSRV-aligned 3.1.12 release
+frame/trailer-preserving body scope plus strict Send-AOP over the complete
+Handler chain. Poem uses the MSRV-aligned 3.1.12 release
 and implements native Middleware/Endpoint composition, request extension
 extractors, and body-bound Scope cleanup. Tonic uses the MSRV-compatible 0.12
 line and implements a Context interceptor, typed Request extensions,
@@ -255,7 +256,7 @@ This crate implements HTTP transport concerns only:
 | 2 | Actix Web | `vernal-actix-web` | HTTP | `Transform`/`Service`, App Data, Extractor, Responder | Adapter + strict Local-AOP |
 | 3 | Rocket | `vernal-rocket` | HTTP | Fairing, Request Guard, Managed State, Responder | Phase 5 adapter |
 | 4 | Warp | `vernal-warp` | HTTP | Filter, Rejection, Reply | Phase 5 adapter |
-| 5 | Salvo | `vernal-salvo` | HTTP | Handler, Hoop, Depot, Writer | Phase 5 adapter |
+| 5 | Salvo | `vernal-salvo` | HTTP | Handler, Hoop, Depot, Writer | Adapter + strict AOP |
 | 6 | Poem | `vernal-poem` | HTTP | Middleware, Endpoint, Data, IntoResponse | Adapter + strict AOP |
 | 7 | Ntex | `vernal-ntex` | HTTP | Service/Middleware, App State, Extractor | Adapter + strict Local-AOP |
 | 8 | Gotham | `vernal-gotham` | HTTP | State Middleware, Pipeline, Handler | Phase 5 adapter |
@@ -290,7 +291,14 @@ This crate implements HTTP transport concerns only:
   components, and request scope, and handlers retain native signatures.
   `ResBody` is wrapped directly as `http_body::Body`, preserving data frames,
   trailers, upstream errors, and backpressure while closing scope on completion
-  or cancellation. Salvo 0.85.0 is the last release declaring Rust 1.85;
+  or cancellation. Strict mode enables Salvo's zero-dependency `matched-path`
+  feature, combines the low-cardinality matched template with the real HTTP
+  method, propagates an owned metadata snapshot, and drives the complete
+  Handler chain through Send-AOP. `BorrowedInvocationTarget` ties
+  `Request`/`Depot`/`Response`/`FlowCtrl` borrows to one plan await without
+  cloning them. Missing metadata or plans fail closed, policy failures become
+  stable responses, and native Handler responses retain their status, headers,
+  extensions, and body. Salvo 0.85.0 is the last release declaring Rust 1.85;
   version 0.86 and later require Rust 1.89 or newer.
 - **Poem:** native middleware wraps the concrete endpoint after Route matching;
   request extensions carry context, components, scope, and `RequestContext`.

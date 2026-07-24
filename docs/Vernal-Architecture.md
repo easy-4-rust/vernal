@@ -61,8 +61,9 @@
   resource operation identity, and strict Local-AOP;
   `vernal-rocket` provides managed state, request guards, and a body-aware
   fairing; `vernal-warp` provides native extension filters and a Tower Service
-  body scope; `vernal-salvo` provides a native Hoop, typed Depot access, and
-  frame/trailer-preserving body scope; `vernal-poem` provides native
+  body scope; `vernal-salvo` provides a native Hoop, typed Depot access,
+  frame/trailer-preserving body scope, matched-path operation identity, and
+  fail-closed strict Send-AOP over borrowed Handler resources; `vernal-poem` provides native
   Middleware/Endpoint composition, typed extractors, body-bound Scope cleanup,
   matched-route operation identity, and fail-closed strict Around AOP;
   `vernal-ntex` provides native Middleware/Service composition,
@@ -458,6 +459,12 @@ that needs both planes deliberately implements and registers both contracts;
 Vernal never pretends that an arbitrary Send interceptor automatically
 supports a local target.
 
+Static Send closures remain `InvocationTarget`; a Send framework Future that
+borrows call-local resources implements `BorrowedInvocationTarget`. Its Future
+lifetime is tied to exclusive `&mut self` and cannot escape
+`InvocationPlan::invoke_borrowed`, so Salvo retains normal `Interceptor`
+contracts without cloning `Request`, `Depot`, `Response`, or `FlowCtrl`.
+
 Static local closure targets remain `LocalInvocationTarget`. A framework
 Service that borrows worker-local state for only one call instead implements
 the object-safe `BorrowedLocalInvocationTarget`; its returned Future lifetime
@@ -615,7 +622,7 @@ The versioned coverage set is owned by
 | 2 | Actix Web | `vernal-actix-web` | HTTP, body streaming, strict Local-AOP | Transform/Service middleware, app data, matched resource pattern |
 | 3 | Rocket | `vernal-rocket` | HTTP request/response, optional streaming | Fairing, request guard, managed state |
 | 4 | Warp | `vernal-warp` | HTTP, body streaming | Filter composition and rejection mapping |
-| 5 | Salvo | `vernal-salvo` | HTTP, body streaming | Handler, Hoop, Depot scope |
+| 5 | Salvo | `vernal-salvo` | HTTP, body streaming, strict AOP | Handler, Hoop, matched path, borrowed Send target |
 | 6 | Poem | `vernal-poem` | HTTP, body streaming, strict AOP | Middleware, Endpoint, request data |
 | 7 | Ntex | `vernal-ntex` | Network HTTP, body streaming, strict Local-AOP | Service/middleware, explicit resource pattern, borrowed worker-local target |
 | 8 | Gotham | `vernal-gotham` | HTTP request/response | State middleware and handler pipeline |
@@ -639,8 +646,10 @@ Strict middleware wraps a concrete Resource after matching, uses the
 low-cardinality resource pattern as operation identity, fail-closes missing
 metadata/plans, and preserves native Actix errors. Rocket adds
 managed state, request guards, and a body-aware fairing; Warp adds extension
-filters and an official Tower Service lifecycle; Salvo adds a Hoop, typed Depot
-access, and frame/trailer-preserving body lifecycle; Poem adds
+filters and an official Tower Service lifecycle; Salvo adds a Hoop, typed
+Depot access, frame/trailer-preserving body lifecycle, matched-path operation
+identity, owned request snapshots, and fail-closed strict Send-AOP over its
+complete borrowed Handler chain; Poem adds
 Middleware/Endpoint, request-extension extractors, body lifecycle integration,
 and strict Around AOP using matched low-cardinality `PathPattern` metadata;
 Ntex adds native Middleware/Service, App State/Extensions, typed extractors,
@@ -836,10 +845,13 @@ atomically commits definitions and bindings together. Tokio remains a
 contract-test dependency for IoC rather than runtime state in its resolution
 hot path.
 
-The Phase 2 AOP kernel additionally has eight contract tests for
+The Phase 2 AOP kernel additionally has nine Send contract tests for
 ordered entry/reverse exit, short circuit, result/error transformation, typed
 context across `.await`, cancellation/deadline, pointcut filtering, and
-64-task concurrent reuse, plus deduplicated plan-catalog compilation. The macro
+64-task concurrent reuse, borrowed non-static targets, plus deduplicated
+plan-catalog compilation. Five Local-AOP tests cover non-`Send` values,
+ordering, short circuit, cancellation, plan catalogs, and borrowed local
+targets. The macro
 frontend additionally has four runtime tests for singleton Component
 injection, transient construction, Trait Object injection, and context-local
 intercepted invocation, plus four compile-fail cases for invalid component

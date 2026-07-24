@@ -54,8 +54,9 @@
   Body 绑定 Scope 释放、匹配资源操作身份与严格 Local-AOP；`vernal-rocket`
   已提供 Managed State、Request Guard
   与 Body 感知 Fairing；`vernal-warp` 已提供原生 Extension Filter 与 Tower
-  Service Body Scope；`vernal-salvo` 已提供原生 Hoop、类型化 Depot 和
-  Frame/Trailer 保真的 Body Scope；`vernal-poem` 已提供原生
+  Service Body Scope；`vernal-salvo` 已提供原生 Hoop、类型化 Depot、
+  Frame/Trailer 保真的 Body Scope、匹配路径操作身份，以及覆盖借用型 Handler
+  资源的 fail-closed 严格 Send-AOP；`vernal-poem` 已提供原生
   Middleware/Endpoint、类型化提取器、Body 绑定 Scope 释放、匹配路由操作
   身份与 fail-closed 严格 Around AOP；`vernal-ntex`
   已提供原生 Middleware/Service、App State/Extension 提取器、Body 绑定 Scope
@@ -449,6 +450,12 @@ Rust Web 框架并不保证所有 Service Future 都满足 `Send`。Vernal 不�
 诊断会单独统计其计划与拦截器数量。消费方如需同时覆盖两类运行时，必须有意识地
 实现并注册两份合同；Vernal 不会假设任意 Send 拦截器自动支持本地目标。
 
+静态 Send 闭包目标继续使用 `InvocationTarget`；借用当前调用资源、但 Future
+仍满足 Send 的框架目标实现 `BorrowedInvocationTarget`。其 Future 生命周期
+绑定到独占 `&mut self`，不能逃逸 `InvocationPlan::invoke_borrowed`，因此 Salvo
+仍使用普通 `Interceptor` 合同，无需克隆
+`Request`、`Depot`、`Response` 或 `FlowCtrl`。
+
 静态本地闭包目标继续使用 `LocalInvocationTarget`。仅在单次调用中借用
 Worker-local 状态的框架 Service 则实现对象安全的
 `BorrowedLocalInvocationTarget`；其 Future 生命周期绑定到 `&self`，不能逃逸
@@ -625,7 +632,7 @@ flowchart TD
 | 2 | Actix Web | `vernal-actix-web` | HTTP、Body Streaming、严格 Local-AOP | Transform/Service Middleware、App Data、匹配资源模式 |
 | 3 | Rocket | `vernal-rocket` | HTTP 请求/响应、可选 Streaming | Fairing、Request Guard、Managed State |
 | 4 | Warp | `vernal-warp` | HTTP、Body Streaming | Filter 组合与 Rejection 映射 |
-| 5 | Salvo | `vernal-salvo` | HTTP、Body Streaming | Handler、Hoop、Depot Scope |
+| 5 | Salvo | `vernal-salvo` | HTTP、Body Streaming、严格 AOP | Handler、Hoop、匹配路径、借用型 Send 目标 |
 | 6 | Poem | `vernal-poem` | HTTP、Body Streaming、严格 AOP | Middleware、Endpoint、Request Data |
 | 7 | Ntex | `vernal-ntex` | Network HTTP、Body Streaming、严格 Local-AOP | Service/Middleware、显式资源模式、借用型 Worker-local 目标 |
 | 8 | Gotham | `vernal-gotham` | HTTP 请求/响应 | State Middleware 与 Handler Pipeline |
@@ -647,7 +654,8 @@ Frame/Trailer、取消、Tower 生命周期、AOP 调用链和 Hyper 传输能�
 Rocket 已增加 Managed State、Request Guard
 与 Body 感知 Fairing，
 Warp 已增加 Extension Filter 与官方 Tower Service 生命周期，Salvo 已增加
-Hoop、Depot 与 Frame/Trailer 保真的 Body 生命周期，Poem 已增加
+Hoop、Depot、Frame/Trailer 保真的 Body 生命周期、匹配路径操作身份、owned
+请求快照，以及覆盖完整借用型 Handler 链的 fail-closed 严格 Send-AOP。Poem 已增加
 Middleware/Endpoint、Request Extension 提取器、Body 生命周期集成，以及基于
 匹配后低基数 `PathPattern` 的严格 Around AOP。Ntex
 已增加原生 Middleware/Service、App State/Extension、类型化提取器、响应 Body
@@ -826,9 +834,11 @@ qualifier、隐藏依赖拒绝、原生值注册、Tokio Handle 真实 task，�
 运行时 Tokio 目前只作为 IoC 合同测试依赖，通用解析热路径未引入 Runtime 状态。
 `register_all` 原子注册纯组件批次；`register_bundle` 同时原子提交定义与绑定。
 
-Phase 2 AOP 内核另有 8 个合同测试，覆盖顺序进入/逆序退出、短路、结果/
+Phase 2 AOP 内核另有 9 个 Send 合同测试，覆盖顺序进入/逆序退出、短路、结果/
 错误改写、跨 `.await` 类型化上下文、取消/deadline、切点过滤和 64 task 并发
-复用，以及重复 Operation 合并的计划目录编译。宏前端另有 4 个运行时测试，覆盖
+复用、借用型非静态目标，以及重复 Operation 合并的计划目录编译；另有 5 个
+Local-AOP 测试覆盖非 `Send` 返回值、顺序、短路、取消、计划目录和借用型本地
+目标。宏前端另有 4 个运行时测试，覆盖
 Singleton Component 注入、Transient 构造、Trait Object 注入和 Context-local
 方法织入，并有 4 个 compile-fail 用例覆盖非法组件字段、非法集合 qualifier、
 非异步方法和借用接收器。Phase 2 已具备可调用

@@ -133,7 +133,7 @@ adapter crates contain runnable native integrations:
 | 2 | Actix Web | `vernal-actix-web` | HTTP | Phase 5 adapter + strict Local-AOP |
 | 3 | Rocket | `vernal-rocket` | HTTP | Phase 5 adapter |
 | 4 | Warp | `vernal-warp` | HTTP | Phase 5 adapter |
-| 5 | Salvo | `vernal-salvo` | HTTP | Phase 5 adapter |
+| 5 | Salvo | `vernal-salvo` | HTTP | Phase 5 adapter + strict AOP |
 | 6 | Poem | `vernal-poem` | HTTP | Phase 5 adapter + strict AOP |
 | 7 | Ntex | `vernal-ntex` | HTTP | Phase 5 adapter + strict Local-AOP |
 | 8 | Gotham | `vernal-gotham` | HTTP | Phase 5 adapter |
@@ -151,7 +151,12 @@ route metadata or plans fail closed, while native Actix errors remain native.
 Rocket provides
 Managed State, Request Guards, and a body-aware Fairing. Warp provides native
 extension filters over its official Tower Service boundary. Salvo provides a
-native Hoop, typed Depot access, and frame/trailer-preserving body cleanup.
+native Hoop, typed Depot access, frame/trailer-preserving body cleanup, and
+strict Send-AOP over the complete Handler chain. It derives low-cardinality
+operation identity from Salvo's matched path plus the real method, propagates
+an owned request snapshot, fail-closes missing metadata or plans, and preserves
+native responses. The borrowed Handler future stays inside
+`BorrowedInvocationTarget` without cloning framework objects.
 Poem provides native `Middleware`/`Endpoint` composition, typed
 Context/component/scope/request-context extractors, body-bound cleanup, and
 strict Around AOP over the complete Endpoint future. Operation identity comes
@@ -505,10 +510,13 @@ container isolation, transient resolution, native objects, named/primary/all
 Trait bindings, Trait graph cycles, hidden-dependency rejection, and atomic
 definition-plus-binding module registration, plus stable Registry
 serialization without factories or instance addresses.
-The Phase 2 AOP kernel currently has eight contract tests covering ordered
+The Phase 2 AOP kernel currently has nine Send contract tests covering ordered
 enter/reverse exit, short circuit, success and error transformation, typed
 context across `.await`, cancellation/deadline, pointcut selection, and
-64-task concurrent plan reuse, plus deduplicated plan-catalog compilation.
+64-task concurrent plan reuse, borrowed non-static targets, plus deduplicated
+plan-catalog compilation. Five Local-AOP tests cover non-`Send` values,
+ordering, short circuit, cancellation, plan catalogs, and borrowed local
+targets.
 The macro frontend has four runtime tests covering singleton Component
 injection, transient construction, Trait Object injection, and context-local
 intercepted invocation, plus four compile-fail cases for invalid component

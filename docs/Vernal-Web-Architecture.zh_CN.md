@@ -36,7 +36,8 @@ Transform/Service Middleware、App Data/Extension 提取器和 Body 绑定 Scope
 Body 感知 Fairing；Warp 0.4.3 通过 `warp::ext` Filter 和官方 `warp::service`
 Tower 边界实现 Context/组件/Scope 提取与完整 Body 生命周期；Salvo 采用最后
 一个兼容 Rust 1.85 的 0.85.0 版本，实现原生 Hoop、类型化 Depot 访问和
-Frame/Trailer 保真的 Body Scope；Poem 采用与 MSRV 一致的 3.1.12 版本，
+Frame/Trailer 保真的 Body Scope，以及覆盖完整 Handler 链的严格 Send-AOP；
+Poem 采用与 MSRV 一致的 3.1.12 版本，
 实现原生 Middleware/Endpoint、Request Extension 提取器和 Body 绑定 Scope
 释放；Tonic 采用兼容 MSRV 的 0.12 版本线，实现 Context Interceptor、类型化
 Request 扩展、`GrpcMethod` 路由元数据、稳定 `Status` 映射和 Tower 组合。
@@ -237,7 +238,7 @@ Trace -> Context -> RequestScope -> Security/AOP -> Handler -> ErrorMapping
 | 2 | Actix Web | `vernal-actix-web` | HTTP | `Transform`/`Service`、App Data、Extractor、Responder | Adapter + 严格 Local-AOP 已实现 |
 | 3 | Rocket | `vernal-rocket` | HTTP | Fairing、Request Guard、Managed State、Responder | Phase 5 适配已实现 |
 | 4 | Warp | `vernal-warp` | HTTP | Filter、Rejection、Reply | Phase 5 适配已实现 |
-| 5 | Salvo | `vernal-salvo` | HTTP | Handler、Hoop、Depot、Writer | Phase 5 适配已实现 |
+| 5 | Salvo | `vernal-salvo` | HTTP | Handler、Hoop、Depot、Writer | Adapter + 严格 AOP 已实现 |
 | 6 | Poem | `vernal-poem` | HTTP | Middleware、Endpoint、Data、IntoResponse | Adapter + 严格 AOP 已实现 |
 | 7 | Ntex | `vernal-ntex` | HTTP | Service/Middleware、App State、Extractor | Adapter + 严格 Local-AOP 已实现 |
 | 8 | Gotham | `vernal-gotham` | HTTP | State Middleware、Pipeline、Handler | Phase 5 适配已实现 |
@@ -267,7 +268,13 @@ Trace -> Context -> RequestScope -> Security/AOP -> Handler -> ErrorMapping
 - **Salvo**：Hoop 包裹调用链，Depot 类型化携带 Context、组件与请求 Scope；
   Handler 保持 Salvo 原生签名。`ResBody` 直接按 `http_body::Body` 包装，保留
   Data Frame、Trailer、上游错误与背压，并在完成或取消后关闭 Scope。0.85.0
-  是最后一个声明 Rust 1.85 的 Salvo 版本；0.86 起要求 Rust 1.89。
+  的严格模式启用零额外依赖的 `matched-path` feature，把匹配后的低基数模板与
+  真实 HTTP 方法组成操作身份，传播 owned 元数据快照，并让严格 Send-AOP 覆盖
+  完整 Handler 链。`BorrowedInvocationTarget` 把
+  `Request`/`Depot`/`Response`/`FlowCtrl` 借用限定在一次计划 await 内，无需
+  克隆；缺少元数据或计划时 fail-closed，策略失败映射为稳定响应，原生 Handler
+  的状态、Header、Extension 与 Body 保持不变。0.85.0 是最后一个声明 Rust
+  1.85 的 Salvo 版本；0.86 起要求 Rust 1.89。
 - **Poem**：原生 Middleware 在 Route 匹配后包裹具体 Endpoint，Request
   Extension 传递 Context、组件、Scope 与 `RequestContext`。严格模式从低基数
   `PathPattern` 构建 `Operation(path_pattern, http_method)`，缺少元数据或计划

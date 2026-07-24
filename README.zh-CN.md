@@ -121,7 +121,7 @@ crate 均已具备可运行的原生集成：
 | 2 | Actix Web | `vernal-actix-web` | HTTP | Phase 5 适配 + 严格 Local-AOP 已实现 |
 | 3 | Rocket | `vernal-rocket` | HTTP | Phase 5 适配已实现 |
 | 4 | Warp | `vernal-warp` | HTTP | Phase 5 适配已实现 |
-| 5 | Salvo | `vernal-salvo` | HTTP | Phase 5 适配已实现 |
+| 5 | Salvo | `vernal-salvo` | HTTP | Phase 5 适配 + 严格 AOP 已实现 |
 | 6 | Poem | `vernal-poem` | HTTP | Phase 5 适配 + 严格 AOP 已实现 |
 | 7 | Ntex | `vernal-ntex` | HTTP | Phase 5 适配 + 严格 Local-AOP 已实现 |
 | 8 | Gotham | `vernal-gotham` | HTTP | Phase 5 适配已实现 |
@@ -136,7 +136,11 @@ Scope 跟随响应 Body 的原生
 Future；缺少路由元数据或计划时 fail-closed，同时保留 Actix 原生错误。Rocket
 已提供 Managed State、Request Guard 和 Body
 感知 Fairing；Warp 已通过官方 Tower Service 边界提供原生 Extension Filter；
-Salvo 已提供原生 Hoop、类型化 Depot 访问以及 Frame/Trailer 保真的 Body 释放；
+Salvo 已提供原生 Hoop、类型化 Depot 访问、Frame/Trailer 保真的 Body 释放，
+以及覆盖完整 Handler 链的严格 Send-AOP。操作身份取自 Salvo 匹配后的低基数
+路径和真实 HTTP 方法，请求上下文携带 owned 快照；缺少元数据或计划时
+fail-closed，原生响应保持不变，借用型 Handler Future 通过
+`BorrowedInvocationTarget` 执行而不克隆框架对象；
 Poem 已提供原生 `Middleware`/`Endpoint` 组合、类型化
 Context/组件/Scope/RequestContext 提取器、Body 绑定释放，以及覆盖完整
 Endpoint Future 的严格 Around AOP；操作身份取自 Poem 匹配后的低基数
@@ -350,10 +354,11 @@ Phase 1/1.1 已通过 24 个 IoC 合同测试，覆盖 1,000 节点确定性规�
 诊断、并发 Singleton、双 Container 隔离、Transient、原生对象、Trait 命名/
 Primary/全部实现、Trait 图环、跨定义/绑定原子模块注册，以及不暴露工厂和实例
 地址的稳定 Registry 序列化快照。
-Phase 2 AOP 内核现有 8 个 Tokio 测试，覆盖顺序进入/逆序退出、短路、成功结果
+Phase 2 AOP 内核现有 9 个 Send 合同测试，覆盖顺序进入/逆序退出、短路、成功结果
 与错误改写、跨 `.await` 类型化上下文、取消/deadline、切点选择和 64 task
-并发共享计划；性能基准仍未完成。宏前端另有 4 个运行时合同测试和 4 个
-compile-fail 用例。
+并发共享计划、借用型非静态目标与计划目录合并；另有 5 个 Local-AOP 测试覆盖
+非 `Send` 返回值、顺序、短路、取消、计划目录和借用型本地目标。性能基准仍未
+完成。宏前端另有 4 个运行时合同测试和 4 个 compile-fail 用例。
 Phase 3 内核现有 11 个测试，覆盖依赖顺序启动、逆序关闭、initialize/start
 回滚、非法状态转换、幂等关闭、并发关闭串行化和 Context-local 类型化事件
 隔离、高层构建器内建资源注入，以及成功/失败启动报告的只读性、序列化和业务
