@@ -567,6 +567,7 @@ sequenceDiagram
 
 - 聚合 Registry、Container 与 AOP Plan；
 - 冻结 Context-local PropertySource 顺序与 Profile；
+- 在依赖图规划前评估显式条件组件模块；
 - 执行 refresh、初始化、启动、就绪、排空和关闭；
 - 发布 Context 内类型化事件；
 - 协调失败回滚与逆序资源释放；
@@ -601,11 +602,19 @@ Web server 和外部配置中心仍属于独立适配器；它们可以把结果
 sequenceDiagram
     participant App as "应用装配"
     participant Builder as "VernalApplicationBuilder"
+    participant Environment as "ApplicationEnvironment"
+    participant Condition as "ComponentCondition"
     participant AOP as "InvocationPlanBuilder"
     participant Graph as "RegistryBuilder"
     participant Context as "ApplicationContext"
 
-    App->>Builder: register definitions, advisors, operations
+    App->>Builder: register definitions, conditional modules, advisors
+    Builder->>Environment: 冻结来源与 Profile
+    loop 按模块注册顺序
+        Builder->>Condition: 基于冻结 Environment 求值
+        Condition-->>Builder: 命中 / 排除
+    end
+    Builder->>Graph: 原子提交命中模块
     Builder->>AOP: compile plan catalog
     Builder->>Graph: 注册 Tokio/任务/环境/策略/事件/AOP 资源
     Builder->>Graph: freeze and validate complete graph
@@ -654,7 +663,52 @@ Hutool-Rust 可以把 `Profile/SettingLoader` 的结果转换成
 构造自身 `SaTokenConfigBuilder`。Vernal 不认识 Hutool 文件对象或 Sa-Token
 配置类型，从而保持消费方拥有集成。
 
-### 10.3 状态机
+### 10.3 条件组件装配
+
+条件判断位于 `vernal-context`，因为 Context 同时拥有冻结后的 Environment 与
+应用装配流程；纯 `vernal-ioc` 不认识 Profile、属性键或配置格式。
+
+- `ComponentCondition` 是扩展合同，只接收冻结后的
+  `ApplicationEnvironment`；
+- `ProfileCondition` 支持有效 Profile 的 any/all/none 判断；
+- `PropertyCondition` 支持存在、缺失、相等、不相等和显式
+  match-if-missing，并比较占位符展开后的值；
+- `PredicateCondition` 把线程安全闭包适配成自定义条件，但诊断不会序列化闭包
+  捕获的数据；
+- `ConditionalComponentModule` 把 Definition、Trait Binding 与生命周期登记
+  绑定为一个原子装配单元；
+- Environment 冻结后按模块注册顺序求值一次，依赖图规划前只提交命中模块；
+- 未命中模块整体排除；若无条件组件仍依赖其中对象，GraphPlanner 继续返回
+  `GraphError::MissingDependency`，不会静默回退；
+- `ConditionEvaluationSnapshot` 只记录静态模块名、条件类型、命中状态、组件类型
+  标识和声明数量，不记录属性键、期望值、解析值或来源错误；
+- 条件失败会终止构建。常规 `Display/Debug` 脱敏，显式遍历
+  `Error::source` 仍可取得根因。
+
+这不是 Spring Boot 的 classpath 扫描或自动配置发现。应用和生态 Adapter 必须
+显式登记模块，让 feature 所有权、依赖成本与替换规则始终在 Rust 代码中可见。
+
+```mermaid
+flowchart LR
+    Assembly["应用装配<br/>显式条件模块"]
+    Environment["冻结的 ApplicationEnvironment"]
+    Condition["ComponentCondition<br/>Profile · Property · Predicate"]
+    Decision{"是否命中？"}
+    Commit["原子提交模块<br/>Definition + Binding + Lifecycle"]
+    Omit["整体排除模块"]
+    Graph["RegistryBuilder<br/>依赖图校验"]
+    Snapshot["ConditionEvaluationSnapshot<br/>不含属性键和值"]
+
+    Assembly --> Condition
+    Environment --> Condition
+    Condition --> Decision
+    Decision -->|"是"| Commit --> Graph
+    Decision -->|"否"| Omit
+    Decision --> Snapshot
+    Omit -.->|"仍被依赖"| Graph
+```
+
+### 10.4 状态机
 
 ```mermaid
 stateDiagram-v2
@@ -672,7 +726,7 @@ stateDiagram-v2
     Closed --> [*]
 ```
 
-### 10.4 生命周期顺序
+### 10.5 生命周期顺序
 
 ```text
 register
@@ -690,7 +744,7 @@ register
 任何阶段失败都要记录已完成步骤，只回滚已经成功的组件。关闭必须幂等；多次
 `close()` 返回相同终态，不重复执行不可重入副作用。
 
-### 10.5 Context 生命周期所有权
+### 10.6 Context 生命周期所有权
 
 `ApplicationContext` 是公开门面，不让某个临时调用者 Future 直接拥有生命周期。
 `ApplicationStartupCoordinator` 在独立 Tokio task 中执行 refresh/initialize/
@@ -766,7 +820,7 @@ flowchart LR
     Close --> Drain["排空任务并逆序 stop"]
 ```
 
-### 10.6 受管 Tokio 任务
+### 10.7 受管 Tokio 任务
 
 `ManagedTaskSupervisor` 是 Context 对长期 Worker、消息消费、配置监听和
 Hutool-Rust Cron 驱动任务的所有权边界。它不实现这些业务或工具能力，只管理其
@@ -966,6 +1020,7 @@ Vernal 不保证第三方依赖完全无 unsafe；`forbid` 只约束 Workspace �
 | 分类 | 示例 | 调用方动作 |
 |:---|:---|:---|
 | Definition | 重复、无效 qualifier | 修正注册 |
+| Condition | 模块非法、条件评估失败 | 修正显式装配或检查 source |
 | Graph | 缺失、歧义、循环 | 修正组件关系 |
 | Resolution | 构造器失败、Scope 关闭 | 检查 source 或停止使用 |
 | Interception | 拒绝、Pointcut、调用链失败 | 按业务错误合同处理 |
@@ -978,6 +1033,7 @@ Context refresh 现已产生可序列化、只读且脱敏的诊断快照：
 
 - Vernal 版本、MSRV 与启用 feature；
 - PropertySource 名称与 Active/Default/Effective Profile；
+- 条件模块的静态名称、条件类型与命中/排除状态；
 - Definition 数量、Scope 数量与依赖图摘要；
 - 匹配的 Pointcut 和拦截器数量；
 - 生命周期阶段、耗时和失败组件；
@@ -989,6 +1045,7 @@ flowchart LR
     Registry["Registry<br/>definitions + bindings + BuildPlan"]
     Catalog["InvocationPlanCatalog"]
     Environment["ApplicationEnvironment<br/>来源名 + Profile"]
+    Conditions["条件评估<br/>仅模块/类型/命中状态"]
     Static["静态诊断配置<br/>feature / adapter / external / warning"]
     Lifecycle["Context 状态机<br/>warm-up / resolve / init / start / stop"]
     Snapshot["RegistrySnapshot<br/>只读值对象"]
@@ -999,6 +1056,7 @@ flowchart LR
     Snapshot --> Report
     Catalog -->|"plan 与 interceptor slot 计数"| Report
     Environment -->|"EnvironmentSnapshot<br/>不含属性键和值"| Report
+    Conditions -->|"不含属性键/值/错误"| Report
     Static --> Report
     Lifecycle -->|"阶段、结果、微秒耗时"| Report
     Report --> Output
@@ -1012,6 +1070,8 @@ flowchart LR
   start/close 不会反向修改已经取得的报告；
 - `EnvironmentSnapshot` 只包含 PropertySource 名称和 Profile；属性键、值及
   占位符解析结果均不会进入 `StartupReport`；
+- `ConditionEvaluationSnapshot` 同时保留命中与排除模块，但不包含条件属性键、
+  期望值、解析值或评估错误；
 - warm-up、组件解析、initialize、start 和 stop 均记录稳定阶段、组件名、
   成功/失败与微秒耗时；
 - 原始错误链只通过 `ContextError::source` 返回，`StartupReport` 类型中不存在
@@ -1070,7 +1130,7 @@ Singleton Component 注入、Transient 构造、Trait Object 注入和 Context-l
 非异步方法和借用接收器。Phase 2 已具备可调用
 闭环，但更广泛的方法签名、诊断矩阵、性能基准和稳定性承诺仍未完成。
 
-Phase 3 内核另有 37 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
+Phase 3 内核另有 43 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
 回滚、非法转换、幂等关闭、并发关闭串行化、Context-local 类型化事件隔离，
 高层构建器的 Runtime 缺失诊断、十一类内建组件同实例注入、应用 Scope 取消树、
 任务错误/panic 传播、取消安全共享停机、超时 abort、任务先于组件 stop 的顺序、
@@ -1079,7 +1139,9 @@ start 前应用取消、任务失败驱动 `run_until_cancelled()` 进入 `Close
 钩子 panic 隔离、initialize/start 超时回滚、stop 超时后继续逆序释放，以及
 类型化 OS 信号发布、应用取消优先结束信号等待，PropertySource 优先级、
 Profile、类型转换、嵌套占位符、循环/来源失败，以及成功/失败启动报告的只读
-快照、Serde 序列化、环境属性值隔离与业务错误正文脱敏。
+快照、Serde 序列化、环境属性值隔离与业务错误正文脱敏，并覆盖
+Profile/Property/自定义条件选择、条件 Definition/Lifecycle 原子进退、依赖图
+fail-closed 与条件错误脱敏。
 
 ## 16. 实施路线
 
@@ -1113,6 +1175,8 @@ Profile、类型转换、嵌套占位符、循环/来源失败，以及成功/�
   具体 Web/ORM 类型；
 - [x] ApplicationEnvironment 保持 Context 隔离，配置格式与消费方类型留在
   Adapter，并提供不含属性键和值的诊断快照；
+- [x] 条件模块只对冻结 Environment 求值一次，并原子包含 Definition、Trait
+  Binding 与生命周期登记；
 - [ ] 组件图、拦截链和生命周期都有成功、失败与回滚测试；
 - [ ] 无指针地址全局链、无正常控制流 panic、无隐式跨 Context 状态；
 - [ ] Web Adapter 通过统一合同套件，并保留各框架原生语义；

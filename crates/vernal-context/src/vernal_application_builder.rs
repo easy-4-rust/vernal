@@ -14,14 +14,13 @@ use vernal_ioc::{ComponentDefinition, DefinitionError, Qualifier, RegistryBuilde
 
 use crate::{
     ApplicationBuildError, ApplicationContext, ApplicationContextBuilder,
-    ApplicationEnvironmentBuilder, DiagnosticState, EventBus, Lifecycle, LifecycleExecutionPolicy,
-    ManagedTaskSupervisor, SubsystemStatus, SystemShutdownSignalListener, TaskShutdownPolicy,
-    context_resources::ContextResources, diagnostic_configuration::DiagnosticConfiguration,
+    ApplicationEnvironmentBuilder, ConditionError, ConditionalComponentModule, DiagnosticState,
+    EventBus, Lifecycle, LifecycleExecutionPolicy, ManagedTaskSupervisor, SubsystemStatus,
+    SystemShutdownSignalListener, TaskShutdownPolicy, context_resources::ContextResources,
+    diagnostic_configuration::DiagnosticConfiguration, lifecycle_registrar::LifecycleRegistrar,
 };
 
-type LifecycleRegistrar = dyn FnOnce(&mut ApplicationContextBuilder) + Send + Sync + 'static;
-
-/// 统一收集组件、生命周期、切面和 Tokio Context 资源的应用建造器。
+/// 统一收集组件、条件模块、生命周期、切面和 Tokio Context 资源的应用建造器。
 ///
 /// 与接收冻结 [`vernal_ioc::Registry`] 的低层 [`ApplicationContextBuilder`]
 /// 不同，该建造器在依赖图冻结前自动注册十一类框架内建组件：
@@ -43,6 +42,8 @@ type LifecycleRegistrar = dyn FnOnce(&mut ApplicationContextBuilder) + Send + Sy
 pub struct VernalApplicationBuilder {
     registry: RegistryBuilder,
     lifecycle_registrars: Vec<Box<LifecycleRegistrar>>,
+    conditional_modules: Vec<ConditionalComponentModule>,
+    conditional_module_names: BTreeSet<&'static str>,
     invocation_plans: InvocationPlanBuilder,
     local_invocation_plans: LocalInvocationPlanBuilder,
     operations: Vec<Operation>,
@@ -72,6 +73,8 @@ impl VernalApplicationBuilder {
         Self {
             registry: RegistryBuilder::new(),
             lifecycle_registrars: Vec::new(),
+            conditional_modules: Vec::new(),
+            conditional_module_names: BTreeSet::new(),
             invocation_plans: InvocationPlanBuilder::new(),
             local_invocation_plans: LocalInvocationPlanBuilder::new(),
             operations: Vec::new(),
@@ -175,6 +178,29 @@ impl VernalApplicationBuilder {
         bindings: impl IntoIterator<Item = TraitBinding>,
     ) -> Result<&mut Self, DefinitionError> {
         self.registry.register_bundle(definitions, bindings)?;
+        Ok(self)
+    }
+
+    /// 登记一个在 Environment 冻结后统一评估的条件组件模块。
+    ///
+    /// 条件命中时，模块内定义、Trait Binding 和生命周期登记会整体进入应用；
+    /// 未命中时三者整体排除，但仍在启动报告中保留脱敏判断结果。同一模块名只能
+    /// 登记一次，使诊断记录能够稳定定位到唯一装配单元。
+    ///
+    /// # Errors
+    ///
+    /// 模块或条件名非法、模块为空或名称重复时返回 [`ConditionError`]。
+    pub fn register_conditional(
+        &mut self,
+        module: ConditionalComponentModule,
+    ) -> Result<&mut Self, ConditionError> {
+        module.validate()?;
+        if !self.conditional_module_names.insert(module.name()) {
+            return Err(ConditionError::DuplicateModule {
+                name: module.name(),
+            });
+        }
+        self.conditional_modules.push(module);
         Ok(self)
     }
 
@@ -297,9 +323,24 @@ impl VernalApplicationBuilder {
     ///
     /// # Errors
     ///
-    /// 内建组件冲突、依赖图无效或生命周期绑定无效时返回
+    /// 条件评估失败、内建组件冲突、依赖图无效或生命周期绑定无效时返回
     /// [`ApplicationBuildError`]。
     pub fn build(mut self) -> Result<ApplicationContext, ApplicationBuildError> {
+        // Environment 必须先冻结，所有条件模块才能对同一个不可变快照执行一次判断。
+        // 命中模块通过 RegistryBuilder 的原子 bundle API 提交，未命中模块不会留下
+        // Definition、Trait Binding 或生命周期登记中的任一残片。
+        let environment = Arc::new(self.environment.build());
+        let mut condition_evaluations = Vec::with_capacity(self.conditional_modules.len());
+        for module in self.conditional_modules {
+            let matched = module.matches(&environment)?;
+            condition_evaluations.push(module.snapshot(matched));
+            if matched {
+                let (definitions, bindings, lifecycle_registrars) = module.into_parts();
+                self.registry.register_bundle(definitions, bindings)?;
+                self.lifecycle_registrars.extend(lifecycle_registrars);
+            }
+        }
+
         // Pointcut 只在启动阶段匹配；运行期目录保持不可变。
         let invocation_plans = Arc::new(
             self.invocation_plans
@@ -307,7 +348,6 @@ impl VernalApplicationBuilder {
         );
         let local_invocation_plans =
             Arc::new(self.local_invocation_plans.build_catalog(self.operations));
-        let environment = Arc::new(self.environment.build());
 
         // 内建原生对象必须在图冻结前进入注册表，业务组件对它们的依赖才会被
         // GraphPlanner 与其他依赖完全一致地校验。
@@ -372,6 +412,7 @@ impl VernalApplicationBuilder {
                     .into_iter()
                     .map(|(name, state)| SubsystemStatus::new(name, state))
                     .collect(),
+                condition_evaluations,
                 self.warnings.into_iter().collect(),
             ),
         };

@@ -5,13 +5,14 @@ use vernal_aop::{InvocationPlanCatalog, LocalInvocationPlanCatalog};
 use vernal_ioc::RegistrySnapshot;
 
 use crate::{
-    ApplicationEnvironment, EnvironmentSnapshot, StartupObservation, SubsystemStatus,
-    diagnostic_configuration::DiagnosticConfiguration,
+    ApplicationEnvironment, ConditionEvaluationSnapshot, EnvironmentSnapshot, StartupObservation,
+    SubsystemStatus, diagnostic_configuration::DiagnosticConfiguration,
 };
 
 /// `ApplicationContext` 的可序列化、只读、脱敏诊断快照。
 ///
-/// 报告持有值对象而不是容器、组件实例或错误源。调用
+/// 报告持有值对象而不是容器、组件实例或错误源；条件模块只保留静态身份与命中
+/// 状态，不包含配置键和值。调用
 /// [`crate::ApplicationContext::startup_report`] 时会克隆当前快照，因此获得的
 /// 报告不会被后续生命周期操作修改，也不能反向控制 Context。
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -29,6 +30,7 @@ pub struct StartupReport {
     enabled_features: Vec<String>,
     adapters: Vec<SubsystemStatus>,
     external_dependencies: Vec<SubsystemStatus>,
+    condition_evaluations: Vec<ConditionEvaluationSnapshot>,
     observations: Vec<StartupObservation>,
     warnings: Vec<String>,
     unused_definitions: Vec<String>,
@@ -58,6 +60,7 @@ impl StartupReport {
             enabled_features: diagnostics.enabled_features().to_vec(),
             adapters: diagnostics.adapters().to_vec(),
             external_dependencies: diagnostics.external_dependencies().to_vec(),
+            condition_evaluations: diagnostics.condition_evaluations().to_vec(),
             observations: Vec::new(),
             warnings: diagnostics.warnings().to_vec(),
             // 仅凭“没有入边”不能判断组件未使用；在引入准确的解析追踪前保持空集，
@@ -142,6 +145,15 @@ impl StartupReport {
     #[must_use]
     pub fn external_dependencies(&self) -> &[SubsystemStatus] {
         &self.external_dependencies
+    }
+
+    /// 返回构建期条件组件模块的脱敏判断结果。
+    ///
+    /// 快照保留命中和未命中的模块，便于解释最终依赖图；其中不包含属性键、
+    /// 属性值、期望值或底层配置来源错误。
+    #[must_use]
+    pub fn condition_evaluations(&self) -> &[ConditionEvaluationSnapshot] {
+        &self.condition_evaluations
     }
 
     /// 返回按实际完成顺序记录的启动与关闭观察。

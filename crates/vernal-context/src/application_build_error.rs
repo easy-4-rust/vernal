@@ -5,9 +5,10 @@ use std::{error::Error, fmt};
 use tokio::runtime::TryCurrentError;
 use vernal_ioc::{DefinitionError, GraphError};
 
-use crate::ContextError;
+use crate::{ConditionError, ContextError};
 
-/// 高层应用建造器在捕获运行时、注册组件、冻结依赖图或创建 Context 时的错误。
+/// 高层应用建造器在捕获运行时、评估条件、注册组件、冻结依赖图或创建 Context
+/// 时的错误。
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum ApplicationBuildError {
@@ -30,6 +31,11 @@ pub enum ApplicationBuildError {
     Context {
         /// Context 构建错误。
         source: ContextError,
+    },
+    /// 条件组件模块声明无效或无法完成构建期评估。
+    Condition {
+        /// 条件装配错误。
+        source: ConditionError,
     },
 }
 
@@ -54,6 +60,12 @@ impl fmt::Display for ApplicationBuildError {
             Self::Context { source } => {
                 write!(formatter, "application context cannot be built: {source}")
             }
+            Self::Condition { source } => {
+                write!(
+                    formatter,
+                    "application conditional component assembly failed: {source}"
+                )
+            }
         }
     }
 }
@@ -65,6 +77,7 @@ impl Error for ApplicationBuildError {
             Self::Definition { source } => Some(source),
             Self::Graph { source } => Some(source),
             Self::Context { source } => Some(source),
+            Self::Condition { source } => Some(source),
         }
     }
 }
@@ -84,5 +97,11 @@ impl From<GraphError> for ApplicationBuildError {
 impl From<ContextError> for ApplicationBuildError {
     fn from(source: ContextError) -> Self {
         Self::Context { source }
+    }
+}
+
+impl From<ConditionError> for ApplicationBuildError {
+    fn from(source: ConditionError) -> Self {
+        Self::Condition { source }
     }
 }

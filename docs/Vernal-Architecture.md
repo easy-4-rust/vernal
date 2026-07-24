@@ -590,11 +590,11 @@ sequenceDiagram
 ## 10. ApplicationContext and lifecycle
 
 The context composes registry, container, AOP plans, ordered property sources,
-profiles, local typed events, rollback, reverse cleanup, and read-only
-diagnostics. It directly uses Tokio tasks, synchronization, time, cancellation,
-and signals. Configuration formats, web servers, and external configuration
-centers remain adapters whose results can implement `PropertySource` or be
-registered as ordinary components.
+profiles, build-time conditional modules, local typed events, rollback,
+reverse cleanup, and read-only diagnostics. It directly uses Tokio tasks,
+synchronization, time, cancellation, and signals. Configuration formats, web
+servers, and external configuration centers remain adapters whose results can
+implement `PropertySource` or be registered as ordinary components.
 
 Before graph freezing, `VernalApplicationBuilder` automatically registers
 eleven framework-native components:
@@ -652,6 +652,57 @@ Hutool-Rust may convert `Profile`/`SettingLoader` output into a
 `MapPropertySource`; a Sa-Token-Rust bridge may read its keys and then construct
 `SaTokenConfigBuilder`. Vernal knows neither consumer type.
 
+### Conditional component assembly
+
+`vernal-context` evaluates conditions because it owns both the frozen
+Environment and application assembly; `vernal-ioc` remains a format-neutral
+container and never depends on Profile or property semantics.
+
+- `ComponentCondition` is the extension contract and receives only the frozen
+  `ApplicationEnvironment`;
+- `ProfileCondition` supports any/all/none effective-profile matching;
+- `PropertyCondition` supports present/missing/equal/not-equal and explicit
+  match-if-missing semantics after placeholder resolution;
+- `PredicateCondition` adapts a custom, thread-safe closure without exposing
+  captured data to diagnostics;
+- `ConditionalComponentModule` atomically groups definitions, Trait bindings,
+  and lifecycle registrations under one condition;
+- evaluation happens once, in module registration order, after Environment
+  freeze and before graph planning;
+- a false condition omits the entire module. An unconditional component that
+  still requires an omitted component therefore produces the ordinary
+  `GraphError::MissingDependency` instead of a silent fallback;
+- `ConditionEvaluationSnapshot` records only static module/condition names,
+  match state, component type identifiers, and declaration counts. Property
+  keys, expected values, resolved values, and source errors are excluded;
+- condition failures stop the build. Normal `Display`/`Debug` output is
+  redacted, while an explicit `Error::source` walk retains the root cause.
+
+This is not Spring Boot classpath scanning or automatic configuration
+discovery. Applications and ecosystem adapters explicitly register modules,
+which keeps feature ownership, dependency cost, and replacement rules visible
+in Rust code.
+
+```mermaid
+flowchart LR
+    Assembly["Application assembly<br/>explicit conditional modules"]
+    Environment["Frozen ApplicationEnvironment"]
+    Condition["ComponentCondition<br/>Profile · Property · Predicate"]
+    Decision{"Matched?"}
+    Commit["Atomic module commit<br/>definitions + bindings + lifecycle"]
+    Omit["Omit complete module"]
+    Graph["RegistryBuilder<br/>graph validation"]
+    Snapshot["ConditionEvaluationSnapshot<br/>no property keys or values"]
+
+    Assembly --> Condition
+    Environment --> Condition
+    Condition --> Decision
+    Decision -->|"yes"| Commit --> Graph
+    Decision -->|"no"| Omit
+    Decision --> Snapshot
+    Omit -.->|"required elsewhere"| Graph
+```
+
 Components declare them with ordinary `depends_on::<T>()` metadata, and the
 context plus container receive the same `Arc<T>` instances. The lower-level
 `Registry -> ApplicationContextBuilder` path remains available for library
@@ -661,11 +712,19 @@ composition that does not want runtime capture or built-in registration.
 sequenceDiagram
     participant App as "Application assembly"
     participant Builder as "VernalApplicationBuilder"
+    participant Environment as "ApplicationEnvironment"
+    participant Condition as "ComponentCondition"
     participant AOP as "InvocationPlanBuilder"
     participant Graph as "RegistryBuilder"
     participant Context as "ApplicationContext"
 
-    App->>Builder: register definitions, advisors, operations
+    App->>Builder: register definitions, conditional modules, advisors
+    Builder->>Environment: freeze sources and profiles
+    loop registration order
+        Builder->>Condition: evaluate against frozen Environment
+        Condition-->>Builder: matched / omitted
+    end
+    Builder->>Graph: atomically commit matched modules
     Builder->>AOP: compile plan catalog
     Builder->>Graph: register Tokio/task/environment/policy/event/AOP resources
     Builder->>Graph: freeze and validate complete graph
@@ -1013,6 +1072,7 @@ The unsafe rule covers Vernal-owned source, not the entire third-party graph.
 | Category | Examples | Caller action |
 |:---|:---|:---|
 | Definition | Duplicate, invalid qualifier | Fix registration |
+| Condition | Invalid module, evaluation failure | Fix explicit assembly or inspect source |
 | Graph | Missing, ambiguous, cyclic | Fix dependency relation |
 | Resolution | Constructor failure, closed scope | Inspect source or stop use |
 | Interception | Rejection, pointcut, chain failure | Follow business error contract |
@@ -1020,15 +1080,16 @@ The unsafe rule covers Vernal-owned source, not the entire third-party graph.
 | Adapter | Conversion or missing context | Return stable native error |
 
 A context refresh now produces a serializable, read-only, redacted report
-containing version/features, PropertySource/profile names, definition and scope
-counts, graph summary, pointcut matches, lifecycle timing/failures, adapter
-state, warnings, and unused definitions.
+containing version/features, PropertySource/profile names, conditional module
+outcomes, definition and scope counts, graph summary, pointcut matches,
+lifecycle timing/failures, adapter state, warnings, and unused definitions.
 
 ```mermaid
 flowchart LR
     Registry["Registry<br/>definitions + bindings + BuildPlan"]
     Catalog["InvocationPlanCatalog"]
     Environment["ApplicationEnvironment<br/>source names + profiles"]
+    Conditions["Condition evaluations<br/>module/type/match only"]
     Static["Static diagnostics<br/>features / adapters / external / warnings"]
     Lifecycle["Context state machine<br/>warm-up / resolve / init / start / stop"]
     Snapshot["RegistrySnapshot<br/>owned read-only value"]
@@ -1039,6 +1100,7 @@ flowchart LR
     Snapshot --> Report
     Catalog -->|"plan and interceptor slot counts"| Report
     Environment -->|"EnvironmentSnapshot<br/>no keys or values"| Report
+    Conditions -->|"no property keys/values/errors"| Report
     Static --> Report
     Lifecycle -->|"phase, outcome, microseconds"| Report
     Report --> Output
@@ -1054,6 +1116,8 @@ The implemented contract is:
 - `EnvironmentSnapshot` contains only PropertySource names and profiles;
   property keys, values, and resolved placeholder results never enter
   `StartupReport`.
+- `ConditionEvaluationSnapshot` includes matched and omitted modules but never
+  condition property keys, expected/resolved values, or evaluation errors.
 - warm-up, component resolution, initialize, start, and stop record stable
   phases, subjects, outcomes, and microsecond durations.
 - raw error chains remain available through `ContextError::source`; the report
@@ -1127,7 +1191,7 @@ receivers. Phase 2 now has a callable loop, while broader
 signatures, diagnostic coverage, benchmarks, and stability guarantees remain
 open.
 
-The Phase 3 kernel has thirty-seven contract tests for dependency-order
+The Phase 3 kernel has forty-three contract tests for dependency-order
 startup, reverse shutdown, initialize/start rollback, invalid transitions,
 idempotent close, concurrent close serialization, and context-local typed
 event isolation, plus runtime-unavailable diagnostics, same-instance injection
@@ -1140,7 +1204,9 @@ initialize/start timeout rollback, stop-timeout continuation, typed OS-signal
 publication, application cancellation winning the signal race, stop-hook
 panic isolation, PropertySource precedence, profiles, typed conversion, nested
 placeholders, cycle/source failures, and owned/redacted serialization of
-successful and failed startup reports without environment keys or values.
+successful and failed startup reports without environment keys or values,
+plus Profile/Property/custom condition selection, atomic definition/lifecycle
+inclusion, fail-closed graph validation, and redacted condition failures.
 
 ## 16. Delivery roadmap
 
@@ -1174,6 +1240,8 @@ No phase is complete merely because a crate exists or `cargo check` is green.
   configuration formats or concrete web/ORM types into generic kernels.
 - [x] ApplicationEnvironment is context-local, keeps format/consumer types in
   adapters, and exposes a snapshot without property keys or values.
+- [x] Conditional modules evaluate once against the frozen Environment and
+  atomically include definitions, Trait bindings, and lifecycle registrations.
 - [ ] Graph, interception, and lifecycle include success/failure/rollback tests.
 - [ ] No pointer-address chain map, normal-flow panic, or hidden cross-context state.
 - [ ] Web adapters pass one conformance suite while preserving native semantics.

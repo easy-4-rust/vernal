@@ -116,7 +116,7 @@ Detailed decisions, flows, failure semantics, and acceptance criteria are in:
 | `vernal-core` | Experimental | Shared contracts for the Tokio-first framework |
 | `vernal-ioc` | Phase 1/diagnostics kernel implemented | Definitions, scopes, resolution, graph validation, read-only snapshots |
 | `vernal-aop` | Phase 2 kernel implemented | Send/Local Around/Next, pointcuts, immutable plans, cancellation |
-| `vernal-context` | Phase 3/diagnostics kernel implemented | Managed bootstrap, application environment, lifecycle, events, redacted startup reports |
+| `vernal-context` | Phase 3/diagnostics kernel implemented | Managed bootstrap, application environment, conditional assembly, lifecycle, events, redacted startup reports |
 | `vernal-macros` | Phase 2 macros implemented | Explicit `Arc<T>` injection metadata and context-local async method weaving |
 | `vernal-web` | Phase 4 contract implemented | Framework-neutral context, request scope, handler, and error contracts |
 | `vernal-web-testkit` | Phase 4 binding/lifecycle contracts implemented | Shared Context/scope/component binding and success/error/drop cleanup assertions for all ten adapters |
@@ -444,7 +444,15 @@ placeholders or parse values into Rust types such as `u16` and `bool`. TOML,
 YAML, Hutool `.setting`, process environments, and configuration centers
 remain adapter concerns. Vernal creates no tx-di-style global configuration,
 and startup diagnostics serialize source/profile names but never property keys
-or values. `refresh()` and `start()` use a separate Context-local Tokio
+or values. `ConditionalComponentModule` can group component definitions,
+Trait bindings, and lifecycle registrations under a `ProfileCondition`,
+`PropertyCondition`, or custom `PredicateCondition`. Every condition is
+evaluated once after the Environment freezes and before graph validation:
+matched modules are registered atomically, unmatched modules leave no partial
+binding or lifecycle state, and both outcomes appear in the startup report
+without property keys or values. This is explicit Rust application assembly,
+not classpath scanning or implicit Spring Boot-style auto-configuration.
+`refresh()` and `start()` use a separate Context-local Tokio
 coordinator: cancelling a waiter cannot abandon initialization or startup,
 and application cancellation during either phase produces a structured
 rollback rather than publishing `Ready`. Every initialize/start/stop hook also
@@ -467,6 +475,7 @@ or a no-yield loop inside an async task.
 | Application context | Tokio-owned refresh/start/close, OS signal shutdown, bounded lifecycle hooks, deterministic rollback, context-local typed events | Phase 3 kernel |
 | Managed Tokio tasks | Context-owned task handles, failure-driven cancellation, graceful wait, bounded abort, shared shutdown result | Phase 3 kernel |
 | Application environment | Explicit PropertySource precedence, profiles, placeholders, typed lookup, and redacted snapshots | Phase 3 kernel |
+| Conditional component assembly | Build-time Profile/Property/custom conditions with atomic definition, binding, and lifecycle inclusion | Phase 3 kernel |
 | Events | Context-local typed event publication | Phase 3 kernel |
 | Async integration | Tokio-native cancellation, deadlines, and typed invocation context | Phase 2 kernel |
 | Web context | Request context, request scope, handler invocation, error mapping | Phase 4 contract |
@@ -589,7 +598,7 @@ compile-fail cases for invalid component
 fields, invalid collection qualifiers, non-async interception, and borrowed
 receivers. Broader signature support, expanded
 macro diagnostics, and AOP benchmarks remain open.
-The Phase 3 kernel has thirty-seven tests covering dependency-order startup,
+The Phase 3 kernel has forty-three tests covering dependency-order startup,
 reverse shutdown, initialize/start rollback, invalid transitions, idempotent
 close, concurrent close serialization, and context-local typed event
 isolation, plus managed injection of eleven framework resources,
@@ -601,8 +610,10 @@ pre-start application cancellation, bounded initialize/start rollback,
 stop-timeout continuation, typed shutdown-signal publication, application
 cancellation winning the OS-signal race, PropertySource precedence, profiles,
 typed conversion, nested placeholders, cycle/source failures, stop-hook panic
-isolation, and read-only/redacted startup reports that exclude environment
-keys and values.
+isolation, build-time Profile/Property/custom conditions, atomic conditional
+definition/lifecycle inclusion, fail-closed missing dependencies, redacted
+condition failures, and read-only/redacted startup reports that exclude
+environment keys and values.
 
 Phase 4 now makes `WebRequestScope` the Web facade over IoC `ScopeContext`.
 All ten adapters resolve singleton, transient, and request-scoped components

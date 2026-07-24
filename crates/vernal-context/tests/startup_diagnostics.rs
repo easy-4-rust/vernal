@@ -74,6 +74,7 @@ async fn report_tracks_registry_aop_subsystems_and_lifecycle_without_mutability(
         ready.external_dependencies()[0].state(),
         DiagnosticState::Degraded
     );
+    assert!(ready.condition_evaluations().is_empty());
     assert_eq!(ready.warnings(), ["preview-api"]);
     assert!(ready.unused_definitions().is_empty());
     assert_eq!(ready.registry().summary().definition_count(), 12);

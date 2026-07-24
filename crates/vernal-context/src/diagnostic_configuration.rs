@@ -1,16 +1,17 @@
 //! 应用诊断配置集合对象。
 
-use crate::SubsystemStatus;
+use crate::{ConditionEvaluationSnapshot, SubsystemStatus};
 
 /// 高层应用建造器传给 Context 的静态诊断元数据集合。
 ///
-/// 该内部对象把 feature、Adapter、外部依赖与告警代码作为一个原子值传递，
-/// 避免 Context 资源构造函数不断扩张。所有内容在应用构建后保持不可变。
+/// 该内部对象把 feature、Adapter、外部依赖、条件评估与告警代码作为一个原子值
+/// 传递，避免 Context 资源构造函数不断扩张。所有内容在应用构建后保持不可变。
 #[derive(Default)]
 pub(crate) struct DiagnosticConfiguration {
     enabled_features: Vec<String>,
     adapters: Vec<SubsystemStatus>,
     external_dependencies: Vec<SubsystemStatus>,
+    condition_evaluations: Vec<ConditionEvaluationSnapshot>,
     warnings: Vec<String>,
 }
 
@@ -20,12 +21,14 @@ impl DiagnosticConfiguration {
         enabled_features: Vec<String>,
         adapters: Vec<SubsystemStatus>,
         external_dependencies: Vec<SubsystemStatus>,
+        condition_evaluations: Vec<ConditionEvaluationSnapshot>,
         warnings: Vec<String>,
     ) -> Self {
         Self {
             enabled_features,
             adapters,
             external_dependencies,
+            condition_evaluations,
             warnings,
         }
     }
@@ -43,6 +46,11 @@ impl DiagnosticConfiguration {
     /// 返回外部依赖的脱敏状态。
     pub(crate) fn external_dependencies(&self) -> &[SubsystemStatus] {
         &self.external_dependencies
+    }
+
+    /// 返回构建期条件模块的脱敏评估结果。
+    pub(crate) fn condition_evaluations(&self) -> &[ConditionEvaluationSnapshot] {
+        &self.condition_evaluations
     }
 
     /// 返回应用构建阶段登记的脱敏告警代码。
