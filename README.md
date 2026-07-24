@@ -132,7 +132,7 @@ adapter crates contain runnable native integrations:
 | 1 | Axum | `vernal-axum` | HTTP + Tower | Phase 5 adapter + strict AOP |
 | 2 | Actix Web | `vernal-actix-web` | HTTP | Phase 5 adapter + strict Local-AOP |
 | 3 | Rocket | `vernal-rocket` | HTTP | Phase 5 adapter |
-| 4 | Warp | `vernal-warp` | HTTP | Phase 5 adapter |
+| 4 | Warp | `vernal-warp` | HTTP | Phase 5 adapter + strict AOP |
 | 5 | Salvo | `vernal-salvo` | HTTP | Phase 5 adapter + strict AOP |
 | 6 | Poem | `vernal-poem` | HTTP | Phase 5 adapter + strict AOP |
 | 7 | Ntex | `vernal-ntex` | HTTP | Phase 5 adapter + strict Local-AOP |
@@ -150,7 +150,12 @@ operation with the low-cardinality resource pattern, and drives the complete
 route metadata or plans fail closed, while native Actix errors remain native.
 Rocket provides
 Managed State, Request Guards, and a body-aware Fairing. Warp provides native
-extension filters over its official Tower Service boundary. Salvo provides a
+extension filters plus strict Send-AOP over its official Tower Service
+boundary. Because Warp does not expose the matched template, each concrete
+Filter Service receives its full low-cardinality route pattern explicitly;
+the real method and an owned request snapshot propagate through the plan,
+missing patterns or plans fail closed, and policy failures become native Warp
+responses without calling the Filter. Salvo provides a
 native Hoop, typed Depot access, frame/trailer-preserving body cleanup, and
 strict Send-AOP over the complete Handler chain. It derives low-cardinality
 operation identity from Salvo's matched path plus the real method, propagates

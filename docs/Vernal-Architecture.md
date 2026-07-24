@@ -60,8 +60,9 @@
   native Transform/Service middleware, body-bound Scope cleanup, matched
   resource operation identity, and strict Local-AOP;
   `vernal-rocket` provides managed state, request guards, and a body-aware
-  fairing; `vernal-warp` provides native extension filters and a Tower Service
-  body scope; `vernal-salvo` provides a native Hoop, typed Depot access,
+  fairing; `vernal-warp` provides native extension filters, a Tower Service
+  body scope, explicit route-pattern identity, and fail-closed strict
+  Send-AOP; `vernal-salvo` provides a native Hoop, typed Depot access,
   frame/trailer-preserving body scope, matched-path operation identity, and
   fail-closed strict Send-AOP over borrowed Handler resources; `vernal-poem` provides native
   Middleware/Endpoint composition, typed extractors, body-bound Scope cleanup,
@@ -623,7 +624,7 @@ The versioned coverage set is owned by
 | 1 | Axum | `vernal-axum` | HTTP, body streaming, Tower | Tower Layer, Service, extractor/context bridge |
 | 2 | Actix Web | `vernal-actix-web` | HTTP, body streaming, strict Local-AOP | Transform/Service middleware, app data, matched resource pattern |
 | 3 | Rocket | `vernal-rocket` | HTTP request/response, optional streaming | Fairing, request guard, managed state |
-| 4 | Warp | `vernal-warp` | HTTP, body streaming | Filter composition and rejection mapping |
+| 4 | Warp | `vernal-warp` | HTTP, body streaming, strict AOP | Filter composition, explicit route pattern, Tower Service |
 | 5 | Salvo | `vernal-salvo` | HTTP, body streaming, strict AOP | Handler, Hoop, matched path, borrowed Send target |
 | 6 | Poem | `vernal-poem` | HTTP, body streaming, strict AOP | Middleware, Endpoint, request data |
 | 7 | Ntex | `vernal-ntex` | Network HTTP, body streaming, strict Local-AOP | Service/middleware, explicit resource pattern, borrowed worker-local target |
@@ -648,7 +649,9 @@ Strict middleware wraps a concrete Resource after matching, uses the
 low-cardinality resource pattern as operation identity, fail-closes missing
 metadata/plans, and preserves native Actix errors. Rocket adds
 managed state, request guards, and a body-aware fairing; Warp adds extension
-filters and an official Tower Service lifecycle; Salvo adds a Hoop, typed
+filters, an official Tower Service lifecycle, owned request snapshots, and
+fail-closed strict Send-AOP for a concrete Filter Service using an explicit
+low-cardinality route pattern; Salvo adds a Hoop, typed
 Depot access, frame/trailer-preserving body lifecycle, matched-path operation
 identity, owned request snapshots, and fail-closed strict Send-AOP over its
 complete borrowed Handler chain; Poem adds

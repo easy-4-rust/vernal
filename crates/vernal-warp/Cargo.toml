@@ -10,6 +10,7 @@ publish = false
 [dependencies]
 tokio.workspace = true
 tower.workspace = true
+vernal-aop = { path = "../vernal-aop" }
 vernal-context = { path = "../vernal-context" }
 vernal-http = { path = "../vernal-http" }
 vernal-ioc = { path = "../vernal-ioc" }

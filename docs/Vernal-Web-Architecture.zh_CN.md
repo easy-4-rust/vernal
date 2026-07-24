@@ -34,7 +34,8 @@ Axum 已引入 Axum 0.8，实现原生 Router 装配与类型化 Context、组�
 Transform/Service Middleware、App Data/Extension 提取器和 Body 绑定 Scope
 释放；Rocket 0.5.1 实现 Managed State、Request Guard，以及覆盖请求与响应的
 Body 感知 Fairing；Warp 0.4.3 通过 `warp::ext` Filter 和官方 `warp::service`
-Tower 边界实现 Context/组件/Scope 提取与完整 Body 生命周期；Salvo 采用最后
+Tower 边界实现 Context/组件/Scope 提取、完整 Body 生命周期，以及基于显式
+路由模式的 fail-closed 严格 Send-AOP；Salvo 采用最后
 一个兼容 Rust 1.85 的 0.85.0 版本，实现原生 Hoop、类型化 Depot 访问和
 Frame/Trailer 保真的 Body Scope，以及覆盖完整 Handler 链的严格 Send-AOP；
 Poem 采用与 MSRV 一致的 3.1.12 版本，
@@ -237,7 +238,7 @@ Trace -> Context -> RequestScope -> Security/AOP -> Handler -> ErrorMapping
 | 1 | Axum | `vernal-axum` | HTTP + Tower | `Layer`、State/Extension、Extractor、IntoResponse | Phase 5 适配已实现 |
 | 2 | Actix Web | `vernal-actix-web` | HTTP | `Transform`/`Service`、App Data、Extractor、Responder | Adapter + 严格 Local-AOP 已实现 |
 | 3 | Rocket | `vernal-rocket` | HTTP | Fairing、Request Guard、Managed State、Responder | Phase 5 适配已实现 |
-| 4 | Warp | `vernal-warp` | HTTP | Filter、Rejection、Reply | Phase 5 适配已实现 |
+| 4 | Warp | `vernal-warp` | HTTP | Filter、Rejection、Reply、Tower Service | Adapter + 严格 AOP 已实现 |
 | 5 | Salvo | `vernal-salvo` | HTTP | Handler、Hoop、Depot、Writer | Adapter + 严格 AOP 已实现 |
 | 6 | Poem | `vernal-poem` | HTTP | Middleware、Endpoint、Data、IntoResponse | Adapter + 严格 AOP 已实现 |
 | 7 | Ntex | `vernal-ntex` | HTTP | Service/Middleware、App State、Extractor | Adapter + 严格 Local-AOP 已实现 |
@@ -261,10 +262,16 @@ Trace -> Context -> RequestScope -> Security/AOP -> Handler -> ErrorMapping
   包装原生 Body，直到读取结束或取消后才释放。Rocket 0.5 的公共 Body 只暴露
   `AsyncRead`，所以包装后成为 streamed body；字节、背压和错误保留，但原有
   “已知长度/可 Seek”分类无法通过公共 API 原样重建。
-- **Warp**：用 `warp::ext` 组合 Filter 提取 Context、组件与 Scope，策略失败映射
-  为明确 Rejection，不能 panic。Warp 0.4 的公开 Reply 使用私有 Body 类型，
-  因此完整 Body Scope 必须通过官方 `warp::service(route)` 与
-  `VernalWarpLayer` 组合；该 Service 边界保留 Frame、Trailer、背压与取消。
+- **Warp**：用 `warp::ext` 组合 Filter 提取 Context、组件与 Scope，提取缺失
+  映射为明确 Rejection，不能 panic。Warp 0.4 的公开 Reply 使用私有 Body
+  类型，因此完整 Body Scope 必须通过官方 `warp::service(route)` 边界组合。
+  `VernalWarpLayer` 提供纯生命周期路径；`VernalWarpAopLayer` 进一步把完整
+  Filter Service 放进严格 Tower AOP，同时保留 Frame、Trailer、背压与取消。
+  Warp 的公共 Service Request 不暴露匹配后的路由模板，因此一个严格 Layer
+  包裹一个具体 Filter Service，并显式接收同一条完整低基数路由模式。真实 HTTP
+  方法与 owned 请求快照通过 `RequestContext` 传播；空模式和缺失计划时
+  fail-closed，策略失败映射成 Warp 原生响应且不执行 Filter，成功的原生响应
+  保持状态、Header、Extension 与私有 Body。
 - **Salvo**：Hoop 包裹调用链，Depot 类型化携带 Context、组件与请求 Scope；
   Handler 保持 Salvo 原生签名。`ResBody` 直接按 `http_body::Body` 包装，保留
   Data Frame、Trailer、上游错误与背压，并在完成或取消后关闭 Scope。0.85.0

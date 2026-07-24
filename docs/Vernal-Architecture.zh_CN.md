@@ -53,8 +53,9 @@
   请求 Scope 提取器；`vernal-actix-web` 已提供原生 Transform/Service 中间件和
   Body 绑定 Scope 释放、匹配资源操作身份与严格 Local-AOP；`vernal-rocket`
   已提供 Managed State、Request Guard
-  与 Body 感知 Fairing；`vernal-warp` 已提供原生 Extension Filter 与 Tower
-  Service Body Scope；`vernal-salvo` 已提供原生 Hoop、类型化 Depot、
+  与 Body 感知 Fairing；`vernal-warp` 已提供原生 Extension Filter、Tower
+  Service Body Scope、显式路由模式身份与 fail-closed 严格 Send-AOP；
+  `vernal-salvo` 已提供原生 Hoop、类型化 Depot、
   Frame/Trailer 保真的 Body Scope、匹配路径操作身份，以及覆盖借用型 Handler
   资源的 fail-closed 严格 Send-AOP；`vernal-poem` 已提供原生
   Middleware/Endpoint、类型化提取器、Body 绑定 Scope 释放、匹配路由操作
@@ -633,7 +634,7 @@ flowchart TD
 | 1 | Axum | `vernal-axum` | HTTP、Body Streaming、Tower | Tower Layer、Service、Extractor/Context Bridge |
 | 2 | Actix Web | `vernal-actix-web` | HTTP、Body Streaming、严格 Local-AOP | Transform/Service Middleware、App Data、匹配资源模式 |
 | 3 | Rocket | `vernal-rocket` | HTTP 请求/响应、可选 Streaming | Fairing、Request Guard、Managed State |
-| 4 | Warp | `vernal-warp` | HTTP、Body Streaming | Filter 组合与 Rejection 映射 |
+| 4 | Warp | `vernal-warp` | HTTP、Body Streaming、严格 AOP | Filter 组合、显式路由模式、Tower Service |
 | 5 | Salvo | `vernal-salvo` | HTTP、Body Streaming、严格 AOP | Handler、Hoop、匹配路径、借用型 Send 目标 |
 | 6 | Poem | `vernal-poem` | HTTP、Body Streaming、严格 AOP | Middleware、Endpoint、Request Data |
 | 7 | Ntex | `vernal-ntex` | Network HTTP、Body Streaming、严格 Local-AOP | Service/Middleware、显式资源模式、借用型 Worker-local 目标 |
@@ -655,7 +656,9 @@ Frame/Trailer、取消、Tower 生命周期、AOP 调用链和 Hyper 传输能�
 原生错误。
 Rocket 已增加 Managed State、Request Guard
 与 Body 感知 Fairing，
-Warp 已增加 Extension Filter 与官方 Tower Service 生命周期，Salvo 已增加
+Warp 已增加 Extension Filter、官方 Tower Service 生命周期、owned 请求快照，
+以及基于显式低基数路由模式、覆盖具体 Filter Service 的 fail-closed 严格
+Send-AOP。Salvo 已增加
 Hoop、Depot、Frame/Trailer 保真的 Body 生命周期、匹配路径操作身份、owned
 请求快照，以及覆盖完整借用型 Handler 链的 fail-closed 严格 Send-AOP。Poem 已增加
 Middleware/Endpoint、Request Extension 提取器、Body 生命周期集成，以及基于

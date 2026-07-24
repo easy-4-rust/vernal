@@ -120,7 +120,7 @@ crate 均已具备可运行的原生集成：
 | 1 | Axum | `vernal-axum` | HTTP + Tower | Phase 5 适配 + 严格 AOP 已实现 |
 | 2 | Actix Web | `vernal-actix-web` | HTTP | Phase 5 适配 + 严格 Local-AOP 已实现 |
 | 3 | Rocket | `vernal-rocket` | HTTP | Phase 5 适配已实现 |
-| 4 | Warp | `vernal-warp` | HTTP | Phase 5 适配已实现 |
+| 4 | Warp | `vernal-warp` | HTTP | Phase 5 适配 + 严格 AOP 已实现 |
 | 5 | Salvo | `vernal-salvo` | HTTP | Phase 5 适配 + 严格 AOP 已实现 |
 | 6 | Poem | `vernal-poem` | HTTP | Phase 5 适配 + 严格 AOP 已实现 |
 | 7 | Ntex | `vernal-ntex` | HTTP | Phase 5 适配 + 严格 Local-AOP 已实现 |
@@ -135,7 +135,10 @@ Scope 跟随响应 Body 的原生
 资源模式建立操作身份，并通过 Local-AOP 链驱动完整的 `Rc`、非 `Send` Service
 Future；缺少路由元数据或计划时 fail-closed，同时保留 Actix 原生错误。Rocket
 已提供 Managed State、Request Guard 和 Body
-感知 Fairing；Warp 已通过官方 Tower Service 边界提供原生 Extension Filter；
+感知 Fairing；Warp 已通过官方 Tower Service 边界提供原生 Extension Filter
+和严格 Send-AOP。由于 Warp 不公开匹配后的模板，每个具体 Filter Service
+显式接收完整低基数路由模式；真实方法与 owned 请求快照进入调用计划，缺少模式
+或计划时 fail-closed，策略失败映射成 Warp 原生响应且不执行 Filter；
 Salvo 已提供原生 Hoop、类型化 Depot 访问、Frame/Trailer 保真的 Body 释放，
 以及覆盖完整 Handler 链的严格 Send-AOP。操作身份取自 Salvo 匹配后的低基数
 路径和真实 HTTP 方法，请求上下文携带 owned 快照；缺少元数据或计划时

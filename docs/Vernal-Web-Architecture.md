@@ -35,8 +35,9 @@ MSRV-compatible 4.11/actix-http 3.11 line and implements native
 Transform/Service middleware, App Data/Extension extractors, and body-bound
 Scope cleanup. Rocket 0.5.1 implements managed state, request guards, and a
 request/response body-aware fairing. Warp 0.4.3 combines native `warp::ext`
-filters with the official `warp::service` Tower boundary for typed extraction
-and full body lifecycle. Salvo uses 0.85.0, the last release compatible with
+filters with the official `warp::service` Tower boundary for typed extraction,
+full body lifecycle, and fail-closed strict Send-AOP using an explicit route
+pattern. Salvo uses 0.85.0, the last release compatible with
 Rust 1.85, and implements a native Hoop, typed Depot access, and a
 frame/trailer-preserving body scope plus strict Send-AOP over the complete
 Handler chain. Poem uses the MSRV-aligned 3.1.12 release
@@ -255,7 +256,7 @@ This crate implements HTTP transport concerns only:
 | 1 | Axum | `vernal-axum` | HTTP + Tower | `Layer`, State/Extension, Extractor, IntoResponse | Phase 5 adapter |
 | 2 | Actix Web | `vernal-actix-web` | HTTP | `Transform`/`Service`, App Data, Extractor, Responder | Adapter + strict Local-AOP |
 | 3 | Rocket | `vernal-rocket` | HTTP | Fairing, Request Guard, Managed State, Responder | Phase 5 adapter |
-| 4 | Warp | `vernal-warp` | HTTP | Filter, Rejection, Reply | Phase 5 adapter |
+| 4 | Warp | `vernal-warp` | HTTP | Filter, Rejection, Reply, Tower Service | Adapter + strict AOP |
 | 5 | Salvo | `vernal-salvo` | HTTP | Handler, Hoop, Depot, Writer | Adapter + strict AOP |
 | 6 | Poem | `vernal-poem` | HTTP | Middleware, Endpoint, Data, IntoResponse | Adapter + strict AOP |
 | 7 | Ntex | `vernal-ntex` | HTTP | Service/Middleware, App State, Extractor | Adapter + strict Local-AOP |
@@ -283,10 +284,19 @@ This crate implements HTTP transport concerns only:
   the original known-length/seekable classification cannot be reconstructed
   through public APIs.
 - **Warp:** `warp::ext` composition filters extract context, components, and
-  scope; policy denial becomes a typed rejection rather than panic. Warp 0.4's
-  public Reply contains a private body type, so full body scope is composed at
-  the official `warp::service(route)` boundary with `VernalWarpLayer`, which
-  preserves frames, trailers, backpressure, and cancellation.
+  scope; missing extraction becomes a typed rejection rather than panic. Warp
+  0.4's public Reply contains a private body type, so full body scope is
+  composed at the official `warp::service(route)` boundary. `VernalWarpLayer`
+  provides the lifecycle-only path; `VernalWarpAopLayer` additionally places
+  the complete Filter Service behind strict Tower AOP while preserving frames,
+  trailers, backpressure, and cancellation. Warp does not expose the matched
+  route template through its public Service request, so one strict layer wraps
+  one concrete Filter Service and receives the same full low-cardinality route
+  pattern explicitly. The real HTTP method and owned request snapshot propagate
+  through `RequestContext`; empty patterns and missing plans fail closed,
+  policy failures map to native Warp responses without executing the Filter,
+  and successful native responses retain status, headers, extensions, and
+  private Body.
 - **Salvo:** a Hoop wraps the invocation, typed Depot entries carry context,
   components, and request scope, and handlers retain native signatures.
   `ResBody` is wrapped directly as `http_body::Body`, preserving data frames,
