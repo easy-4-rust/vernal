@@ -14,6 +14,7 @@ salvo.workspace = true
 sync_wrapper.workspace = true
 tokio.workspace = true
 tokio-util.workspace = true
+vernal-aop = { path = "../vernal-aop" }
 vernal-context = { path = "../vernal-context" }
 vernal-http = { path = "../vernal-http" }
 vernal-ioc = { path = "../vernal-ioc" }
@@ -21,6 +22,7 @@ vernal-web = { path = "../vernal-web" }
 
 [dev-dependencies]
 http-body-util.workspace = true
+salvo = { workspace = true, features = ["test"] }
 
 [lints]
 workspace = true

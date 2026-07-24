@@ -27,7 +27,7 @@ hyper-util = { version = "0.1.20", features = ["client-legacy", "http1", "server
 ntex = { version = "=2.18.0", default-features = false, features = ["tokio"] }
 poem = { version = "=3.1.12", default-features = false }
 rocket = { version = "=0.5.1", default-features = false }
-salvo = { version = "=0.85.0", default-features = false }
+salvo = { version = "=0.85.0", default-features = false, features = ["matched-path"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.145"
 sync_wrapper = "1.0.2"

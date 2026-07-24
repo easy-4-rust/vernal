@@ -1,5 +1,8 @@
 //! Vernal AOP 内核的顺序、短路、改写、取消和并发契约测试。
 
+#[path = "aop_support/borrowed_target.rs"]
+mod borrowed_target;
+
 use std::{
     future::pending,
     io,
@@ -10,11 +13,12 @@ use std::{
     time::Duration,
 };
 
+use borrowed_target::BorrowedTarget;
 use tokio::{sync::Mutex, task::JoinSet, time::Instant};
 use tokio_util::sync::CancellationToken;
 use vernal_aop::{
-    Advisor, Interceptor, Invocation, InvocationError, InvocationFuture, InvocationPlanBuilder,
-    InvocationResult, InvocationTarget, InvocationValue, Next, Operation,
+    Advisor, BorrowedInvocationTarget, Interceptor, Invocation, InvocationError, InvocationFuture,
+    InvocationPlanBuilder, InvocationResult, InvocationTarget, InvocationValue, Next, Operation,
 };
 
 struct RecordingInterceptor {
@@ -110,6 +114,26 @@ impl Interceptor for CountingInterceptor {
 
 fn always() -> impl Fn(&Operation) -> bool {
     |_| true
+}
+
+#[tokio::test]
+async fn borrowed_send_target_stays_inside_current_call_lifetime() {
+    let operation = Operation::new("SalvoEndpoint", "GET");
+    let plan = InvocationPlanBuilder::new().build(operation.clone());
+    let mut events = Vec::new();
+    let mut target = BorrowedTarget::new(&mut events);
+
+    let value = plan
+        .invoke_borrowed(
+            Invocation::new(operation).shared(),
+            &mut target as &mut dyn BorrowedInvocationTarget,
+        )
+        .await
+        .expect("borrowed Send target");
+    let value = value.downcast::<String>().expect("string result");
+
+    assert_eq!(value.as_str(), "borrowed-result");
+    assert_eq!(events, ["borrowed-target:before", "borrowed-target:after"]);
 }
 
 #[test]

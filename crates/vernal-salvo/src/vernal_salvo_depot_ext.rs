@@ -4,7 +4,7 @@ use std::{any::Any, sync::Arc};
 
 use salvo::Depot;
 use vernal_context::ApplicationContext;
-use vernal_web::WebRequestScope;
+use vernal_web::{RequestContext, WebRequestScope};
 
 use crate::SalvoRejection;
 
@@ -32,6 +32,13 @@ pub trait VernalSalvoDepotExt {
     ///
     /// 未安装 [`VernalSalvoHoop`](crate::VernalSalvoHoop) 时返回脱敏拒绝。
     fn vernal_request_scope(&self) -> Result<Arc<WebRequestScope>, SalvoRejection>;
+
+    /// 读取严格 AOP 为当前请求创建的类型化请求上下文。
+    ///
+    /// # Errors
+    ///
+    /// 使用普通 Hoop，或严格调用尚未建立上下文时返回脱敏拒绝。
+    fn vernal_request_context(&self) -> Result<Arc<RequestContext>, SalvoRejection>;
 }
 
 impl VernalSalvoDepotExt for Depot {
@@ -55,5 +62,11 @@ impl VernalSalvoDepotExt for Depot {
         self.obtain::<Arc<WebRequestScope>>()
             .cloned()
             .map_err(|_| SalvoRejection::MissingRequestScope)
+    }
+
+    fn vernal_request_context(&self) -> Result<Arc<RequestContext>, SalvoRejection> {
+        self.obtain::<Arc<RequestContext>>()
+            .cloned()
+            .map_err(|_| SalvoRejection::MissingRequestContext)
     }
 }

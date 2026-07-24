@@ -3,7 +3,8 @@
 use std::sync::Arc;
 
 use crate::{
-    Interceptor, Invocation, InvocationError, InvocationResult, InvocationTarget, Next, Operation,
+    BorrowedInvocationTarget, Interceptor, Invocation, InvocationError, InvocationResult,
+    InvocationTarget, Next, Operation, target_ref::TargetRef,
 };
 
 /// 针对一个操作预编译的有序拦截器链。
@@ -39,6 +40,35 @@ impl InvocationPlan {
         invocation: Arc<Invocation>,
         target: Arc<InvocationTarget>,
     ) -> InvocationResult {
+        self.invoke_target(invocation, TargetRef::Static(target.as_ref()))
+            .await
+    }
+
+    /// 执行可以独占借用当前异步调用期资源的完整线程安全环绕链。
+    ///
+    /// 该入口适合 Salvo `FlowCtrl` 一类 Future 满足 `Send`，但必须借用原生
+    /// Request、Response 或调用控制器的框架对象。目标借用不会逃出本方法；
+    /// 取消、deadline、顺序和错误语义与 [`Self::invoke`] 完全相同。
+    ///
+    /// # Errors
+    ///
+    /// 操作不匹配、调用取消、超过截止时间，或拦截器及目标失败时返回
+    /// [`InvocationError`]。
+    pub async fn invoke_borrowed<'a>(
+        &'a self,
+        invocation: Arc<Invocation>,
+        target: &'a mut (dyn BorrowedInvocationTarget + 'a),
+    ) -> InvocationResult {
+        self.invoke_target(invocation, TargetRef::Borrowed(target))
+            .await
+    }
+
+    /// 在同一条内部路径上执行静态目标和借用型目标。
+    async fn invoke_target<'a>(
+        &'a self,
+        invocation: Arc<Invocation>,
+        target: TargetRef<'a>,
+    ) -> InvocationResult {
         if invocation.operation() != &self.operation {
             return Err(InvocationError::PlanMismatch {
                 expected: self.operation.clone(),
@@ -48,7 +78,7 @@ impl InvocationPlan {
 
         let cancellation = invocation.cancellation().clone();
         let deadline = invocation.deadline();
-        let execution = Next::new(&self.interceptors, target.as_ref()).run(invocation);
+        let execution = Next::new(&self.interceptors, target).run(invocation);
 
         if let Some(deadline) = deadline {
             tokio::select! {

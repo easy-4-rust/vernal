@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use crate::{Interceptor, Invocation, InvocationFuture, InvocationTarget};
+use crate::{Interceptor, Invocation, InvocationFuture, target_ref::TargetRef};
 
 /// 指向拦截器链中下一个节点。
 ///
@@ -10,16 +10,13 @@ use crate::{Interceptor, Invocation, InvocationFuture, InvocationTarget};
 /// 拦截器先进入、后退出，自然形成与 Spring `Around` 一致的栈式语义。
 pub struct Next<'a> {
     interceptors: &'a [Arc<dyn Interceptor>],
-    target: &'a InvocationTarget,
+    target: TargetRef<'a>,
     index: usize,
 }
 
 impl<'a> Next<'a> {
     /// 从调用计划首节点创建后继对象。
-    pub(crate) fn new(
-        interceptors: &'a [Arc<dyn Interceptor>],
-        target: &'a InvocationTarget,
-    ) -> Self {
+    pub(crate) fn new(interceptors: &'a [Arc<dyn Interceptor>], target: TargetRef<'a>) -> Self {
         Self {
             interceptors,
             target,
@@ -39,7 +36,7 @@ impl<'a> Next<'a> {
                 };
                 interceptor.intercept(invocation, next).await
             } else {
-                (self.target)(invocation).await
+                self.target.invoke(invocation).await
             }
         })
     }
