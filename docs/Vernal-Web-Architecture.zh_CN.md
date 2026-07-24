@@ -30,7 +30,9 @@
   TCP/HTTP 连接验证。
 
 Axum 已引入 Axum 0.8，实现原生 Router 装配与类型化 Context、组件、请求 Scope
-提取器；其余九个应用/RPC Adapter 仍是描述符。
+提取器；Tonic 采用兼容 MSRV 的 0.12 版本线，实现 Context Interceptor、类型化
+Request 扩展、`GrpcMethod` 路由元数据、稳定 `Status` 映射和 Tower 组合。其余
+八个应用 Adapter 仍是描述符。
 
 版本化选择清单由
 [`web-integration-manifest.toml`](../web-integration-manifest.toml) 维护。
@@ -215,7 +217,7 @@ Trace -> Context -> RequestScope -> Security/AOP -> Handler -> ErrorMapping
 | 7 | Ntex | `vernal-ntex` | HTTP | Service/Middleware、App State、Extractor | 骨架 |
 | 8 | Gotham | `vernal-gotham` | HTTP | State Middleware、Pipeline、Handler | 骨架 |
 | 9 | Tide | `vernal-tide` | HTTP | Middleware、Request State、Response | 骨架 |
-| 10 | Tonic | `vernal-tonic` | RPC Streaming + Tower | Layer、Interceptor、Extension、Status、Streaming | 骨架 |
+| 10 | Tonic | `vernal-tonic` | RPC Streaming + Tower | Layer、Interceptor、Extension、Status、Streaming | Phase 5 适配已实现 |
 
 ### 8.1 框架特定约束
 

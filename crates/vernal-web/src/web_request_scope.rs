@@ -101,10 +101,9 @@ impl WebRequestScope {
         let hooks = std::mem::take(&mut *self.close_hooks.lock().await);
         let mut first_error = None;
         for hook in hooks.into_iter().rev() {
-            if let Err(source) = hook().await
-                && first_error.is_none()
-            {
-                first_error = Some(ScopeError::CloseHook { source });
+            let hook_error = hook().await.err();
+            if first_error.is_none() {
+                first_error = hook_error.map(|source| ScopeError::CloseHook { source });
             }
         }
         self.components.write().await.clear();

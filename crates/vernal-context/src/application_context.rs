@@ -197,10 +197,9 @@ impl ApplicationContext {
     async fn stop_all(components: &[Arc<dyn Lifecycle>]) -> Option<ContextError> {
         let mut first_error = None;
         for component in components.iter().rev() {
-            if let Err(source) = component.stop().await
-                && first_error.is_none()
-            {
-                first_error = Some(ContextError::Lifecycle {
+            let stop_error = component.stop().await.err();
+            if first_error.is_none() {
+                first_error = stop_error.map(|source| ContextError::Lifecycle {
                     component: component.name(),
                     phase: LifecyclePhase::Stop,
                     source,

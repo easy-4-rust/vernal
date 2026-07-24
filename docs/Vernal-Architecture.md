@@ -34,7 +34,8 @@
 ### 1.3 Current state
 
 - `[Confirmed]` The manifest declares Edition 2024, resolver 3, and MSRV
-  1.85.0. Current local gates use Rust 1.97.1; MSRV CI remains a target.
+  1.85.0. The workspace passes `cargo +1.85.0 check --workspace --all-targets`
+  locally; automated MSRV CI remains a target.
 - `[Confirmed]` Six kernel/composition crates and fourteen web-related crates
   exist; four web foundation crates now expose callable behavior.
 - `[Confirmed]` Every crate is `publish = false`; no crates.io or stable API
@@ -52,8 +53,10 @@
   `vernal-hyper` provide request scope, standard HTTP body frames/trailers,
   Tower lifecycle layers, and a real Hyper transport bridge.
 - `[Confirmed]` `vernal-axum` provides native Router assembly and typed
-  Context, component, and request-scope extractors.
-- `[Skeleton]` Macros and the remaining nine framework adapters still validate
+  Context, component, and request-scope extractors; `vernal-tonic` provides a
+  Context interceptor, typed Request extensions, `Status` mapping, and Tower
+  composition.
+- `[Skeleton]` Macros and the remaining eight framework adapters still validate
   crate boundaries only.
 - `[Target]` Phase 2 macros, Context AOP-plan aggregation, framework adapters,
   and later production gates remain.
@@ -462,8 +465,9 @@ ranking.
 The workspace has fourteen web-related crates: `vernal-web`, `vernal-http`,
 Tower/Hyper, and ten adapters. The four foundations now provide callable
 request-scope, HTTP frame/trailer, cancellation, Tower lifecycle, and Hyper
-transport behavior. Axum adds native Router assembly and typed extractors; the
-remaining nine upstream framework adapters are compile-checked descriptors.
+transport behavior. Axum adds native Router assembly and typed extractors;
+Tonic adds native Request/Metadata/Status and Tower integration. The remaining
+eight upstream framework adapters are compile-checked descriptors.
 The detailed contract is
 [Vernal Web Architecture](./Vernal-Web-Architecture.md).
 

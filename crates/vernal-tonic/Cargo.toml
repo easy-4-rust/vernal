@@ -8,8 +8,19 @@ description = "Tonic gRPC integration for Vernal."
 publish = false
 
 [dependencies]
+tonic.workspace = true
+vernal-context = { path = "../vernal-context" }
+vernal-ioc = { path = "../vernal-ioc" }
 vernal-tower = { path = "../vernal-tower" }
 vernal-web = { path = "../vernal-web" }
+
+[dev-dependencies]
+http.workspace = true
+http-body-util.workspace = true
+tokio.workspace = true
+tokio-util.workspace = true
+tower.workspace = true
+vernal-http = { path = "../vernal-http" }
 
 [lints]
 workspace = true

@@ -29,9 +29,11 @@ The four shared/foundation crates now expose callable contracts:
 - `vernal-hyper` converts `Incoming` into the same frame stream without
   buffering and is verified over a real TCP/HTTP connection.
 
-Axum now depends on Axum 0.8 and implements native Router assembly plus typed
-Context, component, and request-scope extractors. The other nine
-application/RPC adapters remain descriptors.
+Axum depends on Axum 0.8 and implements native Router assembly plus typed
+Context, component, and request-scope extractors. Tonic uses the MSRV-compatible
+0.12 line and implements a Context interceptor, typed Request extensions,
+`GrpcMethod` routing metadata, stable `Status` mapping, and Tower composition.
+The other eight application adapters remain descriptors.
 
 The versioned selection is recorded in
 [`web-integration-manifest.toml`](../web-integration-manifest.toml).
@@ -227,7 +229,7 @@ This crate implements HTTP transport concerns only:
 | 7 | Ntex | `vernal-ntex` | HTTP | Service/Middleware, App State, Extractor | Skeleton |
 | 8 | Gotham | `vernal-gotham` | HTTP | State Middleware, Pipeline, Handler | Skeleton |
 | 9 | Tide | `vernal-tide` | HTTP | Middleware, Request State, Response | Skeleton |
-| 10 | Tonic | `vernal-tonic` | RPC Streaming + Tower | Layer, Interceptor, Extension, Status, Streaming | Skeleton |
+| 10 | Tonic | `vernal-tonic` | RPC Streaming + Tower | Layer, Interceptor, Extension, Status, Streaming | Phase 5 adapter |
 
 ### 8.1 Framework-specific constraints
 
