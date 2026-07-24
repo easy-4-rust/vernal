@@ -7,7 +7,9 @@ use std::{
 
 use tokio::runtime::Handle;
 use tokio_util::sync::CancellationToken;
-use vernal_aop::{Advisor, InvocationPlanBuilder, Operation};
+use vernal_aop::{
+    Advisor, InvocationPlanBuilder, LocalAdvisor, LocalInvocationPlanBuilder, Operation,
+};
 use vernal_ioc::{ComponentDefinition, DefinitionError, Qualifier, RegistryBuilder, TraitBinding};
 
 use crate::{
@@ -21,12 +23,13 @@ type LifecycleRegistrar = dyn FnOnce(&mut ApplicationContextBuilder) + Send + Sy
 /// 统一收集组件、生命周期、切面和 Tokio Context 资源的应用建造器。
 ///
 /// 与接收冻结 [`vernal_ioc::Registry`] 的低层 [`ApplicationContextBuilder`]
-/// 不同，该建造器在依赖图冻结前自动注册四类框架内建组件：
+/// 不同，该建造器在依赖图冻结前自动注册五类框架内建组件：
 ///
 /// - [`Handle`]：应用绑定的 Tokio Runtime；
 /// - [`CancellationToken`]：应用关闭与后台任务协作取消；
 /// - [`EventBus`]：Context 内类型化事件；
 /// - [`vernal_aop::InvocationPlanCatalog`]：预编译 AOP 调用计划。
+/// - [`vernal_aop::LocalInvocationPlanCatalog`]：预编译 Local-AOP 调用计划。
 ///
 /// 业务组件可以像依赖普通 Rust 类型一样依赖它们，不需要全局 Service Locator
 /// 或 Vernal 专用包装 trait。
@@ -34,6 +37,7 @@ pub struct VernalApplicationBuilder {
     registry: RegistryBuilder,
     lifecycle_registrars: Vec<Box<LifecycleRegistrar>>,
     invocation_plans: InvocationPlanBuilder,
+    local_invocation_plans: LocalInvocationPlanBuilder,
     operations: Vec<Operation>,
     runtime: Arc<Handle>,
     cancellation: Arc<CancellationToken>,
@@ -52,6 +56,7 @@ impl VernalApplicationBuilder {
             registry: RegistryBuilder::new(),
             lifecycle_registrars: Vec::new(),
             invocation_plans: InvocationPlanBuilder::new(),
+            local_invocation_plans: LocalInvocationPlanBuilder::new(),
             operations: Vec::new(),
             runtime: Arc::new(runtime),
             cancellation: Arc::new(CancellationToken::new()),
@@ -78,7 +83,7 @@ impl VernalApplicationBuilder {
     /// 注册一个业务或基础设施组件定义。
     ///
     /// 内建类型由 [`Self::build`] 自动注册；业务代码不应重复注册同类型的
-    /// `Handle`、`CancellationToken`、`EventBus` 或调用计划目录。
+    /// `Handle`、`CancellationToken`、`EventBus` 或两类调用计划目录。
     ///
     /// # Errors
     ///
@@ -175,6 +180,12 @@ impl VernalApplicationBuilder {
         self
     }
 
+    /// 注册一个面向 `!Send` 目标 Future 的 Local-AOP 顾问。
+    pub fn local_advisor(&mut self, advisor: LocalAdvisor) -> &mut Self {
+        self.local_invocation_plans.register(advisor);
+        self
+    }
+
     /// 声明一个需要在应用构建阶段预编译调用计划的组件操作。
     pub fn operation(&mut self, operation: Operation) -> &mut Self {
         self.operations.push(operation);
@@ -228,7 +239,12 @@ impl VernalApplicationBuilder {
     /// [`ApplicationBuildError`]。
     pub fn build(mut self) -> Result<ApplicationContext, ApplicationBuildError> {
         // Pointcut 只在启动阶段匹配；运行期目录保持不可变。
-        let invocation_plans = Arc::new(self.invocation_plans.build_catalog(self.operations));
+        let invocation_plans = Arc::new(
+            self.invocation_plans
+                .build_catalog(self.operations.iter().cloned()),
+        );
+        let local_invocation_plans =
+            Arc::new(self.local_invocation_plans.build_catalog(self.operations));
 
         // 内建原生对象必须在图冻结前进入注册表，业务组件对它们的依赖才会被
         // GraphPlanner 与其他依赖完全一致地校验。
@@ -244,12 +260,17 @@ impl VernalApplicationBuilder {
             .register(ComponentDefinition::shared_arc(Arc::clone(
                 &invocation_plans,
             )))?;
+        self.registry
+            .register(ComponentDefinition::shared_arc(Arc::clone(
+                &local_invocation_plans,
+            )))?;
 
         let resources = ContextResources::managed(
             self.runtime,
             self.cancellation,
             self.events,
             invocation_plans,
+            local_invocation_plans,
             DiagnosticConfiguration::new(
                 self.enabled_features.into_iter().collect(),
                 self.adapters

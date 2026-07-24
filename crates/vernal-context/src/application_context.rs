@@ -39,6 +39,7 @@ impl ApplicationContext {
             ContextState::Created.as_str().to_owned(),
             container.registry().snapshot(),
             resources.invocation_plans(),
+            resources.local_invocation_plans(),
             resources.diagnostics(),
         );
         Self {
@@ -259,6 +260,12 @@ impl ApplicationContext {
     #[must_use]
     pub fn invocation_plans(&self) -> &InvocationPlanCatalog {
         self.resources.invocation_plans()
+    }
+
+    /// 返回应用构建阶段预编译的 Local-AOP 调用计划目录。
+    #[must_use]
+    pub fn local_invocation_plans(&self) -> &vernal_aop::LocalInvocationPlanCatalog {
+        self.resources.local_invocation_plans()
     }
 
     /// 返回调用时刻的只读、可序列化、脱敏启动报告。

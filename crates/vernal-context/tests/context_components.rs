@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use tokio::runtime::Handle;
 use tokio_util::sync::CancellationToken;
-use vernal_aop::{InvocationPlanCatalog, Operation};
+use vernal_aop::{InvocationPlanCatalog, LocalInvocationPlanCatalog, Operation};
 use vernal_context::{ApplicationBuildError, EventBus, Lifecycle, VernalApplicationBuilder};
 use vernal_core::BoxError;
 use vernal_ioc::ComponentDefinition;
@@ -15,6 +15,7 @@ struct RuntimeAwareService {
     cancellation: Arc<CancellationToken>,
     events: Arc<EventBus>,
     invocation_plans: Arc<InvocationPlanCatalog>,
+    local_invocation_plans: Arc<LocalInvocationPlanCatalog>,
 }
 
 impl Lifecycle for RuntimeAwareService {}
@@ -43,13 +44,15 @@ async fn managed_context_injects_tokio_events_cancellation_and_aop_plans() {
                         cancellation: resolver.resolve::<CancellationToken>()?,
                         events: resolver.resolve::<EventBus>()?,
                         invocation_plans: resolver.resolve::<InvocationPlanCatalog>()?,
+                        local_invocation_plans: resolver.resolve::<LocalInvocationPlanCatalog>()?,
                     })
                 },
             )
             .depends_on::<Handle>()
             .depends_on::<CancellationToken>()
             .depends_on::<EventBus>()
-            .depends_on::<InvocationPlanCatalog>(),
+            .depends_on::<InvocationPlanCatalog>()
+            .depends_on::<LocalInvocationPlanCatalog>(),
         )
         .expect("runtime-aware service definition should be valid");
 
@@ -78,6 +81,11 @@ async fn managed_context_injects_tokio_events_cancellation_and_aop_plans() {
         context.invocation_plans()
     ));
     assert!(service.invocation_plans.get(&operation).is_some());
+    assert!(std::ptr::eq(
+        service.local_invocation_plans.as_ref(),
+        context.local_invocation_plans()
+    ));
+    assert!(service.local_invocation_plans.get(&operation).is_some());
 
     let mut receiver = context.events().subscribe::<String>().await;
     assert_eq!(

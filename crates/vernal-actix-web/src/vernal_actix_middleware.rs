@@ -15,13 +15,29 @@ use crate::{ActixScopedBody, VernalActixService};
 #[derive(Clone)]
 pub struct VernalActixMiddleware {
     context: Arc<ApplicationContext>,
+    strict_aop: bool,
 }
 
 impl VernalActixMiddleware {
     /// 创建 Actix Web 中间件。
     #[must_use]
     pub fn new(context: Arc<ApplicationContext>) -> Self {
-        Self { context }
+        Self {
+            context,
+            strict_aop: false,
+        }
+    }
+
+    /// 创建注入 Context、管理 Scope 并执行严格 Local-AOP 的中间件。
+    ///
+    /// 中间件使用 Actix 匹配后的低基数 Resource Pattern 构建 Operation；缺少
+    /// 路由元数据或预编译计划时 fail-closed，不回退到用户输入的原始路径。
+    #[must_use]
+    pub fn strict_aop(context: Arc<ApplicationContext>) -> Self {
+        Self {
+            context,
+            strict_aop: true,
+        }
     }
 }
 
@@ -41,6 +57,7 @@ where
         std::future::ready(Ok(VernalActixService::new(
             Rc::new(service),
             Arc::clone(&self.context),
+            self.strict_aop,
         )))
     }
 }

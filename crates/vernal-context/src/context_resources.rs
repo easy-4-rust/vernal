@@ -4,20 +4,21 @@ use std::sync::Arc;
 
 use tokio::runtime::Handle;
 use tokio_util::sync::CancellationToken;
-use vernal_aop::InvocationPlanCatalog;
+use vernal_aop::{InvocationPlanCatalog, LocalInvocationPlanCatalog};
 
 use crate::{EventBus, diagnostic_configuration::DiagnosticConfiguration};
 
 /// 聚合一个 `ApplicationContext` 独占或共享的基础运行资源。
 ///
 /// 该对象只在 Context 内部传递，公开 API 仍直接暴露 Rust 原生类型。高层应用
-/// 建造器会把其中的 Tokio Handle、取消令牌、事件总线和 AOP 计划目录同时注册
-/// 到 `IoC` 容器，使业务组件与 Context 本身使用完全相同的实例。
+/// 建造器会把其中的 Tokio Handle、取消令牌、事件总线，以及线程安全与本地
+/// AOP 计划目录同时注册到 `IoC` 容器，使业务组件与 Context 使用相同实例。
 pub(crate) struct ContextResources {
     runtime: Option<Arc<Handle>>,
     cancellation: Arc<CancellationToken>,
     events: Arc<EventBus>,
     invocation_plans: Arc<InvocationPlanCatalog>,
+    local_invocation_plans: Arc<LocalInvocationPlanCatalog>,
     diagnostics: DiagnosticConfiguration,
 }
 
@@ -31,6 +32,7 @@ impl ContextResources {
             cancellation: Arc::new(CancellationToken::new()),
             events: Arc::new(EventBus::new()),
             invocation_plans: Arc::new(InvocationPlanCatalog::default()),
+            local_invocation_plans: Arc::new(LocalInvocationPlanCatalog::default()),
             diagnostics: DiagnosticConfiguration::default(),
         }
     }
@@ -41,6 +43,7 @@ impl ContextResources {
         cancellation: Arc<CancellationToken>,
         events: Arc<EventBus>,
         invocation_plans: Arc<InvocationPlanCatalog>,
+        local_invocation_plans: Arc<LocalInvocationPlanCatalog>,
         diagnostics: DiagnosticConfiguration,
     ) -> Self {
         Self {
@@ -48,6 +51,7 @@ impl ContextResources {
             cancellation,
             events,
             invocation_plans,
+            local_invocation_plans,
             diagnostics,
         }
     }
@@ -70,6 +74,11 @@ impl ContextResources {
     /// 返回应用构建阶段预编译的 AOP 调用计划目录。
     pub(crate) fn invocation_plans(&self) -> &InvocationPlanCatalog {
         &self.invocation_plans
+    }
+
+    /// 返回应用构建阶段预编译的 Local-AOP 调用计划目录。
+    pub(crate) fn local_invocation_plans(&self) -> &LocalInvocationPlanCatalog {
+        &self.local_invocation_plans
     }
 
     /// 返回应用构建阶段冻结的静态诊断配置。

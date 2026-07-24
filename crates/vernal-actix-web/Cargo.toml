@@ -12,6 +12,7 @@ actix-http.workspace = true
 actix-web.workspace = true
 futures-util.workspace = true
 tokio-util.workspace = true
+vernal-aop = { path = "../vernal-aop" }
 vernal-context = { path = "../vernal-context" }
 vernal-http = { path = "../vernal-http" }
 vernal-ioc = { path = "../vernal-ioc" }

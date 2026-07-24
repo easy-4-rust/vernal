@@ -1,7 +1,7 @@
 //! 应用启动诊断报告对象。
 
 use serde::Serialize;
-use vernal_aop::InvocationPlanCatalog;
+use vernal_aop::{InvocationPlanCatalog, LocalInvocationPlanCatalog};
 use vernal_ioc::RegistrySnapshot;
 
 use crate::{
@@ -22,6 +22,8 @@ pub struct StartupReport {
     registry: RegistrySnapshot,
     aop_plan_count: usize,
     aop_interceptor_count: usize,
+    local_aop_plan_count: usize,
+    local_aop_interceptor_count: usize,
     enabled_features: Vec<String>,
     adapters: Vec<SubsystemStatus>,
     external_dependencies: Vec<SubsystemStatus>,
@@ -36,6 +38,7 @@ impl StartupReport {
         context_state: String,
         registry: RegistrySnapshot,
         invocation_plans: &InvocationPlanCatalog,
+        local_invocation_plans: &LocalInvocationPlanCatalog,
         diagnostics: &DiagnosticConfiguration,
     ) -> Self {
         Self {
@@ -46,6 +49,8 @@ impl StartupReport {
             registry,
             aop_plan_count: invocation_plans.len(),
             aop_interceptor_count: invocation_plans.interceptor_count(),
+            local_aop_plan_count: local_invocation_plans.len(),
+            local_aop_interceptor_count: local_invocation_plans.interceptor_count(),
             enabled_features: diagnostics.enabled_features().to_vec(),
             adapters: diagnostics.adapters().to_vec(),
             external_dependencies: diagnostics.external_dependencies().to_vec(),
@@ -97,6 +102,18 @@ impl StartupReport {
     #[must_use]
     pub const fn aop_interceptor_count(&self) -> usize {
         self.aop_interceptor_count
+    }
+
+    /// 返回唯一 Local-AOP 调用计划数量。
+    #[must_use]
+    pub const fn local_aop_plan_count(&self) -> usize {
+        self.local_aop_plan_count
+    }
+
+    /// 返回全部 Local-AOP 计划匹配的拦截器槽位总数。
+    #[must_use]
+    pub const fn local_aop_interceptor_count(&self) -> usize {
+        self.local_aop_interceptor_count
     }
 
     /// 返回应用显式声明的 feature 名称。

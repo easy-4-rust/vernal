@@ -2,8 +2,10 @@
 
 mod diagnostic_support;
 
-use diagnostic_support::{FailingLifecycle, HealthyLifecycle, PassThroughInterceptor};
-use vernal_aop::{Advisor, Operation};
+use diagnostic_support::{
+    FailingLifecycle, HealthyLifecycle, PassThroughInterceptor, PassThroughLocalInterceptor,
+};
+use vernal_aop::{Advisor, LocalAdvisor, Operation};
 use vernal_context::{ContextState, DiagnosticOutcome, DiagnosticState, VernalApplicationBuilder};
 use vernal_ioc::ComponentDefinition;
 
@@ -18,6 +20,11 @@ async fn report_tracks_registry_aop_subsystems_and_lifecycle_without_mutability(
         .advisor(Advisor::new(
             |_: &Operation| true,
             PassThroughInterceptor,
+            10,
+        ))
+        .local_advisor(LocalAdvisor::new(
+            |_: &Operation| true,
+            PassThroughLocalInterceptor,
             10,
         ))
         .operation(Operation::new("diagnostic", "run"))
@@ -36,6 +43,8 @@ async fn report_tracks_registry_aop_subsystems_and_lifecycle_without_mutability(
     assert_eq!(ready.minimum_rust_version(), "1.85.0");
     assert_eq!(ready.aop_plan_count(), 1);
     assert_eq!(ready.aop_interceptor_count(), 1);
+    assert_eq!(ready.local_aop_plan_count(), 1);
+    assert_eq!(ready.local_aop_interceptor_count(), 1);
     assert_eq!(ready.enabled_features(), ["tokio-runtime"]);
     assert_eq!(ready.adapters()[0].name(), "axum");
     assert_eq!(
@@ -44,7 +53,7 @@ async fn report_tracks_registry_aop_subsystems_and_lifecycle_without_mutability(
     );
     assert_eq!(ready.warnings(), ["preview-api"]);
     assert!(ready.unused_definitions().is_empty());
-    assert_eq!(ready.registry().summary().definition_count(), 5);
+    assert_eq!(ready.registry().summary().definition_count(), 6);
     assert_eq!(ready.observations().len(), 4);
     assert!(
         ready
