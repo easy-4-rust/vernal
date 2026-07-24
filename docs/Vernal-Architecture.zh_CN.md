@@ -62,8 +62,10 @@
   Middleware、类型化 Request Extension 访问和 Reader 绑定 Scope 释放；
   `vernal-tonic` 已提供 Context Interceptor、类型化 Request 扩展、`Status`
   映射与 Tower 组合。
-- `[骨架]` 宏仍只验证 crate 边界与依赖方向。
-- `[设计目标]` Phase 2 宏、剩余消费方生态桥接与后续生产门禁仍需实现和验收。
+- `[已确认]` `vernal-macros` 已提供显式 `Arc<T>` 构造注入的
+  `#[derive(Component)]`，支持 Singleton/Transient 与 default 字段，并通过
+  运行时和 compile-fail 合同测试；它不使用 linkme 或全局自动注册。
+- `[设计目标]` AOP 方法宏、剩余消费方生态桥接与后续生产门禁仍需实现和验收。
 
 ## 2. 品牌寓意与架构主张
 
@@ -654,8 +656,8 @@ qualifier、隐藏依赖拒绝、原生值注册和 Tokio Handle 真实 task；�
 
 Phase 2 AOP 内核另有 8 个合同测试，覆盖顺序进入/逆序退出、短路、结果/
 错误改写、跨 `.await` 类型化上下文、取消/deadline、切点过滤和 64 task 并发
-复用，以及重复 Operation 合并的计划目录编译；过程宏的 trybuild 覆盖完成前，
-Phase 2 仍不能宣布整体完成。
+复用，以及重复 Operation 合并的计划目录编译。Component derive 另有 2 个运行时
+测试和 1 个中文诊断 trybuild；AOP 方法宏完成前，Phase 2 仍不能宣布整体完成。
 
 Phase 3 内核另有 9 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
 回滚、非法转换、幂等关闭、并发关闭串行化、Context-local 类型化事件隔离，

@@ -1,0 +1,5 @@
+error: 注入字段必须使用 Arc<T>；非依赖字段请标记 #[component(default)]
+ --> tests/ui/component_non_arc_field.rs:5:12
+  |
+5 |     value: usize,
+  |            ^^^^^

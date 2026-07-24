@@ -70,9 +70,12 @@
   native Middleware, typed Request Extension access, and reader-bound Scope
   cleanup; `vernal-tonic` provides a Context interceptor, typed Request
   extensions, `Status` mapping, and Tower composition.
-- `[Skeleton]` Macros still validate crate boundaries only.
-- `[Target]` Phase 2 macros, remaining consumer ecosystem bridges, and later
-  production gates remain.
+- `[Confirmed]` `vernal-macros` provides `#[derive(Component)]` for explicit
+  `Arc<T>` constructor injection, Singleton/Transient scope, and default
+  fields, with runtime and compile-fail tests. It uses neither linkme nor
+  global auto-registration.
+- `[Target]` The AOP method macro, remaining consumer ecosystem bridges, and
+  later production gates remain.
 
 ## 2. Brand meaning and architecture thesis
 
@@ -633,8 +636,9 @@ IoC rather than runtime state in its resolution hot path.
 The Phase 2 AOP kernel additionally has eight contract tests for
 ordered entry/reverse exit, short circuit, result/error transformation, typed
 context across `.await`, cancellation/deadline, pointcut filtering, and
-64-task concurrent reuse, plus deduplicated plan-catalog compilation. Phase 2
-remains incomplete until macro trybuild coverage is present.
+64-task concurrent reuse, plus deduplicated plan-catalog compilation. The
+Component derive additionally has two runtime tests and one compile-fail
+diagnostic test; Phase 2 remains incomplete until the AOP method macro exists.
 
 The Phase 3 kernel has nine contract tests for dependency-order
 startup, reverse shutdown, initialize/start rollback, invalid transitions,

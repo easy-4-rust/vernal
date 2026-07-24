@@ -117,7 +117,7 @@ Detailed decisions, flows, failure semantics, and acceptance criteria are in:
 | `vernal-ioc` | Phase 1 implemented | Definitions, scopes, resolution, graph validation |
 | `vernal-aop` | Phase 2 kernel implemented | Around/Next, pointcuts, immutable plans, cancellation |
 | `vernal-context` | Phase 3 kernel implemented | Managed bootstrap, built-in components, AOP plans, lifecycle, events, shutdown |
-| `vernal-macros` | Skeleton | Thin procedural macro entry points |
+| `vernal-macros` | Component derive implemented | Explicit `Arc<T>` injection metadata; AOP method macro remains planned |
 | `vernal-web` | Phase 4 contract implemented | Framework-neutral context, request scope, handler, and error contracts |
 | `vernal-http` | Phase 4 contract implemented | HTTP request, response, body, streaming, cancellation, and backpressure |
 | `vernal-tower` | Phase 4 foundation implemented | Tower context injection and request-scope lifecycle |
@@ -223,6 +223,31 @@ fn main() -> Result<(), AnyError> {
 Factories may resolve only dependencies declared by the definition. Registries
 are validated before a `Container` is created, and singleton state belongs to
 that container rather than to a process-global store.
+
+The component derive generates the same explicit definition without global
+auto-registration:
+
+```rust
+use std::sync::Arc;
+use vernal_ioc::Component;
+
+#[derive(vernal_macros::Component)]
+struct OrderService {
+    repository: Arc<OrderRepository>,
+    #[component(default)]
+    retry_count: usize,
+}
+
+struct OrderRepository;
+
+let definition = OrderService::definition();
+```
+
+Every unmarked field must be `Arc<T>` and becomes a declared dependency.
+`#[component(default)]` is opt-in for local default state, while
+`#[component(scope = "transient")]` changes the generated scope. Applications
+still call `RegistryBuilder::register`, so registration provenance stays
+explicit.
 
 Any `Send + Sync + 'static` Rust value can be a component, including
 `reqwest::Client`, database pools, Tower services, framework state, Tokio
@@ -381,7 +406,8 @@ The Phase 2 AOP kernel currently has eight contract tests covering ordered
 enter/reverse exit, short circuit, success and error transformation, typed
 context across `.await`, cancellation/deadline, pointcut selection, and
 64-task concurrent plan reuse, plus deduplicated plan-catalog compilation.
-Macro generation and benchmarks remain open.
+The Component derive has runtime and compile-fail coverage; the AOP method
+macro and benchmarks remain open.
 The Phase 3 kernel has nine tests covering dependency-order startup,
 reverse shutdown, initialize/start rollback, invalid transitions, idempotent
 close, concurrent close serialization, and context-local typed event

@@ -2,6 +2,7 @@
 #![doc = "Vernal 的 Tokio-first 类型驱动控制反转内核。"]
 
 mod build_plan;
+mod component_contract;
 mod component_definition;
 mod component_key;
 mod component_registry;
@@ -17,6 +18,7 @@ mod resolve_error;
 mod resolver;
 
 pub use build_plan::BuildPlan;
+pub use component_contract::Component;
 pub use component_definition::ComponentDefinition;
 pub use component_key::ComponentKey;
 pub use component_registry::Registry;
