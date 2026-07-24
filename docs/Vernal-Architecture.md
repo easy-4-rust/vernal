@@ -586,6 +586,16 @@ Hutool-Rust remains a utility library. Its Reqwest-based HTTP client
 interceptors may use `vernal-aop`, but Hutool-Rust must not own server
 ApplicationContext or become a Vernal kernel dependency.
 
+The local Hutool-Rust checkout now contains a consumer-owned, unpublished
+`hutool-vernal` bridge pinned to a verified Vernal Git revision. It atomically
+registers Hutool `HttpConfig` and the Tokio/Reqwest `HttpClient` as
+container-local singletons, exposes explicit URL/SSRF policy selection, and
+keeps the configuration edge visible to Vernal graph validation. Its runtime
+test proves singleton resolution, duplicate-bundle rejection, and local-target
+rejection before network I/O. Clean remote integration remains pending because
+that checkout is concurrently undergoing a separate one-object-per-file
+history/refactor stream.
+
 ### 12.2 Sa-Token-Rust
 
 Sa-Token-Rust is the only retained security integration target. Vernal will

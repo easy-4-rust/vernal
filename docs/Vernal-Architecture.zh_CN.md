@@ -602,6 +602,13 @@ Hutool-Rust 继续承担通用工具库职责。其基于 Reqwest 的 HTTP Clien
 可以使用 `vernal-aop`，但 Hutool-Rust 不拥有服务端 ApplicationContext，也不能
 成为 Vernal 内核依赖。
 
+本地 Hutool-Rust checkout 现已提供消费方持有、暂不发布的 `hutool-vernal`，
+并固定到已验证的 Vernal Git Revision。它把 Hutool `HttpConfig` 与基于
+Tokio/Reqwest 的 `HttpClient` 原子注册为 Container-local Singleton，显式选择
+URL/SSRF 策略，并让配置依赖进入 Vernal 图校验。运行时测试已证明 Singleton
+解析、重复组件包拒绝以及在网络 I/O 前拒绝本地目标。由于该 checkout 同时处于
+另一条“一文件一对象”历史/重构流程中，干净的远端整合仍待完成。
+
 ### 12.2 Sa-Token-Rust
 
 Sa-Token-Rust 是唯一保留的安全集成目标。Vernal 将其 Manager/Runtime 图

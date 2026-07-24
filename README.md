@@ -381,7 +381,10 @@ flowchart LR
 ```
 
 - **Hutool-Rust** remains a general-purpose utility library. It may consume
-  Vernal capabilities, but Vernal does not become a Hutool-Rust module.
+  Vernal capabilities, but Vernal does not become a Hutool-Rust module. Its
+  consumer-owned `hutool-vernal` bridge now installs `HttpConfig` and the
+  Tokio/Reqwest `HttpClient` as an atomic, context-local component bundle with
+  an application-selected URL policy.
 - **Sa-Token-Rust** is the single retained security integration target and
   remains the authority for authentication, sessions, and
   authorization. Vernal supplies component lifecycle and interception, not a
@@ -429,9 +432,11 @@ under design. There is no crates.io installation command or stable API yet.
 | 5 | Hutool-Rust, Sa-Token-Rust, and Ddd4r bridges | Consumer-owned integration examples |
 | 6 | Preview release | MSRV, SemVer, security, docs.rs, and package gates |
 
-Phase 5 is in progress: Sa-Token-Rust now owns a tested `sa-token-vernal`
-bridge pinned to a verified Vernal Git revision. Hutool-Rust and Ddd4r bridges
-remain targets.
+Phase 5 is in progress: Sa-Token-Rust owns a tested `sa-token-vernal` bridge,
+and Hutool-Rust locally owns a tested `hutool-vernal` HTTP component bridge;
+both pin verified Vernal Git revisions. The Hutool-Rust checkout is currently
+under a separate history-rewrite/refactor stream, so its clean remote
+integration is still pending. Ddd4r remains a target.
 
 Phase 1 was completed with tests for 1,000-node deterministic planning,
 structured graph diagnostics, concurrent singleton construction, container
