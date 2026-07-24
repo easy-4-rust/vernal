@@ -62,6 +62,19 @@ async fn report_tracks_registry_aop_subsystems_and_lifecycle_without_mutability(
             .all(|observation| observation.outcome() == DiagnosticOutcome::Succeeded)
     );
 
+    // 运行期诊断入口只接收静态代码，并在同一 Context 内排序、去重；已经取得的
+    // ready 快照仍保持只读，不会被后续告警反向修改。
+    context
+        .record_runtime_warning("web.request-scope.cleanup-failed")
+        .await;
+    context.record_runtime_warning("preview-api").await;
+    let warned = context.startup_report().await;
+    assert_eq!(
+        warned.warnings(),
+        ["preview-api", "web.request-scope.cleanup-failed"]
+    );
+    assert_eq!(ready.warnings(), ["preview-api"]);
+
     let json = serde_json::to_string(&ready).expect("serializable startup report");
     assert!(json.contains("\"context_state\":\"ready\""));
     assert!(json.contains("\"state\":\"degraded\""));
@@ -71,6 +84,10 @@ async fn report_tracks_registry_aop_subsystems_and_lifecycle_without_mutability(
     let closed = context.startup_report().await;
     assert_eq!(closed.context_state(), ContextState::Closed.as_str());
     assert_eq!(closed.observations().len(), 5);
+    assert_eq!(
+        closed.warnings(),
+        ["preview-api", "web.request-scope.cleanup-failed"]
+    );
 
     // 先前取得的快照拥有独立值，Context 后续关闭不会反向修改它。
     assert_eq!(ready.context_state(), ContextState::Ready.as_str());

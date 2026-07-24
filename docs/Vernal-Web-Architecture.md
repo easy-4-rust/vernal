@@ -454,13 +454,15 @@ and Vernal never depends on Sa-Token-Rust.
 | Extraction/validation | ClientInput | Native 4xx or rejection |
 | Authentication/authorization | PolicyDenied | Sa-Token-Rust determines 401/403 semantics |
 | Handler application error | Application | Invoke the user error mapper |
-| Body/stream error | Transport | Preserve cancellation class and close scope |
+| Body/stream error | Transport | Preserve cancellation class, close scope, and record a redacted cleanup warning on failure |
 
 Guardrails:
 
 - never log tokens, cookies, authorization headers, or component secrets;
 - no unbounded-cardinality raw paths or user IDs in trace/metric labels;
-- diagnostics expose adapter, version, status, scope counts, and redacted errors;
+- diagnostics expose adapter, version, status, scope counts, and static redacted
+  warning codes; scope cleanup failures use
+  `web.request-scope.cleanup-failed`, never the close-hook error text;
 - panic is not normal control flow for denial, resolution failure, or cancel;
 - adapters keep native body limits and timeouts unless explicitly configured.
 
@@ -474,7 +476,9 @@ shared request-binding contract makes all ten adapters pass their native
 scope. Together with `ScopeRejectingInterceptor`, it proves normal body
 completion, policy short-circuit, and response-body drop cleanup on all ten
 adapters. This catches both scope bypass and test-assisted cleanup. Streaming
-error/disconnect/timeout paths and the remaining matrix continue incrementally:
+error/disconnect/timeout paths and the remaining matrix continue incrementally.
+The Axum cancellation contract additionally proves that an ignored background
+close error reaches the owning Context as a redacted warning:
 
 | Contract | Required coverage |
 |:---|:---|

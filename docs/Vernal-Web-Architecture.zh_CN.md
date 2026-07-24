@@ -400,13 +400,14 @@ Vernal 不反向依赖 Sa-Token-Rust。
 | 参数提取/校验失败 | ClientInput | 使用框架原生 4xx/Rejection |
 | 认证/授权拒绝 | PolicyDenied | 由 Sa-Token-Rust 语义决定 401/403 |
 | Handler 业务错误 | Application | 调用用户 ErrorMapper |
-| Body/Stream 失败 | Transport | 保留取消/传输分类并关闭 Scope |
+| Body/Stream 失败 | Transport | 保留取消/传输分类、关闭 Scope，并在清理失败时记录脱敏告警 |
 
 Guardrails：
 
 - 默认日志不记录 Token、Cookie、Authorization Header 或组件 Secret；
 - Trace/Metric 标签禁止使用无限基数的原始路径或用户 ID；
-- 诊断报告只公开 Adapter、版本、状态、Scope 计数和脱敏错误；
+- 诊断报告只公开 Adapter、版本、状态、Scope 计数和静态脱敏告警代码；Scope
+  清理失败统一使用 `web.request-scope.cleanup-failed`，不记录关闭钩子错误正文；
 - Panic 不作为拒绝、缺失组件或取消的正常控制流；
 - Adapter 不修改框架默认 Body 限制与超时，除非用户显式配置。
 
@@ -419,7 +420,8 @@ Guardrails：
 Scope；配合 `ScopeRejectingInterceptor`，十个 Adapter 已共同证明正常 Body
 完成、策略短路与响应 Body Drop 三条路径都会清理 Scope。这既能发现绕过请求
 Scope 的实现，也能阻止 testkit 替被测 Adapter 完成清理。流式错误、断连、
-释放超时和下表其余矩阵仍按阶段继续补齐：
+释放超时和下表其余矩阵仍按阶段继续补齐。Axum 取消合同还证明：后台关闭结果
+无法回传响应且被 Adapter 忽略时，所属 Context 仍会收到脱敏告警：
 
 | 合同 | 必须覆盖 |
 |:---|:---|

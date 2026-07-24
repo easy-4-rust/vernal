@@ -270,7 +270,9 @@ let json = serde_json::to_string(&startup_report)?;
 
 `RegistrySnapshot` 复用真实构建计划，不重复执行拓扑算法；`StartupReport` 记录
 版本、MSRV、Scope/依赖摘要、AOP 计划槽位和生命周期耗时。失败报告只保存组件名、
-阶段和成功/失败分类，不序列化底层业务错误正文。
+阶段和成功/失败分类，不序列化底层业务错误正文。请求 Scope 的运行期清理失败
+只追加去重后的静态代码 `web.request-scope.cleanup-failed`；响应已被 Drop、
+无法再返回原生错误时也能留下 Context-local 诊断证据。
 
 ## 6. 能力状态
 
@@ -290,7 +292,7 @@ let json = serde_json::to_string(&startup_report)?;
 | Web 集成底座 | Tower Context/Scope Layer 与 Hyper 流式桥接 | Phase 4 底座 |
 | 跨框架合同 | 同 Scope 组件身份及成功、策略错误、响应 Drop 清理 | Phase 4 公共合同 |
 | 框架适配器 | 能复用 Tower 时优先 Tower，必要时原生适配 | Phase 5 适配已实现 |
-| 诊断 | 可序列化 Registry 快照与不泄露错误正文的启动报告 | Phase 3 诊断内核 |
+| 诊断 | 可序列化 Registry/Context 快照与脱敏运行期清理告警 | Phase 3/4 诊断内核 |
 
 “Phase 1”和“Phase 2 内核”表示已有可调用实现与合同测试，但 API 仍处于实验
 阶段。任何标签都不代表稳定兼容或达到性能指标；未使用 Definition 的可靠运行时

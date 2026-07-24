@@ -289,6 +289,14 @@ impl ApplicationContext {
         self.diagnostics.lock().await.clone()
     }
 
+    /// 记录一条不携带运行时数据的 Context-local 脱敏告警代码。
+    ///
+    /// 该入口只接受静态字符串，从类型层阻止请求参数、凭证、数据库错误正文或其他
+    /// 敏感值进入可序列化诊断。相同代码自动去重，多个应用 Context 之间互不共享。
+    pub async fn record_runtime_warning(&self, warning: &'static str) {
+        self.diagnostics.lock().await.record_warning(warning);
+    }
+
     /// 校验当前状态是否符合操作前置条件。
     async fn require_state(
         &self,

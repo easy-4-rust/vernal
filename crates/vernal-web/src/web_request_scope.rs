@@ -157,8 +157,19 @@ impl WebRequestScope {
     /// # Errors
     ///
     /// 返回第一个关闭钩子错误，但仍执行其余钩子、清空缓存并进入 Closed。
+    /// 应用绑定 Scope 发生错误时还会向所属 `ApplicationContext` 写入静态、
+    /// 脱敏的 `web.request-scope.cleanup-failed` 告警代码；独立兼容 Scope
+    /// 没有应用诊断目标，因此只返回原始结构化错误。
     pub async fn close(&self) -> Result<(), ScopeError> {
-        self.scope.close().await
+        let result = self.scope.close().await;
+        if result.is_err() {
+            if let Some(context) = self.owner.application_context() {
+                context
+                    .record_runtime_warning("web.request-scope.cleanup-failed")
+                    .await;
+            }
+        }
+        result
     }
 
     /// 返回当前请求作用域状态快照。

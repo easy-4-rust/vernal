@@ -141,6 +141,46 @@ async fn close_hooks_run_in_reverse_and_close_is_idempotent() {
 }
 
 #[tokio::test]
+async fn application_bound_scope_records_redacted_cleanup_failure() {
+    let context = Arc::new(
+        ApplicationContextBuilder::new(
+            RegistryBuilder::new()
+                .build()
+                .expect("empty registry build"),
+        )
+        .build()
+        .expect("context build"),
+    );
+    context.refresh().await.expect("context refresh");
+    context.start().await.expect("context start");
+    let scope = WebRequestScope::from_application_context(Arc::clone(&context));
+    scope
+        .on_close(|| async {
+            Err::<(), _>(io::Error::other(
+                "database password and request token must stay private",
+            ))
+        })
+        .expect("failing close hook");
+
+    let error = scope.close().await.expect_err("close hook must fail");
+    assert!(matches!(error, ScopeError::CloseHook { .. }));
+    assert_eq!(scope.state(), ScopeState::Closed);
+
+    let report = context.startup_report().await;
+    assert_eq!(
+        report.warnings(),
+        ["web.request-scope.cleanup-failed"],
+        "application diagnostics must retain only a stable warning code"
+    );
+    assert!(
+        report
+            .warnings()
+            .iter()
+            .all(|warning| !warning.contains("password") && !warning.contains("token"))
+    );
+}
+
+#[tokio::test]
 async fn request_context_carries_principal_and_builds_aop_invocation() {
     let cancellation = CancellationToken::new();
     let context = Arc::new(RequestContext::new(

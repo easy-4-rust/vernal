@@ -854,6 +854,10 @@ flowchart LR
   `error_message` 字段；
 - feature 和告警只接受静态名称/代码；Adapter 与外部依赖只接受名称和固定
   `DiagnosticState`，不接收连接串、令牌或任意错误详情；
+- `ApplicationContext::record_runtime_warning` 将静态代码按确定顺序去重写入当前
+  Context。应用绑定的 `WebRequestScope` 在异步关闭钩子失败时统一记录
+  `web.request-scope.cleanup-failed`；即使 Body 已被 Drop、无法回传响应错误，
+  运维快照仍能看到脱敏证据；
 - 未使用 Definition 不能通过“没有入边”可靠判断；在引入精确解析追踪前该集合
   保持为空，避免把合法入口组件误报为死定义。Adapter 自动探测同样留给各集成
   crate 后续接入，当前由应用显式登记。

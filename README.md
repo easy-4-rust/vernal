@@ -414,6 +414,9 @@ let json = serde_json::to_string(&startup_report)?;
 graph. `StartupReport` contains version/MSRV, scope and dependency summaries,
 AOP plan slots, and lifecycle timing. Failure snapshots retain only the
 component, phase, and outcome; business error text is never serialized.
+Runtime cleanup failures add only the deduplicated static code
+`web.request-scope.cleanup-failed`, including response-drop paths where no
+native response remains available.
 
 ## 6. Capabilities
 
@@ -433,7 +436,7 @@ component, phase, and outcome; business error text is never serialized.
 | Web integration foundation | Tower context/scope layers and Hyper streaming bridge | Phase 4 foundation |
 | Cross-framework conformance | Same-scope component identity plus success, policy-error, and response-drop cleanup | Phase 4 shared contracts |
 | Framework adapters | Tower-first where possible, native adapters where necessary | Phase 5 adapters |
-| Diagnostics | Serializable Registry snapshot and startup report without business error text | Phase 3 diagnostics kernel |
+| Diagnostics | Serializable Registry/Context snapshots plus redacted runtime cleanup warnings | Phase 3/4 diagnostics kernel |
 
 “Phase 1” and “Phase 2 kernel” mean callable implementation and contract tests
 exist, but the API is still experimental. The first Component and AOP method

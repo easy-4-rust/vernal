@@ -140,7 +140,10 @@ impl StartupReport {
         &self.observations
     }
 
-    /// 返回应用构建阶段显式登记的脱敏警告。
+    /// 返回应用构建阶段声明以及运行期间观测到的脱敏警告代码。
+    ///
+    /// 所有警告都是静态、去重、稳定排序的代码，不包含业务错误正文、请求标识、
+    /// Token 或连接信息，因此报告可以安全地用于健康检查与运维快照。
     #[must_use]
     pub fn warnings(&self) -> &[String] {
         &self.warnings
@@ -163,5 +166,19 @@ impl StartupReport {
     /// 追加一条完成后的脱敏观察记录。
     pub(crate) fn record(&mut self, observation: StartupObservation) {
         self.observations.push(observation);
+    }
+
+    /// 追加一条静态运行期警告代码，并保持确定性排序与去重。
+    ///
+    /// 使用二分查找而不是在读取报告时临时排序，使每次快照都直接反映 Context
+    /// 内部的权威顺序；重复出现同类故障不会无限扩大诊断对象。
+    pub(crate) fn record_warning(&mut self, warning: &'static str) {
+        match self
+            .warnings
+            .binary_search_by(|existing| existing.as_str().cmp(warning))
+        {
+            Ok(_) => {}
+            Err(index) => self.warnings.insert(index, warning.to_owned()),
+        }
     }
 }

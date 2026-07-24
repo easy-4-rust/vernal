@@ -876,6 +876,11 @@ The implemented contract is:
 - features and warnings use static names/codes; adapters and external
   dependencies accept only a name and fixed `DiagnosticState`, not connection
   strings, tokens, or arbitrary error details.
+- `ApplicationContext::record_runtime_warning` adds a static code to the
+  context-local report with stable sorting and deduplication. An application-
+  bound `WebRequestScope` uses it to retain
+  `web.request-scope.cleanup-failed` when asynchronous close hooks fail,
+  including body-drop paths that can no longer return a response error.
 - unused definitions cannot be inferred safely from “no incoming edges”; the
   collection remains empty until exact resolution tracking exists. Adapter
   auto-discovery is likewise delegated to future integration-crate wiring;

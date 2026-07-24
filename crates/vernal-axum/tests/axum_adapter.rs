@@ -1,6 +1,7 @@
 //! Axum Router、Extractor、IoC 组件和请求作用域集成测试。
 
 use std::{
+    io,
     sync::{
         Arc,
         atomic::{AtomicBool, Ordering},
@@ -108,7 +109,7 @@ async fn router_extracts_context_component_and_request_scope() {
 }
 
 #[tokio::test]
-async fn dropping_response_body_closes_request_scope() {
+async fn dropping_response_body_closes_scope_and_records_cleanup_failure() {
     let context = ready_context().await;
     let probe = Arc::new(ScopeCloseProbe::new());
     let handler_probe = Arc::clone(&probe);
@@ -119,11 +120,18 @@ async fn dropping_response_body_closes_request_scope() {
                 let handler_probe = Arc::clone(&handler_probe);
                 async move {
                     handler_probe.observe(&scope);
+                    scope
+                        .on_close(|| async {
+                            Err::<(), _>(io::Error::other(
+                                "private cleanup source must not enter diagnostics",
+                            ))
+                        })
+                        .expect("failing close hook");
                     "stream is not consumed"
                 }
             }),
         )
-        .with_vernal(context);
+        .with_vernal(Arc::clone(&context));
 
     let response = app
         .oneshot(
@@ -138,6 +146,10 @@ async fn dropping_response_body_closes_request_scope() {
     drop(response);
 
     probe.assert_closed_within(Duration::from_secs(1)).await;
+    assert_eq!(
+        context.startup_report().await.warnings(),
+        ["web.request-scope.cleanup-failed"]
+    );
 }
 
 #[tokio::test]
