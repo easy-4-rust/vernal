@@ -1,0 +1,15 @@
+[package]
+name = "vernal-poem"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Poem integration for Vernal."
+publish = false
+
+[dependencies]
+vernal-http = { path = "../vernal-http" }
+vernal-web = { path = "../vernal-web" }
+
+[lints]
+workspace = true

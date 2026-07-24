@@ -1,0 +1,15 @@
+[package]
+name = "vernal-tonic"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Tonic gRPC integration for Vernal."
+publish = false
+
+[dependencies]
+vernal-tower = { path = "../vernal-tower" }
+vernal-web = { path = "../vernal-web" }
+
+[lints]
+workspace = true

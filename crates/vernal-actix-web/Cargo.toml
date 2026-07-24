@@ -1,0 +1,15 @@
+[package]
+name = "vernal-actix-web"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Actix Web integration for Vernal."
+publish = false
+
+[dependencies]
+vernal-http = { path = "../vernal-http" }
+vernal-web = { path = "../vernal-web" }
+
+[lints]
+workspace = true

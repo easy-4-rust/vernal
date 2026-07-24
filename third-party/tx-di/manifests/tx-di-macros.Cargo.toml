@@ -1,0 +1,23 @@
+[package]
+name = "tx-di-macros"
+version = "0.4.0"
+edition.workspace = true
+license.workspace = true
+description = "宏支持 di-core"
+repository.workspace = true
+readme.workspace = true
+# 必须声明为 proc-macro crate
+[lib]
+proc-macro = true
+
+[dependencies]
+# syn：解析 Rust AST
+syn.workspace = true
+# quote：生成 TokenStream
+quote.workspace = true
+# proc-macro2：提供 Span 等工具
+proc-macro2.workspace = true
+
+[dev-dependencies]
+# 运行期依赖（宏展开后生成的代码需要这些）
+#tx-di-core = { path = "../tx-di-core" }

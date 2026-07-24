@@ -1,0 +1,16 @@
+[package]
+name = "vernal-context"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Application context and lifecycle composition for Vernal."
+publish = false
+
+[dependencies]
+vernal-aop = { path = "../vernal-aop" }
+vernal-core = { path = "../vernal-core" }
+vernal-ioc = { path = "../vernal-ioc" }
+
+[lints]
+workspace = true

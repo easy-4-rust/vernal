@@ -1,0 +1,16 @@
+[package]
+name = "vernal-axum"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Axum integration for Vernal."
+publish = false
+
+[dependencies]
+vernal-http = { path = "../vernal-http" }
+vernal-tower = { path = "../vernal-tower" }
+vernal-web = { path = "../vernal-web" }
+
+[lints]
+workspace = true

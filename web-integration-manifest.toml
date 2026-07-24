@@ -1,0 +1,140 @@
+schema_version = 1
+verified_at = "2026-07-24"
+status = "design-stage"
+selection_basis = "Local integration superset plus current crates.io availability; this is a coverage priority, not an absolute popularity ranking."
+
+[[shared_contracts]]
+name = "Vernal Web"
+crate = "vernal-web"
+semantics = "request context, request scope, handler invocation, validation, error mapping"
+status = "skeleton"
+
+[[shared_contracts]]
+name = "Vernal HTTP"
+crate = "vernal-http"
+semantics = "HTTP request, response, body frames, streaming, cancellation, backpressure"
+status = "skeleton"
+
+[[foundations]]
+name = "Tower"
+crate = "vernal-tower"
+upstream_crate = "tower"
+observed_version = "0.5.3"
+status = "skeleton"
+
+[[foundations]]
+name = "Hyper"
+crate = "vernal-hyper"
+upstream_crate = "hyper"
+observed_version = "1.11.0"
+status = "skeleton"
+
+[[integrations]]
+priority = 1
+name = "Axum"
+crate = "vernal-axum"
+upstream_crate = "axum"
+observed_version = "0.8.9"
+category = "http-framework"
+protocol = "http"
+source_evidence = ["Sa-Token-Rust", "tx-di"]
+status = "skeleton"
+
+[[integrations]]
+priority = 2
+name = "Actix Web"
+crate = "vernal-actix-web"
+upstream_crate = "actix-web"
+observed_version = "4.14.0"
+category = "http-framework"
+protocol = "http"
+source_evidence = ["Sa-Token-Rust"]
+status = "skeleton"
+
+[[integrations]]
+priority = 3
+name = "Rocket"
+crate = "vernal-rocket"
+upstream_crate = "rocket"
+observed_version = "0.5.1"
+category = "http-framework"
+protocol = "http"
+source_evidence = ["Sa-Token-Rust"]
+status = "skeleton"
+
+[[integrations]]
+priority = 4
+name = "Warp"
+crate = "vernal-warp"
+upstream_crate = "warp"
+observed_version = "0.4.3"
+category = "http-framework"
+protocol = "http"
+source_evidence = ["Sa-Token-Rust"]
+status = "skeleton"
+
+[[integrations]]
+priority = 5
+name = "Salvo"
+crate = "vernal-salvo"
+upstream_crate = "salvo"
+observed_version = "0.95.0"
+category = "http-framework"
+protocol = "http"
+source_evidence = ["Sa-Token-Rust"]
+status = "skeleton"
+
+[[integrations]]
+priority = 6
+name = "Poem"
+crate = "vernal-poem"
+upstream_crate = "poem"
+observed_version = "3.1.12"
+category = "http-framework"
+protocol = "http"
+source_evidence = ["Sa-Token-Rust"]
+status = "skeleton"
+
+[[integrations]]
+priority = 7
+name = "Ntex"
+crate = "vernal-ntex"
+upstream_crate = "ntex"
+observed_version = "3.10.1"
+category = "network-web-framework"
+protocol = "http"
+source_evidence = ["Sa-Token-Rust"]
+status = "skeleton"
+
+[[integrations]]
+priority = 8
+name = "Gotham"
+crate = "vernal-gotham"
+upstream_crate = "gotham"
+observed_version = "0.8.0"
+category = "http-framework"
+protocol = "http"
+source_evidence = ["Sa-Token-Rust"]
+status = "skeleton"
+
+[[integrations]]
+priority = 9
+name = "Tide"
+crate = "vernal-tide"
+upstream_crate = "tide"
+observed_version = "0.17.0-beta.1"
+category = "http-framework"
+protocol = "http"
+source_evidence = ["Sa-Token-Rust"]
+status = "skeleton"
+
+[[integrations]]
+priority = 10
+name = "Tonic"
+crate = "vernal-tonic"
+upstream_crate = "tonic"
+observed_version = "0.14.6"
+category = "grpc-framework"
+protocol = "grpc"
+source_evidence = ["Sa-Token-Rust", "tx-di"]
+status = "skeleton"

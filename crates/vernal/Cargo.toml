@@ -1,0 +1,18 @@
+[package]
+name = "vernal"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description.workspace = true
+publish = false
+
+[dependencies]
+vernal-aop = { path = "../vernal-aop" }
+vernal-context = { path = "../vernal-context" }
+vernal-core = { path = "../vernal-core" }
+vernal-ioc = { path = "../vernal-ioc" }
+vernal-macros = { path = "../vernal-macros" }
+
+[lints]
+workspace = true

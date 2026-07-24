@@ -1,0 +1,38 @@
+[package]
+name = "tx-di-core"
+version = "0.4.0"
+edition.workspace = true
+license.workspace = true
+readme.workspace = true
+description = "DI framwork,依赖自动注入框架，运行时使用拓扑排序，排序依赖关系"
+[dependencies]
+tx-di-macros = { path = "../tx-di-macros", version = "0.4.0" }
+tx_error = { path = "../common/tx_error", version = "0.1.0" }
+tx_common = { path = "../common/crates/tx_common", version = "0.1.0" }
+# linkme 用于跨 crate 在链接期收集静态数组切片
+# 基于 ELF/Mach-O/PE 的自定义 link section，完全零运行时开销
+linkme.workspace = true
+
+# DashMap：无锁并发 HashMap，支持跨线程共享的组件注册表
+dashmap.workspace = true
+tracing.workspace = true
+toml.workspace = true
+serde.workspace = true
+#thiserror.workspace = true
+anyhow.workspace = true
+#serde_json.workspace = true
+#chrono.workspace = true
+tokio.workspace = true
+tokio-util.workspace = true
+#tracing-subscriber.workspace = true
+
+[dev-dependencies]
+criterion = { workspace = true, features = ["html_reports"] }
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time", "signal"] }
+tracing-subscriber = { workspace = true }
+serde = { workspace = true }
+tx_di_log = { workspace = true }
+
+[[bench]]
+name = "di_bench"
+harness = false

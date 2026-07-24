@@ -1,0 +1,11 @@
+[package]
+name = "vernal-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Stable shared contracts for the Vernal framework."
+publish = false
+
+[lints]
+workspace = true

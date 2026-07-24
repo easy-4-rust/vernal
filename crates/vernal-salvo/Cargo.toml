@@ -1,0 +1,15 @@
+[package]
+name = "vernal-salvo"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Salvo integration for Vernal."
+publish = false
+
+[dependencies]
+vernal-http = { path = "../vernal-http" }
+vernal-web = { path = "../vernal-web" }
+
+[lints]
+workspace = true
