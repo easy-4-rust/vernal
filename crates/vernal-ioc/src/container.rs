@@ -6,11 +6,12 @@ use std::{
     sync::{Arc, Mutex, OnceLock},
 };
 
+use tokio_util::sync::CancellationToken;
 use vernal_core::SharedError;
 
 use crate::{
     ComponentDefinition, ComponentKey, Dependency, Qualifier, Registry, ResolveError, Resolver,
-    Scope, TraitBinding, component_definition::ErasedComponent,
+    Scope, ScopeContext, ScopeKey, TraitBinding, component_definition::ErasedComponent,
 };
 
 type SingletonCell = OnceLock<Result<ErasedComponent, ResolveError>>;
@@ -22,6 +23,7 @@ type SingletonCell = OnceLock<Result<ErasedComponent, ResolveError>>;
 pub struct Container {
     registry: Registry,
     singletons: Mutex<HashMap<ComponentKey, Arc<SingletonCell>>>,
+    owner: Arc<()>,
 }
 
 impl Container {
@@ -31,7 +33,35 @@ impl Container {
         Self {
             registry,
             singletons: Mutex::new(HashMap::new()),
+            owner: Arc::new(()),
         }
+    }
+
+    /// 进入由标记类型 `S` 识别的根自定义作用域。
+    ///
+    /// 返回的 Context 绑定当前 Container，不能交给另一个 Container 解析。作用域
+    /// 所有者必须在生命周期结束时显式调用 [`ScopeContext::close`]。
+    #[must_use]
+    pub fn open_scope<S>(&self) -> Arc<ScopeContext>
+    where
+        S: 'static,
+    {
+        self.open_scope_with_cancellation::<S>(CancellationToken::new())
+    }
+
+    /// 使用调用方提供的取消令牌进入根自定义作用域。
+    ///
+    /// Adapter 可以传入请求、任务或租户生命周期已有的令牌；关闭 Scope 会取消
+    /// 该令牌，外部取消也会立即阻止新的作用域组件解析。
+    #[must_use]
+    pub fn open_scope_with_cancellation<S>(
+        &self,
+        cancellation: CancellationToken,
+    ) -> Arc<ScopeContext>
+    where
+        S: 'static,
+    {
+        ScopeContext::root(Arc::clone(&self.owner), ScopeKey::of::<S>(), cancellation)
     }
 
     /// 解析唯一注册的 `T` 类型组件。
@@ -43,7 +73,25 @@ impl Container {
     where
         T: Any + Send + Sync,
     {
-        self.resolve_typed(&Dependency::of::<T>(), &[])
+        self.resolve_typed(&Dependency::of::<T>(), &[], None)
+    }
+
+    /// 在显式自定义作用域链中解析唯一注册的 `T` 类型组件。
+    ///
+    /// Singleton 构造不会继承传入 Scope，避免长生命周期对象捕获 Request/Task
+    /// 等短生命周期组件；Transient 会传播当前 Scope；Custom 定义按类型身份
+    /// 选择当前或父 Scope。
+    ///
+    /// # Errors
+    ///
+    /// Scope 来自其他 Container、目标作用域未激活/不可用，或普通组件解析失败时
+    /// 返回 [`ResolveError`]。
+    pub fn resolve_in<T>(&self, scope: &ScopeContext) -> Result<Arc<T>, ResolveError>
+    where
+        T: Any + Send + Sync,
+    {
+        self.ensure_scope_owner(scope)?;
+        self.resolve_typed(&Dependency::of::<T>(), &[], Some(scope))
     }
 
     /// 解析具有指定限定符的 `T` 类型组件。
@@ -55,7 +103,28 @@ impl Container {
     where
         T: Any + Send + Sync,
     {
-        self.resolve_typed(&Dependency::qualified::<T>(qualifier.clone()), &[])
+        self.resolve_typed(&Dependency::qualified::<T>(qualifier.clone()), &[], None)
+    }
+
+    /// 在显式自定义作用域链中解析带限定符组件。
+    ///
+    /// # Errors
+    ///
+    /// Scope 身份或组件解析失败时返回 [`ResolveError`]。
+    pub fn resolve_qualified_in<T>(
+        &self,
+        qualifier: &Qualifier,
+        scope: &ScopeContext,
+    ) -> Result<Arc<T>, ResolveError>
+    where
+        T: Any + Send + Sync,
+    {
+        self.ensure_scope_owner(scope)?;
+        self.resolve_typed(
+            &Dependency::qualified::<T>(qualifier.clone()),
+            &[],
+            Some(scope),
+        )
     }
 
     /// 解析指定 Trait Object 的唯一或 Primary 实现。
@@ -68,7 +137,20 @@ impl Container {
     where
         T: ?Sized + Send + Sync + 'static,
     {
-        self.resolve_trait_typed(&Dependency::trait_of::<T>(), &[])
+        self.resolve_trait_typed(&Dependency::trait_of::<T>(), &[], None)
+    }
+
+    /// 在显式自定义作用域链中解析 Trait Object 的唯一或 Primary 实现。
+    ///
+    /// # Errors
+    ///
+    /// Scope 身份、Trait 选择或目标组件解析失败时返回 [`ResolveError`]。
+    pub fn resolve_trait_in<T>(&self, scope: &ScopeContext) -> Result<Arc<T>, ResolveError>
+    where
+        T: ?Sized + Send + Sync + 'static,
+    {
+        self.ensure_scope_owner(scope)?;
+        self.resolve_trait_typed(&Dependency::trait_of::<T>(), &[], Some(scope))
     }
 
     /// 按限定符解析指定 Trait Object 实现。
@@ -81,7 +163,32 @@ impl Container {
     where
         T: ?Sized + Send + Sync + 'static,
     {
-        self.resolve_trait_typed(&Dependency::trait_qualified::<T>(qualifier.clone()), &[])
+        self.resolve_trait_typed(
+            &Dependency::trait_qualified::<T>(qualifier.clone()),
+            &[],
+            None,
+        )
+    }
+
+    /// 在显式自定义作用域链中按限定符解析 Trait Object 实现。
+    ///
+    /// # Errors
+    ///
+    /// Scope 身份、Trait 选择或目标组件解析失败时返回 [`ResolveError`]。
+    pub fn resolve_qualified_trait_in<T>(
+        &self,
+        qualifier: &Qualifier,
+        scope: &ScopeContext,
+    ) -> Result<Arc<T>, ResolveError>
+    where
+        T: ?Sized + Send + Sync + 'static,
+    {
+        self.ensure_scope_owner(scope)?;
+        self.resolve_trait_typed(
+            &Dependency::trait_qualified::<T>(qualifier.clone()),
+            &[],
+            Some(scope),
+        )
     }
 
     /// 按注册顺序解析指定 Trait Object 的全部实现。
@@ -97,7 +204,23 @@ impl Container {
     where
         T: ?Sized + Send + Sync + 'static,
     {
-        self.resolve_all_traits_typed(&Dependency::all_traits_of::<T>(), &[])
+        self.resolve_all_traits_typed(&Dependency::all_traits_of::<T>(), &[], None)
+    }
+
+    /// 在显式自定义作用域链中按注册顺序解析 Trait Object 的全部实现。
+    ///
+    /// # Errors
+    ///
+    /// Scope 身份或任一绑定目标解析失败时返回 [`ResolveError`]。
+    pub fn resolve_all_traits_in<T>(
+        &self,
+        scope: &ScopeContext,
+    ) -> Result<Vec<Arc<T>>, ResolveError>
+    where
+        T: ?Sized + Send + Sync + 'static,
+    {
+        self.ensure_scope_owner(scope)?;
+        self.resolve_all_traits_typed(&Dependency::all_traits_of::<T>(), &[], Some(scope))
     }
 
     /// 按依赖优先顺序构造全部单例。
@@ -112,7 +235,7 @@ impl Container {
         for index in self.registry.ordered_indices().iter().copied() {
             let definition = &self.registry.definitions()[index];
             if definition.scope() == Scope::Singleton {
-                self.resolve_definition(definition, &[])?;
+                self.resolve_definition(definition, &[], None)?;
             }
         }
         Ok(())
@@ -129,12 +252,13 @@ impl Container {
         &self,
         dependency: &Dependency,
         stack: &[ComponentKey],
+        scope: Option<&ScopeContext>,
     ) -> Result<Arc<T>, ResolveError>
     where
         T: Any + Send + Sync,
     {
         let definition = self.select_definition(dependency, stack)?;
-        let component = self.resolve_definition(definition, stack)?;
+        let component = self.resolve_definition(definition, stack, scope)?;
         Arc::downcast::<T>(component).map_err(|_| ResolveError::TypeMismatch {
             component: definition.key().clone(),
         })
@@ -145,12 +269,13 @@ impl Container {
         &self,
         dependency: &Dependency,
         stack: &[ComponentKey],
+        scope: Option<&ScopeContext>,
     ) -> Result<Arc<T>, ResolveError>
     where
         T: ?Sized + Send + Sync + 'static,
     {
         let binding = self.select_trait_binding(dependency, stack)?;
-        self.resolve_binding(binding, stack)
+        self.resolve_binding(binding, stack, scope)
     }
 
     /// 为受限 Resolver 执行 Trait 全实现解析。
@@ -158,6 +283,7 @@ impl Container {
         &self,
         dependency: &Dependency,
         stack: &[ComponentKey],
+        scope: Option<&ScopeContext>,
     ) -> Result<Vec<Arc<T>>, ResolveError>
     where
         T: ?Sized + Send + Sync + 'static,
@@ -166,7 +292,7 @@ impl Container {
             .bindings()
             .iter()
             .filter(|binding| binding.key().type_id == dependency.type_id)
-            .map(|binding| self.resolve_binding(binding, stack))
+            .map(|binding| self.resolve_binding(binding, stack, scope))
             .collect()
     }
 
@@ -255,6 +381,7 @@ impl Container {
         &self,
         binding: &TraitBinding,
         stack: &[ComponentKey],
+        scope: Option<&ScopeContext>,
     ) -> Result<Arc<T>, ResolveError>
     where
         T: ?Sized + Send + Sync + 'static,
@@ -268,7 +395,7 @@ impl Container {
                 component: binding.target().to_string(),
                 path: Self::display_path(stack, Some(binding.to_string())),
             })?;
-        let component = self.resolve_definition(definition, stack)?;
+        let component = self.resolve_definition(definition, stack, scope)?;
         let erased_trait =
             binding
                 .upcast(component)
@@ -291,6 +418,7 @@ impl Container {
         &self,
         definition: &Arc<ComponentDefinition>,
         stack: &[ComponentKey],
+        scope: Option<&ScopeContext>,
     ) -> Result<ErasedComponent, ResolveError> {
         if let Some(position) = stack.iter().position(|key| key == definition.key()) {
             let mut path: Vec<String> = stack[position..].iter().map(ToString::to_string).collect();
@@ -299,7 +427,7 @@ impl Container {
         }
 
         match definition.scope() {
-            Scope::Transient => self.construct(definition, stack),
+            Scope::Transient => self.construct(definition, stack, scope),
             Scope::Singleton => {
                 let cell = {
                     let mut singletons = self
@@ -311,8 +439,24 @@ impl Container {
                         .or_insert_with(|| Arc::new(OnceLock::new()))
                         .clone()
                 };
-                cell.get_or_init(|| self.construct(definition, stack))
+                // Singleton 的依赖解析故意不传播调用方 Scope。否则第一次恰好在
+                // Request/Tenant 内解析的单例会永久捕获短生命周期对象。
+                cell.get_or_init(|| self.construct(definition, stack, None))
                     .clone()
+            }
+            Scope::Custom(scope_key) => {
+                let active_scope =
+                    scope
+                        .and_then(|scope| scope.find(scope_key))
+                        .ok_or_else(|| ResolveError::ScopeNotActive {
+                            component: definition.key().clone(),
+                            scope: scope_key,
+                        })?;
+                active_scope.resolve_component(definition.key(), || {
+                    // 只把匹配节点而不是最内层叶节点交给工厂：父 Scope 组件可以
+                    // 依赖更长生命周期的祖先，但不能捕获更短生命周期的子组件。
+                    self.construct(definition, stack, Some(active_scope))
+                })
             }
         }
     }
@@ -322,10 +466,11 @@ impl Container {
         &self,
         definition: &Arc<ComponentDefinition>,
         stack: &[ComponentKey],
+        scope: Option<&ScopeContext>,
     ) -> Result<ErasedComponent, ResolveError> {
         let mut next_stack = stack.to_vec();
         next_stack.push(definition.key().clone());
-        let resolver = Resolver::new(self, definition, &next_stack);
+        let resolver = Resolver::new(self, definition, &next_stack, scope);
 
         definition
             .create(&resolver)
@@ -342,5 +487,14 @@ impl Container {
             path.push(leaf);
         }
         path
+    }
+
+    /// 拒绝把另一个 Container 创建的 `ScopeContext` 用作当前实例缓存。
+    fn ensure_scope_owner(&self, scope: &ScopeContext) -> Result<(), ResolveError> {
+        if scope.belongs_to(&self.owner) {
+            Ok(())
+        } else {
+            Err(ResolveError::ScopeOwnerMismatch { scope: scope.key() })
+        }
     }
 }

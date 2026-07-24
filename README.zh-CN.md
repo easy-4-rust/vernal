@@ -276,7 +276,7 @@ let json = serde_json::to_string(&startup_report)?;
 | 能力 | 目标合同 | 状态 |
 |:---|:---|:---:|
 | 类型化组件定义 | 构造器注入与显式元数据 | Phase 1 |
-| 作用域 | 每 Container Singleton 与每次解析 Transient | Phase 1 |
+| 作用域 | Singleton、Transient 与绑定 Container 的类型化自定义 ScopeContext | Phase 1.2 内核 |
 | 依赖图 | 确定性顺序及缺失、歧义、循环结构化诊断 | Phase 1 |
 | Trait 绑定 | 不依赖字符串查找的命名、Primary 和多实现绑定 | Phase 1.1 内核 |
 | 拦截器链 | 有序 Around/Next、短路及结果/错误改写 | Phase 2 内核 |
@@ -363,19 +363,22 @@ AOP Bridge；Hutool-Rust
 Tokio 测试、Clippy 和文档构建已在独立依赖图通过。Ddd4r 全 Workspace 门禁仍被
 既有、当前不可获取的 `rbatis-r2dbc` Git Revision 阻断，不能据此宣称全仓通过。
 
-Phase 1/1.1 已通过 24 个 IoC 合同测试，覆盖 1,000 节点确定性规划、结构化图
+Phase 1/1.1/1.2 已通过 30 个 IoC 合同测试，覆盖 1,000 节点确定性规划、结构化图
 诊断、并发 Singleton、双 Container 隔离、Transient、原生对象、Trait 命名/
-Primary/全部实现、Trait 图环、跨定义/绑定原子模块注册，以及不暴露工厂和实例
-地址的稳定 Registry 序列化快照。
+Primary/全部实现、Trait 图环、跨定义/绑定原子模块注册，以及稳定 Registry
+序列化快照。新增 6 项自定义 Scope 合同进一步覆盖同 Scope 并发一次构造、兄弟
+隔离、父子生命周期方向、Container 所有权、取消传播、失败后继续逆序清理，以及
+关闭等待已开始工厂。
 Phase 2 AOP 内核现有 9 个 Send 合同测试，覆盖顺序进入/逆序退出、短路、成功结果
 与错误改写、跨 `.await` 类型化上下文、取消/deadline、切点选择和 64 task
 并发共享计划、借用型非静态目标与计划目录合并；另有 5 个 Local-AOP 测试覆盖
 非 `Send` 返回值、顺序、短路、取消、计划目录和借用型本地目标。性能基准仍未
-完成。宏前端另有 4 个运行时合同测试和 4 个 compile-fail 用例。
-Phase 3 内核现有 11 个测试，覆盖依赖顺序启动、逆序关闭、initialize/start
+完成。宏前端另有 5 个运行时合同测试（包含类型驱动自定义 Scope）和 4 个
+compile-fail 用例。
+Phase 3 内核现有 12 个测试，覆盖依赖顺序启动、逆序关闭、initialize/start
 回滚、非法状态转换、幂等关闭、并发关闭串行化和 Context-local 类型化事件
-隔离、高层构建器内建资源注入，以及成功/失败启动报告的只读性、序列化和业务
-错误正文脱敏。
+隔离、高层构建器内建资源注入、应用 Scope 取消树，以及成功/失败启动报告的
+只读性、序列化和业务错误正文脱敏。
 
 ## 10. 贡献与许可证
 

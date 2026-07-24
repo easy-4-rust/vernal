@@ -2,6 +2,7 @@
 #![doc = "Vernal 的编译期组件与切面元数据生成入口。"]
 
 mod component_derive;
+mod component_scope_option;
 mod intercept_macro;
 mod self_reference_rewriter;
 
@@ -10,7 +11,8 @@ use syn::{DeriveInput, parse_macro_input};
 
 /// 根据结构体 `Arc<T>` 字段生成类型安全的 Vernal 组件定义。
 ///
-/// 默认生成 Singleton；`#[component(scope = "transient")]` 可选择 Transient。
+/// 默认生成 Singleton；`#[component(scope = "transient")]` 可选择 Transient，
+/// `#[component(scope = RequestScope)]` 可声明类型化自定义作用域。
 /// `#[component(default)]` 字段使用 `Default::default()`，不进入依赖图。
 /// `Arc<dyn Trait>` 使用唯一/Primary Trait Binding，字段级
 /// `#[component(qualifier = "name")]` 使用命名绑定，

@@ -36,6 +36,7 @@ fn snapshot_reuses_build_order_and_exposes_only_stable_metadata() {
     assert_eq!(summary.definition_count(), 3);
     assert_eq!(summary.singleton_count(), 2);
     assert_eq!(summary.transient_count(), 1);
+    assert_eq!(summary.custom_scope_count(), 0);
     assert_eq!(summary.declared_dependency_count(), 2);
     assert_eq!(summary.trait_binding_count(), 1);
 

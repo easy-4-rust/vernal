@@ -91,6 +91,29 @@ impl ComponentDefinition {
         Self::new(Scope::Transient, factory)
     }
 
+    /// 创建不会失败的类型化自定义作用域组件定义。
+    ///
+    /// 标记类型 `S` 只提供作用域身份，不需要实现 Vernal trait。组件必须通过
+    /// [`crate::Container::resolve_in`] 在匹配的 [`crate::ScopeContext`] 中解析。
+    pub fn scoped<T, S, F>(factory: F) -> Self
+    where
+        T: Any + Send + Sync,
+        S: 'static,
+        F: for<'a> Fn(&Resolver<'a>) -> T + Send + Sync + 'static,
+    {
+        Self::new::<T, _>(Scope::custom::<S>(), move |resolver| Ok(factory(resolver)))
+    }
+
+    /// 创建可能返回业务错误的类型化自定义作用域组件定义。
+    pub fn try_scoped<T, S, F>(factory: F) -> Self
+    where
+        T: Any + Send + Sync,
+        S: 'static,
+        F: for<'a> Fn(&Resolver<'a>) -> Result<T, BoxError> + Send + Sync + 'static,
+    {
+        Self::new(Scope::custom::<S>(), factory)
+    }
+
     /// 擦除具体组件类型，同时保留运行时安全的 `Any + Send + Sync` 边界。
     fn new<T, F>(scope: Scope, factory: F) -> Self
     where

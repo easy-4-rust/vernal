@@ -2,7 +2,9 @@
 
 use std::{any::Any, sync::Arc};
 
-use crate::{ComponentDefinition, ComponentKey, Container, Dependency, Qualifier, ResolveError};
+use crate::{
+    ComponentDefinition, ComponentKey, Container, Dependency, Qualifier, ResolveError, ScopeContext,
+};
 
 /// 传递给组件工厂的受限依赖解析视图。
 ///
@@ -12,6 +14,7 @@ pub struct Resolver<'a> {
     container: &'a Container,
     definition: &'a ComponentDefinition,
     stack: &'a [ComponentKey],
+    scope: Option<&'a ScopeContext>,
 }
 
 impl<'a> Resolver<'a> {
@@ -20,11 +23,13 @@ impl<'a> Resolver<'a> {
         container: &'a Container,
         definition: &'a ComponentDefinition,
         stack: &'a [ComponentKey],
+        scope: Option<&'a ScopeContext>,
     ) -> Self {
         Self {
             container,
             definition,
             stack,
+            scope,
         }
     }
 
@@ -90,7 +95,7 @@ impl<'a> Resolver<'a> {
         let dependency = Dependency::all_traits_of::<T>();
         self.ensure_declared(&dependency)?;
         self.container
-            .resolve_all_traits_typed(&dependency, self.stack)
+            .resolve_all_traits_typed(&dependency, self.stack, self.scope)
     }
 
     /// 返回当前正在构造的组件标识。
@@ -105,7 +110,8 @@ impl<'a> Resolver<'a> {
         T: Any + Send + Sync,
     {
         self.ensure_declared(dependency)?;
-        self.container.resolve_typed(dependency, self.stack)
+        self.container
+            .resolve_typed(dependency, self.stack, self.scope)
     }
 
     /// 校验声明后委托容器执行 Trait 单值解析。
@@ -114,7 +120,8 @@ impl<'a> Resolver<'a> {
         T: ?Sized + Send + Sync + 'static,
     {
         self.ensure_declared(dependency)?;
-        self.container.resolve_trait_typed(dependency, self.stack)
+        self.container
+            .resolve_trait_typed(dependency, self.stack, self.scope)
     }
 
     /// 确认工厂请求的依赖已经进入不可变组件定义。

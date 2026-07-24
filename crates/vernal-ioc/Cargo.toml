@@ -9,6 +9,8 @@ publish = false
 
 [dependencies]
 serde.workspace = true
+tokio = { version = "1.48.0", default-features = false, features = ["sync"] }
+tokio-util = { version = "0.7.16", default-features = false, features = ["rt"] }
 vernal-core = { path = "../vernal-core" }
 
 [dev-dependencies]

@@ -223,7 +223,7 @@ already integrates Vernal.
 | `TypeId` plus erased store | Keep typed entrypoints and constrain erasure | `vernal-ioc` |
 | Kahn topological ordering | Rebuild as a deterministic, testable planner | `vernal-ioc` |
 | `debug_registry()` log table | Upgrade to serializable read-only snapshots that reuse the frozen plan | `vernal-ioc` / `vernal-context` |
-| Singleton / Prototype | Evolve to Singleton / Transient / Scope SPI | `vernal-ioc` |
+| Singleton / Prototype | Implemented as Singleton / Transient / typed Scope SPI | `vernal-ioc` |
 | Lifecycle hooks | Move to a Context-owned state machine | `vernal-context` |
 | Forward before / reverse after | Preserve stack order through a true Around chain | `vernal-aop` |
 | Generated interception wrapper | Keep compile-time generation; remove hard-coded paths and panic | `vernal-macros` |
@@ -331,11 +331,54 @@ sequenceDiagram
     end
 ```
 
-Phase 1 implements only per-container `Singleton` and per-resolution
-`Transient`. Request/task/tenant scopes arrive through a later Scope SPI and do
-not introduce HTTP concepts into the kernel.
+### 8.3 Scopes
 
-### 8.3 Tokio and framework-native components
+The kernel implements three construction policies:
+
+- `Singleton`: one concurrently initialized instance per Container;
+- `Transient`: a new instance for every resolution;
+- `Scope::Custom(ScopeKey)`: one instance per full `ComponentKey` in an
+  explicitly entered, type-identified `ScopeContext`.
+
+Applications declare a custom component with
+`ComponentDefinition::scoped::<T, ScopeMarker, _>(...)` or
+`#[component(scope = ScopeMarker)]`, enter it through
+`Container::open_scope::<ScopeMarker>()`, and resolve it with `resolve_in`.
+Request, task, tenant, batch, or security semantics remain consumer-owned
+marker types; no HTTP type enters `vernal-ioc`.
+
+```mermaid
+flowchart LR
+    Container["Container<br/>owner identity"] --> Tenant["ScopeContext&lt;Tenant&gt;<br/>typed cache"]
+    Tenant --> RequestA["ScopeContext&lt;Request&gt; A"]
+    Tenant --> RequestB["ScopeContext&lt;Request&gt; B"]
+    RequestA -->|"may resolve parent"| TenantValue["Tenant component"]
+    Tenant -. "cannot capture child" .-> RequestValue["Request component"]
+    RequestB -->|"isolated instance"| RequestValue
+```
+
+Each Scope is bound to the Container that created it, so a Context cannot carry
+instances across application containers. Child resolution can see parent
+scopes, while construction of a parent-scoped component is restricted to that
+parent node. Singleton construction receives no custom Scope at all, preventing
+a long-lived singleton from capturing a request/task instance.
+
+The Scope lifecycle contract is explicit:
+
+- per-component `OnceLock` caches either the first result or first error under
+  concurrent resolution;
+- close first rejects new resolution and cancels the Tokio cancellation token;
+- close waits for synchronous factories that already started;
+- asynchronous close hooks execute in reverse registration order, all hooks run
+  even after an error, and the first error is returned;
+- cache clearing and `Closed` transition still complete after hook failure;
+- repeated and concurrent close calls are serialized and idempotent.
+
+`ApplicationContext::open_scope` derives the Scope cancellation token from the
+application cancellation tree. Scope owners still call `close().await` so
+resource cleanup is observable rather than delegated to `Drop`.
+
+### 8.4 Tokio and framework-native components
 
 Vernal does not require ecosystem objects to be wrapped in framework-specific
 bean types. Any `Send + Sync + 'static` value can be registered directly,
@@ -361,7 +404,7 @@ when tasks, asynchronous synchronization, time, or cancellation require it;
 the framework will not invent a second runtime SPI. The IoC contract tests
 register a native `tokio::runtime::Handle` and use it to run a real Tokio task.
 
-### 8.4 Named, primary, and multiple Trait bindings
+### 8.5 Named, primary, and multiple Trait bindings
 
 Trait bindings join the existing immutable Registry and graph rather than
 enabling tx-di's former parallel Store:
@@ -850,17 +893,21 @@ Phase 1 minimum acceptance:
    Tokio is allowed when needed.
 5. Normal failures use `Result`, not panic.
 
-As of 2026-07-24, all five items have local evidence: 24 IoC contract tests
+As of 2026-07-25, all five items have local evidence: 30 IoC contract tests
 cover a 1,000-node graph, missing/ambiguous/cycle paths, singleton isolation
 across two concurrent containers, transient creation, qualifiers, hidden
 dependency rejection, native-value registration, a real task spawned through
 an injected Tokio handle, named/primary/all Trait bindings, empty sets,
 missing targets, Trait cycles, naming conflicts, batch atomicity, and
 deterministic Registry serialization without factories or instance addresses.
+Six of those tests cover typed custom scopes: concurrent once-only
+construction, sibling isolation, safe parent/child visibility, Container
+ownership, cancellation, reverse cleanup with failure continuation, and close
+waiting for a factory already in flight.
 `register_all` atomically installs definition-only batches; `register_bundle`
-atomically commits definitions and bindings together. Tokio remains a
-contract-test dependency for IoC rather than runtime state in its resolution
-hot path.
+atomically commits definitions and bindings together. Ordinary singleton and
+transient resolution remains synchronous; the custom Scope lifecycle uses
+Tokio synchronization and cancellation directly for observable async cleanup.
 
 The Phase 2 AOP kernel additionally has nine Send contract tests for
 ordered entry/reverse exit, short circuit, result/error transformation, typed
@@ -869,20 +916,21 @@ context across `.await`, cancellation/deadline, pointcut filtering, and
 plan-catalog compilation. Five Local-AOP tests cover non-`Send` values,
 ordering, short circuit, cancellation, plan catalogs, and borrowed local
 targets. The macro
-frontend additionally has four runtime tests for singleton Component
+frontend additionally has five runtime tests for singleton Component
 injection, transient construction, Trait Object injection, and context-local
-intercepted invocation, plus four compile-fail cases for invalid component
+intercepted invocation, plus a type-driven custom Scope declaration and four
+compile-fail cases for invalid component
 fields, invalid collection qualifiers, non-async methods, and borrowed
 receivers. Phase 2 now has a callable loop, while broader
 signatures, diagnostic coverage, benchmarks, and stability guarantees remain
 open.
 
-The Phase 3 kernel has eleven contract tests for dependency-order
+The Phase 3 kernel has twelve contract tests for dependency-order
 startup, reverse shutdown, initialize/start rollback, invalid transitions,
 idempotent close, concurrent close serialization, and context-local typed
 event isolation, plus runtime-unavailable diagnostics, same-instance injection
-of the four built-in resources, and owned/redacted serialization of successful
-and failed startup reports.
+of the four built-in resources, application-owned Scope cancellation, and
+owned/redacted serialization of successful and failed startup reports.
 
 ## 16. Delivery roadmap
 

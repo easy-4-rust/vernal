@@ -202,7 +202,7 @@ flowchart TB
 | `TypeId` + 类型擦除 Store | 保留类型安全入口，限制擦除边界 | `vernal-ioc` |
 | Kahn 拓扑排序与循环诊断 | 重写为确定性、可测试的 Graph Planner | `vernal-ioc` |
 | `debug_registry()` 日志表格 | 升级为复用冻结计划、可 Serde 序列化的只读快照 | `vernal-ioc` / `vernal-context` |
-| Singleton / Prototype | 演进为 Singleton / Transient / Scope SPI | `vernal-ioc` |
+| Singleton / Prototype | 已实现为 Singleton / Transient / 类型化 Scope SPI | `vernal-ioc` |
 | 生命周期钩子 | 抽离为 Context 管理的状态机 | `vernal-context` |
 | 正序 `before`、逆序 `after` | 保留栈式顺序语义，升级为真正 Around 链 | `vernal-aop` |
 | `#[intercept]` 生成包装代码 | 保留编译期生成方向，移除硬编码 crate 与 panic | `vernal-macros` |
@@ -312,13 +312,45 @@ sequenceDiagram
 
 ### 8.3 作用域
 
-Phase 1 只实现：
+IoC 内核现已实现三种构造策略：
 
-- `Singleton`：每个 Container 一份，线程安全缓存；
+- `Singleton`：每个 Container 一份，并发下只初始化一次；
 - `Transient`：每次解析创建新实例。
+- `Scope::Custom(ScopeKey)`：在显式进入、由类型标识的 `ScopeContext` 中，按完整
+  `ComponentKey` 缓存一份实例。
 
-`Request`、`Task`、`Tenant` 等 Scope 通过 Scope SPI 在后续阶段加入，不把 HTTP 概念
-放入 IoC Core。自定义 Scope 必须定义缓存所有者、进入/退出方式、并发保证和清理失败语义。
+应用可以使用 `ComponentDefinition::scoped::<T, ScopeMarker, _>(...)` 或
+`#[component(scope = ScopeMarker)]` 声明自定义作用域，通过
+`Container::open_scope::<ScopeMarker>()` 进入，再用 `resolve_in` 解析。Request、
+Task、Tenant、Batch 或安全会话等含义仍由消费方标记类型表达，不把 HTTP 类型放入
+`vernal-ioc`。
+
+```mermaid
+flowchart LR
+    Container["Container<br/>所有者身份"] --> Tenant["ScopeContext&lt;Tenant&gt;<br/>类型化缓存"]
+    Tenant --> RequestA["ScopeContext&lt;Request&gt; A"]
+    Tenant --> RequestB["ScopeContext&lt;Request&gt; B"]
+    RequestA -->|"可以解析父级"| TenantValue["Tenant 组件"]
+    Tenant -. "禁止捕获子级" .-> RequestValue["Request 组件"]
+    RequestB -->|"实例隔离"| RequestValue
+```
+
+每个 Scope 都绑定创建它的 Container，不能跨应用容器携带实例。子 Scope 解析可以
+读取父 Scope；构造父 Scope 组件时只暴露父节点，不能反向捕获更短生命周期的子组件。
+Singleton 构造完全不接收自定义 Scope，从根源上避免第一次在 Request/Task 中解析的
+单例永久持有短生命周期对象。
+
+Scope 生命周期合同是显式的：
+
+- 每组件 `OnceLock` 在并发解析下缓存第一次成功或失败结果；
+- 关闭先拒绝新解析，并取消 Tokio `CancellationToken`；
+- 已经开始的同步工厂执行完毕后才进入资源释放；
+- 异步关闭钩子按注册逆序执行，即使某个失败也继续执行其余钩子，并返回第一个错误；
+- 钩子失败后仍清空缓存并进入 `Closed`；
+- 重复/并发关闭由 Tokio Mutex 串行且保持幂等。
+
+`ApplicationContext::open_scope` 从应用取消树派生 Scope 令牌；Scope 所有者仍须显式
+调用 `close().await`，让资源释放结果可观察，而不是把异步清理藏进 `Drop`。
 
 ### 8.4 Tokio 与框架原生组件
 
@@ -839,28 +871,31 @@ Phase 1 最低验收：
 4. `cargo tree` 证明 `vernal-ioc` 不包含具体 Web 或 ORM 框架；允许按需使用 Tokio；
 5. 所有失败通过 `Result` 返回，不依赖 panic。
 
-截至 2026-07-24，上述五项已有本地证据：24 个 IoC 合同测试覆盖 1,000 节点图、
+截至 2026-07-25，上述五项已有本地证据：30 个 IoC 合同测试覆盖 1,000 节点图、
 缺失/歧义/循环路径、两个并行 Container 的 Singleton 隔离、Transient、
 qualifier、隐藏依赖拒绝、原生值注册、Tokio Handle 真实 task，以及 Trait
 命名/Primary/全部实现、空集合、目标缺失、Trait 图环、命名冲突、批量原子性，
 以及不含工厂与实例地址的确定性 Registry 序列化快照。
-运行时 Tokio 目前只作为 IoC 合同测试依赖，通用解析热路径未引入 Runtime 状态。
+其中 6 项验证类型化自定义 Scope 的并发一次构造、兄弟隔离、安全父子可见性、
+Container 所有权、取消传播、失败后继续逆序清理，以及关闭等待已开始工厂。
+普通 Singleton/Transient 解析仍为同步热路径；自定义 Scope 生命周期直接使用
+Tokio 同步与取消能力完成可观察的异步清理。
 `register_all` 原子注册纯组件批次；`register_bundle` 同时原子提交定义与绑定。
 
 Phase 2 AOP 内核另有 9 个 Send 合同测试，覆盖顺序进入/逆序退出、短路、结果/
 错误改写、跨 `.await` 类型化上下文、取消/deadline、切点过滤和 64 task 并发
 复用、借用型非静态目标，以及重复 Operation 合并的计划目录编译；另有 5 个
 Local-AOP 测试覆盖非 `Send` 返回值、顺序、短路、取消、计划目录和借用型本地
-目标。宏前端另有 4 个运行时测试，覆盖
+目标。宏前端另有 5 个运行时测试，覆盖
 Singleton Component 注入、Transient 构造、Trait Object 注入和 Context-local
-方法织入，并有 4 个 compile-fail 用例覆盖非法组件字段、非法集合 qualifier、
+方法织入及类型驱动自定义 Scope，并有 4 个 compile-fail 用例覆盖非法组件字段、非法集合 qualifier、
 非异步方法和借用接收器。Phase 2 已具备可调用
 闭环，但更广泛的方法签名、诊断矩阵、性能基准和稳定性承诺仍未完成。
 
-Phase 3 内核另有 11 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
+Phase 3 内核另有 12 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
 回滚、非法转换、幂等关闭、并发关闭串行化、Context-local 类型化事件隔离，
-高层构建器的 Runtime 缺失诊断、四类内建组件同实例注入，以及成功/失败启动报告
-的只读快照、Serde 序列化与业务错误正文脱敏。
+高层构建器的 Runtime 缺失诊断、四类内建组件同实例注入、应用 Scope 取消树，
+以及成功/失败启动报告的只读快照、Serde 序列化与业务错误正文脱敏。
 
 ## 16. 实施路线
 

@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use crate::{
     BuildPlan, ComponentDefinition, ComponentSnapshot, Container, RegistrySnapshot,
-    RegistrySummary, Scope, TraitBinding, TraitBindingSnapshot,
+    RegistrySummary, TraitBinding, TraitBindingSnapshot,
 };
 
 /// 保存已校验组件定义与构建计划的不可变注册表。
@@ -62,8 +62,14 @@ impl Registry {
         let singleton_count = self
             .definitions
             .iter()
-            .filter(|definition| definition.scope() == Scope::Singleton)
+            .filter(|definition| definition.scope().is_singleton())
             .count();
+        let transient_count = self
+            .definitions
+            .iter()
+            .filter(|definition| definition.scope().is_transient())
+            .count();
+        let custom_scope_count = self.definitions.len() - singleton_count - transient_count;
         let declared_dependency_count = self
             .definitions
             .iter()
@@ -114,7 +120,8 @@ impl Registry {
         let summary = RegistrySummary::new(
             self.definitions.len(),
             singleton_count,
-            self.definitions.len() - singleton_count,
+            transient_count,
+            custom_scope_count,
             declared_dependency_count,
             self.bindings.len(),
         );

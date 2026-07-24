@@ -15,6 +15,8 @@ pub struct RegistrySummary {
     singletons: usize,
     #[serde(rename = "transient_count")]
     transients: usize,
+    #[serde(rename = "custom_scope_count")]
+    custom_scopes: usize,
     #[serde(rename = "declared_dependency_count")]
     declared_dependencies: usize,
     #[serde(rename = "trait_binding_count")]
@@ -27,6 +29,7 @@ impl RegistrySummary {
         definition_count: usize,
         singleton_count: usize,
         transient_count: usize,
+        custom_scope_count: usize,
         declared_dependency_count: usize,
         trait_binding_count: usize,
     ) -> Self {
@@ -34,6 +37,7 @@ impl RegistrySummary {
             definitions: definition_count,
             singletons: singleton_count,
             transients: transient_count,
+            custom_scopes: custom_scope_count,
             declared_dependencies: declared_dependency_count,
             trait_bindings: trait_binding_count,
         }
@@ -55,6 +59,12 @@ impl RegistrySummary {
     #[must_use]
     pub const fn transient_count(&self) -> usize {
         self.transients
+    }
+
+    /// 返回自定义 Scope 定义数量。
+    #[must_use]
+    pub const fn custom_scope_count(&self) -> usize {
+        self.custom_scopes
     }
 
     /// 返回组件定义显式声明的依赖选择器总数。

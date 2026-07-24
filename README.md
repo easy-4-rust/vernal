@@ -419,7 +419,7 @@ component, phase, and outcome; business error text is never serialized.
 | Capability | Target contract | Status |
 |:---|:---|:---:|
 | Typed component definitions | Constructor injection with explicit metadata | Phase 1 |
-| Scopes | Per-container singleton and per-resolution transient | Phase 1 |
+| Scopes | Singleton, transient, and Container-bound typed custom ScopeContext | Phase 1.2 kernel |
 | Dependency graph | Deterministic build order and structured missing/ambiguous/cycle diagnostics | Phase 1 |
 | Trait binding | Named/primary/multiple implementations without string lookup | Phase 1.1 kernel |
 | Interceptor chain | Ordered Around/Next composition with short circuit and result/error transformation | Phase 2 kernel |
@@ -522,12 +522,15 @@ graph. The full Ddd4r workspace gate remains blocked by its pre-existing,
 currently unavailable `rbatis-r2dbc` Git revision and is not reported as
 passing.
 
-Phase 1/1.1 now has 24 IoC contract tests for 1,000-node deterministic
+Phase 1/1.1/1.2 now has 30 IoC contract tests for 1,000-node deterministic
 planning, structured graph diagnostics, concurrent singleton construction,
 container isolation, transient resolution, native objects, named/primary/all
-Trait bindings, Trait graph cycles, hidden-dependency rejection, and atomic
-definition-plus-binding module registration, plus stable Registry
-serialization without factories or instance addresses.
+Trait bindings, Trait graph cycles, hidden-dependency rejection, atomic
+definition-plus-binding module registration, and stable Registry serialization.
+The six custom-Scope contracts additionally cover per-Scope concurrent
+construction, sibling isolation, parent/child lifetime direction, Container
+ownership, cancellation, reverse cleanup with failure continuation, and close
+waiting for an in-flight factory.
 The Phase 2 AOP kernel currently has nine Send contract tests covering ordered
 enter/reverse exit, short circuit, success and error transformation, typed
 context across `.await`, cancellation/deadline, pointcut selection, and
@@ -535,18 +538,19 @@ context across `.await`, cancellation/deadline, pointcut selection, and
 plan-catalog compilation. Five Local-AOP tests cover non-`Send` values,
 ordering, short circuit, cancellation, plan catalogs, and borrowed local
 targets.
-The macro frontend has four runtime tests covering singleton Component
+The macro frontend has five runtime tests covering singleton Component
 injection, transient construction, Trait Object injection, and context-local
-intercepted invocation, plus four compile-fail cases for invalid component
+intercepted invocation, plus a type-driven custom Scope declaration and four
+compile-fail cases for invalid component
 fields, invalid collection qualifiers, non-async interception, and borrowed
 receivers. Broader signature support, expanded
 macro diagnostics, and AOP benchmarks remain open.
-The Phase 3 kernel has eleven tests covering dependency-order startup,
+The Phase 3 kernel has twelve tests covering dependency-order startup,
 reverse shutdown, initialize/start rollback, invalid transitions, idempotent
 close, concurrent close serialization, and context-local typed event
 isolation, plus managed injection of Tokio, cancellation, events, and AOP
-plans, and read-only/redacted serialization of successful and failed startup
-reports.
+plans, application-owned Scope cancellation, and read-only/redacted
+serialization of successful and failed startup reports.
 
 ## 10. Contributing and license
 

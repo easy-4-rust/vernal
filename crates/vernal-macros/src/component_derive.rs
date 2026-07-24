@@ -7,11 +7,13 @@ use syn::{
     Attribute, Data, DeriveInput, Field, Fields, GenericArgument, LitStr, PathArguments, Type,
 };
 
+use crate::component_scope_option::ComponentScopeOption;
+
 /// 解析组件结构并生成 `vernal_ioc::Component` 实现。
 pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
     reject_generics(input)?;
     let ioc = ioc_crate_path()?;
-    let (transient, aop_enabled) = parse_component_options(&input.attrs)?;
+    let (scope, aop_enabled) = parse_component_options(&input.attrs)?;
     let component_name = &input.ident;
     let fields = component_fields(&input.data)?;
     let mut initializers = Vec::with_capacity(fields.len());
@@ -35,17 +37,23 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
         )?;
     }
 
-    let factory = if transient {
-        quote! { #ioc::ComponentDefinition::try_transient }
-    } else {
-        quote! { #ioc::ComponentDefinition::try_singleton }
+    let factory = match scope {
+        ComponentScopeOption::Singleton => {
+            quote! { #ioc::ComponentDefinition::try_singleton::<Self, _> }
+        }
+        ComponentScopeOption::Transient => {
+            quote! { #ioc::ComponentDefinition::try_transient::<Self, _> }
+        }
+        ComponentScopeOption::Custom(scope_type) => {
+            quote! { #ioc::ComponentDefinition::try_scoped::<Self, #scope_type, _> }
+        }
     };
 
     Ok(quote! {
         impl #ioc::Component for #component_name {
             fn definition() -> #ioc::ComponentDefinition {
                 #(#qualifier_declarations)*
-                let mut __definition = #factory::<Self, _>(
+                let mut __definition = #factory(
                     move |__resolver| -> ::core::result::Result<
                         Self,
                         ::std::boxed::Box<
@@ -210,8 +218,8 @@ fn reject_generics(input: &DeriveInput) -> syn::Result<()> {
 }
 
 /// 读取组件作用域和 AOP 接线选项；默认作用域为 singleton。
-fn parse_component_options(attributes: &[Attribute]) -> syn::Result<(bool, bool)> {
-    let mut transient = false;
+fn parse_component_options(attributes: &[Attribute]) -> syn::Result<(ComponentScopeOption, bool)> {
+    let mut scope = ComponentScopeOption::Singleton;
     let mut aop_enabled = false;
     for attribute in attributes
         .iter()
@@ -225,24 +233,29 @@ fn parse_component_options(attributes: &[Attribute]) -> syn::Result<(bool, bool)
             if !metadata.path.is_ident("scope") {
                 return Err(metadata.error("结构体 component 属性只支持 scope 或 aop"));
             }
-            let value = metadata.value()?.parse::<LitStr>()?;
-            match value.value().as_str() {
-                "singleton" => {
-                    transient = false;
-                    Ok(())
-                }
-                "transient" => {
-                    transient = true;
-                    Ok(())
-                }
-                _ => Err(syn::Error::new_spanned(
-                    value,
-                    "scope 只支持 \"singleton\" 或 \"transient\"",
-                )),
+            let value = metadata.value()?;
+            if value.peek(LitStr) {
+                let value = value.parse::<LitStr>()?;
+                return match value.value().as_str() {
+                    "singleton" => {
+                        scope = ComponentScopeOption::Singleton;
+                        Ok(())
+                    }
+                    "transient" => {
+                        scope = ComponentScopeOption::Transient;
+                        Ok(())
+                    }
+                    _ => Err(syn::Error::new_spanned(
+                        value,
+                        "字符串 scope 只支持 \"singleton\" 或 \"transient\"；自定义作用域请直接填写标记类型",
+                    )),
+                };
             }
+            scope = ComponentScopeOption::Custom(Box::new(value.parse::<Type>()?));
+            Ok(())
         })?;
     }
-    Ok((transient, aop_enabled))
+    Ok((scope, aop_enabled))
 }
 
 /// 为启用 AOP 的组件生成 Context-local 资源访问实现。

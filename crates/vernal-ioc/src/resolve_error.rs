@@ -4,7 +4,7 @@ use std::{error::Error, fmt};
 
 use vernal_core::SharedError;
 
-use crate::{ComponentKey, TraitKey};
+use crate::{ComponentKey, ScopeKey, ScopeState, TraitKey};
 
 /// 运行时选择或构造组件失败。
 #[derive(Clone, Debug)]
@@ -57,6 +57,29 @@ pub enum ResolveError {
         /// 闭合的运行时解析路径。
         path: Vec<String>,
     },
+    /// 自定义作用域组件在没有匹配 Context 的解析路径中被请求。
+    ScopeNotActive {
+        /// 无法解析的组件。
+        component: ComponentKey,
+        /// 组件声明的作用域。
+        scope: ScopeKey,
+    },
+    /// `ScopeContext` 来自另一个 Container。
+    ScopeOwnerMismatch {
+        /// 调用方传入的最内层作用域。
+        scope: ScopeKey,
+    },
+    /// 目标 Scope 已关闭、正在关闭或被父级取消。
+    ScopeUnavailable {
+        /// 无法解析的组件。
+        component: ComponentKey,
+        /// 目标作用域。
+        scope: ScopeKey,
+        /// 目标作用域当前状态。
+        state: ScopeState,
+        /// 当前或父作用域是否已经发出取消信号。
+        cancelled: bool,
+    },
 }
 
 impl fmt::Display for ResolveError {
@@ -99,6 +122,27 @@ impl fmt::Display for ResolveError {
             Self::CircularRuntime { path } => {
                 write!(formatter, "runtime dependency cycle: {}", path.join(" -> "))
             }
+            Self::ScopeNotActive { component, scope } => {
+                write!(
+                    formatter,
+                    "component {component} requires active scope {scope}"
+                )
+            }
+            Self::ScopeOwnerMismatch { scope } => {
+                write!(
+                    formatter,
+                    "scope {scope} belongs to a different component container"
+                )
+            }
+            Self::ScopeUnavailable {
+                component,
+                scope,
+                state,
+                cancelled,
+            } => write!(
+                formatter,
+                "scope {scope} is unavailable for component {component}; state: {state:?}; cancelled: {cancelled}"
+            ),
         }
     }
 }

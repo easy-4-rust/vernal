@@ -6,7 +6,7 @@ use tokio::runtime::Handle;
 use tokio::sync::{Mutex, RwLock};
 use tokio_util::sync::CancellationToken;
 use vernal_aop::InvocationPlanCatalog;
-use vernal_ioc::{ComponentKey, Container, ResolveError};
+use vernal_ioc::{ComponentKey, Container, ResolveError, ScopeContext};
 
 use crate::{
     ContextError, ContextState, DiagnosticOutcome, DiagnosticPhase, EventBus, Lifecycle,
@@ -233,6 +233,19 @@ impl ApplicationContext {
     #[must_use]
     pub const fn container(&self) -> &Container {
         &self.container
+    }
+
+    /// 进入绑定当前应用和类型标记 `S` 的根自定义作用域。
+    ///
+    /// Scope 使用应用取消令牌的子令牌：应用关闭会立即阻止新组件解析，但 Scope
+    /// 所有者仍须显式调用 [`ScopeContext::close`] 执行自己的异步关闭钩子。
+    #[must_use]
+    pub fn open_scope<S>(&self) -> Arc<ScopeContext>
+    where
+        S: 'static,
+    {
+        self.container
+            .open_scope_with_cancellation::<S>(self.resources.cancellation().child_token())
     }
 
     /// 返回供组件和适配器派生子令牌的取消令牌。
