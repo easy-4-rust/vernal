@@ -2,13 +2,15 @@
 
 use std::sync::Arc;
 
+use tokio::runtime::Handle;
 use tokio::sync::{Mutex, RwLock};
 use tokio_util::sync::CancellationToken;
+use vernal_aop::InvocationPlanCatalog;
 use vernal_ioc::{ComponentKey, Container};
 
 use crate::{
     ContextError, ContextState, EventBus, Lifecycle, LifecyclePhase,
-    application_context_builder::LifecycleResolver,
+    application_context_builder::LifecycleResolver, context_resources::ContextResources,
 };
 
 /// 组合 `IoC` 容器与 Tokio 生命周期状态机的应用上下文。
@@ -21,8 +23,7 @@ pub struct ApplicationContext {
     components: Mutex<Vec<Arc<dyn Lifecycle>>>,
     state: RwLock<ContextState>,
     operation: Mutex<()>,
-    cancellation: CancellationToken,
-    events: EventBus,
+    resources: ContextResources,
 }
 
 impl ApplicationContext {
@@ -30,6 +31,7 @@ impl ApplicationContext {
     pub(crate) fn new(
         container: Container,
         lifecycle_resolvers: Vec<(ComponentKey, Arc<LifecycleResolver>)>,
+        resources: ContextResources,
     ) -> Self {
         Self {
             container,
@@ -37,8 +39,7 @@ impl ApplicationContext {
             components: Mutex::new(Vec::new()),
             state: RwLock::new(ContextState::Created),
             operation: Mutex::new(()),
-            cancellation: CancellationToken::new(),
-            events: EventBus::new(),
+            resources,
         }
     }
 
@@ -107,13 +108,13 @@ impl ApplicationContext {
 
         let components = self.components.lock().await.clone();
         for component in &components {
-            if let Err(source) = component.start(self.cancellation.clone()).await {
+            if let Err(source) = component.start(self.resources.cancellation().clone()).await {
                 let error = ContextError::Lifecycle {
                     component: component.name(),
                     phase: LifecyclePhase::Start,
                     source,
                 };
-                self.cancellation.cancel();
+                self.resources.cancellation().cancel();
                 self.set_state(ContextState::RollingBack).await;
                 Self::stop_all(&components).await;
                 self.components.lock().await.clear();
@@ -137,7 +138,7 @@ impl ApplicationContext {
             return Ok(());
         }
 
-        self.cancellation.cancel();
+        self.resources.cancellation().cancel();
         let draining_state = if self.state().await == ContextState::Ready {
             ContextState::Draining
         } else {
@@ -165,13 +166,28 @@ impl ApplicationContext {
     /// 返回供组件和适配器派生子令牌的取消令牌。
     #[must_use]
     pub fn cancellation_token(&self) -> CancellationToken {
-        self.cancellation.clone()
+        self.resources.cancellation().clone()
     }
 
     /// 返回当前 Context 独占的类型化事件总线。
     #[must_use]
-    pub const fn events(&self) -> &EventBus {
-        &self.events
+    pub fn events(&self) -> &EventBus {
+        self.resources.events()
+    }
+
+    /// 返回高层应用建造器绑定的 Tokio Runtime Handle。
+    ///
+    /// 通过兼容性低层 API 创建的 Context 不隐式捕获 Runtime，因此返回
+    /// `None`；通过 [`crate::VernalApplicationBuilder`] 创建时始终为 `Some`。
+    #[must_use]
+    pub fn runtime_handle(&self) -> Option<&Handle> {
+        self.resources.runtime()
+    }
+
+    /// 返回应用构建阶段预编译的 AOP 调用计划目录。
+    #[must_use]
+    pub fn invocation_plans(&self) -> &InvocationPlanCatalog {
+        self.resources.invocation_plans()
     }
 
     /// 校验当前状态是否符合操作前置条件。

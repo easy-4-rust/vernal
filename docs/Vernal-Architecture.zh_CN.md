@@ -43,7 +43,9 @@
 - `[已确认]` `vernal-aop` 已提供对象安全的异步 Around/Next、操作切点、
   不可变计划、类型化扩展、取消和 deadline。
 - `[已确认]` `vernal-context` 已提供串行 Tokio 生命周期状态机、依赖顺序
-  initialize/start、取消、失败回滚、逆序幂等关闭和 Context-local 类型化事件。
+  initialize/start、取消、失败回滚、逆序幂等关闭和 Context-local 类型化事件；
+  `VernalApplicationBuilder` 已在依赖图冻结前自动注册 Tokio Handle、应用取消
+  令牌、事件总线和预编译 AOP 计划目录。
 - `[已确认]` `vernal-web`、`vernal-http`、`vernal-tower` 与
   `vernal-hyper` 已提供请求 Scope、标准 HTTP Body Frame/Trailer、Tower
   生命周期 Layer 和真实 Hyper 传输桥接。
@@ -61,8 +63,7 @@
   `vernal-tonic` 已提供 Context Interceptor、类型化 Request 扩展、`Status`
   映射与 Tower 组合。
 - `[骨架]` 宏仍只验证 crate 边界与依赖方向。
-- `[设计目标]` Phase 2 宏、Context AOP 计划聚合、消费方生态桥接与后续生产
-  门禁仍需实现和验收。
+- `[设计目标]` Phase 2 宏、剩余消费方生态桥接与后续生产门禁仍需实现和验收。
 
 ## 2. 品牌寓意与架构主张
 
@@ -389,14 +390,15 @@ sequenceDiagram
 2. 相同 `order` 按注册序稳定排序；
 3. 宏声明顺序不能被 HashMap 遍历顺序改变；
 4. 重复拦截器是否允许由 Definition 明确声明；
-5. Pointcut 在 Context refresh 阶段编译为不可变 `InvocationPlan`。
+5. Pointcut 在高层应用构建阶段编译为不可变 `InvocationPlan`，Context refresh
+   只消费已经冻结的目录。
 
 ### 9.5 不采用实例指针 Map
 
 Vernal 不使用 `self as *const Self as usize` 作为长期身份。目标方案按场景选择：
 
 - 静态使用：`Advised<T>` 直接拥有目标与 `Arc<InterceptorChain>`；
-- Context 组件：不可变 `ComponentDefinition` 持有 `InvocationPlan`；
+- Context 组件：`InvocationPlanCatalog` 作为共享内建组件持有全部不可变计划；
 - Web 请求：Adapter 从 Context 获取计划，并把 request-scoped 扩展传入 Invocation。
 
 这样链的生命周期与所有者一致，无需全局清理，也不会因为地址复用关联到错误实例。
@@ -416,6 +418,37 @@ Vernal 不使用 `self as *const Self as usize` 作为长期身份。目标方�
 Context 直接使用 Tokio 任务、同步、时间、取消与 signal 能力。配置格式加载、
 Web server 和外部配置中心仍属于独立适配器；应用可以把它们产生的原生对象注册
 为普通组件。
+
+高层 `VernalApplicationBuilder` 在依赖图冻结前自动注册以下 Rust 原生对象：
+
+| 内建组件 | 生命周期与用途 |
+|:---|:---|
+| `tokio::runtime::Handle` | 绑定当前应用 Runtime，供后台组件派生 task |
+| `CancellationToken` | Context 关闭时统一取消，由组件监听或派生子令牌 |
+| `EventBus` | 每个 Context 独占的类型化广播事件 |
+| `InvocationPlanCatalog` | 应用构建阶段匹配 Pointcut 后生成的只读 AOP 计划目录 |
+
+业务组件通过普通 `depends_on::<T>()` 声明这些依赖，构造器通过 `Resolver`
+解析。Context 与组件持有的是同一组 `Arc<T>`，因此关闭取消、事件发布和计划
+查找不会产生两套状态。低层 `Registry → ApplicationContextBuilder` 入口继续
+保留，用于不希望隐式捕获 Runtime 或自动注册内建资源的库级组合。
+
+```mermaid
+sequenceDiagram
+    participant App as "应用装配"
+    participant Builder as "VernalApplicationBuilder"
+    participant AOP as "InvocationPlanBuilder"
+    participant Graph as "RegistryBuilder"
+    participant Context as "ApplicationContext"
+
+    App->>Builder: register definitions, advisors, operations
+    Builder->>AOP: compile plan catalog
+    Builder->>Graph: register Tokio/cancellation/events/catalog
+    Builder->>Graph: freeze and validate complete graph
+    Graph-->>Builder: Registry
+    Builder->>Context: create with identical shared resources
+    Context-->>App: refresh/start
+```
 
 ### 10.2 状态机
 
@@ -614,17 +647,19 @@ Phase 1 最低验收：
 4. `cargo tree` 证明 `vernal-ioc` 不包含具体 Web 或 ORM 框架；允许按需使用 Tokio；
 5. 所有失败通过 `Result` 返回，不依赖 panic。
 
-截至 2026-07-24，上述五项已有本地证据：9 个 IoC 合同测试覆盖 1,000 节点图、
+截至 2026-07-24，上述五项已有本地证据：11 个 IoC 合同测试覆盖 1,000 节点图、
 缺失/歧义/循环路径、两个并行 Container 的 Singleton 隔离、Transient、
-qualifier 与隐藏依赖拒绝；当前 `cargo tree -p vernal-ioc` 仅包含 `vernal-core`，
-但这不是禁止后续引入 Tokio 的约束。
+qualifier、隐藏依赖拒绝、原生值注册和 Tokio Handle 真实 task；运行时 Tokio
+目前只作为 IoC 合同测试依赖，通用解析热路径未引入 Runtime 状态。
 
-Phase 2 AOP 内核另有 7 个 Tokio 合同测试，覆盖顺序进入/逆序退出、短路、结果/
+Phase 2 AOP 内核另有 8 个合同测试，覆盖顺序进入/逆序退出、短路、结果/
 错误改写、跨 `.await` 类型化上下文、取消/deadline、切点过滤和 64 task 并发
-复用；过程宏的 trybuild 覆盖完成前，Phase 2 仍不能宣布整体完成。
+复用，以及重复 Operation 合并的计划目录编译；过程宏的 trybuild 覆盖完成前，
+Phase 2 仍不能宣布整体完成。
 
-Phase 3 内核另有 7 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
-回滚、非法转换、幂等关闭、并发关闭串行化和 Context-local 类型化事件隔离。
+Phase 3 内核另有 9 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
+回滚、非法转换、幂等关闭、并发关闭串行化、Context-local 类型化事件隔离，
+以及高层构建器的 Runtime 缺失诊断和四类内建组件同实例注入。
 
 ## 16. 实施路线
 

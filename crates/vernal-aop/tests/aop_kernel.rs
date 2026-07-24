@@ -112,6 +112,31 @@ fn always() -> impl Fn(&Operation) -> bool {
     |_| true
 }
 
+#[test]
+fn catalog_precompiles_matching_advisors_and_coalesces_duplicate_operations() {
+    let count = Arc::new(AtomicUsize::new(0));
+    let mut builder = InvocationPlanBuilder::new();
+    builder.register(Advisor::new(
+        always(),
+        CountingInterceptor {
+            count: Arc::clone(&count),
+        },
+        0,
+    ));
+    let operation = Operation::new("CatalogService", "execute");
+
+    let catalog = builder.build_catalog([operation.clone(), operation.clone()]);
+
+    assert_eq!(catalog.len(), 1);
+    assert_eq!(
+        catalog
+            .get(&operation)
+            .expect("catalog plan should exist")
+            .len(),
+        1
+    );
+}
+
 #[tokio::test]
 async fn lower_order_enters_first_and_exits_last() {
     let events = Arc::new(Mutex::new(Vec::new()));

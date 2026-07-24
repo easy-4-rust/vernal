@@ -1,6 +1,8 @@
 //! 调用计划建造器对象。
 
-use crate::{Advisor, InvocationPlan, Operation};
+use std::collections::HashMap;
+
+use crate::{Advisor, InvocationPlan, InvocationPlanCatalog, Operation};
 
 /// 收集顾问并为具体操作生成不可变调用计划。
 ///
@@ -37,6 +39,25 @@ impl InvocationPlanBuilder {
         matched.sort_by_key(|advisor| advisor.order());
         let interceptors = matched.into_iter().map(Advisor::interceptor).collect();
         InvocationPlan::new(operation, interceptors)
+    }
+
+    /// 为一组组件操作批量编译不可变调用计划目录。
+    ///
+    /// 同一个操作重复出现时只保留一个等价计划，避免注册扫描或宏展开产生的
+    /// 重复元数据扩大运行时目录。
+    #[must_use]
+    pub fn build_catalog(
+        &self,
+        operations: impl IntoIterator<Item = Operation>,
+    ) -> InvocationPlanCatalog {
+        let plans = operations
+            .into_iter()
+            .map(|operation| {
+                let plan = self.build(operation.clone());
+                (operation, plan)
+            })
+            .collect::<HashMap<_, _>>();
+        InvocationPlanCatalog::new(plans)
     }
 
     /// 返回已注册顾问数量。

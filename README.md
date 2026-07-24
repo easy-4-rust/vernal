@@ -116,7 +116,7 @@ Detailed decisions, flows, failure semantics, and acceptance criteria are in:
 | `vernal-core` | Experimental | Shared contracts for the Tokio-first framework |
 | `vernal-ioc` | Phase 1 implemented | Definitions, scopes, resolution, graph validation |
 | `vernal-aop` | Phase 2 kernel implemented | Around/Next, pointcuts, immutable plans, cancellation |
-| `vernal-context` | Phase 3 kernel implemented | Lifecycle, rollback, reverse shutdown, typed events |
+| `vernal-context` | Phase 3 kernel implemented | Managed bootstrap, built-in components, AOP plans, lifecycle, events, shutdown |
 | `vernal-macros` | Skeleton | Thin procedural macro entry points |
 | `vernal-web` | Phase 4 contract implemented | Framework-neutral context, request scope, handler, and error contracts |
 | `vernal-http` | Phase 4 contract implemented | HTTP request, response, body, streaming, cancellation, and backpressure |
@@ -249,6 +249,41 @@ Vernal is deliberately Tokio-first. Core crates may use Tokio directly when
 the capability requires asynchronous tasks, synchronization, time, or
 cancellation; Vernal does not introduce a second runtime abstraction.
 
+### 5.1 Managed application context
+
+`VernalApplicationBuilder` is the high-level bootstrap path. Before freezing
+the dependency graph it registers the current Tokio `Handle`, the application
+`CancellationToken`, the context-local `EventBus`, and the precompiled
+`InvocationPlanCatalog` as ordinary typed components:
+
+```rust
+use vernal_aop::Operation;
+use vernal_context::VernalApplicationBuilder;
+
+# async fn bootstrap() -> Result<(), Box<dyn std::error::Error>> {
+let mut application = VernalApplicationBuilder::current()?;
+application.operation(Operation::new("OrderService", "create"));
+
+let context = application.build()?;
+context.refresh().await?;
+context.start().await?;
+
+assert!(context.runtime_handle().is_some());
+assert!(context
+    .invocation_plans()
+    .get(&Operation::new("OrderService", "create"))
+    .is_some());
+
+context.close().await?;
+# Ok(())
+# }
+```
+
+Components may declare these native types with the same `depends_on::<T>()`
+contract used for application services. The low-level
+`Registry -> ApplicationContextBuilder` path remains available when automatic
+runtime capture and built-in registration are not wanted.
+
 ## 6. Capabilities
 
 | Capability | Target contract | Status |
@@ -342,14 +377,16 @@ remain targets.
 Phase 1 was completed with tests for 1,000-node deterministic planning,
 structured graph diagnostics, concurrent singleton construction, container
 isolation, transient resolution, qualifiers, and hidden-dependency rejection.
-The Phase 2 AOP kernel currently has seven Tokio tests covering ordered
+The Phase 2 AOP kernel currently has eight contract tests covering ordered
 enter/reverse exit, short circuit, success and error transformation, typed
 context across `.await`, cancellation/deadline, pointcut selection, and
-64-task concurrent plan reuse. Macro generation and benchmarks remain open.
-The Phase 3 kernel has seven tests covering dependency-order startup,
+64-task concurrent plan reuse, plus deduplicated plan-catalog compilation.
+Macro generation and benchmarks remain open.
+The Phase 3 kernel has nine tests covering dependency-order startup,
 reverse shutdown, initialize/start rollback, invalid transitions, idempotent
 close, concurrent close serialization, and context-local typed event
-isolation. AOP plan aggregation and richer diagnostics remain open.
+isolation, plus managed injection of Tokio, cancellation, events, and AOP
+plans. Richer startup diagnostics remain open.
 
 ## 10. Contributing and license
 

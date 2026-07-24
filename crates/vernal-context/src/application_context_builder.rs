@@ -4,7 +4,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use vernal_ioc::{ComponentKey, Container, Qualifier, Registry, ResolveError};
 
-use crate::{ApplicationContext, ContextError, Lifecycle};
+use crate::{ApplicationContext, ContextError, Lifecycle, context_resources::ContextResources};
 
 pub(crate) type LifecycleResolver =
     dyn Fn(&Container) -> Result<Arc<dyn Lifecycle>, ResolveError> + Send + Sync + 'static;
@@ -16,6 +16,7 @@ pub(crate) type LifecycleResolver =
 pub struct ApplicationContextBuilder {
     registry: Registry,
     lifecycle_resolvers: Vec<(ComponentKey, Arc<LifecycleResolver>)>,
+    resources: ContextResources,
 }
 
 impl ApplicationContextBuilder {
@@ -25,6 +26,16 @@ impl ApplicationContextBuilder {
         Self {
             registry,
             lifecycle_resolvers: Vec::new(),
+            resources: ContextResources::standalone(),
+        }
+    }
+
+    /// 基于高层应用建造器准备的内建资源创建 Context 建造器。
+    pub(crate) fn managed(registry: Registry, resources: ContextResources) -> Self {
+        Self {
+            registry,
+            lifecycle_resolvers: Vec::new(),
+            resources,
         }
     }
 
@@ -88,6 +99,7 @@ impl ApplicationContextBuilder {
         Ok(ApplicationContext::new(
             self.registry.container(),
             self.lifecycle_resolvers,
+            self.resources,
         ))
     }
 }

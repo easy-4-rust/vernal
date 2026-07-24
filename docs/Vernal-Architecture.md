@@ -49,6 +49,9 @@
 - `[Confirmed]` `vernal-context` provides a serialized Tokio lifecycle state
   machine, dependency-order initialize/start, cancellation, rollback,
   reverse idempotent shutdown, and context-local typed events.
+  `VernalApplicationBuilder` registers the Tokio handle, application
+  cancellation token, event bus, and precompiled AOP plan catalog before
+  dependency-graph freezing.
 - `[Confirmed]` `vernal-web`, `vernal-http`, `vernal-tower`, and
   `vernal-hyper` provide request scope, standard HTTP body frames/trailers,
   Tower lifecycle layers, and a real Hyper transport bridge.
@@ -68,8 +71,8 @@
   cleanup; `vernal-tonic` provides a Context interceptor, typed Request
   extensions, `Status` mapping, and Tower composition.
 - `[Skeleton]` Macros still validate crate boundaries only.
-- `[Target]` Phase 2 macros, Context AOP-plan aggregation, consumer ecosystem
-  bridges, and later production gates remain.
+- `[Target]` Phase 2 macros, remaining consumer ecosystem bridges, and later
+  production gates remain.
 
 ## 2. Brand meaning and architecture thesis
 
@@ -383,8 +386,9 @@ sequenceDiagram
 ```
 
 Lower `order` enters first and exits last. Equal order preserves registration
-order. Pointcuts compile into immutable `InvocationPlan` values during context
-refresh.
+order. Pointcuts compile into immutable `InvocationPlan` values during
+high-level application construction; context refresh consumes the frozen
+catalog.
 
 ### 9.4 No instance-pointer map
 
@@ -404,6 +408,31 @@ rollback, reverse cleanup, and read-only diagnostics. It directly uses Tokio
 tasks, synchronization, time, cancellation, and signals. Configuration
 formats, web servers, and external configuration centers remain adapters whose
 native objects may still be registered as ordinary components.
+
+Before graph freezing, `VernalApplicationBuilder` automatically registers the
+current `tokio::runtime::Handle`, the application `CancellationToken`, the
+context-local `EventBus`, and the immutable `InvocationPlanCatalog`. Components
+declare them with ordinary `depends_on::<T>()` metadata, and the context plus
+container receive the same `Arc<T>` instances. The lower-level
+`Registry -> ApplicationContextBuilder` path remains available for library
+composition that does not want runtime capture or built-in registration.
+
+```mermaid
+sequenceDiagram
+    participant App as "Application assembly"
+    participant Builder as "VernalApplicationBuilder"
+    participant AOP as "InvocationPlanBuilder"
+    participant Graph as "RegistryBuilder"
+    participant Context as "ApplicationContext"
+
+    App->>Builder: register definitions, advisors, operations
+    Builder->>AOP: compile plan catalog
+    Builder->>Graph: register Tokio/cancellation/events/catalog
+    Builder->>Graph: freeze and validate complete graph
+    Graph-->>Builder: Registry
+    Builder->>Context: create with identical shared resources
+    Context-->>App: refresh/start
+```
 
 ```mermaid
 stateDiagram-v2
@@ -594,22 +623,24 @@ Phase 1 minimum acceptance:
    Tokio is allowed when needed.
 5. Normal failures use `Result`, not panic.
 
-As of 2026-07-24, all five items have local evidence: nine IoC contract tests
+As of 2026-07-24, all five items have local evidence: eleven IoC contract tests
 cover a 1,000-node graph, missing/ambiguous/cycle paths, singleton isolation
-across two concurrent containers, transient creation, qualifiers, and hidden
-dependency rejection. `cargo tree -p vernal-ioc` currently contains only
-`vernal-core`, but that is not a rule forbidding future Tokio use.
+across two concurrent containers, transient creation, qualifiers, hidden
+dependency rejection, native-value registration, and a real task spawned
+through an injected Tokio handle. Tokio remains a contract-test dependency for
+IoC rather than runtime state in its resolution hot path.
 
-The Phase 2 AOP kernel additionally has seven Tokio contract tests for
+The Phase 2 AOP kernel additionally has eight contract tests for
 ordered entry/reverse exit, short circuit, result/error transformation, typed
 context across `.await`, cancellation/deadline, pointcut filtering, and
-64-task concurrent reuse. Phase 2 remains incomplete until macro trybuild
-coverage is present.
+64-task concurrent reuse, plus deduplicated plan-catalog compilation. Phase 2
+remains incomplete until macro trybuild coverage is present.
 
-The Phase 3 kernel has seven contract tests for dependency-order
+The Phase 3 kernel has nine contract tests for dependency-order
 startup, reverse shutdown, initialize/start rollback, invalid transitions,
 idempotent close, concurrent close serialization, and context-local typed
-event isolation.
+event isolation, plus runtime-unavailable diagnostics and same-instance
+injection of the four built-in resources.
 
 ## 16. Delivery roadmap
 
