@@ -229,6 +229,26 @@ Any `Send + Sync + 'static` Rust value can be a component, including
 synchronization primitives, and user-defined objects. Their dependencies stay
 in the application or integration crate that registers them.
 
+Prebuilt framework objects can enter the graph without wrapper types:
+
+```rust
+use std::sync::Arc;
+use tokio::runtime::Handle;
+use vernal_ioc::{ComponentDefinition, RegistryBuilder};
+
+let runtime = Arc::new(Handle::current());
+let mut registry = RegistryBuilder::new();
+registry.register(ComponentDefinition::shared_arc(Arc::clone(&runtime)))?;
+
+let handle = registry.build()?.container().resolve::<Handle>()?;
+assert!(Arc::ptr_eq(&runtime, &handle));
+# Ok::<(), Box<dyn std::error::Error>>(())
+```
+
+Vernal is deliberately Tokio-first. Core crates may use Tokio directly when
+the capability requires asynchronous tasks, synchronization, time, or
+cancellation; Vernal does not introduce a second runtime abstraction.
+
 ## 6. Capabilities
 
 | Capability | Target contract | Status |

@@ -313,6 +313,18 @@ Vernal 不要求把生态对象包装成专用 Bean 类型。任何满足
 `vernal-*` Adapter 引入并提供 `ComponentDefinition`；IoC 只看到 Rust 类型、
 工厂、依赖和 Scope。这样既保留框架原生能力，也避免把所有生态版本耦合进核心。
 
+对于已经由 Tokio 或第三方框架构造完成的对象，应用可以使用
+`ComponentDefinition::shared_value` 或 `ComponentDefinition::shared_arc`
+直接把原生值放入依赖图，不需要创建空壳包装类型。其中 `shared_arc` 在解析时
+返回原来的 `Arc<T>`，不会形成 `Arc<Arc<T>>`。这种预构建对象由同一注册表创建
+的所有 Container 共享；需要每个 Container 独立实例时，仍使用工厂式
+`ComponentDefinition::singleton`。
+
+Vernal 明确采用 Tokio-first：当任务、异步同步、时间或取消能力需要时，核心
+crate 可以直接依赖 Tokio，不再人为抽象第二套 Runtime SPI。IoC 的类型注册机制
+本身不要求生态对象实现 Vernal trait；当前合同测试已直接注册
+`tokio::runtime::Handle` 并通过该句柄执行真实 Tokio task。
+
 ### 8.5 解析失败合同
 
 | 错误 | 是否可重试 | 诊断要求 |

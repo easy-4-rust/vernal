@@ -22,6 +22,39 @@ pub struct ComponentDefinition {
 }
 
 impl ComponentDefinition {
+    /// 将一个已经构造完成的 Rust 原生对象注册为共享实例。
+    ///
+    /// 该方法适合注册由生态框架创建、Vernal 只负责注入的对象，例如 Tokio
+    /// [`tokio::runtime::Handle`](https://docs.rs/tokio/latest/tokio/runtime/struct.Handle.html)、
+    /// HTTP 客户端、数据库连接池或 Web 框架状态。对象不需要实现 Vernal
+    /// 专用 trait，只需要满足 `Any + Send + Sync`。
+    ///
+    /// 与 [`Self::singleton`] 的“每个容器调用一次工厂”语义不同，预构建实例
+    /// 会被创建自同一注册表的所有容器共享。需要容器级隔离时应继续使用
+    /// [`Self::singleton`]。
+    pub fn shared_value<T>(value: T) -> Self
+    where
+        T: Any + Send + Sync,
+    {
+        Self::shared_arc(Arc::new(value))
+    }
+
+    /// 将调用方已经持有的 `Arc<T>` 注册为共享实例。
+    ///
+    /// 容器解析结果仍是同一个 `Arc<T>`，不会形成 `Arc<Arc<T>>`。这使框架
+    /// 原生共享状态可以直接进入依赖图，同时保留调用方原有的所有权关系。
+    pub fn shared_arc<T>(value: Arc<T>) -> Self
+    where
+        T: Any + Send + Sync,
+    {
+        Self {
+            key: ComponentKey::of::<T>(),
+            dependencies: Vec::new(),
+            scope: Scope::Singleton,
+            factory: Arc::new(move |_| Ok(Arc::clone(&value) as ErasedComponent)),
+        }
+    }
+
     /// 创建不会失败的单例组件定义。
     pub fn singleton<T, F>(factory: F) -> Self
     where

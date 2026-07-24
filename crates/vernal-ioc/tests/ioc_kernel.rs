@@ -1,4 +1,4 @@
-//! Contract tests for the runtime-neutral `IoC` kernel.
+//! Contract tests for the typed `IoC` kernel.
 
 use std::{
     error::Error,
@@ -122,6 +122,52 @@ fn singleton_is_once_per_container_even_under_concurrency() {
     }
     assert!(!Arc::ptr_eq(&first_instances[0], &second_instances[0]));
     assert_eq!(calls.load(Ordering::SeqCst), 2);
+}
+
+#[tokio::test]
+async fn tokio_runtime_handle_can_be_used_as_a_native_shared_component() {
+    let runtime = Arc::new(tokio::runtime::Handle::current());
+    let mut builder = RegistryBuilder::new();
+    builder
+        .register(ComponentDefinition::shared_arc(Arc::clone(&runtime)))
+        .expect("Tokio runtime handle definition should be valid");
+    let registry = builder.build().expect("graph should be valid");
+
+    let first = registry
+        .container()
+        .resolve::<tokio::runtime::Handle>()
+        .expect("runtime handle should resolve");
+    let second = registry
+        .container()
+        .resolve::<tokio::runtime::Handle>()
+        .expect("runtime handle should be shared across containers");
+
+    assert!(Arc::ptr_eq(&runtime, &first));
+    assert!(Arc::ptr_eq(&first, &second));
+    assert_eq!(
+        first
+            .spawn(async { "vernal-tokio" })
+            .await
+            .expect("Tokio task should finish"),
+        "vernal-tokio"
+    );
+}
+
+#[test]
+fn owned_native_value_can_be_registered_without_a_wrapper_type() {
+    let mut builder = RegistryBuilder::new();
+    builder
+        .register(ComponentDefinition::shared_value(String::from(
+            "vernal-native-component",
+        )))
+        .expect("native String definition should be valid");
+    let container = builder.build().expect("graph should be valid").container();
+
+    let value = container
+        .resolve::<String>()
+        .expect("native String should resolve");
+
+    assert_eq!(value.as_str(), "vernal-native-component");
 }
 
 #[derive(Debug)]

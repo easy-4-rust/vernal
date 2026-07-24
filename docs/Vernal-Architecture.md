@@ -321,6 +321,19 @@ application or a `vernal-*` adapter imports the concrete framework and supplies
 the `ComponentDefinition`; IoC sees only Rust types, factories, dependencies,
 and scopes.
 
+Prebuilt native objects can be added with
+`ComponentDefinition::shared_value` or `ComponentDefinition::shared_arc`
+without introducing wrapper types. `shared_arc` resolves the original
+`Arc<T>`, not an `Arc<Arc<T>>`. Such values are shared by all containers
+created from the same registry; use factory-based
+`ComponentDefinition::singleton` when each container needs an isolated
+instance.
+
+Vernal is explicitly Tokio-first. Kernel crates may depend on Tokio directly
+when tasks, asynchronous synchronization, time, or cancellation require it;
+the framework will not invent a second runtime SPI. The IoC contract tests
+register a native `tokio::runtime::Handle` and use it to run a real Tokio task.
+
 ### 8.4 Failure contract
 
 | Error | Retry | Required diagnostic |
