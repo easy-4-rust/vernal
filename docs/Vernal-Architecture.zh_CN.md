@@ -193,6 +193,7 @@ flowchart TB
 | 链接期组件元数据 | 作为可选注册后端评估，不写死到内核 | `vernal-macros` / 可选 adapter |
 | `TypeId` + 类型擦除 Store | 保留类型安全入口，限制擦除边界 | `vernal-ioc` |
 | Kahn 拓扑排序与循环诊断 | 重写为确定性、可测试的 Graph Planner | `vernal-ioc` |
+| `debug_registry()` 日志表格 | 升级为复用冻结计划、可 Serde 序列化的只读快照 | `vernal-ioc` / `vernal-context` |
 | Singleton / Prototype | 演进为 Singleton / Transient / Scope SPI | `vernal-ioc` |
 | 生命周期钩子 | 抽离为 Context 管理的状态机 | `vernal-context` |
 | 正序 `before`、逆序 `after` | 保留栈式顺序语义，升级为真正 Around 链 | `vernal-aop` |
@@ -712,7 +713,7 @@ Vernal 不保证第三方依赖完全无 unsafe；`forbid` 只约束 Workspace �
 
 ### 14.2 启动报告
 
-Context refresh 应产生可序列化、只读且脱敏的诊断快照：
+Context refresh 现已产生可序列化、只读且脱敏的诊断快照：
 
 - Vernal 版本、MSRV 与启用 feature；
 - Definition 数量、Scope 数量与依赖图摘要；
@@ -720,6 +721,40 @@ Context refresh 应产生可序列化、只读且脱敏的诊断快照：
 - 生命周期阶段、耗时和失败组件；
 - Adapter 与外部依赖状态；
 - 警告、废弃项和未使用 Definition。
+
+```mermaid
+flowchart LR
+    Registry["Registry<br/>definitions + bindings + BuildPlan"]
+    Catalog["InvocationPlanCatalog"]
+    Static["静态诊断配置<br/>feature / adapter / external / warning"]
+    Lifecycle["Context 状态机<br/>warm-up / resolve / init / start / stop"]
+    Snapshot["RegistrySnapshot<br/>只读值对象"]
+    Report["StartupReport<br/>只读脱敏值对象"]
+    Output["Serde Serializer<br/>日志 / 管理端点 / 测试"]
+
+    Registry -->|"复用已验证顺序"| Snapshot
+    Snapshot --> Report
+    Catalog -->|"plan 与 interceptor slot 计数"| Report
+    Static --> Report
+    Lifecycle -->|"阶段、结果、微秒耗时"| Report
+    Report --> Output
+```
+
+当前实现合同：
+
+- `Registry::snapshot()` 按真实依赖优先构建顺序生成 `RegistrySnapshot`，不会重新
+  运行拓扑算法，也不会暴露工厂、upcast 闭包、实例或地址；
+- `ApplicationContext::startup_report().await` 返回拥有自身数据的克隆快照，后续
+  start/close 不会反向修改已经取得的报告；
+- warm-up、组件解析、initialize、start 和 stop 均记录稳定阶段、组件名、
+  成功/失败与微秒耗时；
+- 原始错误链只通过 `ContextError::source` 返回，`StartupReport` 类型中不存在
+  `error_message` 字段；
+- feature 和告警只接受静态名称/代码；Adapter 与外部依赖只接受名称和固定
+  `DiagnosticState`，不接收连接串、令牌或任意错误详情；
+- 未使用 Definition 不能通过“没有入边”可靠判断；在引入精确解析追踪前该集合
+  保持为空，避免把合法入口组件误报为死定义。Adapter 自动探测同样留给各集成
+  crate 后续接入，当前由应用显式登记。
 
 ## 15. 测试与架构验收
 
@@ -743,10 +778,11 @@ Phase 1 最低验收：
 4. `cargo tree` 证明 `vernal-ioc` 不包含具体 Web 或 ORM 框架；允许按需使用 Tokio；
 5. 所有失败通过 `Result` 返回，不依赖 panic。
 
-截至 2026-07-24，上述五项已有本地证据：22 个 IoC 合同测试覆盖 1,000 节点图、
+截至 2026-07-24，上述五项已有本地证据：24 个 IoC 合同测试覆盖 1,000 节点图、
 缺失/歧义/循环路径、两个并行 Container 的 Singleton 隔离、Transient、
 qualifier、隐藏依赖拒绝、原生值注册、Tokio Handle 真实 task，以及 Trait
-命名/Primary/全部实现、空集合、目标缺失、Trait 图环、命名冲突和批量原子性。
+命名/Primary/全部实现、空集合、目标缺失、Trait 图环、命名冲突、批量原子性，
+以及不含工厂与实例地址的确定性 Registry 序列化快照。
 运行时 Tokio 目前只作为 IoC 合同测试依赖，通用解析热路径未引入 Runtime 状态。
 `register_all` 原子注册纯组件批次；`register_bundle` 同时原子提交定义与绑定。
 
@@ -758,9 +794,10 @@ Singleton Component 注入、Transient 构造、Trait Object 注入和 Context-l
 非异步方法和借用接收器。Phase 2 已具备可调用
 闭环，但更广泛的方法签名、诊断矩阵、性能基准和稳定性承诺仍未完成。
 
-Phase 3 内核另有 9 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
+Phase 3 内核另有 11 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
 回滚、非法转换、幂等关闭、并发关闭串行化、Context-local 类型化事件隔离，
-以及高层构建器的 Runtime 缺失诊断和四类内建组件同实例注入。
+高层构建器的 Runtime 缺失诊断、四类内建组件同实例注入，以及成功/失败启动报告
+的只读快照、Serde 序列化与业务错误正文脱敏。
 
 ## 16. 实施路线
 

@@ -26,3 +26,21 @@ pub enum ContextState {
     /// 资源已经释放；重复关闭保持幂等。
     Closed,
 }
+
+impl ContextState {
+    /// 返回适合稳定诊断、序列化和监控标签的状态名称。
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Created => "created",
+            Self::Refreshing => "refreshing",
+            Self::Refreshed => "refreshed",
+            Self::Starting => "starting",
+            Self::Ready => "ready",
+            Self::RollingBack => "rolling_back",
+            Self::Draining => "draining",
+            Self::Failed => "failed",
+            Self::Closed => "closed",
+        }
+    }
+}

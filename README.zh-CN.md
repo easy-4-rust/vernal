@@ -102,10 +102,10 @@ Vernal 遵守四条不可退化的规则：
 |:---|:---:|:---|
 | `vernal` | 实验性 Facade | Facade、prelude 与 feature 组合 |
 | `vernal-core` | 实验性 | Tokio-first 框架的公共合同 |
-| `vernal-ioc` | Phase 1 已实现 | 定义、作用域、解析和依赖图校验 |
+| `vernal-ioc` | Phase 1/诊断内核已实现 | 定义、作用域、解析、依赖图和只读快照 |
 | `vernal-aop` | Phase 2 内核已实现 | Around/Next、切点、不可变计划和取消 |
-| `vernal-context` | Phase 3 内核已实现 | 生命周期、回滚、逆序关闭和类型化事件 |
-| `vernal-macros` | 骨架 | 薄过程宏入口 |
+| `vernal-context` | Phase 3/诊断内核已实现 | 生命周期、回滚、事件和脱敏启动报告 |
+| `vernal-macros` | Phase 2 宏已实现 | 显式注入元数据与 Context-local 异步方法织入 |
 | `vernal-web` | Phase 4 合同已实现 | 框架中立的 Context、请求 Scope、Handler 和错误合同 |
 | `vernal-http` | Phase 4 合同已实现 | HTTP 请求、响应、Body、流、取消和背压合同 |
 | `vernal-tower` | Phase 4 底座已实现 | Tower Context 注入与请求 Scope 生命周期 |
@@ -230,6 +230,18 @@ registry.register_bundle(
 `Vec<Arc<dyn MessageSender>>` 注入全部实现。绑定仍指向原始组件实例，不建立
 第二套 Store；模块定义与绑定通过 `register_bundle` 原子提交。
 
+已冻结 Registry 和运行中的 Context 都提供拥有自身数据的只读诊断快照：
+
+```rust
+let registry_snapshot = context.container().registry().snapshot();
+let startup_report = context.startup_report().await;
+let json = serde_json::to_string(&startup_report)?;
+```
+
+`RegistrySnapshot` 复用真实构建计划，不重复执行拓扑算法；`StartupReport` 记录
+版本、MSRV、Scope/依赖摘要、AOP 计划槽位和生命周期耗时。失败报告只保存组件名、
+阶段和成功/失败分类，不序列化底层业务错误正文。
+
 ## 6. 能力状态
 
 | 能力 | 目标合同 | 状态 |
@@ -247,10 +259,11 @@ registry.register_bundle(
 | HTTP | 请求/响应、Body Frame/Trailer、显式限量收集、取消和背压 | Phase 4 合同 |
 | Web 集成底座 | Tower Context/Scope Layer 与 Hyper 流式桥接 | Phase 4 底座 |
 | 框架适配器 | 能复用 Tower 时优先 Tower，必要时原生适配 | Phase 5 适配已实现 |
-| 诊断 | 可检查的依赖图与不泄露秘密的启动报告 | 计划 |
+| 诊断 | 可序列化 Registry 快照与不泄露错误正文的启动报告 | Phase 3 诊断内核 |
 
 “Phase 1”和“Phase 2 内核”表示已有可调用实现与合同测试，但 API 仍处于实验
-阶段。“计划”表示当前不存在可调用实现。任何标签都不代表稳定兼容或达到性能指标。
+阶段。任何标签都不代表稳定兼容或达到性能指标；未使用 Definition 的可靠运行时
+追踪和 Adapter 自动探测仍待后续实现。
 
 ## 7. 生态定位
 
@@ -317,16 +330,18 @@ Phase 5 正在进行：Sa-Token-Rust 已远端集成 `sa-token-vernal`；Hutool-
 Tokio 测试、Clippy 和文档构建已在独立依赖图通过。Ddd4r 全 Workspace 门禁仍被
 既有、当前不可获取的 `rbatis-r2dbc` Git Revision 阻断，不能据此宣称全仓通过。
 
-Phase 1/1.1 已通过 22 个 IoC 合同测试，覆盖 1,000 节点确定性规划、结构化图
+Phase 1/1.1 已通过 24 个 IoC 合同测试，覆盖 1,000 节点确定性规划、结构化图
 诊断、并发 Singleton、双 Container 隔离、Transient、原生对象、Trait 命名/
-Primary/全部实现、Trait 图环和跨定义/绑定原子模块注册。
+Primary/全部实现、Trait 图环、跨定义/绑定原子模块注册，以及不暴露工厂和实例
+地址的稳定 Registry 序列化快照。
 Phase 2 AOP 内核现有 8 个 Tokio 测试，覆盖顺序进入/逆序退出、短路、成功结果
 与错误改写、跨 `.await` 类型化上下文、取消/deadline、切点选择和 64 task
 并发共享计划；性能基准仍未完成。宏前端另有 4 个运行时合同测试和 4 个
 compile-fail 用例。
-Phase 3 内核现有 9 个测试，覆盖依赖顺序启动、逆序关闭、initialize/start
+Phase 3 内核现有 11 个测试，覆盖依赖顺序启动、逆序关闭、initialize/start
 回滚、非法状态转换、幂等关闭、并发关闭串行化和 Context-local 类型化事件
-隔离，以及高层构建器内建资源注入。
+隔离、高层构建器内建资源注入，以及成功/失败启动报告的只读性、序列化和业务
+错误正文脱敏。
 
 ## 10. 贡献与许可证
 

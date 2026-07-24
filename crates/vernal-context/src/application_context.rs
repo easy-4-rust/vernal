@@ -1,15 +1,16 @@
 //! 应用上下文对象。
 
-use std::sync::Arc;
+use std::{sync::Arc, time::Instant};
 
 use tokio::runtime::Handle;
 use tokio::sync::{Mutex, RwLock};
 use tokio_util::sync::CancellationToken;
 use vernal_aop::InvocationPlanCatalog;
-use vernal_ioc::{ComponentKey, Container};
+use vernal_ioc::{ComponentKey, Container, ResolveError};
 
 use crate::{
-    ContextError, ContextState, EventBus, Lifecycle, LifecyclePhase,
+    ContextError, ContextState, DiagnosticOutcome, DiagnosticPhase, EventBus, Lifecycle,
+    LifecyclePhase, StartupObservation, StartupReport,
     application_context_builder::LifecycleResolver, context_resources::ContextResources,
 };
 
@@ -24,6 +25,7 @@ pub struct ApplicationContext {
     state: RwLock<ContextState>,
     operation: Mutex<()>,
     resources: ContextResources,
+    diagnostics: Mutex<StartupReport>,
 }
 
 impl ApplicationContext {
@@ -33,6 +35,12 @@ impl ApplicationContext {
         lifecycle_resolvers: Vec<(ComponentKey, Arc<LifecycleResolver>)>,
         resources: ContextResources,
     ) -> Self {
+        let diagnostics = StartupReport::new(
+            ContextState::Created.as_str().to_owned(),
+            container.registry().snapshot(),
+            resources.invocation_plans(),
+            resources.diagnostics(),
+        );
         Self {
             container,
             lifecycle_resolvers: lifecycle_resolvers.into(),
@@ -40,6 +48,7 @@ impl ApplicationContext {
             state: RwLock::new(ContextState::Created),
             operation: Mutex::new(()),
             resources,
+            diagnostics: Mutex::new(diagnostics),
         }
     }
 
@@ -54,20 +63,52 @@ impl ApplicationContext {
         self.require_state("refresh", ContextState::Created).await?;
         self.set_state(ContextState::Refreshing).await;
 
+        let warm_up_started = Instant::now();
         if let Err(source) = self.container.warm_up() {
+            self.record_observation(
+                Self::resolve_failure_subject(&source),
+                DiagnosticPhase::ContainerWarmUp,
+                DiagnosticOutcome::Failed,
+                warm_up_started,
+            )
+            .await;
             self.set_state(ContextState::Failed).await;
             return Err(ContextError::ContainerWarmUp {
                 source: Box::new(source),
             });
         }
+        self.record_observation(
+            "vernal_ioc::Container",
+            DiagnosticPhase::ContainerWarmUp,
+            DiagnosticOutcome::Succeeded,
+            warm_up_started,
+        )
+        .await;
 
         let mut initialized = Vec::with_capacity(self.lifecycle_resolvers.len());
         for (key, resolver) in self.lifecycle_resolvers.iter() {
+            let resolution_started = Instant::now();
             let component = match resolver(&self.container) {
-                Ok(component) => component,
+                Ok(component) => {
+                    self.record_observation(
+                        key.to_string(),
+                        DiagnosticPhase::ComponentResolution,
+                        DiagnosticOutcome::Succeeded,
+                        resolution_started,
+                    )
+                    .await;
+                    component
+                }
                 Err(source) => {
+                    self.record_observation(
+                        key.to_string(),
+                        DiagnosticPhase::ComponentResolution,
+                        DiagnosticOutcome::Failed,
+                        resolution_started,
+                    )
+                    .await;
                     self.set_state(ContextState::RollingBack).await;
-                    Self::stop_all(&initialized).await;
+                    self.stop_all(&initialized).await;
                     self.set_state(ContextState::Closed).await;
                     return Err(ContextError::ComponentResolution {
                         component: key.clone(),
@@ -75,18 +116,33 @@ impl ApplicationContext {
                     });
                 }
             };
+            let initialize_started = Instant::now();
             if let Err(source) = component.initialize().await {
+                self.record_observation(
+                    component.name(),
+                    DiagnosticPhase::Initialize,
+                    DiagnosticOutcome::Failed,
+                    initialize_started,
+                )
+                .await;
                 self.set_state(ContextState::RollingBack).await;
                 let error = ContextError::Lifecycle {
                     component: component.name(),
                     phase: LifecyclePhase::Initialize,
                     source,
                 };
-                let _ = component.stop().await;
-                Self::stop_all(&initialized).await;
+                let _ = self.stop_component(&component).await;
+                self.stop_all(&initialized).await;
                 self.set_state(ContextState::Closed).await;
                 return Err(error);
             }
+            self.record_observation(
+                component.name(),
+                DiagnosticPhase::Initialize,
+                DiagnosticOutcome::Succeeded,
+                initialize_started,
+            )
+            .await;
             initialized.push(component);
         }
 
@@ -108,7 +164,15 @@ impl ApplicationContext {
 
         let components = self.components.lock().await.clone();
         for component in &components {
+            let start_started = Instant::now();
             if let Err(source) = component.start(self.resources.cancellation().clone()).await {
+                self.record_observation(
+                    component.name(),
+                    DiagnosticPhase::Start,
+                    DiagnosticOutcome::Failed,
+                    start_started,
+                )
+                .await;
                 let error = ContextError::Lifecycle {
                     component: component.name(),
                     phase: LifecyclePhase::Start,
@@ -116,11 +180,18 @@ impl ApplicationContext {
                 };
                 self.resources.cancellation().cancel();
                 self.set_state(ContextState::RollingBack).await;
-                Self::stop_all(&components).await;
+                self.stop_all(&components).await;
                 self.components.lock().await.clear();
                 self.set_state(ContextState::Closed).await;
                 return Err(error);
             }
+            self.record_observation(
+                component.name(),
+                DiagnosticPhase::Start,
+                DiagnosticOutcome::Succeeded,
+                start_started,
+            )
+            .await;
         }
 
         self.set_state(ContextState::Ready).await;
@@ -147,7 +218,7 @@ impl ApplicationContext {
         self.set_state(draining_state).await;
 
         let components = std::mem::take(&mut *self.components.lock().await);
-        let error = Self::stop_all(&components).await;
+        let error = self.stop_all(&components).await;
         self.set_state(ContextState::Closed).await;
         error.map_or(Ok(()), Err)
     }
@@ -190,6 +261,14 @@ impl ApplicationContext {
         self.resources.invocation_plans()
     }
 
+    /// 返回调用时刻的只读、可序列化、脱敏启动报告。
+    ///
+    /// 返回值是拥有自身数据的快照；后续 start/close 操作只更新 Context 内部
+    /// 报告，不会修改调用方已经取得的对象。
+    pub async fn startup_report(&self) -> StartupReport {
+        self.diagnostics.lock().await.clone()
+    }
+
     /// 校验当前状态是否符合操作前置条件。
     async fn require_state(
         &self,
@@ -207,13 +286,34 @@ impl ApplicationContext {
     /// 原子替换可观察状态。
     async fn set_state(&self, state: ContextState) {
         *self.state.write().await = state;
+        self.diagnostics
+            .lock()
+            .await
+            .set_context_state(state.as_str().to_owned());
     }
 
-    /// 逆序停止全部组件并保留第一个错误。
-    async fn stop_all(components: &[Arc<dyn Lifecycle>]) -> Option<ContextError> {
+    /// 执行单个组件停止钩子并记录脱敏结果。
+    async fn stop_component(
+        &self,
+        component: &Arc<dyn Lifecycle>,
+    ) -> Result<(), vernal_core::BoxError> {
+        let started = Instant::now();
+        let result = component.stop().await;
+        let outcome = if result.is_ok() {
+            DiagnosticOutcome::Succeeded
+        } else {
+            DiagnosticOutcome::Failed
+        };
+        self.record_observation(component.name(), DiagnosticPhase::Stop, outcome, started)
+            .await;
+        result
+    }
+
+    /// 逆序停止全部组件、记录每一步，并保留第一个错误。
+    async fn stop_all(&self, components: &[Arc<dyn Lifecycle>]) -> Option<ContextError> {
         let mut first_error = None;
         for component in components.iter().rev() {
-            let stop_error = component.stop().await.err();
+            let stop_error = self.stop_component(component).await.err();
             if first_error.is_none() {
                 first_error = stop_error.map(|source| ContextError::Lifecycle {
                     component: component.name(),
@@ -223,5 +323,38 @@ impl ApplicationContext {
             }
         }
         first_error
+    }
+
+    /// 向内部报告追加一条不含错误正文的阶段记录。
+    async fn record_observation(
+        &self,
+        subject: impl Into<String>,
+        phase: DiagnosticPhase,
+        outcome: DiagnosticOutcome,
+        started: Instant,
+    ) {
+        let elapsed_microseconds = u64::try_from(started.elapsed().as_micros()).unwrap_or(u64::MAX);
+        self.diagnostics
+            .lock()
+            .await
+            .record(StartupObservation::new(
+                subject.into(),
+                phase,
+                outcome,
+                elapsed_microseconds,
+            ));
+    }
+
+    /// 从结构化解析错误中提取失败组件标识，不复制原始错误文本。
+    fn resolve_failure_subject(error: &ResolveError) -> String {
+        match error {
+            ResolveError::Construction { component, .. }
+            | ResolveError::TypeMismatch { component }
+            | ResolveError::UndeclaredDependency { component, .. } => component.to_string(),
+            ResolveError::TraitBindingTypeMismatch { target, .. } => target.to_string(),
+            ResolveError::NotFound { component, .. }
+            | ResolveError::Ambiguous { component, .. } => component.clone(),
+            _ => "vernal_ioc::Container".to_owned(),
+        }
     }
 }

@@ -1,6 +1,9 @@
 //! Vernal 高层应用建造器对象。
 
-use std::sync::Arc;
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    sync::Arc,
+};
 
 use tokio::runtime::Handle;
 use tokio_util::sync::CancellationToken;
@@ -8,8 +11,9 @@ use vernal_aop::{Advisor, InvocationPlanBuilder, Operation};
 use vernal_ioc::{ComponentDefinition, DefinitionError, Qualifier, RegistryBuilder, TraitBinding};
 
 use crate::{
-    ApplicationBuildError, ApplicationContext, ApplicationContextBuilder, EventBus, Lifecycle,
-    context_resources::ContextResources,
+    ApplicationBuildError, ApplicationContext, ApplicationContextBuilder, DiagnosticState,
+    EventBus, Lifecycle, SubsystemStatus, context_resources::ContextResources,
+    diagnostic_configuration::DiagnosticConfiguration,
 };
 
 type LifecycleRegistrar = dyn FnOnce(&mut ApplicationContextBuilder) + Send + Sync + 'static;
@@ -34,6 +38,10 @@ pub struct VernalApplicationBuilder {
     runtime: Arc<Handle>,
     cancellation: Arc<CancellationToken>,
     events: Arc<EventBus>,
+    enabled_features: BTreeSet<String>,
+    adapters: BTreeMap<String, DiagnosticState>,
+    external_dependencies: BTreeMap<String, DiagnosticState>,
+    warnings: BTreeSet<String>,
 }
 
 impl VernalApplicationBuilder {
@@ -48,6 +56,10 @@ impl VernalApplicationBuilder {
             runtime: Arc::new(runtime),
             cancellation: Arc::new(CancellationToken::new()),
             events: Arc::new(EventBus::new()),
+            enabled_features: BTreeSet::new(),
+            adapters: BTreeMap::new(),
+            external_dependencies: BTreeMap::new(),
+            warnings: BTreeSet::new(),
         }
     }
 
@@ -169,6 +181,45 @@ impl VernalApplicationBuilder {
         self
     }
 
+    /// 登记一个需要出现在启动报告中的应用 feature。
+    ///
+    /// 参数要求静态字符串，避免把运行时配置值或密钥误当作 feature 写入诊断
+    /// 输出；重复名称会被确定性去重。
+    pub fn diagnostic_feature(&mut self, feature: &'static str) -> &mut Self {
+        self.enabled_features.insert(feature.to_owned());
+        self
+    }
+
+    /// 登记一个 Web/RPC Adapter 的脱敏状态。
+    ///
+    /// 相同名称后一次登记覆盖前一次，最终报告按名称排序，确保快照和测试稳定。
+    pub fn adapter_status(&mut self, name: &'static str, state: DiagnosticState) -> &mut Self {
+        self.adapters.insert(name.to_owned(), state);
+        self
+    }
+
+    /// 登记一个外部依赖的脱敏状态。
+    ///
+    /// API 不接收任意详情或错误字符串，只允许固定状态枚举，避免连接串、令牌或
+    /// 下游响应进入可公开序列化的启动报告。
+    pub fn external_dependency_status(
+        &mut self,
+        name: &'static str,
+        state: DiagnosticState,
+    ) -> &mut Self {
+        self.external_dependencies.insert(name.to_owned(), state);
+        self
+    }
+
+    /// 登记一个静态、脱敏的告警代码。
+    ///
+    /// 建议使用 `deprecated.adapter-api` 一类稳定代码；该入口不接受运行时
+    /// `String`，从 API 层阻止拼接业务错误正文。
+    pub fn warning_code(&mut self, warning: &'static str) -> &mut Self {
+        self.warnings.insert(warning.to_owned());
+        self
+    }
+
     /// 冻结依赖图和 AOP 计划并创建尚未 refresh 的应用上下文。
     ///
     /// # Errors
@@ -199,6 +250,18 @@ impl VernalApplicationBuilder {
             self.cancellation,
             self.events,
             invocation_plans,
+            DiagnosticConfiguration::new(
+                self.enabled_features.into_iter().collect(),
+                self.adapters
+                    .into_iter()
+                    .map(|(name, state)| SubsystemStatus::new(name, state))
+                    .collect(),
+                self.external_dependencies
+                    .into_iter()
+                    .map(|(name, state)| SubsystemStatus::new(name, state))
+                    .collect(),
+                self.warnings.into_iter().collect(),
+            ),
         );
         let registry = self.registry.build()?;
         let mut context = ApplicationContextBuilder::managed(registry, resources);

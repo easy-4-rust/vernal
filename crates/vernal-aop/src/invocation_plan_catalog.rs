@@ -34,6 +34,15 @@ impl InvocationPlanCatalog {
         self.plans.len()
     }
 
+    /// 返回全部调用计划匹配的拦截器槽位总数。
+    ///
+    /// 同一个拦截器实例可能匹配多个操作，因此该值描述计划中的执行槽位，而不是
+    /// 唯一拦截器对象数量。诊断报告使用它反映实际织入规模。
+    #[must_use]
+    pub fn interceptor_count(&self) -> usize {
+        self.plans.values().map(InvocationPlan::len).sum()
+    }
+
     /// 返回目录是否不包含任何调用计划。
     #[must_use]
     pub fn is_empty(&self) -> bool {

@@ -2,7 +2,10 @@
 
 use std::sync::Arc;
 
-use crate::{BuildPlan, ComponentDefinition, Container, TraitBinding};
+use crate::{
+    BuildPlan, ComponentDefinition, ComponentSnapshot, Container, RegistrySnapshot,
+    RegistrySummary, Scope, TraitBinding, TraitBindingSnapshot,
+};
 
 /// 保存已校验组件定义与构建计划的不可变注册表。
 ///
@@ -48,6 +51,75 @@ impl Registry {
     #[must_use]
     pub fn plan(&self) -> &BuildPlan {
         &self.plan
+    }
+
+    /// 生成不包含工厂和实例的只读诊断快照。
+    ///
+    /// 组件使用已经校验的 `ordered_indices` 排列，不重复运行拓扑算法；Trait
+    /// Binding 只复制选择键、目标和 Primary 标记，不暴露 upcast 闭包。
+    #[must_use]
+    pub fn snapshot(&self) -> RegistrySnapshot {
+        let singleton_count = self
+            .definitions
+            .iter()
+            .filter(|definition| definition.scope() == Scope::Singleton)
+            .count();
+        let declared_dependency_count = self
+            .definitions
+            .iter()
+            .map(|definition| definition.dependencies().len())
+            .sum();
+
+        // `ordered_indices` 是 GraphPlanner 已验证的唯一权威构建顺序。诊断层只做
+        // 值对象投影，不重新选择 Trait 实现或重新计算依赖图。
+        let components = self
+            .ordered_indices
+            .iter()
+            .enumerate()
+            .map(|(build_order, index)| {
+                let definition = &self.definitions[*index];
+                ComponentSnapshot::new(
+                    definition.key().to_string(),
+                    definition.key().type_name().to_owned(),
+                    definition
+                        .key()
+                        .qualifier()
+                        .map(|qualifier| qualifier.as_str().to_owned()),
+                    definition.scope().as_str().to_owned(),
+                    build_order,
+                    definition
+                        .dependencies()
+                        .iter()
+                        .map(ToString::to_string)
+                        .collect(),
+                )
+            })
+            .collect();
+        let trait_bindings = self
+            .bindings
+            .iter()
+            .map(|binding| {
+                TraitBindingSnapshot::new(
+                    binding.key().to_string(),
+                    binding.key().type_name().to_owned(),
+                    binding
+                        .key()
+                        .qualifier()
+                        .map(|qualifier| qualifier.as_str().to_owned()),
+                    binding.target().to_string(),
+                    binding.is_primary(),
+                )
+            })
+            .collect();
+        let summary = RegistrySummary::new(
+            self.definitions.len(),
+            singleton_count,
+            self.definitions.len() - singleton_count,
+            declared_dependency_count,
+            self.bindings.len(),
+        );
+
+        RegistrySnapshot::new(summary, components, trait_bindings)
     }
 
     /// 创建拥有独立实例缓存的容器。

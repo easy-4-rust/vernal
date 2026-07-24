@@ -8,11 +8,15 @@ description = "Application context and lifecycle composition for Vernal."
 publish = false
 
 [dependencies]
+serde.workspace = true
 tokio.workspace = true
 tokio-util.workspace = true
 vernal-aop = { path = "../vernal-aop" }
 vernal-core = { path = "../vernal-core" }
 vernal-ioc = { path = "../vernal-ioc" }
+
+[dev-dependencies]
+serde_json.workspace = true
 
 [lints]
 workspace = true

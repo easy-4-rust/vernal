@@ -6,7 +6,7 @@ use tokio::runtime::Handle;
 use tokio_util::sync::CancellationToken;
 use vernal_aop::InvocationPlanCatalog;
 
-use crate::EventBus;
+use crate::{EventBus, diagnostic_configuration::DiagnosticConfiguration};
 
 /// 聚合一个 `ApplicationContext` 独占或共享的基础运行资源。
 ///
@@ -18,6 +18,7 @@ pub(crate) struct ContextResources {
     cancellation: Arc<CancellationToken>,
     events: Arc<EventBus>,
     invocation_plans: Arc<InvocationPlanCatalog>,
+    diagnostics: DiagnosticConfiguration,
 }
 
 impl ContextResources {
@@ -30,6 +31,7 @@ impl ContextResources {
             cancellation: Arc::new(CancellationToken::new()),
             events: Arc::new(EventBus::new()),
             invocation_plans: Arc::new(InvocationPlanCatalog::default()),
+            diagnostics: DiagnosticConfiguration::default(),
         }
     }
 
@@ -39,12 +41,14 @@ impl ContextResources {
         cancellation: Arc<CancellationToken>,
         events: Arc<EventBus>,
         invocation_plans: Arc<InvocationPlanCatalog>,
+        diagnostics: DiagnosticConfiguration,
     ) -> Self {
         Self {
             runtime: Some(runtime),
             cancellation,
             events,
             invocation_plans,
+            diagnostics,
         }
     }
 
@@ -66,5 +70,10 @@ impl ContextResources {
     /// 返回应用构建阶段预编译的 AOP 调用计划目录。
     pub(crate) fn invocation_plans(&self) -> &InvocationPlanCatalog {
         &self.invocation_plans
+    }
+
+    /// 返回应用构建阶段冻结的静态诊断配置。
+    pub(crate) const fn diagnostics(&self) -> &DiagnosticConfiguration {
+        &self.diagnostics
     }
 }

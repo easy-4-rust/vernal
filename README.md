@@ -114,9 +114,9 @@ Detailed decisions, flows, failure semantics, and acceptance criteria are in:
 |:---|:---:|:---|
 | `vernal` | Experimental facade | Facade, prelude, feature composition |
 | `vernal-core` | Experimental | Shared contracts for the Tokio-first framework |
-| `vernal-ioc` | Phase 1 implemented | Definitions, scopes, resolution, graph validation |
+| `vernal-ioc` | Phase 1/diagnostics kernel implemented | Definitions, scopes, resolution, graph validation, read-only snapshots |
 | `vernal-aop` | Phase 2 kernel implemented | Around/Next, pointcuts, immutable plans, cancellation |
-| `vernal-context` | Phase 3 kernel implemented | Managed bootstrap, built-in components, AOP plans, lifecycle, events, shutdown |
+| `vernal-context` | Phase 3/diagnostics kernel implemented | Managed bootstrap, lifecycle, events, redacted startup reports |
 | `vernal-macros` | Phase 2 macros implemented | Explicit `Arc<T>` injection metadata and context-local async method weaving |
 | `vernal-web` | Phase 4 contract implemented | Framework-neutral context, request scope, handler, and error contracts |
 | `vernal-http` | Phase 4 contract implemented | HTTP request, response, body, streaming, cancellation, and backpressure |
@@ -361,6 +361,20 @@ contract used for application services. The low-level
 `Registry -> ApplicationContextBuilder` path remains available when automatic
 runtime capture and built-in registration are not wanted.
 
+Frozen registries and running contexts expose owned, read-only diagnostic
+snapshots:
+
+```rust
+let registry_snapshot = context.container().registry().snapshot();
+let startup_report = context.startup_report().await;
+let json = serde_json::to_string(&startup_report)?;
+```
+
+`RegistrySnapshot` reuses the validated build plan instead of recomputing the
+graph. `StartupReport` contains version/MSRV, scope and dependency summaries,
+AOP plan slots, and lifecycle timing. Failure snapshots retain only the
+component, phase, and outcome; business error text is never serialized.
+
 ## 6. Capabilities
 
 | Capability | Target contract | Status |
@@ -378,13 +392,13 @@ runtime capture and built-in registration are not wanted.
 | HTTP | Request/response, body frames/trailers, explicit bounded collection, cancellation, backpressure | Phase 4 contract |
 | Web integration foundation | Tower context/scope layers and Hyper streaming bridge | Phase 4 foundation |
 | Framework adapters | Tower-first where possible, native adapters where necessary | Phase 5 adapters |
-| Diagnostics | Introspectable graph and startup report without secret leakage | Planned |
+| Diagnostics | Serializable Registry snapshot and startup report without business error text | Phase 3 diagnostics kernel |
 
 “Phase 1” and “Phase 2 kernel” mean callable implementation and contract tests
 exist, but the API is still experimental. The first Component and AOP method
 macros are implemented with compile-fail coverage; broader method signatures,
-expanded diagnostics, and benchmarks remain open. “Planned” means no callable
-implementation exists yet. No label is a compatibility or performance claim.
+unused-definition runtime tracking, adapter auto-discovery, and benchmarks
+remain open. No label is a compatibility or performance claim.
 
 ## 7. Ecosystem role
 
@@ -466,11 +480,12 @@ graph. The full Ddd4r workspace gate remains blocked by its pre-existing,
 currently unavailable `rbatis-r2dbc` Git revision and is not reported as
 passing.
 
-Phase 1/1.1 now has 22 IoC contract tests for 1,000-node deterministic
+Phase 1/1.1 now has 24 IoC contract tests for 1,000-node deterministic
 planning, structured graph diagnostics, concurrent singleton construction,
 container isolation, transient resolution, native objects, named/primary/all
 Trait bindings, Trait graph cycles, hidden-dependency rejection, and atomic
-definition-plus-binding module registration.
+definition-plus-binding module registration, plus stable Registry
+serialization without factories or instance addresses.
 The Phase 2 AOP kernel currently has eight contract tests covering ordered
 enter/reverse exit, short circuit, success and error transformation, typed
 context across `.await`, cancellation/deadline, pointcut selection, and
@@ -480,12 +495,13 @@ injection, transient construction, Trait Object injection, and context-local
 intercepted invocation, plus four compile-fail cases for invalid component
 fields, invalid collection qualifiers, non-async interception, and borrowed
 receivers. Broader signature support, expanded
-diagnostic snapshots, and AOP benchmarks remain open.
-The Phase 3 kernel has nine tests covering dependency-order startup,
+macro diagnostics, and AOP benchmarks remain open.
+The Phase 3 kernel has eleven tests covering dependency-order startup,
 reverse shutdown, initialize/start rollback, invalid transitions, idempotent
 close, concurrent close serialization, and context-local typed event
 isolation, plus managed injection of Tokio, cancellation, events, and AOP
-plans. Richer startup diagnostics remain open.
+plans, and read-only/redacted serialization of successful and failed startup
+reports.
 
 ## 10. Contributing and license
 

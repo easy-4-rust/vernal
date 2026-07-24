@@ -12,3 +12,14 @@ pub enum Scope {
     /// 每次解析都创建新实例。
     Transient,
 }
+
+impl Scope {
+    /// 返回适合稳定诊断和序列化输出的作用域名称。
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Singleton => "singleton",
+            Self::Transient => "transient",
+        }
+    }
+}

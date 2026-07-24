@@ -213,6 +213,7 @@ already integrates Vernal.
 | Link-time component metadata | Evaluate as an optional registration frontend | macros / optional adapter |
 | `TypeId` plus erased store | Keep typed entrypoints and constrain erasure | `vernal-ioc` |
 | Kahn topological ordering | Rebuild as a deterministic, testable planner | `vernal-ioc` |
+| `debug_registry()` log table | Upgrade to serializable read-only snapshots that reuse the frozen plan | `vernal-ioc` / `vernal-context` |
 | Singleton / Prototype | Evolve to Singleton / Transient / Scope SPI | `vernal-ioc` |
 | Lifecycle hooks | Move to a Context-owned state machine | `vernal-context` |
 | Forward before / reverse after | Preserve stack order through a true Around chain | `vernal-aop` |
@@ -709,9 +710,47 @@ The unsafe rule covers Vernal-owned source, not the entire third-party graph.
 | Lifecycle | Init/start/close failure | Roll back or report degraded |
 | Adapter | Conversion or missing context | Return stable native error |
 
-A context refresh produces a serializable, read-only, redacted report containing
-version/features, definition and scope counts, graph summary, pointcut matches,
-lifecycle timing/failures, adapter state, warnings, and unused definitions.
+A context refresh now produces a serializable, read-only, redacted report
+containing version/features, definition and scope counts, graph summary,
+pointcut matches, lifecycle timing/failures, adapter state, warnings, and
+unused definitions.
+
+```mermaid
+flowchart LR
+    Registry["Registry<br/>definitions + bindings + BuildPlan"]
+    Catalog["InvocationPlanCatalog"]
+    Static["Static diagnostics<br/>features / adapters / external / warnings"]
+    Lifecycle["Context state machine<br/>warm-up / resolve / init / start / stop"]
+    Snapshot["RegistrySnapshot<br/>owned read-only value"]
+    Report["StartupReport<br/>owned redacted value"]
+    Output["Serde serializer<br/>logs / admin endpoints / tests"]
+
+    Registry -->|"reuse validated order"| Snapshot
+    Snapshot --> Report
+    Catalog -->|"plan and interceptor slot counts"| Report
+    Static --> Report
+    Lifecycle -->|"phase, outcome, microseconds"| Report
+    Report --> Output
+```
+
+The implemented contract is:
+
+- `Registry::snapshot()` follows the real dependency-first build order without
+  rerunning graph planning or exposing factories, upcast closures, instances,
+  or addresses.
+- `ApplicationContext::startup_report().await` returns an owned clone that
+  later start/close operations cannot mutate.
+- warm-up, component resolution, initialize, start, and stop record stable
+  phases, subjects, outcomes, and microsecond durations.
+- raw error chains remain available through `ContextError::source`; the report
+  type has no `error_message` field.
+- features and warnings use static names/codes; adapters and external
+  dependencies accept only a name and fixed `DiagnosticState`, not connection
+  strings, tokens, or arbitrary error details.
+- unused definitions cannot be inferred safely from “no incoming edges”; the
+  collection remains empty until exact resolution tracking exists. Adapter
+  auto-discovery is likewise delegated to future integration-crate wiring;
+  applications can register current states explicitly.
 
 ## 15. Verification and acceptance
 
@@ -736,12 +775,13 @@ Phase 1 minimum acceptance:
    Tokio is allowed when needed.
 5. Normal failures use `Result`, not panic.
 
-As of 2026-07-24, all five items have local evidence: 22 IoC contract tests
+As of 2026-07-24, all five items have local evidence: 24 IoC contract tests
 cover a 1,000-node graph, missing/ambiguous/cycle paths, singleton isolation
 across two concurrent containers, transient creation, qualifiers, hidden
 dependency rejection, native-value registration, a real task spawned through
-an injected Tokio handle, and named/primary/all Trait bindings, empty sets,
-missing targets, Trait cycles, naming conflicts, and batch atomicity.
+an injected Tokio handle, named/primary/all Trait bindings, empty sets,
+missing targets, Trait cycles, naming conflicts, batch atomicity, and
+deterministic Registry serialization without factories or instance addresses.
 `register_all` atomically installs definition-only batches; `register_bundle`
 atomically commits definitions and bindings together. Tokio remains a
 contract-test dependency for IoC rather than runtime state in its resolution
@@ -759,11 +799,12 @@ receivers. Phase 2 now has a callable loop, while broader
 signatures, diagnostic coverage, benchmarks, and stability guarantees remain
 open.
 
-The Phase 3 kernel has nine contract tests for dependency-order
+The Phase 3 kernel has eleven contract tests for dependency-order
 startup, reverse shutdown, initialize/start rollback, invalid transitions,
 idempotent close, concurrent close serialization, and context-local typed
-event isolation, plus runtime-unavailable diagnostics and same-instance
-injection of the four built-in resources.
+event isolation, plus runtime-unavailable diagnostics, same-instance injection
+of the four built-in resources, and owned/redacted serialization of successful
+and failed startup reports.
 
 ## 16. Delivery roadmap
 
