@@ -8,6 +8,8 @@ description = "Application context and lifecycle composition for Vernal."
 publish = false
 
 [dependencies]
+tokio.workspace = true
+tokio-util.workspace = true
 vernal-aop = { path = "../vernal-aop" }
 vernal-core = { path = "../vernal-core" }
 vernal-ioc = { path = "../vernal-ioc" }

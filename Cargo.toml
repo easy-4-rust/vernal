@@ -10,6 +10,10 @@ license = "MIT"
 authors = ["Vernal Contributors"]
 description = "A lightweight IoC, AOP and application context framework for Rust."
 
+[workspace.dependencies]
+tokio = { version = "1.48.0", features = ["macros", "rt-multi-thread", "sync", "time"] }
+tokio-util = { version = "0.7.16", features = ["rt"] }
+
 [workspace.lints.rust]
 unsafe_code = "forbid"
 missing_docs = "warn"

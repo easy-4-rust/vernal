@@ -43,7 +43,8 @@ The versioned selection is recorded in
 - No Rust Servlet container.
 - No Project Reactor clone or new async runtime.
 - No replacement for native routing DSLs.
-- No Tower, Hyper, Tokio, or web framework dependency in Vernal kernels.
+- No concrete web-framework implementation in generic kernels. Tokio is the
+  official runtime; Tower and Hyper remain owned by their foundation crates.
 - No reimplementation of Sa-Token-Rust authentication or authorization.
 - No claim that the ten targets form a permanent worldwide popularity ranking.
 
@@ -91,7 +92,9 @@ This crate defines framework-neutral application contracts only:
 - `ContextCarrier`: context propagation across futures, streams, and tasks;
 - `WebIntegration`: adapter capability and diagnostics metadata.
 
-Its public API must not expose Axum, Actix Web, Tokio, or Hyper types.
+Its public API must not expose Axum, Actix Web, or Hyper types. Tokio-native
+types are allowed for task, cancellation, deadline, and context-propagation
+contracts.
 
 ### 4.2 `vernal-http`
 

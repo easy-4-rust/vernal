@@ -6,7 +6,7 @@
 > `tx-di`.
 >
 > **Architecture version:** 0.1.0<br>
-> **Applicable code:** `0.0.0-dev` workspace skeleton<br>
+> **Applicable code:** `0.0.0-dev` Phase 1 IoC + Phase 2 AOP kernel<br>
 > **Status:** Draft, awaiting architecture review<br>
 > **Last updated:** 2026-07-24
 
@@ -39,8 +39,17 @@
   web-related skeleton crates exist.
 - `[Confirmed]` Every crate is `publish = false`; no crates.io or stable API
   claim is made.
-- `[Skeleton]` The source currently validates boundaries and dependencies only.
-- `[Target]` Sections below require delivery through Phases 1–6.
+- `[Confirmed]` `vernal-core` and `vernal-ioc` provide an explicit registry,
+  deterministic graph planning, isolated containers, singleton/transient
+  scopes, and structured failures.
+- `[Confirmed]` `vernal-aop` provides object-safe async Around/Next,
+  operation pointcuts, immutable plans, typed extensions, cancellation, and
+  deadlines.
+- `[Confirmed]` `vernal-context` provides a serialized Tokio lifecycle state
+  machine, dependency-order initialize/start, cancellation, rollback,
+  reverse idempotent shutdown, and context-local typed events.
+- `[Skeleton]` Macros and web adapters still validate crate boundaries only.
+- `[Target]` Phase 2 macros, Context AOP-plan aggregation, and Phases 4–6 remain.
 
 ## 2. Brand meaning and architecture thesis
 
@@ -95,13 +104,15 @@ adapters connect the kernels to web frameworks and downstream ecosystems.**
 | D-003 | Enable Hutool-Rust, Sa-Token-Rust, and Ddd4r | P0 | Consumer-owned bridges/starters |
 | D-004 | Reuse proven `tx-di` ideas | P1 | Migration ledger and contract tests |
 | D-005 | Remain Rust-native and diagnosable | P0 | Explicit types, errors, state, graph reports |
-| D-006 | Minimize dependency and runtime pollution | P0 | No Tokio/Web/config implementation in core |
+| D-006 | Use ecosystem standards without dependency pollution | P0 | Tokio-first; concrete web/ORM/config dependencies stay in integrations |
 
 ### 3.2 Hard constraints
 
 1. `vernal-ioc` and `vernal-aop` do not depend on each other.
-2. `vernal-core` does not depend on Tokio, web frameworks, ORMs,
-   authentication libraries, or configuration formats.
+2. `vernal-core`, `vernal-aop`, and `vernal-context` may use Tokio and
+   `tokio-util` task, synchronization, time, and cancellation primitives, but
+   do not depend on concrete web, ORM, authentication, or configuration
+   implementations.
 3. Adapters point inward; kernels never depend on adapters.
 4. Missing components, cycles, interception rejection, and shutdown failure
    return structured errors instead of panicking.
@@ -176,12 +187,12 @@ already integrates Vernal.
 
 | Current tx-di design | Risk | Vernal response |
 |:---|:---|:---|
-| Core depends on config, Tokio, tracing, utilities, and shared errors | Core cannot stand alone | Minimal kernels; optional concerns move outward |
+| Core mixes config, tracing, utilities, and shared errors | Unrelated concerns expand the kernel | Keep Tokio foundations; move config formats, logging implementations, and utilities outward |
 | Global `HashMap<usize, Arc<InterceptorChain>>` | Address reuse, cleanup, locking, context isolation | Chain owned by wrapper/definition/context |
 | Macro panics on missing chain or rejected before | Failure cannot compose | Structured caller-visible errors |
 | Every argument becomes a Debug string | Secret leakage, allocation, lost type | No values by default; explicit redacted opt-in |
 | `after` changes only a result description | Not true Around semantics | Introduce `Next`/continuation |
-| Lifecycle owns Tokio tasks | Excludes other runtimes | Runtime-neutral context plus adapters |
+| Lifecycle owns Tokio tasks without one state machine | Cancellation and rollback semantics scatter | Tokio-native context with one lifecycle state machine |
 | Global link-time registry is the only entrypoint | Weak isolation and dynamic assembly | Explicit `RegistryBuilder` baseline |
 
 ## 6. Architecture decisions
@@ -194,7 +205,7 @@ already integrates Vernal.
 | ADR-004 | Around/Next interception | Express before/after/error/short-circuit | before/after only | Equivalent lower-cost model is proven |
 | ADR-005 | Tower-first integration | Reuse a shared Rust service abstraction | Duplicate each pipeline | A framework cannot preserve semantics |
 | ADR-006 | Separate adapters and bridges | Isolate dependency/version churn | All framework features in facade | Stable ecosystem ABI emerges |
-| ADR-007 | Runtime-neutral kernels | Support sync and multiple executors | Tokio in core | One runtime becomes a factual standard |
+| ADR-007 | Tokio-first runtime | Reuse the server ecosystem's tasks, synchronization, cancellation, and time | Custom runtime abstraction or multi-executor parity | Tokio stops being the target ecosystem standard |
 
 ## 7. Layers and crate dependencies
 
@@ -230,8 +241,8 @@ Forbidden directions:
 
 ```text
 core ─X→ ioc / aop / context / web
-ioc  ─X→ aop / context / tokio / web
-aop  ─X→ ioc / context / tokio / web
+ioc  ─X→ aop / context / concrete web / ORM
+aop  ─X→ ioc / context / concrete web / ORM
 context ─X→ concrete web framework
 adapter A ─X→ adapter B
 ```
@@ -277,7 +288,20 @@ Phase 1 implements only per-container `Singleton` and per-resolution
 `Transient`. Request/task/tenant scopes arrive through a later Scope SPI and do
 not introduce HTTP concepts into the kernel.
 
-### 8.3 Failure contract
+### 8.3 Tokio and framework-native components
+
+Vernal does not require ecosystem objects to be wrapped in framework-specific
+bean types. Any `Send + Sync + 'static` value can be registered directly,
+including Tokio synchronization primitives and task handles, HTTP clients,
+database pools, message clients, Tower services, framework state, and
+application services.
+
+Being usable as a component does not make its crate a kernel dependency. The
+application or a `vernal-*` adapter imports the concrete framework and supplies
+the `ComponentDefinition`; IoC sees only Rust types, factories, dependencies,
+and scopes.
+
+### 8.4 Failure contract
 
 | Error | Retry | Required diagnostic |
 |:---|:---:|:---|
@@ -343,8 +367,10 @@ Ownership and cleanup therefore follow the actual wrapper/context lifecycle.
 ## 10. ApplicationContext and lifecycle
 
 The context composes registry, container, AOP plans, local typed events,
-rollback, reverse cleanup, and read-only diagnostics. Configuration formats,
-Tokio signals, web servers, and external configuration centers remain adapters.
+rollback, reverse cleanup, and read-only diagnostics. It directly uses Tokio
+tasks, synchronization, time, cancellation, and signals. Configuration
+formats, web servers, and external configuration centers remain adapters whose
+native objects may still be registered as ordinary components.
 
 ```mermaid
 stateDiagram-v2
@@ -500,7 +526,7 @@ lifecycle timing/failures, adapter state, warnings, and unused definitions.
 
 | Level | Required evidence |
 |:---|:---|
-| Static | Crate direction; no Web/Tokio in kernels |
+| Static | Crate direction, Tokio feature budget, and no concrete Web/ORM implementation in generic kernels |
 | Unit | Graph, qualifier, ordering, scope, state machine |
 | Property | Deterministic planning and cycle detection for arbitrary graphs |
 | Compile | Macro diagnostics, bounds, lifetimes, generics |
@@ -515,8 +541,26 @@ Phase 1 minimum acceptance:
 1. Deterministically plan a 1,000-node DAG.
 2. Missing, ambiguous, and cycle errors contain readable paths.
 3. Parallel containers do not share singleton instances.
-4. `cargo tree` proves no Tokio or web framework in `vernal-ioc`.
+4. `cargo tree` proves no concrete web or ORM framework in `vernal-ioc`;
+   Tokio is allowed when needed.
 5. Normal failures use `Result`, not panic.
+
+As of 2026-07-24, all five items have local evidence: nine IoC contract tests
+cover a 1,000-node graph, missing/ambiguous/cycle paths, singleton isolation
+across two concurrent containers, transient creation, qualifiers, and hidden
+dependency rejection. `cargo tree -p vernal-ioc` currently contains only
+`vernal-core`, but that is not a rule forbidding future Tokio use.
+
+The Phase 2 AOP kernel additionally has seven Tokio contract tests for
+ordered entry/reverse exit, short circuit, result/error transformation, typed
+context across `.await`, cancellation/deadline, pointcut filtering, and
+64-task concurrent reuse. Phase 2 remains incomplete until macro trybuild
+coverage is present.
+
+The Phase 3 kernel has seven contract tests for dependency-order
+startup, reverse shutdown, initialize/start rollback, invalid transitions,
+idempotent close, concurrent close serialization, and context-local typed
+event isolation.
 
 ## 16. Delivery roadmap
 
@@ -536,7 +580,7 @@ No phase is complete merely because a crate exists or `cargo check` is green.
 
 | ID | Risk / open decision | Impact | Validation |
 |:---|:---|:---|:---|
-| R-001 | Object-safe async Around cost | AOP API stability | Two prototypes + benchmark |
+| R-001 | Object-safe async Around allocation cost | AOP performance | Benchmark the implemented boxed-future path |
 | R-002 | Macro support for impl/trait/async methods | Usability | trybuild matrix |
 | R-003 | Cross-platform link-time registration | Portability | Linux/macOS/Windows CI |
 | R-004 | Request-scope cancellation differences | Resource safety | Cross-framework failure tests |
@@ -545,8 +589,9 @@ No phase is complete merely because a crate exists or `cargo check` is green.
 
 ## 18. Definition of architecture done
 
-- [ ] IoC and AOP can be depended on, built, and used independently.
-- [ ] Context does not leak config-format, web, or Tokio types into kernels.
+- [x] IoC and AOP can be depended on, built, and used independently.
+- [ ] Tokio usage and feature budgets are explicit; Context does not leak
+  configuration formats or concrete web/ORM types into generic kernels.
 - [ ] Graph, interception, and lifecycle include success/failure/rollback tests.
 - [ ] No pointer-address chain map, normal-flow panic, or hidden cross-context state.
 - [ ] Web adapters pass one conformance suite while preserving native semantics.

@@ -5,7 +5,7 @@
 > 遵守的重构边界。
 >
 > **架构版本**：0.1.0<br>
-> **适用代码版本**：`0.0.0-dev` Workspace 骨架<br>
+> **适用代码版本**：`0.0.0-dev` Phase 1 IoC + Phase 2 AOP 内核<br>
 > **文档状态**：草案，待架构评审<br>
 > **最后更新**：2026-07-24
 
@@ -36,8 +36,14 @@
   本轮本地门禁使用 Rust 1.97.1，MSRV CI 仍是目标态。
 - `[已确认]` 已创建六个内核/组合层骨架，以及十四个 Web 相关骨架 crate。
 - `[已确认]` 所有 crate 设置 `publish = false`，没有 crates.io 或稳定 API 声明。
-- `[骨架]` 当前代码只验证 crate 边界与依赖方向，不提供 IoC、AOP 或 Context 行为。
-- `[设计目标]` 本文定义的能力需要按 Phase 1–6 逐步实现和验收。
+- `[已确认]` `vernal-core` 与 `vernal-ioc` 已提供显式 Registry、确定性图规划、
+  Container 隔离、Singleton/Transient 和结构化错误。
+- `[已确认]` `vernal-aop` 已提供对象安全的异步 Around/Next、操作切点、
+  不可变计划、类型化扩展、取消和 deadline。
+- `[已确认]` `vernal-context` 已提供串行 Tokio 生命周期状态机、依赖顺序
+  initialize/start、取消、失败回滚、逆序幂等关闭和 Context-local 类型化事件。
+- `[骨架]` 宏及 Web Adapter 仍只验证 crate 边界与依赖方向。
+- `[设计目标]` Phase 2 宏、Context AOP 计划聚合与 Phase 4–6 仍需实现和验收。
 
 ## 2. 品牌寓意与架构主张
 
@@ -92,12 +98,14 @@ flowchart LR
 | D-003 | 为 Hutool-Rust、Sa-Token-Rust、Ddd4r 提供基础能力 | P0 | 消费方拥有 Bridge/Starter |
 | D-004 | 吸收 `tx-di` 已验证思路 | P1 | 建立能力迁移台账与合同测试 |
 | D-005 | 保持 Rust 原生和可诊断 | P0 | 显式类型、错误、状态和图报告 |
-| D-006 | 控制依赖和运行时污染 | P0 | Core 不依赖 Tokio/Web/配置实现 |
+| D-006 | 采用 Rust 生态事实标准并控制依赖污染 | P0 | Tokio-first；具体 Web/ORM/配置依赖留在集成层 |
 
 ### 3.2 硬约束
 
 1. `vernal-ioc` 不依赖 `vernal-aop`，`vernal-aop` 不依赖 `vernal-ioc`。
-2. `vernal-core` 不依赖 Tokio、任何 Web 框架、ORM、鉴权库或配置格式。
+2. `vernal-core`、`vernal-aop` 和 `vernal-context` 可以使用 Tokio 及
+   `tokio-util` 的任务、同步、时间与取消原语；不得反向依赖具体 Web、ORM、
+   鉴权或配置实现。
 3. 适配器只依赖公共合同，内核不能反向依赖适配器。
 4. 正常的缺失组件、循环依赖、拦截拒绝和关闭失败必须返回结构化错误，不得 panic。
 5. Context 必须是实例隔离的；并行测试或同进程多 Context 不能互相覆盖。
@@ -165,12 +173,12 @@ flowchart TB
 
 | tx-di 当前设计 | 风险 | Vernal 处理 |
 |:---|:---|:---|
-| `tx-di-core` 依赖配置、Tokio、tracing、公共工具和统一错误 | Core 无法独立复用 | 内核仅保留必要标准库依赖，可选能力下沉 adapter |
+| `tx-di-core` 混合配置、tracing、公共工具和统一错误 | 无关能力扩大内核边界 | 保留 Tokio 基础能力；配置格式、日志实现和工具能力下沉 |
 | 全局 `HashMap<usize, Arc<InterceptorChain>>` | 地址复用、清理、锁竞争、Context 隔离风险 | 链随 Wrapper/Definition/Context 所有，不用裸地址做身份 |
 | 宏在链缺失或 before 失败时 panic | 业务失败不可组合 | 返回调用者声明的结构化错误 |
 | 参数统一 `Debug` 字符串化 | 敏感信息泄漏、分配和类型丢失 | 元数据默认不采集值；值捕获显式 opt-in 并支持脱敏 |
 | `after` 只修改 `CallResult` 描述 | 不能实现真正 Around/返回值变换 | 引入 `Next`/Continuation 语义 |
-| 生命周期与 Tokio task 固定绑定 | 非 Tokio 项目无法复用 | Context Core 运行时中立，异步执行由 runtime adapter 提供 |
+| 生命周期与 Tokio task 固定绑定且缺少统一状态机 | 任务取消和回滚语义分散 | Context 采用 Tokio 原生任务、取消和时间能力，并统一管理状态机 |
 | 全局链接期 Registry 是唯一入口 | 测试隔离和动态组装受限 | 显式 `RegistryBuilder` 为基线，编译期收集为可选前端 |
 
 ## 6. 关键架构决策
@@ -183,7 +191,7 @@ flowchart TB
 | ADR-004 | AOP 使用 Around/Next | 完整表达前后、异常和短路 | 只有 before/after 回调 | 基准证明无法接受且有等价替代 |
 | ADR-005 | Tower 优先集成 | 多个 Web 框架共享抽象 | 每个框架复制整条业务链 | 框架语义无法由 Tower 保真表达 |
 | ADR-006 | 适配器与 Bridge 独立 crate | 隔离依赖与版本变化 | 所有框架 feature 堆进 facade | Cargo 生态出现更可靠的稳定 ABI |
-| ADR-007 | 内核运行时中立 | 支持同步、Tokio 和其他 executor | Core 直接持有 Tokio Runtime | Rust 生态形成唯一事实运行时 |
+| ADR-007 | Tokio-first 运行时 | 直接复用 Rust 服务端生态的任务、同步、取消和时间能力 | 自建抽象 Runtime 或同时兼容多个 executor | Tokio 不再是目标生态事实标准 |
 
 ## 7. 总体分层与 crate 依赖
 
@@ -219,8 +227,8 @@ flowchart TB
 
 ```text
 core ─X→ ioc / aop / context / web
-ioc  ─X→ aop / context / tokio / web
-aop  ─X→ ioc / context / tokio / web
+ioc  ─X→ aop / context / concrete web / ORM
+aop  ─X→ ioc / context / concrete web / ORM
 context ─X→ concrete web framework
 adapter A ─X→ adapter B
 ```
@@ -272,7 +280,21 @@ Phase 1 只实现：
 `Request`、`Task`、`Tenant` 等 Scope 通过 Scope SPI 在后续阶段加入，不把 HTTP 概念
 放入 IoC Core。自定义 Scope 必须定义缓存所有者、进入/退出方式、并发保证和清理失败语义。
 
-### 8.4 解析失败合同
+### 8.4 Tokio 与框架原生组件
+
+Vernal 不要求把生态对象包装成专用 Bean 类型。任何满足
+`Send + Sync + 'static` 的对象都可以直接注册，例如：
+
+- `tokio::sync` 同步原语、任务句柄与取消相关对象；
+- `reqwest::Client`、数据库连接池、消息客户端；
+- Tower Service、Axum State、Actix `web::Data` 所承载的状态；
+- Sa-Token-Rust 服务、Ddd4r 应用服务以及业务自定义对象。
+
+“可作为组件”不等于“由内核直接依赖”。具体框架 crate 仍由应用或
+`vernal-*` Adapter 引入并提供 `ComponentDefinition`；IoC 只看到 Rust 类型、
+工厂、依赖和 Scope。这样既保留框架原生能力，也避免把所有生态版本耦合进核心。
+
+### 8.5 解析失败合同
 
 | 错误 | 是否可重试 | 诊断要求 |
 |:---|:---:|:---|
@@ -360,7 +382,9 @@ Vernal 不使用 `self as *const Self as usize` 作为长期身份。目标方�
 - 协调失败回滚与逆序资源释放；
 - 提供只读诊断快照。
 
-配置格式加载、Tokio signal、Web server 和外部配置中心属于独立适配器。
+Context 直接使用 Tokio 任务、同步、时间、取消与 signal 能力。配置格式加载、
+Web server 和外部配置中心仍属于独立适配器；应用可以把它们产生的原生对象注册
+为普通组件。
 
 ### 10.2 状态机
 
@@ -528,7 +552,7 @@ Context refresh 应产生可序列化、只读且脱敏的诊断快照：
 
 | 层级 | 必须验证 |
 |:---|:---|
-| 静态 | crate 依赖方向、禁止 Web/Tokio 进入内核 |
+| 静态 | crate 依赖方向、Tokio feature 预算、禁止具体 Web/ORM 实现进入通用内核 |
 | 单元 | 图算法、qualifier、顺序、Scope、状态机 |
 | 属性测试 | 任意 DAG 的确定性拓扑和循环识别 |
 | 编译测试 | 宏诊断、trait bounds、生命周期和泛型 |
@@ -543,8 +567,20 @@ Phase 1 最低验收：
 1. 1,000 节点无环图可以确定性规划；
 2. 缺失、歧义和循环错误包含可读路径；
 3. 两个并行 Container 的 Singleton 不共享；
-4. `cargo tree` 证明 `vernal-ioc` 不包含 Tokio 或 Web 框架；
+4. `cargo tree` 证明 `vernal-ioc` 不包含具体 Web 或 ORM 框架；允许按需使用 Tokio；
 5. 所有失败通过 `Result` 返回，不依赖 panic。
+
+截至 2026-07-24，上述五项已有本地证据：9 个 IoC 合同测试覆盖 1,000 节点图、
+缺失/歧义/循环路径、两个并行 Container 的 Singleton 隔离、Transient、
+qualifier 与隐藏依赖拒绝；当前 `cargo tree -p vernal-ioc` 仅包含 `vernal-core`，
+但这不是禁止后续引入 Tokio 的约束。
+
+Phase 2 AOP 内核另有 7 个 Tokio 合同测试，覆盖顺序进入/逆序退出、短路、结果/
+错误改写、跨 `.await` 类型化上下文、取消/deadline、切点过滤和 64 task 并发
+复用；过程宏的 trybuild 覆盖完成前，Phase 2 仍不能宣布整体完成。
+
+Phase 3 内核另有 7 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
+回滚、非法转换、幂等关闭、并发关闭串行化和 Context-local 类型化事件隔离。
 
 ## 16. 实施路线
 
@@ -564,7 +600,7 @@ Phase 1 最低验收：
 
 | ID | 风险 / 待确认 | 影响 | 验证计划 |
 |:---|:---|:---|:---|
-| R-001 | 异步 Around trait 的对象安全与分配成本 | AOP API 稳定性 | 两种原型 + benchmark |
+| R-001 | 对象安全异步 Around 的分配成本 | AOP 性能 | 对已实现的 boxed-future 路径做 benchmark |
 | R-002 | proc-macro 对 impl method、trait method 和 async 的覆盖 | 可用性 | trybuild 矩阵 |
 | R-003 | 编译期自动注册的跨平台链接行为 | 可移植性 | Linux/macOS/Windows CI |
 | R-004 | Request Scope 在不同 Web 框架中的取消/释放差异 | 资源安全 | 跨框架异常链测试 |
@@ -573,8 +609,9 @@ Phase 1 最低验收：
 
 ## 18. 架构完成定义
 
-- [ ] IoC 与 AOP 能分别独立依赖、构建和使用；
-- [ ] Context 不向内核泄漏配置格式、Web 或 Tokio 类型；
+- [x] IoC 与 AOP 能分别独立依赖、构建和使用；
+- [ ] Tokio 使用范围和 feature 预算明确，Context 不向通用内核泄漏配置格式或
+  具体 Web/ORM 类型；
 - [ ] 组件图、拦截链和生命周期都有成功、失败与回滚测试；
 - [ ] 无指针地址全局链、无正常控制流 panic、无隐式跨 Context 状态；
 - [ ] Web Adapter 通过统一合同套件，并保留各框架原生语义；

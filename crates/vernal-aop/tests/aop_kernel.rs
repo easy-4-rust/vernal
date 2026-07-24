@@ -1,0 +1,345 @@
+//! Vernal AOP 内核的顺序、短路、改写、取消和并发契约测试。
+
+use std::{
+    future::pending,
+    io,
+    sync::{
+        Arc,
+        atomic::{AtomicBool, AtomicUsize, Ordering},
+    },
+    time::Duration,
+};
+
+use tokio::{sync::Mutex, task::JoinSet, time::Instant};
+use tokio_util::sync::CancellationToken;
+use vernal_aop::{
+    Advisor, Interceptor, Invocation, InvocationError, InvocationFuture, InvocationPlanBuilder,
+    InvocationResult, InvocationTarget, InvocationValue, Next, Operation,
+};
+
+struct RecordingInterceptor {
+    name: &'static str,
+    events: Arc<Mutex<Vec<String>>>,
+}
+
+impl Interceptor for RecordingInterceptor {
+    fn intercept<'a>(
+        &'a self,
+        invocation: Arc<Invocation>,
+        next: Next<'a>,
+    ) -> InvocationFuture<'a> {
+        Box::pin(async move {
+            self.events
+                .lock()
+                .await
+                .push(format!("{}:before", self.name));
+            let result = next.run(invocation).await;
+            self.events
+                .lock()
+                .await
+                .push(format!("{}:after", self.name));
+            result
+        })
+    }
+}
+
+struct ShortCircuitInterceptor;
+
+impl Interceptor for ShortCircuitInterceptor {
+    fn intercept<'a>(
+        &'a self,
+        _invocation: Arc<Invocation>,
+        _next: Next<'a>,
+    ) -> InvocationFuture<'a> {
+        Box::pin(async { Ok(Box::new(401_u16) as InvocationValue) })
+    }
+}
+
+struct TransformInterceptor;
+
+impl Interceptor for TransformInterceptor {
+    fn intercept<'a>(
+        &'a self,
+        invocation: Arc<Invocation>,
+        next: Next<'a>,
+    ) -> InvocationFuture<'a> {
+        Box::pin(async move {
+            let value = next.run(invocation).await?;
+            let value = value.downcast::<i32>().map_err(|_| {
+                InvocationError::target(io::Error::other("expected i32 in transform"))
+            })?;
+            Ok(Box::new(*value + 2) as InvocationValue)
+        })
+    }
+}
+
+struct RecoveryInterceptor;
+
+impl Interceptor for RecoveryInterceptor {
+    fn intercept<'a>(
+        &'a self,
+        invocation: Arc<Invocation>,
+        next: Next<'a>,
+    ) -> InvocationFuture<'a> {
+        Box::pin(async move {
+            match next.run(invocation).await {
+                Ok(value) => Ok(value),
+                Err(InvocationError::Target { .. }) => {
+                    Ok(Box::new(String::from("fallback")) as InvocationValue)
+                }
+                Err(error) => Err(error),
+            }
+        })
+    }
+}
+
+struct CountingInterceptor {
+    count: Arc<AtomicUsize>,
+}
+
+impl Interceptor for CountingInterceptor {
+    fn intercept<'a>(
+        &'a self,
+        invocation: Arc<Invocation>,
+        next: Next<'a>,
+    ) -> InvocationFuture<'a> {
+        self.count.fetch_add(1, Ordering::Relaxed);
+        next.run(invocation)
+    }
+}
+
+fn always() -> impl Fn(&Operation) -> bool {
+    |_| true
+}
+
+#[tokio::test]
+async fn lower_order_enters_first_and_exits_last() {
+    let events = Arc::new(Mutex::new(Vec::new()));
+    let mut builder = InvocationPlanBuilder::new();
+    builder
+        .register(Advisor::new(
+            always(),
+            RecordingInterceptor {
+                name: "late",
+                events: Arc::clone(&events),
+            },
+            20,
+        ))
+        .register(Advisor::new(
+            always(),
+            RecordingInterceptor {
+                name: "early",
+                events: Arc::clone(&events),
+            },
+            10,
+        ));
+
+    let operation = Operation::new("OrderService", "create");
+    let plan = builder.build(operation.clone());
+    let target_events = Arc::clone(&events);
+    let target: Arc<InvocationTarget> = Arc::new(move |_| {
+        let target_events = Arc::clone(&target_events);
+        Box::pin(async move {
+            target_events.lock().await.push(String::from("target"));
+            Ok(Box::new(40_i32) as InvocationValue)
+        })
+    });
+
+    let result = plan
+        .invoke(Invocation::new(operation).shared(), target)
+        .await
+        .expect("ordered chain should succeed");
+    assert_eq!(*result.downcast::<i32>().expect("i32 result"), 40);
+    assert_eq!(
+        *events.lock().await,
+        [
+            "early:before",
+            "late:before",
+            "target",
+            "late:after",
+            "early:after"
+        ]
+    );
+}
+
+#[tokio::test]
+async fn interceptor_can_short_circuit_without_running_target() {
+    let called = Arc::new(AtomicBool::new(false));
+    let mut builder = InvocationPlanBuilder::new();
+    builder.register(Advisor::new(always(), ShortCircuitInterceptor, 0));
+    let operation = Operation::new("AuthService", "check");
+    let plan = builder.build(operation.clone());
+    let target_called = Arc::clone(&called);
+    let target: Arc<InvocationTarget> = Arc::new(move |_| {
+        target_called.store(true, Ordering::Relaxed);
+        Box::pin(async { Ok(Box::new(200_u16) as InvocationValue) })
+    });
+
+    let result = plan
+        .invoke(Invocation::new(operation).shared(), target)
+        .await
+        .expect("short circuit should return a value");
+    assert_eq!(*result.downcast::<u16>().expect("u16 result"), 401);
+    assert!(!called.load(Ordering::Relaxed));
+}
+
+#[tokio::test]
+async fn interceptor_can_transform_success_and_recover_target_error() {
+    let operation = Operation::new("PriceService", "quote");
+    let mut transform_builder = InvocationPlanBuilder::new();
+    transform_builder.register(Advisor::new(always(), TransformInterceptor, 0));
+    let transform_plan = transform_builder.build(operation.clone());
+    let success_target: Arc<InvocationTarget> =
+        Arc::new(|_| Box::pin(async { Ok(Box::new(40_i32) as InvocationValue) }));
+    let transformed = transform_plan
+        .invoke(Invocation::new(operation).shared(), success_target)
+        .await
+        .expect("transform should succeed");
+    assert_eq!(*transformed.downcast::<i32>().expect("i32 result"), 42);
+
+    let recovery_operation = Operation::new("RemoteService", "load");
+    let mut recovery_builder = InvocationPlanBuilder::new();
+    recovery_builder.register(Advisor::new(always(), RecoveryInterceptor, 0));
+    let recovery_plan = recovery_builder.build(recovery_operation.clone());
+    let failing_target: Arc<InvocationTarget> = Arc::new(|_| {
+        Box::pin(async {
+            Err(InvocationError::target(io::Error::other(
+                "remote unavailable",
+            )))
+        })
+    });
+    let recovered = recovery_plan
+        .invoke(Invocation::new(recovery_operation).shared(), failing_target)
+        .await
+        .expect("recovery should replace target error");
+    assert_eq!(
+        *recovered.downcast::<String>().expect("string fallback"),
+        "fallback"
+    );
+}
+
+#[tokio::test]
+async fn typed_context_is_available_across_await_boundaries() {
+    let operation = Operation::new("SessionService", "current_user");
+    let plan = InvocationPlanBuilder::new().build(operation.clone());
+    let invocation = Invocation::new(operation).shared();
+    invocation
+        .context()
+        .insert::<String>(String::from("user-42"))
+        .await;
+
+    let target: Arc<InvocationTarget> = Arc::new(|invocation| {
+        Box::pin(async move {
+            tokio::task::yield_now().await;
+            let subject = invocation
+                .context()
+                .get::<String>()
+                .await
+                .expect("subject should survive await");
+            Ok(Box::new(subject) as InvocationValue)
+        })
+    });
+
+    let result = plan
+        .invoke(invocation, target)
+        .await
+        .expect("context read should succeed");
+    assert_eq!(
+        *result.downcast::<String>().expect("string subject"),
+        "user-42"
+    );
+}
+
+#[tokio::test]
+async fn cancellation_and_deadline_stop_pending_chain() {
+    let operation = Operation::new("JobService", "run");
+    let plan = Arc::new(InvocationPlanBuilder::new().build(operation.clone()));
+    let pending_target: Arc<InvocationTarget> =
+        Arc::new(|_| Box::pin(async { pending::<InvocationResult>().await }));
+
+    let cancellation = CancellationToken::new();
+    let invocation = Invocation::new(operation.clone())
+        .with_cancellation(cancellation.clone())
+        .shared();
+    let cancel_plan = Arc::clone(&plan);
+    let cancel_target = Arc::clone(&pending_target);
+    let task = tokio::spawn(async move { cancel_plan.invoke(invocation, cancel_target).await });
+    tokio::task::yield_now().await;
+    cancellation.cancel();
+    assert!(matches!(
+        task.await.expect("task should join"),
+        Err(InvocationError::Cancelled)
+    ));
+
+    let deadline_invocation = Invocation::new(operation)
+        .with_deadline(Instant::now() + Duration::from_millis(10))
+        .shared();
+    assert!(matches!(
+        plan.invoke(deadline_invocation, pending_target).await,
+        Err(InvocationError::DeadlineExceeded)
+    ));
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn immutable_plan_is_safe_under_concurrent_tokio_tasks() {
+    let count = Arc::new(AtomicUsize::new(0));
+    let mut builder = InvocationPlanBuilder::new();
+    builder.register(Advisor::new(
+        always(),
+        CountingInterceptor {
+            count: Arc::clone(&count),
+        },
+        0,
+    ));
+    let operation = Operation::new("ConcurrentService", "execute");
+    let plan = Arc::new(builder.build(operation.clone()));
+    let target: Arc<InvocationTarget> = Arc::new(|invocation| {
+        Box::pin(async move { Ok(Box::new(invocation.id().get()) as InvocationValue) })
+    });
+
+    let mut tasks = JoinSet::new();
+    for _ in 0..64 {
+        let plan = Arc::clone(&plan);
+        let target = Arc::clone(&target);
+        let invocation = Invocation::new(operation.clone()).shared();
+        tasks.spawn(async move { plan.invoke(invocation, target).await });
+    }
+
+    let mut completed = 0;
+    while let Some(result) = tasks.join_next().await {
+        result
+            .expect("task should join")
+            .expect("invocation should succeed");
+        completed += 1;
+    }
+    assert_eq!(completed, 64);
+    assert_eq!(count.load(Ordering::Relaxed), 64);
+}
+
+#[tokio::test]
+async fn pointcut_filters_advisors_and_plan_rejects_wrong_operation() {
+    let count = Arc::new(AtomicUsize::new(0));
+    let mut builder = InvocationPlanBuilder::new();
+    builder.register(Advisor::new(
+        |operation: &Operation| operation.component() == "MatchedService",
+        CountingInterceptor {
+            count: Arc::clone(&count),
+        },
+        0,
+    ));
+
+    let matched = Operation::new("MatchedService", "run");
+    let plan = builder.build(matched.clone());
+    assert_eq!(plan.len(), 1);
+    let target: Arc<InvocationTarget> =
+        Arc::new(|_| Box::pin(async { Ok(Box::new(()) as InvocationValue) }));
+    assert!(matches!(
+        plan.invoke(
+            Invocation::new(Operation::new("OtherService", "run")).shared(),
+            target
+        )
+        .await,
+        Err(InvocationError::PlanMismatch { .. })
+    ));
+    assert_eq!(count.load(Ordering::Relaxed), 0);
+}

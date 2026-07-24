@@ -40,7 +40,8 @@
 - 不实现 Rust 版 Servlet 容器；
 - 不复制 Project Reactor，也不发明另一套异步运行时；
 - 不统一或替换各框架的路由 DSL；
-- 不把 Tower、Hyper、Tokio 或任一 Web 框架放进 Vernal 内核；
+- 不把具体 Web 框架实现放进通用内核；Tokio 是官方运行时，Tower/Hyper
+  由对应基础集成 crate 持有；
 - 不在 Vernal 中重新实现 Sa-Token-Rust 的认证与授权语义；
 - 不承诺十个目标是永久或绝对的流行度排名。
 
@@ -86,7 +87,8 @@ flowchart TB
 - `ContextCarrier`：跨 Future、Stream 和任务边界传播上下文；
 - `WebIntegration`：Adapter 能力和诊断描述。
 
-它不能出现 Axum、Actix Web、Tokio 或 Hyper 的公共类型。
+它不能出现 Axum、Actix Web 或 Hyper 的公共类型；可以在任务、取消、deadline
+和上下文传播合同中使用 Tokio 原生类型。
 
 ### 4.2 `vernal-http`
 
@@ -100,7 +102,7 @@ flowchart TB
 - WebSocket 和 SSE 扩展点。
 
 普通请求/响应与 Streaming 是同一 HTTP 合同的不同能力。Vernal 直接使用 Rust
-`Future`/`Stream`，不发明第二套响应式类型系统，也不拥有异步 Runtime。
+`Future`/`Stream` 和 Tokio 运行时能力，不发明第二套响应式类型系统。
 
 ## 5. 请求执行主链
 

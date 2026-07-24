@@ -31,14 +31,15 @@ Vernal 是 **句芒** 的英文品牌。句芒在中国古代文化中与春天�
 Hutool-Rust · Sa-Token-Rust · Ddd4r · 通用 Rust 应用
 ```
 
-> **项目状态**：设计阶段、可构建的 Workspace 骨架。crate 边界和架构基线已经建立，
-> 但框架公共 API 与运行时行为尚未实现，也尚未发布。
+> **项目状态**：实验阶段。Phase 1 IoC 已实现，Tokio-first 的 Phase 2 AOP
+> 内核也已提供可调用的 `Around + Next` 链；宏、应用上下文和框架适配器仍是
+> 骨架。当前尚未发布。
 
 ## 1. 愿景
 
 Vernal 希望为 Rust 生态补齐小型基础库与完整 Web 框架之间可复用的应用基础：
 
-- 运行时中立、类型驱动的 IoC 内核，负责组件构造和依赖解析；
+- 类型驱动、可直接管理 Tokio 与框架原生对象的 IoC 内核；
 - 可独立使用的 AOP 内核，负责有序、可组合的调用拦截；
 - 组合 IoC、AOP、生命周期、事件和配置，但不吞并底层内核的应用上下文；
 - 生成普通 Rust 代码、不隐藏反射运行时的过程宏；
@@ -83,8 +84,8 @@ Vernal 遵守四条不可退化的规则：
 2. **Context 只负责组合，不负责吞并。** 生命周期、事件和配置依赖内核公开合同。
 3. **所有适配器向内依赖。** Web 框架、Sa-Token-Rust、Hutool-Rust 和 Ddd4r
    都不能成为底层内核依赖。
-4. **不建立隐藏的环境运行时。** 目标内核排除全局可变注册表、指针地址身份、
-   强制 Tokio 所有权和以 panic 作为正常控制流。
+4. **Tokio-first，但不建立全局 Service Locator。** Tokio 是官方异步运行时；
+   Registry、组件身份和生命周期状态仍然显式且按 Context 隔离。
 
 详细决策、主链、失败语义和验收标准参见：
 
@@ -98,11 +99,11 @@ Vernal 遵守四条不可退化的规则：
 
 | Crate | 当前状态 | 目标职责 |
 |:---|:---:|:---|
-| `vernal` | 骨架 | Facade、prelude 与 feature 组合 |
-| `vernal-core` | 骨架 | 稳定公共合同和错误模型 |
-| `vernal-ioc` | 骨架 | 定义、作用域、解析和依赖图校验 |
-| `vernal-aop` | 骨架 | Invocation、切点和拦截器链 |
-| `vernal-context` | 骨架 | 启动、生命周期、事件和优雅关闭 |
+| `vernal` | 实验性 Facade | Facade、prelude 与 feature 组合 |
+| `vernal-core` | 实验性 | Tokio-first 框架的公共合同 |
+| `vernal-ioc` | Phase 1 已实现 | 定义、作用域、解析和依赖图校验 |
+| `vernal-aop` | Phase 2 内核已实现 | Around/Next、切点、不可变计划和取消 |
+| `vernal-context` | Phase 3 内核已实现 | 生命周期、回滚、逆序关闭和类型化事件 |
 | `vernal-macros` | 骨架 | 薄过程宏入口 |
 | `vernal-web` | 骨架 | 框架中立的 Context、请求 Scope、Handler 和错误合同 |
 | `vernal-http` | 骨架 | HTTP 请求、响应、Body、流、取消和背压合同 |
@@ -151,27 +152,75 @@ flowchart TB
     TONIC["vernal-tonic"] --> TOWER
 ```
 
-## 5. 目标能力
+## 5. IoC 快速开始
+
+```rust
+use std::{error::Error, sync::Arc};
+use vernal_ioc::{ComponentDefinition, RegistryBuilder};
+
+type AnyError = Box<dyn Error + Send + Sync + 'static>;
+
+struct Config {
+    name: &'static str,
+}
+
+struct Service {
+    config: Arc<Config>,
+}
+
+fn main() -> Result<(), AnyError> {
+    let mut registry = RegistryBuilder::new();
+    registry.register(ComponentDefinition::singleton::<Config, _>(|_| Config {
+        name: "vernal",
+    }))?;
+    registry.register(
+        ComponentDefinition::try_singleton::<Service, _>(
+            |resolver| -> Result<Service, AnyError> {
+                Ok(Service {
+                    config: resolver.resolve::<Config>()?,
+                })
+            },
+        )
+        .depends_on::<Config>(),
+    )?;
+
+    let container = registry.build()?.container();
+    let service = container.resolve::<Service>()?;
+    assert_eq!(service.config.name, "vernal");
+    Ok(())
+}
+```
+
+工厂只能解析定义中显式声明的依赖。Registry 在创建 `Container` 前完成图校验；
+Singleton 状态属于具体 Container，而不是进程级全局 Store。
+
+任何满足 `Send + Sync + 'static` 的 Rust 值都可以成为组件，包括
+`reqwest::Client`、数据库连接池、Tower Service、框架 State、Tokio 同步原语和
+业务对象。具体框架依赖由注册它们的应用或集成 crate 持有。
+
+## 6. 能力状态
 
 | 能力 | 目标合同 | 状态 |
 |:---|:---|:---:|
-| 类型化组件定义 | 构造器注入与显式元数据 | 计划 |
-| 作用域 | Singleton、transient 与可扩展 Scope SPI | 计划 |
-| 依赖图 | 确定性构建顺序和循环依赖诊断 | 计划 |
+| 类型化组件定义 | 构造器注入与显式元数据 | Phase 1 |
+| 作用域 | 每 Container Singleton 与每次解析 Transient | Phase 1 |
+| 依赖图 | 确定性顺序及缺失、歧义、循环结构化诊断 | Phase 1 |
 | Trait 绑定 | 不依赖字符串查找的命名、首选和多实现绑定 | 计划 |
-| 拦截器链 | 有序 Around 调用组合与类型化错误 | 计划 |
-| 切点 | 编译期生成的方法、类型和元数据匹配 | 计划 |
-| ApplicationContext | refresh、start、ready、close 生命周期 | 计划 |
+| 拦截器链 | 有序 Around/Next、短路及结果/错误改写 | Phase 2 内核 |
+| 切点 | 操作匹配并编译成不可变调用计划 | Phase 2 内核 |
+| ApplicationContext | 串行生命周期、回滚、逆序关闭和 Context-local 类型化事件 | Phase 3 内核 |
 | 事件 | Context 内部隔离的类型化事件发布 | 计划 |
-| 异步集成 | 运行时中立内核与可选运行时适配器 | 计划 |
+| 异步集成 | Tokio 原生取消、deadline 与类型化调用上下文 | Phase 2 内核 |
 | Web 上下文 | 请求 Context、请求 Scope、Handler 调用和错误映射 | 骨架 |
 | HTTP | 请求/响应、Body 流、取消和背压 | 骨架 |
 | Web 集成 | 能复用 Tower 时优先 Tower，必要时原生适配 | Adapter 骨架 |
 | 诊断 | 可检查的依赖图与不泄露秘密的启动报告 | 计划 |
 
-“计划”表示当前不存在可调用实现，不代表已经兼容或达到任何性能指标。
+“Phase 1”和“Phase 2 内核”表示已有可调用实现与合同测试，但 API 仍处于实验
+阶段；过程宏和编译失败矩阵完成前，Phase 2 不能宣布整体完成。“计划”表示当前
+不存在可调用实现。任何标签都不代表稳定兼容或达到性能指标。
 
-## 6. 生态定位
+## 7. 生态定位
 
 ```mermaid
 flowchart LR
@@ -192,7 +241,7 @@ flowchart LR
   自己的 DDD/CQRS 语义。
 - **Web 框架** 继续拥有路由、Request/Response 类型、传输限制和服务器生命周期。
 
-## 7. 本地开发
+## 8. 本地开发
 
 前置条件：
 
@@ -215,7 +264,7 @@ cargo doc --workspace --no-deps
 公共合同仍在设计期间，Workspace 有意统一设置为 `publish = false`。当前没有
 crates.io 安装命令，也没有稳定 API 承诺。
 
-## 8. 路线图
+## 9. 路线图
 
 | 阶段 | 交付物 | 退出证据 |
 |:---|:---|:---|
@@ -227,7 +276,16 @@ crates.io 安装命令，也没有稳定 API 承诺。
 | Phase 5 | Hutool-Rust、Sa-Token-Rust 和 Ddd4r 桥接 | 由消费方拥有的集成示例 |
 | Phase 6 | Preview 发布 | MSRV、SemVer、安全、docs.rs 和打包门禁 |
 
-## 9. 贡献与许可证
+Phase 1 已通过 1,000 节点确定性规划、结构化图诊断、并发 Singleton、
+双 Container 隔离、Transient、qualifier 和隐藏依赖拒绝测试。
+Phase 2 AOP 内核现有 7 个 Tokio 测试，覆盖顺序进入/逆序退出、短路、成功结果
+与错误改写、跨 `.await` 类型化上下文、取消/deadline、切点选择和 64 task
+并发共享计划；宏生成与基准测试仍未完成。
+Phase 3 内核现有 7 个测试，覆盖依赖顺序启动、逆序关闭、initialize/start
+回滚、非法状态转换、幂等关闭、并发关闭串行化和 Context-local 类型化事件
+隔离；AOP 计划聚合与更丰富诊断仍待实现。
+
+## 10. 贡献与许可证
 
 当前阶段以架构文档作为实现合同。新增代码必须先确定所属 crate、依赖方向、
 失败语义和验收证据。不能仅仅为了让适配器更容易编写，就把 Web 框架依赖加入内核。

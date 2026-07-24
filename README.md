@@ -33,16 +33,18 @@ Application components
 Hutool-Rust · Sa-Token-Rust · Ddd4r · general Rust applications
 ```
 
-> **Project status:** design-stage, buildable workspace skeleton. The crate
-> boundaries and architecture baseline exist; the framework API and runtime
-> behavior are not implemented or published.
+> **Project status:** experimental. Phase 1 IoC is implemented, and the
+> Tokio-first Phase 2 AOP kernel now has a callable `Around + Next` chain.
+> Macros, application context, and framework adapters remain skeletons.
+> Nothing is published yet.
 
 ## 1. Vision
 
 Vernal aims to provide the reusable application foundation that is currently
 missing between small Rust libraries and full web frameworks:
 
-- a runtime-neutral IoC kernel for typed component construction and resolution;
+- a typed IoC kernel that can manage Tokio and framework-native objects
+  directly;
 - an independent AOP kernel for ordered, composable interception;
 - an application context that composes IoC, AOP, lifecycle, events, and
   configuration without merging their kernels;
@@ -92,9 +94,9 @@ Vernal follows four non-negotiable rules:
    configuration depend on public kernel contracts.
 3. **Adapters point inward.** Web frameworks, Sa-Token-Rust, Hutool-Rust, and
    Ddd4r never become dependencies of the kernels.
-4. **No hidden ambient runtime.** Global mutable registries, pointer-address
-   identity, forced Tokio ownership, and panic-based control flow are excluded
-   from the target core contract.
+4. **Tokio-first without a global service locator.** Tokio is the official
+   asynchronous runtime, while registries, component identity, and lifecycle
+   state remain explicit and context-local.
 
 Detailed decisions, flows, failure semantics, and acceptance criteria are in:
 
@@ -108,11 +110,11 @@ Detailed decisions, flows, failure semantics, and acceptance criteria are in:
 
 | Crate | Current state | Target responsibility |
 |:---|:---:|:---|
-| `vernal` | Skeleton | Facade, prelude, feature composition |
-| `vernal-core` | Skeleton | Shared stable contracts and errors |
-| `vernal-ioc` | Skeleton | Definitions, scopes, resolution, graph validation |
-| `vernal-aop` | Skeleton | Invocation, pointcuts, interceptor chains |
-| `vernal-context` | Skeleton | Bootstrap, lifecycle, events, graceful shutdown |
+| `vernal` | Experimental facade | Facade, prelude, feature composition |
+| `vernal-core` | Experimental | Shared contracts for the Tokio-first framework |
+| `vernal-ioc` | Phase 1 implemented | Definitions, scopes, resolution, graph validation |
+| `vernal-aop` | Phase 2 kernel implemented | Around/Next, pointcuts, immutable plans, cancellation |
+| `vernal-context` | Phase 3 kernel implemented | Lifecycle, rollback, reverse shutdown, typed events |
 | `vernal-macros` | Skeleton | Thin procedural macro entry points |
 | `vernal-web` | Skeleton | Framework-neutral context, request scope, handler, and error contracts |
 | `vernal-http` | Skeleton | HTTP request, response, body, streaming, cancellation, and backpressure |
@@ -163,28 +165,78 @@ flowchart TB
     TONIC["vernal-tonic"] --> TOWER
 ```
 
-## 5. Target capabilities
+## 5. IoC quick start
+
+```rust
+use std::{error::Error, sync::Arc};
+use vernal_ioc::{ComponentDefinition, RegistryBuilder};
+
+type AnyError = Box<dyn Error + Send + Sync + 'static>;
+
+struct Config {
+    name: &'static str,
+}
+
+struct Service {
+    config: Arc<Config>,
+}
+
+fn main() -> Result<(), AnyError> {
+    let mut registry = RegistryBuilder::new();
+    registry.register(ComponentDefinition::singleton::<Config, _>(|_| Config {
+        name: "vernal",
+    }))?;
+    registry.register(
+        ComponentDefinition::try_singleton::<Service, _>(
+            |resolver| -> Result<Service, AnyError> {
+                Ok(Service {
+                    config: resolver.resolve::<Config>()?,
+                })
+            },
+        )
+        .depends_on::<Config>(),
+    )?;
+
+    let container = registry.build()?.container();
+    let service = container.resolve::<Service>()?;
+    assert_eq!(service.config.name, "vernal");
+    Ok(())
+}
+```
+
+Factories may resolve only dependencies declared by the definition. Registries
+are validated before a `Container` is created, and singleton state belongs to
+that container rather than to a process-global store.
+
+Any `Send + Sync + 'static` Rust value can be a component, including
+`reqwest::Client`, database pools, Tower services, framework state, Tokio
+synchronization primitives, and user-defined objects. Their dependencies stay
+in the application or integration crate that registers them.
+
+## 6. Capabilities
 
 | Capability | Target contract | Status |
 |:---|:---|:---:|
-| Typed component definitions | Constructor injection with explicit metadata | Planned |
-| Scopes | Singleton, transient, and extensible scope SPI | Planned |
-| Dependency graph | Deterministic build order and cycle diagnostics | Planned |
+| Typed component definitions | Constructor injection with explicit metadata | Phase 1 |
+| Scopes | Per-container singleton and per-resolution transient | Phase 1 |
+| Dependency graph | Deterministic build order and structured missing/ambiguous/cycle diagnostics | Phase 1 |
 | Trait binding | Named/primary/multiple implementations without string lookup | Planned |
-| Interceptor chain | Ordered around-invocation composition with typed errors | Planned |
-| Pointcuts | Method/type/metadata matching generated at compile time | Planned |
-| Application context | Refresh/start/ready/close lifecycle | Planned |
+| Interceptor chain | Ordered Around/Next composition with short circuit and result/error transformation | Phase 2 kernel |
+| Pointcuts | Operation matching compiled into immutable invocation plans | Phase 2 kernel |
+| Application context | Serialized lifecycle, rollback, reverse shutdown, context-local typed events | Phase 3 kernel |
 | Events | Context-local typed event publication | Planned |
-| Async integration | Runtime-neutral core with optional runtime adapters | Planned |
+| Async integration | Tokio-native cancellation, deadlines, and typed invocation context | Phase 2 kernel |
 | Web context | Request context, request scope, handler invocation, error mapping | Skeleton |
 | HTTP | Request/response, body streams, cancellation, backpressure | Skeleton |
 | Web integration | Tower-first where possible, native adapters where necessary | Adapter skeletons |
 | Diagnostics | Introspectable graph and startup report without secret leakage | Planned |
 
-“Planned” means no callable implementation exists yet. It is not a compatibility
-or performance claim.
+“Phase 1” and “Phase 2 kernel” mean callable implementation and contract tests
+exist, but the API is still experimental. Phase 2 is not complete until the
+procedural macros and compile-fail matrix land. “Planned” means no callable
+implementation exists yet. No label is a compatibility or performance claim.
 
-## 6. Ecosystem role
+## 7. Ecosystem role
 
 ```mermaid
 flowchart LR
@@ -208,7 +260,7 @@ flowchart LR
 - **Web frameworks** retain ownership of routing, request/response types,
   transport limits, and server lifecycle.
 
-## 7. Local development
+## 8. Local development
 
 Prerequisites:
 
@@ -231,7 +283,7 @@ cargo doc --workspace --no-deps
 The workspace intentionally uses `publish = false` while the contracts are
 under design. There is no crates.io installation command or stable API yet.
 
-## 8. Roadmap
+## 9. Roadmap
 
 | Phase | Deliverable | Exit evidence |
 |:---|:---|:---|
@@ -243,7 +295,19 @@ under design. There is no crates.io installation command or stable API yet.
 | 5 | Hutool-Rust, Sa-Token-Rust, and Ddd4r bridges | Consumer-owned integration examples |
 | 6 | Preview release | MSRV, SemVer, security, docs.rs, and package gates |
 
-## 9. Contributing and license
+Phase 1 was completed with tests for 1,000-node deterministic planning,
+structured graph diagnostics, concurrent singleton construction, container
+isolation, transient resolution, qualifiers, and hidden-dependency rejection.
+The Phase 2 AOP kernel currently has seven Tokio tests covering ordered
+enter/reverse exit, short circuit, success and error transformation, typed
+context across `.await`, cancellation/deadline, pointcut selection, and
+64-task concurrent plan reuse. Macro generation and benchmarks remain open.
+The Phase 3 kernel has seven tests covering dependency-order startup,
+reverse shutdown, initialize/start rollback, invalid transitions, idempotent
+close, concurrent close serialization, and context-local typed event
+isolation. AOP plan aggregation and richer diagnostics remain open.
+
+## 10. Contributing and license
 
 The architecture is currently the contract. New code should first identify the
 owning crate, dependency direction, failure semantics, and acceptance evidence.
