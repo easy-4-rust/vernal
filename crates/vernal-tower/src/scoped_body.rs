@@ -83,6 +83,9 @@ where
         context: &mut Context<'_>,
     ) -> Poll<Option<Result<Frame<Self::Data>, Self::Error>>> {
         let body = self.as_mut().get_mut();
+        if body.completed {
+            return Poll::Ready(None);
+        }
 
         if let Some(closing) = &mut body.closing {
             return match closing.as_mut().poll(context) {

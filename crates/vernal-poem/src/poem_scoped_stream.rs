@@ -72,6 +72,9 @@ where
 
     fn poll_next(mut self: Pin<&mut Self>, context: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         let stream = self.as_mut().get_mut();
+        if stream.completed {
+            return Poll::Ready(None);
+        }
 
         if let Some(closing) = &mut stream.closing {
             return match closing.as_mut().poll(context) {

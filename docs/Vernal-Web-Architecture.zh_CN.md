@@ -32,14 +32,15 @@
 Axum 已引入 Axum 0.8，实现原生 Router 装配与类型化 Context、组件、请求 Scope
 提取器；Actix Web 采用兼容 MSRV 的 4.11/actix-http 3.11 版本线，实现原生
 Transform/Service Middleware、App Data/Extension 提取器和 Body 绑定 Scope
-释放；Warp 0.4.3 通过 `warp::ext` Filter 和官方 `warp::service` Tower 边界
-实现 Context/组件/Scope 提取与完整 Body 生命周期；Salvo 采用最后一个兼容
-Rust 1.85 的 0.85.0 版本，实现原生 Hoop、类型化 Depot 访问和 Frame/Trailer
-保真的 Body Scope；Poem 采用与 MSRV 一致的 3.1.12 版本，实现原生
-Middleware/Endpoint、Request Extension 提取器和 Body 绑定 Scope 释放；Tonic
-采用兼容 MSRV 的 0.12 版本线，实现 Context Interceptor、类型化 Request
-扩展、`GrpcMethod` 路由元数据、稳定 `Status` 映射和 Tower 组合。其余四个
-应用 Adapter 仍是描述符。
+释放；Rocket 0.5.1 实现 Managed State、Request Guard，以及覆盖请求与响应的
+Body 感知 Fairing；Warp 0.4.3 通过 `warp::ext` Filter 和官方 `warp::service`
+Tower 边界实现 Context/组件/Scope 提取与完整 Body 生命周期；Salvo 采用最后
+一个兼容 Rust 1.85 的 0.85.0 版本，实现原生 Hoop、类型化 Depot 访问和
+Frame/Trailer 保真的 Body Scope；Poem 采用与 MSRV 一致的 3.1.12 版本，
+实现原生 Middleware/Endpoint、Request Extension 提取器和 Body 绑定 Scope
+释放；Tonic 采用兼容 MSRV 的 0.12 版本线，实现 Context Interceptor、类型化
+Request 扩展、`GrpcMethod` 路由元数据、稳定 `Status` 映射和 Tower 组合。
+其余三个应用 Adapter 仍是描述符。
 
 版本化选择清单由
 [`web-integration-manifest.toml`](../web-integration-manifest.toml) 维护。
@@ -217,7 +218,7 @@ Trace -> Context -> RequestScope -> Security/AOP -> Handler -> ErrorMapping
 |:--:|:---|:---|:---|:---|:---:|
 | 1 | Axum | `vernal-axum` | HTTP + Tower | `Layer`、State/Extension、Extractor、IntoResponse | Phase 5 适配已实现 |
 | 2 | Actix Web | `vernal-actix-web` | HTTP | `Transform`/`Service`、App Data、Extractor、Responder | Phase 5 适配已实现 |
-| 3 | Rocket | `vernal-rocket` | HTTP | Fairing、Request Guard、Managed State、Responder | 骨架 |
+| 3 | Rocket | `vernal-rocket` | HTTP | Fairing、Request Guard、Managed State、Responder | Phase 5 适配已实现 |
 | 4 | Warp | `vernal-warp` | HTTP | Filter、Rejection、Reply | Phase 5 适配已实现 |
 | 5 | Salvo | `vernal-salvo` | HTTP | Handler、Hoop、Depot、Writer | Phase 5 适配已实现 |
 | 6 | Poem | `vernal-poem` | HTTP | Middleware、Endpoint、Data、IntoResponse | Phase 5 适配已实现 |
@@ -232,8 +233,11 @@ Trace -> Context -> RequestScope -> Security/AOP -> Handler -> ErrorMapping
   Request Extension，不建立第二个容器。
 - **Actix Web**：Context 属于 App Data；必须验证多 Worker 下 Singleton 与
   Request Scope 的边界。
-- **Rocket**：使用 Managed State 持有 Context；Request Guard 负责解析组件，
-  Fairing 只处理生命周期或全局请求流程。
+- **Rocket**：Fairing 在 Ignite 阶段注册 Managed Context，在 Request 阶段建立
+  Scope；Request Guard 负责解析 Context、组件与 Scope，Response Fairing
+  包装原生 Body，直到读取结束或取消后才释放。Rocket 0.5 的公共 Body 只暴露
+  `AsyncRead`，所以包装后成为 streamed body；字节、背压和错误保留，但原有
+  “已知长度/可 Seek”分类无法通过公共 API 原样重建。
 - **Warp**：用 `warp::ext` 组合 Filter 提取 Context、组件与 Scope，策略失败映射
   为明确 Rejection，不能 panic。Warp 0.4 的公开 Reply 使用私有 Body 类型，
   因此完整 Body Scope 必须通过官方 `warp::service(route)` 与

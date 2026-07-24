@@ -33,15 +33,17 @@ Axum depends on Axum 0.8 and implements native Router assembly plus typed
 Context, component, and request-scope extractors. Actix Web uses the
 MSRV-compatible 4.11/actix-http 3.11 line and implements native
 Transform/Service middleware, App Data/Extension extractors, and body-bound
-Scope cleanup. Warp 0.4.3 combines native `warp::ext` filters with the official
-`warp::service` Tower boundary for typed extraction and full body lifecycle.
-Salvo uses 0.85.0, the last release compatible with Rust 1.85, and implements a
-native Hoop, typed Depot access, and a frame/trailer-preserving body scope. Poem
-uses the MSRV-aligned 3.1.12 release and implements native Middleware/Endpoint
-composition, request extension extractors, and body-bound Scope cleanup. Tonic
-uses the MSRV-compatible 0.12 line and implements a Context interceptor, typed
-Request extensions, `GrpcMethod` routing metadata, stable `Status` mapping,
-and Tower composition. The other four application adapters remain descriptors.
+Scope cleanup. Rocket 0.5.1 implements managed state, request guards, and a
+request/response body-aware fairing. Warp 0.4.3 combines native `warp::ext`
+filters with the official `warp::service` Tower boundary for typed extraction
+and full body lifecycle. Salvo uses 0.85.0, the last release compatible with
+Rust 1.85, and implements a native Hoop, typed Depot access, and a
+frame/trailer-preserving body scope. Poem uses the MSRV-aligned 3.1.12 release
+and implements native Middleware/Endpoint composition, request extension
+extractors, and body-bound Scope cleanup. Tonic uses the MSRV-compatible 0.12
+line and implements a Context interceptor, typed Request extensions,
+`GrpcMethod` routing metadata, stable `Status` mapping, and Tower composition.
+The other three application adapters remain descriptors.
 
 The versioned selection is recorded in
 [`web-integration-manifest.toml`](../web-integration-manifest.toml).
@@ -230,7 +232,7 @@ This crate implements HTTP transport concerns only:
 |:--:|:---|:---|:---|:---|:---:|
 | 1 | Axum | `vernal-axum` | HTTP + Tower | `Layer`, State/Extension, Extractor, IntoResponse | Phase 5 adapter |
 | 2 | Actix Web | `vernal-actix-web` | HTTP | `Transform`/`Service`, App Data, Extractor, Responder | Phase 5 adapter |
-| 3 | Rocket | `vernal-rocket` | HTTP | Fairing, Request Guard, Managed State, Responder | Skeleton |
+| 3 | Rocket | `vernal-rocket` | HTTP | Fairing, Request Guard, Managed State, Responder | Phase 5 adapter |
 | 4 | Warp | `vernal-warp` | HTTP | Filter, Rejection, Reply | Phase 5 adapter |
 | 5 | Salvo | `vernal-salvo` | HTTP | Handler, Hoop, Depot, Writer | Phase 5 adapter |
 | 6 | Poem | `vernal-poem` | HTTP | Middleware, Endpoint, Data, IntoResponse | Phase 5 adapter |
@@ -245,8 +247,13 @@ This crate implements HTTP transport concerns only:
   request extensions and never create a second container.
 - **Actix Web:** context lives in app data; multi-worker singleton and request
   scope boundaries need explicit tests.
-- **Rocket:** managed state owns the context, request guards resolve components,
-  and fairings handle lifecycle or global request flow.
+- **Rocket:** the ignite fairing registers managed context, the request fairing
+  creates scope, request guards resolve context/components/scope, and the
+  response fairing retains scope until the native body reaches EOF or is
+  cancelled. Rocket 0.5 exposes its public body only as `AsyncRead`, so wrapping
+  converts it to a streamed body: bytes, backpressure, and errors remain, while
+  the original known-length/seekable classification cannot be reconstructed
+  through public APIs.
 - **Warp:** `warp::ext` composition filters extract context, components, and
   scope; policy denial becomes a typed rejection rather than panic. Warp 0.4's
   public Reply contains a private body type, so full body scope is composed at
