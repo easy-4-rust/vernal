@@ -210,10 +210,24 @@ Implemented reusable facilities for Axum, Tonic, and other Tower services:
 - `VernalLayer` injects the context handle;
 - `RequestScopeLayer` opens and closes request scopes across response body
   completion, service error, cancellation, and dropped futures;
+- `AopLayer` resolves `RouteMetadata` into a precompiled `InvocationPlan` for
+  security, transaction, audit, and observability interceptors;
+- `TowerRouteResolver` lets adapters derive low-cardinality route metadata from
+  native routing information;
+- `TowerResponse<R>` preserves the native response and body across type erasure
+  without reading or buffering it, and requires only `Send`;
+- `AopServiceError<E>` separates missing context/scope/route failures, AOP
+  failures, and recoverable native `Service::Error` values.
+
+Missing plans are rejected by default, so a missing Sa-Token-Rust security plan
+cannot silently bypass authorization. Routes that intentionally do not use AOP
+must explicitly select `MissingPlanPolicy::Proceed`. A short-circuiting
+interceptor never transfers request ownership to the downstream service, while
+downstream errors traverse the complete AOP chain before being restored to
+their native error type.
 
 Remaining Phase 4/adapter facilities:
 
-- `AopLayer` turns service calls into invocations;
 - `ContextPropagationLayer` carries metadata and cancellation;
 - configurable error mapping to `Service::Error`.
 

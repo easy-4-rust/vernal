@@ -599,7 +599,8 @@ ranking.
 
 The workspace has fourteen web-related crates: `vernal-web`, `vernal-http`,
 Tower/Hyper, and ten adapters. The four foundations now provide callable
-request-scope, HTTP frame/trailer, cancellation, Tower lifecycle, and Hyper
+request-scope, HTTP frame/trailer, cancellation, Tower lifecycle, AOP
+invocation, and Hyper
 transport behavior. Axum adds native Router assembly and typed extractors;
 Actix Web adds App Data/Extensions and native body-aware middleware; Rocket adds
 managed state, request guards, and a body-aware fairing; Warp adds extension

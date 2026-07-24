@@ -50,6 +50,30 @@ impl InvocationError {
             source: Box::new(error),
         }
     }
+
+    /// 尝试从目标执行错误中恢复指定的原始错误类型。
+    ///
+    /// Tower 等适配层可先用自己的私有包装类型标记下游错误，待整个拦截器链
+    /// 结束后再恢复原生错误。这样既允许拦截器观察错误，又不会把适配层的
+    /// `Service::Error` 永久擦除。类型不匹配或当前错误并非目标错误时，完整
+    /// 返回原错误，调用方不会丢失诊断信息。
+    ///
+    /// # Errors
+    ///
+    /// 当前错误不是 [`InvocationError::Target`]，或内部错误类型不是 `T` 时，
+    /// 返回未被消费的原始 [`InvocationError`]。
+    pub fn into_target<T>(self) -> Result<T, Self>
+    where
+        T: Error + Send + Sync + 'static,
+    {
+        match self {
+            Self::Target { source } => match source.downcast::<T>() {
+                Ok(source) => Ok(*source),
+                Err(source) => Err(Self::Target { source }),
+            },
+            other => Err(other),
+        }
+    }
 }
 
 impl fmt::Display for InvocationError {

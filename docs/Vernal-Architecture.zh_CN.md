@@ -612,9 +612,10 @@ Tower 与 Hyper 是公共底座，不占十种目标名额；Tonic 明确属于 
 
 当前 Workspace 包含十四个 Web 相关 crate：`vernal-web`、`vernal-http`、
 Tower/Hyper 和十个 Adapter。四个底座已提供可调用的请求 Scope、HTTP
-Frame/Trailer、取消、Tower 生命周期和 Hyper 传输能力；Axum 已增加原生 Router
-装配与类型化提取器，Actix Web 已增加 App Data/Extensions 与原生 Body 感知
-Middleware，Rocket 已增加 Managed State、Request Guard 与 Body 感知 Fairing，
+Frame/Trailer、取消、Tower 生命周期、AOP 调用链和 Hyper 传输能力；Axum
+已增加原生 Router 装配与类型化提取器，Actix Web 已增加 App Data/Extensions
+与原生 Body 感知 Middleware，Rocket 已增加 Managed State、Request Guard
+与 Body 感知 Fairing，
 Warp 已增加 Extension Filter 与官方 Tower Service 生命周期，Salvo 已增加
 Hoop、Depot 与 Frame/Trailer 保真的 Body 生命周期，Poem 已增加
 Middleware/Endpoint、Request Extension 提取器与 Body 生命周期集成，Ntex

@@ -195,10 +195,21 @@ stateDiagram-v2
 - `VernalLayer`：向 Service 注入 Context Handle；
 - `RequestScopeLayer`：在响应 Body 完成、Service 错误、取消或请求 Future
   被丢弃时关闭请求作用域；
+- `AopLayer`：把 `RouteMetadata` 转换成预编译 `InvocationPlan`，统一执行安全、
+  事务、审计和可观测性拦截器；
+- `TowerRouteResolver`：允许上层 Adapter 使用原生路由信息生成低基数路由元数据；
+- `TowerResponse<R>`：在类型擦除边界内保留原生响应和 Body，不读取、不缓冲，
+  且只要求响应满足 `Send`；
+- `AopServiceError<E>`：区分 Context/Scope/路由缺失、AOP 错误和可恢复的原生
+  `Service::Error`。
+
+缺少调用计划时默认 `Reject`，请求不会进入 Handler，避免 Sa-Token-Rust 等安全
+切面因漏配而被静默绕过。只有明确无需切面的路由才能显式选择
+`MissingPlanPolicy::Proceed`。拦截器短路时请求所有权不会交给下游；下游错误会先
+经过完整 AOP 链，再恢复为原生 `Service::Error`。
 
 仍待后续 Phase 4/Adapter 实现：
 
-- `AopLayer`：把 Service 调用纳入统一 Invocation；
 - `ContextPropagationLayer`：传播请求元数据和取消；
 - 错误分类到 Tower `Service::Error` 的可配置映射。
 

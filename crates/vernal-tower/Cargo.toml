@@ -14,6 +14,7 @@ http-body.workspace = true
 tokio.workspace = true
 tokio-util.workspace = true
 tower.workspace = true
+vernal-aop = { path = "../vernal-aop" }
 vernal-context = { path = "../vernal-context" }
 vernal-core = { path = "../vernal-core" }
 vernal-web = { path = "../vernal-web" }
