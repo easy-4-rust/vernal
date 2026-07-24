@@ -656,7 +656,34 @@ register → freeze → validate graph and pointcuts
 Failures record completed steps and roll back only successful components.
 `close()` is idempotent.
 
-### Application close ownership
+### Application lifecycle ownership
+
+`ApplicationContext` is a public facade rather than the owner of a temporary
+caller Future. `ApplicationStartupCoordinator` runs refresh/initialize/start
+inside a Tokio task, while a second observer task always consumes its Join
+result. Cancelling a waiter only drops the one-shot result receiver; the phase
+still commits success or performs reverse rollback after failure, panic, or
+application cancellation.
+
+```mermaid
+flowchart LR
+    Caller["refresh / start caller"] --> Receiver["One-shot result receiver"]
+    Caller -.->|"cancel wait"| Dropped["Drop receiver only"]
+    Startup["ApplicationStartupCoordinator"] --> Operation["Tokio phase task"]
+    Startup --> Observer["Tokio observer task"]
+    Operation --> Hooks["initialize / start hooks"]
+    Hooks -->|"success"| Commit["Commit Refreshed / Ready"]
+    Hooks -->|"Err / panic / app cancellation"| Rollback["Cancel app + reverse stop"]
+    Operation --> Observer
+    Observer --> Receiver
+    Dropped -.->|"does not affect"| Operation
+```
+
+Each user initialize/start hook also runs in an isolated child task, so panic
+becomes a component-and-phase `ContextError::Lifecycle` instead of terminating
+the coordinator. Components enter the shared stack before initialize, leaving
+rollback with an explicit owner. This retains tx-di's readable explicit phases
+without copying its global App or implicit task ownership.
 
 `ApplicationContext::close()` starts and observes shutdown, while one
 Context-local Tokio coordinator owns the component stack and the actual
@@ -1022,14 +1049,15 @@ receivers. Phase 2 now has a callable loop, while broader
 signatures, diagnostic coverage, benchmarks, and stability guarantees remain
 open.
 
-The Phase 3 kernel has twenty-two contract tests for dependency-order
+The Phase 3 kernel has twenty-five contract tests for dependency-order
 startup, reverse shutdown, initialize/start rollback, invalid transitions,
 idempotent close, concurrent close serialization, and context-local typed
 event isolation, plus runtime-unavailable diagnostics, same-instance injection
 of the eight built-in resources, application-owned Scope cancellation,
 task failure/panic propagation, cancellation-safe shared task shutdown,
 timeout abort, task-before-component stop ordering, cancelled close-waiter
-recovery, failure-driven `run_until_cancelled()` shutdown, stop-hook panic
+recovery, cancelled refresh/start waiter rollback, pre-start application
+cancellation, failure-driven `run_until_cancelled()` shutdown, stop-hook panic
 isolation, and owned/redacted serialization of successful and failed startup
 reports.
 

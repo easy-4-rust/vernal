@@ -1,8 +1,16 @@
 //! Vernal 应用上下文的状态、顺序、回滚与并发关闭合同测试。
 
+#[path = "lifecycle_support/cancellation_safe_phase_lifecycle.rs"]
+mod cancellation_safe_phase_lifecycle;
+
 use std::{io, sync::Arc};
 
-use tokio::sync::Mutex;
+use cancellation_safe_phase_lifecycle::CancellationSafePhaseLifecycle;
+use tokio::{
+    sync::{Mutex, Notify},
+    task::yield_now,
+    time::{Duration, timeout},
+};
 use vernal_context::{
     ApplicationContextBuilder, ContextError, ContextState, Lifecycle, LifecycleFuture,
     LifecyclePhase,
@@ -287,6 +295,29 @@ async fn invalid_transition_is_rejected_without_mutating_state() {
     assert_eq!(context.state().await, ContextState::Created);
 }
 
+#[tokio::test]
+async fn cancellation_before_start_rolls_back_refreshed_components() {
+    let events = Arc::new(Mutex::new(Vec::new()));
+    let context = happy_context(&events);
+    context.refresh().await.expect("refresh should succeed");
+    context.cancellation_token().cancel();
+
+    assert!(matches!(
+        context.start().await,
+        Err(ContextError::LifecycleCancelled { operation: "start" })
+    ));
+    assert_eq!(context.state().await, ContextState::Closed);
+    assert_eq!(
+        events.lock().await.as_slice(),
+        [
+            "database:initialize",
+            "api:initialize",
+            "api:stop",
+            "database:stop"
+        ]
+    );
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn concurrent_close_is_serialized_and_stops_components_once() {
     let events = Arc::new(Mutex::new(Vec::new()));
@@ -349,4 +380,89 @@ async fn typed_events_are_broadcast_and_isolated_per_context() {
     let received = first_receiver.recv().await.expect("first context event");
     assert_eq!(*received, UserCreated(42));
     assert!(second_receiver.try_recv().is_err());
+}
+
+#[tokio::test]
+async fn cancelling_refresh_waiter_does_not_abandon_initialize_rollback() {
+    let entered = Arc::new(Notify::new());
+    let release = Arc::new(Notify::new());
+    let component = Arc::new(CancellationSafePhaseLifecycle::failing_initialize(
+        Arc::clone(&entered),
+        Arc::clone(&release),
+    ));
+    let mut registry = RegistryBuilder::new();
+    registry
+        .register(ComponentDefinition::shared_arc(Arc::clone(&component)))
+        .expect("phase lifecycle definition");
+    let mut builder =
+        ApplicationContextBuilder::new(registry.build().expect("valid lifecycle graph"));
+    builder.lifecycle::<CancellationSafePhaseLifecycle>();
+    let context = Arc::new(builder.build().expect("context build"));
+
+    let waiter = {
+        let context = Arc::clone(&context);
+        tokio::spawn(async move { context.refresh().await })
+    };
+    entered.notified().await;
+    waiter.abort();
+    assert!(
+        waiter
+            .await
+            .expect_err("refresh waiter should be cancelled")
+            .is_cancelled()
+    );
+
+    release.notify_one();
+    timeout(Duration::from_secs(1), async {
+        while context.state().await != ContextState::Closed {
+            yield_now().await;
+        }
+    })
+    .await
+    .expect("background refresh rollback should reach Closed");
+    assert!(component.stopped());
+    assert!(context.cancellation_token().is_cancelled());
+}
+
+#[tokio::test]
+async fn cancelling_start_waiter_does_not_abandon_start_rollback() {
+    let entered = Arc::new(Notify::new());
+    let release = Arc::new(Notify::new());
+    let component = Arc::new(CancellationSafePhaseLifecycle::failing_start(
+        Arc::clone(&entered),
+        Arc::clone(&release),
+    ));
+    let mut registry = RegistryBuilder::new();
+    registry
+        .register(ComponentDefinition::shared_arc(Arc::clone(&component)))
+        .expect("phase lifecycle definition");
+    let mut builder =
+        ApplicationContextBuilder::new(registry.build().expect("valid lifecycle graph"));
+    builder.lifecycle::<CancellationSafePhaseLifecycle>();
+    let context = Arc::new(builder.build().expect("context build"));
+    context.refresh().await.expect("refresh should succeed");
+
+    let waiter = {
+        let context = Arc::clone(&context);
+        tokio::spawn(async move { context.start().await })
+    };
+    entered.notified().await;
+    waiter.abort();
+    assert!(
+        waiter
+            .await
+            .expect_err("start waiter should be cancelled")
+            .is_cancelled()
+    );
+
+    release.notify_one();
+    timeout(Duration::from_secs(1), async {
+        while context.state().await != ContextState::Closed {
+            yield_now().await;
+        }
+    })
+    .await
+    .expect("background start rollback should reach Closed");
+    assert!(component.stopped());
+    assert!(context.cancellation_token().is_cancelled());
 }

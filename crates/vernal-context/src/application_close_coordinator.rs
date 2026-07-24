@@ -63,9 +63,9 @@ impl ApplicationCloseCoordinator {
         &self.resources
     }
 
-    /// 替换已经成功初始化、等待启动或关闭的组件栈。
-    pub(crate) async fn replace_components(&self, components: Vec<Arc<dyn Lifecycle>>) {
-        *self.components.lock().await = components;
+    /// 把已经解析、需要在失败或关闭时释放的组件压入共享栈。
+    pub(crate) async fn push_component(&self, component: Arc<dyn Lifecycle>) {
+        self.components.lock().await.push(component);
     }
 
     /// 克隆当前组件栈，使启动过程不跨用户 Future 持有组件锁。
@@ -73,9 +73,9 @@ impl ApplicationCloseCoordinator {
         self.components.lock().await.clone()
     }
 
-    /// 清空 Context 持有的组件栈。
-    pub(crate) async fn clear_components(&self) {
-        self.components.lock().await.clear();
+    /// 取得组件栈所有权并清空共享位置，保证每个组件最多被一个回滚流程停止。
+    pub(crate) async fn take_components(&self) -> Vec<Arc<dyn Lifecycle>> {
+        mem::take(&mut *self.components.lock().await)
     }
 
     /// 返回当前生命周期状态快照。
@@ -255,7 +255,7 @@ impl ApplicationCloseCoordinator {
         // 长期任务可能正在使用生命周期组件提供的连接池、消费者或调度器。因此先
         // 取消并等待任务退出，再取得组件栈所有权并按依赖逆序执行 stop。
         let task_error = self.shutdown_managed_tasks().await;
-        let components = mem::take(&mut *self.components.lock().await);
+        let components = self.take_components().await;
         let lifecycle_error = self.stop_all(&components).await;
         self.set_state(ContextState::Closed).await;
         task_error

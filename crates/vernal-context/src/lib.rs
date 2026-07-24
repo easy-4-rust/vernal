@@ -5,6 +5,7 @@ mod application_build_error;
 mod application_close_coordinator;
 mod application_context;
 mod application_context_builder;
+mod application_startup_coordinator;
 mod component_lifecycle;
 mod context_error;
 mod context_resources;

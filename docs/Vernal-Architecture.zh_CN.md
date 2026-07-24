@@ -644,7 +644,31 @@ register
 任何阶段失败都要记录已完成步骤，只回滚已经成功的组件。关闭必须幂等；多次
 `close()` 返回相同终态，不重复执行不可重入副作用。
 
-### 10.4 Context 关闭所有权
+### 10.4 Context 生命周期所有权
+
+`ApplicationContext` 是公开门面，不让某个临时调用者 Future 直接拥有生命周期。
+`ApplicationStartupCoordinator` 在独立 Tokio task 中执行 refresh/initialize/
+start，并由第二个观察任务消费 Join 结果。调用方取消等待只会丢弃一次性结果
+接收端；阶段任务仍会成功提交状态，或在失败/panic/应用取消时逆序回滚。
+
+```mermaid
+flowchart LR
+    Caller["refresh / start 调用者"] --> Receiver["一次性结果接收端"]
+    Caller -.->|"取消等待"| Dropped["仅丢弃 Receiver"]
+    Startup["ApplicationStartupCoordinator"] --> Operation["Tokio 阶段任务"]
+    Startup --> Observer["Tokio 观察任务"]
+    Operation --> Hooks["initialize / start 钩子"]
+    Hooks -->|"成功"| Commit["提交 Refreshed / Ready"]
+    Hooks -->|"Err / panic / 应用取消"| Rollback["取消应用并逆序 stop"]
+    Operation --> Observer
+    Observer --> Receiver
+    Dropped -.->|"不影响"| Operation
+```
+
+每个用户 initialize/start 钩子还会在独立子任务中执行，因此 panic 会变成携带
+组件名与阶段的 `ContextError::Lifecycle`，而不是击穿协调器。组件在 initialize
+前先进入共享组件栈，确保 panic 或等待者取消后仍有明确所有者执行 stop。Vernal
+在这里保留 tx-di 的显式阶段语义，但不复制其全局 App 和隐式任务所有权。
 
 `ApplicationContext::close()` 只负责启动并等待关闭，组件栈与实际释放流程由
 Context-local 的唯一 Tokio 协调对象持有。这样调用方取消 Future 不会等价于取消
@@ -970,13 +994,14 @@ Singleton Component 注入、Transient 构造、Trait Object 注入和 Context-l
 非异步方法和借用接收器。Phase 2 已具备可调用
 闭环，但更广泛的方法签名、诊断矩阵、性能基准和稳定性承诺仍未完成。
 
-Phase 3 内核另有 22 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
+Phase 3 内核另有 25 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
 回滚、非法转换、幂等关闭、并发关闭串行化、Context-local 类型化事件隔离，
 高层构建器的 Runtime 缺失诊断、八类内建组件同实例注入、应用 Scope 取消树、
 任务错误/panic 传播、取消安全共享停机、超时 abort、任务先于组件 stop 的顺序、
-关闭等待者取消后继续完成组件释放、任务失败驱动 `run_until_cancelled()` 进入
-`Closed`、stop 钩子 panic 隔离，以及成功/失败启动报告的只读快照、Serde
-序列化与业务错误正文脱敏。
+关闭等待者取消后继续完成组件释放、refresh/start 等待者取消后继续失败回滚、
+start 前应用取消、任务失败驱动 `run_until_cancelled()` 进入 `Closed`、stop
+钩子 panic 隔离，以及成功/失败启动报告的只读快照、Serde 序列化与业务错误
+正文脱敏。
 
 ## 16. 实施路线
 

@@ -56,6 +56,11 @@ pub enum ContextError {
         /// Runtime 缺失、协调任务 panic 或结果通道异常等原始错误。
         source: SharedError,
     },
+    /// refresh 或 start 期间收到应用取消信号并完成回滚。
+    LifecycleCancelled {
+        /// 被取消的生命周期操作。
+        operation: &'static str,
+    },
 }
 
 impl fmt::Display for ContextError {
@@ -97,6 +102,12 @@ impl fmt::Display for ContextError {
                 write!(
                     formatter,
                     "context lifecycle coordinator failed during {operation}: {source}"
+                )
+            }
+            Self::LifecycleCancelled { operation } => {
+                write!(
+                    formatter,
+                    "context lifecycle operation {operation} was cancelled and rolled back"
                 )
             }
         }

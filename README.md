@@ -430,7 +430,10 @@ Tokio coordinator: cancelling a close waiter cannot abandon component `stop`
 hooks, concurrent callers observe the same result, and a panicking hook does
 not prevent later components from stopping. Service entrypoints can await
 `run_until_cancelled()` so a managed task failure drives the Context all the
-way to `Closed`.
+way to `Closed`. `refresh()` and `start()` use a separate Context-local Tokio
+coordinator: cancelling a waiter cannot abandon initialization or startup,
+and application cancellation during either phase produces a structured
+rollback instead of publishing `Ready`.
 
 ## 6. Capabilities
 
@@ -442,7 +445,7 @@ way to `Closed`.
 | Trait binding | Named/primary/multiple implementations without string lookup | Phase 1.1 kernel |
 | Interceptor chain | Ordered Around/Next composition with short circuit and result/error transformation | Phase 2 kernel |
 | Pointcuts | Operation matching compiled into immutable invocation plans | Phase 2 kernel |
-| Application context | Serialized lifecycle, rollback, cancellation-safe reverse shutdown, context-local typed events | Phase 3 kernel |
+| Application context | Tokio-owned refresh/start/close, deterministic rollback, context-local typed events | Phase 3 kernel |
 | Managed Tokio tasks | Context-owned task handles, failure-driven cancellation, graceful wait, bounded abort, shared shutdown result | Phase 3 kernel |
 | Events | Context-local typed event publication | Phase 3 kernel |
 | Async integration | Tokio-native cancellation, deadlines, and typed invocation context | Phase 2 kernel |
@@ -566,15 +569,16 @@ compile-fail cases for invalid component
 fields, invalid collection qualifiers, non-async interception, and borrowed
 receivers. Broader signature support, expanded
 macro diagnostics, and AOP benchmarks remain open.
-The Phase 3 kernel has twenty-two tests covering dependency-order startup,
+The Phase 3 kernel has twenty-five tests covering dependency-order startup,
 reverse shutdown, initialize/start rollback, invalid transitions, idempotent
 close, concurrent close serialization, and context-local typed event
 isolation, plus managed injection of eight framework resources,
 application-owned Scope cancellation, task failure/panic propagation,
 cancellation-safe shared task shutdown, timeout abort, task-before-component
 stop ordering, cancelled close-waiter recovery, failure-driven
-`run_until_cancelled()` shutdown, stop-hook panic isolation, and
-read-only/redacted serialization of successful and failed startup reports.
+`run_until_cancelled()` shutdown, cancelled refresh/start waiter recovery,
+pre-start application cancellation, stop-hook panic isolation, and read-only/
+redacted serialization of successful and failed startup reports.
 
 Phase 4 now makes `WebRequestScope` the Web facade over IoC `ScopeContext`.
 All ten adapters resolve singleton, transient, and request-scoped components
