@@ -78,11 +78,11 @@ priority = 5
 name = "Salvo"
 crate = "vernal-salvo"
 upstream_crate = "salvo"
-observed_version = "0.95.0"
+observed_version = "0.85.0"
 category = "http-framework"
 protocol = "http"
 source_evidence = ["Sa-Token-Rust"]
-status = "skeleton"
+status = "phase-5-adapter"
 
 [[integrations]]
 priority = 6

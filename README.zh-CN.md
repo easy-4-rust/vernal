@@ -33,8 +33,8 @@ Hutool-Rust · Sa-Token-Rust · Ddd4r · 通用 Rust 应用
 
 > **项目状态**：实验阶段。Phase 1 IoC、Tokio-first 的 Phase 2 AOP 内核、
 > Phase 3 应用上下文，以及 Phase 4 Web/HTTP/Tower/Hyper 底座已有可调用实现
-> 和合同测试；Axum、Actix Web、Poem 与 Tonic 已具备可运行适配，过程宏及其余
-> 六个 Adapter 仍是骨架。当前尚未发布。
+> 和合同测试；Axum、Actix Web、Salvo、Poem 与 Tonic 已具备可运行适配，过程宏
+> 及其余五个 Adapter 仍是骨架。当前尚未发布。
 
 ## 1. 愿景
 
@@ -121,7 +121,7 @@ crate 已经存在并能参与编译，但当前只提供可检查的描述符�
 | 2 | Actix Web | `vernal-actix-web` | HTTP | Phase 5 适配已实现 |
 | 3 | Rocket | `vernal-rocket` | HTTP | 骨架 |
 | 4 | Warp | `vernal-warp` | HTTP | 骨架 |
-| 5 | Salvo | `vernal-salvo` | HTTP | 骨架 |
+| 5 | Salvo | `vernal-salvo` | HTTP | Phase 5 适配已实现 |
 | 6 | Poem | `vernal-poem` | HTTP | Phase 5 适配已实现 |
 | 7 | Ntex | `vernal-ntex` | HTTP | 骨架 |
 | 8 | Gotham | `vernal-gotham` | HTTP | 骨架 |
@@ -130,10 +130,11 @@ crate 已经存在并能参与编译，但当前只提供可检查的描述符�
 
 Axum 已提供原生 Router 装配，以及 Context、组件和请求 Scope 提取器；Actix Web
 已提供 App Data/Extension 提取器，以及 Scope 跟随响应 Body 的原生
-`Transform`/`Service`；Poem 已提供原生 `Middleware`/`Endpoint` 组合、类型化
-Context/组件/Scope 提取器和 Body 绑定释放；Tonic 已提供 Context Interceptor、
-类型化 Request 扩展、稳定 `Status` 映射和可复用 Tower Layer。其余六个 Adapter
-仍是描述符。
+`Transform`/`Service`；Salvo 已提供原生 Hoop、类型化 Depot 访问以及
+Frame/Trailer 保真的 Body 释放；Poem 已提供原生 `Middleware`/`Endpoint`
+组合、类型化 Context/组件/Scope 提取器和 Body 绑定释放；Tonic 已提供 Context
+Interceptor、类型化 Request 扩展、稳定 `Status` 映射和可复用 Tower Layer。
+其余五个 Adapter 仍是描述符。
 
 这里的“十种”是基于本地源码集成并集和当前 registry 可用性形成的版本化覆盖优先级，
 不是对全世界 Rust 框架热度的绝对排名。Tonic 明确属于 RPC 集成；Tower 和 Hyper

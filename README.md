@@ -35,8 +35,8 @@ Hutool-Rust · Sa-Token-Rust · Ddd4r · general Rust applications
 
 > **Project status:** experimental. Phase 1 IoC, the Tokio-first Phase 2 AOP
 > kernel, Phase 3 application context, and the Phase 4 Web/HTTP/Tower/Hyper
-> foundations are callable and contract-tested. Axum, Actix Web, Poem, and
-> Tonic are runnable framework adapters; procedural macros and the other six
+> foundations are callable and contract-tested. Axum, Actix Web, Salvo, Poem,
+> and Tonic are runnable framework adapters; procedural macros and the other five
 > adapters remain skeletons. Nothing is published yet.
 
 ## 1. Vision
@@ -133,7 +133,7 @@ upstream middleware implementations:
 | 2 | Actix Web | `vernal-actix-web` | HTTP | Phase 5 adapter |
 | 3 | Rocket | `vernal-rocket` | HTTP | Skeleton |
 | 4 | Warp | `vernal-warp` | HTTP | Skeleton |
-| 5 | Salvo | `vernal-salvo` | HTTP | Skeleton |
+| 5 | Salvo | `vernal-salvo` | HTTP | Phase 5 adapter |
 | 6 | Poem | `vernal-poem` | HTTP | Phase 5 adapter |
 | 7 | Ntex | `vernal-ntex` | HTTP | Skeleton |
 | 8 | Gotham | `vernal-gotham` | HTTP | Skeleton |
@@ -142,11 +142,12 @@ upstream middleware implementations:
 
 Axum provides native Router assembly plus Context, component, and request-scope
 extractors. Actix Web provides App Data/Extension extractors and a native
-`Transform`/`Service` whose Scope follows the response body. Poem provides
-native `Middleware`/`Endpoint` composition, typed Context/component/scope
-extractors, and body-bound cleanup. Tonic provides a Context interceptor,
-typed Request extensions, stable `Status` mapping, and reusable Tower layers.
-The remaining six adapters are descriptors.
+`Transform`/`Service` whose Scope follows the response body. Salvo provides a
+native Hoop, typed Depot access, and frame/trailer-preserving body cleanup.
+Poem provides native `Middleware`/`Endpoint` composition, typed
+Context/component/scope extractors, and body-bound cleanup. Tonic provides a
+Context interceptor, typed Request extensions, stable `Status` mapping, and
+reusable Tower layers. The remaining five adapters are descriptors.
 
 “Ten” is a versioned coverage priority derived from the reviewed local
 integration superset and current registry availability, not a claim of an
