@@ -17,6 +17,8 @@ pub enum GothamRejection {
     MissingContext,
     /// Gotham State 中没有请求作用域。
     MissingRequestScope,
+    /// Gotham State 中没有严格 AOP 创建的请求上下文。
+    MissingRequestContext,
     /// `IoC` 容器无法解析目标组件。
     ComponentResolution {
         /// 原始解析错误，仅供服务端错误链使用。
@@ -50,6 +52,7 @@ impl GothamRejection {
         match self {
             Self::MissingContext => "Vernal application context is unavailable",
             Self::MissingRequestScope => "Vernal request scope is unavailable",
+            Self::MissingRequestContext => "Vernal request context is unavailable",
             Self::ComponentResolution { .. } => "Vernal component resolution failed",
             Self::ScopeClose { .. } => "Vernal request scope cleanup failed",
         }
@@ -73,6 +76,9 @@ impl fmt::Display for GothamRejection {
             Self::MissingContext => formatter.write_str("Gotham State has no Vernal context"),
             Self::MissingRequestScope => {
                 formatter.write_str("Gotham State has no Vernal request scope")
+            }
+            Self::MissingRequestContext => {
+                formatter.write_str("Gotham State has no Vernal request context")
             }
             Self::ComponentResolution { source } => {
                 write!(formatter, "Gotham component resolution failed: {source}")

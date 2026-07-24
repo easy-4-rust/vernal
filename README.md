@@ -136,7 +136,7 @@ adapter crates contain runnable native integrations:
 | 5 | Salvo | `vernal-salvo` | HTTP | Phase 5 adapter + strict AOP |
 | 6 | Poem | `vernal-poem` | HTTP | Phase 5 adapter + strict AOP |
 | 7 | Ntex | `vernal-ntex` | HTTP | Phase 5 adapter + strict Local-AOP |
-| 8 | Gotham | `vernal-gotham` | HTTP | Phase 5 adapter |
+| 8 | Gotham | `vernal-gotham` | HTTP | Phase 5 adapter + strict AOP |
 | 9 | Tide | `vernal-tide` | HTTP | Phase 5 adapter + strict AOP |
 | 10 | Tonic | `vernal-tonic` | RPC streaming + Tower | Phase 5 adapter + strict AOP |
 
@@ -175,8 +175,12 @@ public request API. It uses the real request method and drives the complete
 worker-local Service future through `BorrowedLocalInvocationTarget`; missing
 plans fail closed, the request is never cloned, and native Ntex Service errors
 remain native. Gotham provides native `StateData`, a
-type-safe State extension, Pipeline middleware, and frame/trailer-preserving
-body cleanup. Tide provides native `Middleware`, typed Request Extension access,
+type-safe State extension, Pipeline middleware, frame/trailer-preserving body
+cleanup, and strict Send-AOP over the complete Pipeline Chain. A concrete
+Pipeline receives its full low-cardinality route pattern explicitly; owned
+request metadata crosses the async chain, missing patterns or plans fail
+closed, and native `HandlerError` status and cause are restored unchanged.
+Tide provides native `Middleware`, typed Request Extension access,
 response-reader-bound Scope cleanup, and strict Send-AOP over the complete
 Middleware/Endpoint chain. Because Tide exposes route parameters but not the
 matched template, strict middleware receives the same full low-cardinality

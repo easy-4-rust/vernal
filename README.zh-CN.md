@@ -124,7 +124,7 @@ crate 均已具备可运行的原生集成：
 | 5 | Salvo | `vernal-salvo` | HTTP | Phase 5 适配 + 严格 AOP 已实现 |
 | 6 | Poem | `vernal-poem` | HTTP | Phase 5 适配 + 严格 AOP 已实现 |
 | 7 | Ntex | `vernal-ntex` | HTTP | Phase 5 适配 + 严格 Local-AOP 已实现 |
-| 8 | Gotham | `vernal-gotham` | HTTP | Phase 5 适配已实现 |
+| 8 | Gotham | `vernal-gotham` | HTTP | Phase 5 适配 + 严格 AOP 已实现 |
 | 9 | Tide | `vernal-tide` | HTTP | Phase 5 适配 + 严格 AOP 已实现 |
 | 10 | Tonic | `vernal-tonic` | RPC Streaming + Tower | Phase 5 适配 + 严格 AOP 已实现 |
 
@@ -154,8 +154,11 @@ Endpoint Future 的严格 Around AOP；操作身份取自 Poem 匹配后的低�
 低基数完整路径模式；HTTP 方法取自真实请求，完整 Worker-local Service Future
 通过 `BorrowedLocalInvocationTarget` 执行。缺少计划时 fail-closed，请求不会
 被克隆，Ntex 原生 Service 错误仍保持原生语义；Gotham 已提供原生
-`StateData`、类型安全 State 扩展、Pipeline Middleware 与 Frame/Trailer
-保真的 Body 释放；Tide 已提供原生 `Middleware`、类型化 Request Extension
+`StateData`、类型安全 State 扩展、Pipeline Middleware、Frame/Trailer
+保真的 Body 释放，以及覆盖完整 Pipeline Chain 的严格 Send-AOP。具体 Pipeline
+显式接收完整低基数路由模式，owned 请求元数据跨异步链传播；缺少模式或计划时
+fail-closed，原生 `HandlerError` 的状态码与错误源保持不变；Tide 已提供原生
+`Middleware`、类型化 Request Extension
 访问、响应 Reader 绑定的 Scope 释放，以及覆盖完整 Middleware/Endpoint 链的
 严格 Send-AOP。Tide 只暴露路由参数值而不暴露匹配模板，因此严格中间件显式
 接收同一条低基数完整路径模式，结合真实方法并携带跨 HTTP 模型的 owned 快照；

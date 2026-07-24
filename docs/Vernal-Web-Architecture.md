@@ -48,9 +48,10 @@ line and implements a Context interceptor, typed Request extensions,
 Ntex uses the Rust-1.85-compatible 2.18.0 line and implements native
 Middleware/Service composition, App State/Extension extractors, and a
 MessageBody-bound request scope. Its strict Local-AOP path uses an explicit
-resource pattern and a borrowed worker-local target. Gotham 0.8 implements native StateData,
-type-safe State access, Pipeline middleware, and frame/trailer-preserving body
-cleanup. Tide 0.17.0-beta.1 implements native Middleware, typed Request
+resource pattern and a borrowed worker-local target. Gotham 0.8 implements
+native StateData, type-safe State access, Pipeline middleware,
+frame/trailer-preserving body cleanup, and strict Send-AOP over the complete
+Pipeline Chain with an explicit route pattern. Tide 0.17.0-beta.1 implements native Middleware, typed Request
 Extension access, response-reader-bound Scope cleanup, and strict Send-AOP over
 borrowed `Next` on Vernal's Tokio runtime.
 
@@ -260,7 +261,7 @@ This crate implements HTTP transport concerns only:
 | 5 | Salvo | `vernal-salvo` | HTTP | Handler, Hoop, Depot, Writer | Adapter + strict AOP |
 | 6 | Poem | `vernal-poem` | HTTP | Middleware, Endpoint, Data, IntoResponse | Adapter + strict AOP |
 | 7 | Ntex | `vernal-ntex` | HTTP | Service/Middleware, App State, Extractor | Adapter + strict Local-AOP |
-| 8 | Gotham | `vernal-gotham` | HTTP | State Middleware, Pipeline, Handler | Phase 5 adapter |
+| 8 | Gotham | `vernal-gotham` | HTTP | State Middleware, Pipeline, Handler | Adapter + strict AOP |
 | 9 | Tide | `vernal-tide` | HTTP | Middleware, Request Extension, Response | Adapter + strict AOP |
 | 10 | Tonic | `vernal-tonic` | RPC Streaming + Tower | Layer, Interceptor, Extension, Status, Streaming | Phase 5 adapter |
 
@@ -339,10 +340,17 @@ This crate implements HTTP transport concerns only:
   and per-request scope, while a typed State extension resolves IoC components
   without a service locator. `Middleware`/`NewMiddleware` binds the scope to
   Gotham's `http-body` 1.0 response, preserving data frames, trailers, size
-  hints, upstream errors, backpressure, and cancellation. The middleware
-  factory narrowly marks its synchronized `Arc<ApplicationContext>` holder as
-  unwind-safe to satisfy Gotham's pipeline contract; it does not weaken
-  Context locking or thread-safety requirements.
+  hints, upstream errors, backpressure, and cancellation. Strict mode drives
+  the complete Pipeline Chain through `BorrowedInvocationTarget`. Gotham State
+  exposes owned standard HTTP metadata but not the final matched route
+  template, so a concrete Pipeline receives the same full low-cardinality
+  route pattern explicitly. The real method and owned request snapshot
+  propagate through `RequestContext`; empty patterns and missing plans fail
+  closed, policy failures become native responses without invoking the
+  Handler, and native `HandlerError` status plus cause are restored. The
+  middleware factory narrowly marks its synchronized `Arc<ApplicationContext>`
+  holder as unwind-safe to satisfy Gotham's pipeline contract; it does not
+  weaken Context locking or thread-safety requirements.
 - **Tide:** native Middleware injects the explicit application context and
   per-request scope into Request Extensions; a typed request extension resolves
   IoC components without a service locator. The response `AsyncBufRead` wrapper

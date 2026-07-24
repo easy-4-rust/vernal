@@ -1,19 +1,27 @@
 #![forbid(unsafe_code)]
 #![doc = "Vernal 的 Gotham 0.8 原生集成。"]
 
+mod gotham_aop_error;
 mod gotham_body_error;
+mod gotham_borrowed_target;
 mod gotham_rejection;
+mod gotham_response;
 mod gotham_scoped_body;
+mod gotham_upstream_error;
 mod vernal_gotham_context;
 mod vernal_gotham_middleware;
+mod vernal_gotham_request_context;
 mod vernal_gotham_request_scope;
 mod vernal_gotham_state_ext;
 
+pub use gotham_aop_error::GothamAopError;
 pub use gotham_body_error::GothamBodyError;
 pub use gotham_rejection::GothamRejection;
+pub use gotham_response::GothamResponse;
 pub use gotham_scoped_body::GothamScopedBody;
 pub use vernal_gotham_context::VernalGothamContext;
 pub use vernal_gotham_middleware::VernalGothamMiddleware;
+pub use vernal_gotham_request_context::VernalGothamRequestContext;
 pub use vernal_gotham_request_scope::VernalGothamRequestScope;
 pub use vernal_gotham_state_ext::VernalGothamStateExt;
 use vernal_web::{IntegrationDescriptor, IntegrationRole, TransportKind};

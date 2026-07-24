@@ -45,8 +45,9 @@ Request 扩展、`GrpcMethod` 路由元数据、稳定 `Status` 映射和 Tower 
 Ntex 采用兼容 Rust 1.85 的 2.18.0 版本线，实现原生 Middleware/Service、
 App State/Extension 提取器与 `MessageBody` 绑定请求 Scope；严格 Local-AOP
 路径使用显式资源模式和借用型 Worker-local 目标。Gotham 0.8
-实现原生 StateData、类型安全 State 访问、Pipeline Middleware 与
-Frame/Trailer 保真的 Body 释放。Tide 0.17.0-beta.1 已实现原生 Middleware、
+实现原生 StateData、类型安全 State 访问、Pipeline Middleware、
+Frame/Trailer 保真的 Body 释放，以及基于显式路由模式、覆盖完整 Pipeline
+Chain 的严格 Send-AOP。Tide 0.17.0-beta.1 已实现原生 Middleware、
 类型化 Request Extension 访问，以及基于 Vernal Tokio 运行时的响应 Reader
 绑定 Scope 释放和覆盖借用型 `Next` 的严格 Send-AOP。
 
@@ -242,7 +243,7 @@ Trace -> Context -> RequestScope -> Security/AOP -> Handler -> ErrorMapping
 | 5 | Salvo | `vernal-salvo` | HTTP | Handler、Hoop、Depot、Writer | Adapter + 严格 AOP 已实现 |
 | 6 | Poem | `vernal-poem` | HTTP | Middleware、Endpoint、Data、IntoResponse | Adapter + 严格 AOP 已实现 |
 | 7 | Ntex | `vernal-ntex` | HTTP | Service/Middleware、App State、Extractor | Adapter + 严格 Local-AOP 已实现 |
-| 8 | Gotham | `vernal-gotham` | HTTP | State Middleware、Pipeline、Handler | Phase 5 适配已实现 |
+| 8 | Gotham | `vernal-gotham` | HTTP | State Middleware、Pipeline、Handler | Adapter + 严格 AOP 已实现 |
 | 9 | Tide | `vernal-tide` | HTTP | Middleware、Request Extension、Response | Adapter + 严格 AOP 已实现 |
 | 10 | Tonic | `vernal-tonic` | RPC Streaming + Tower | Layer、Interceptor、Extension、Status、Streaming | Phase 5 适配已实现 |
 
@@ -303,7 +304,12 @@ Trace -> Context -> RequestScope -> Security/AOP -> Handler -> ErrorMapping
 - **Gotham**：原生 `StateData` Wrapper 携带显式应用 Context 与请求 Scope，
   类型化 State 扩展直接解析 IoC 组件，不建立 Service Locator；
   `Middleware`/`NewMiddleware` 将 Scope 绑定到 Gotham 的 `http-body` 1.0
-  响应，保留 Data Frame、Trailer、Size Hint、上游错误、背压与取消。为满足
+  响应，保留 Data Frame、Trailer、Size Hint、上游错误、背压与取消。严格模式
+  通过 `BorrowedInvocationTarget` 驱动完整 Pipeline Chain。Gotham State
+  暴露 owned 标准 HTTP 元数据，但不暴露最终匹配模板，因此具体 Pipeline 显式
+  接收同一条完整低基数路由模式；真实方法与 owned 请求快照通过
+  `RequestContext` 传播。空模式和缺失计划时 fail-closed，策略失败映射成原生
+  响应且不执行 Handler，原生 `HandlerError` 的状态码与错误源保持不变。为满足
   Gotham Pipeline 合同，中间件工厂仅对受同步保护的
   `Arc<ApplicationContext>` 持有端明确标记 unwind-safe，不放宽 Context 锁与
   线程安全要求。

@@ -1,11 +1,24 @@
 //! Gotham Middleware、State、IoC 与响应 Body 生命周期测试。
 
-use std::{io, net::SocketAddr, sync::Arc, time::Duration};
+#[path = "aop_support/native_response_interceptor.rs"]
+mod native_response_interceptor;
+#[path = "aop_support/policy_deny_interceptor.rs"]
+mod policy_deny_interceptor;
+
+use std::{
+    io,
+    net::SocketAddr,
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
+    time::Duration,
+};
 
 use bytes::Bytes;
 use futures_util::stream;
 use gotham::{
-    handler::{HandlerResult, IntoBody},
+    handler::{HandlerError, HandlerResult, IntoBody},
     helpers::http::Body,
     middleware::Middleware,
     state::State,
@@ -13,9 +26,13 @@ use gotham::{
 use http::{HeaderMap, Request, Response, StatusCode};
 use http_body::Frame;
 use http_body_util::{BodyExt, Empty, StreamBody};
+use native_response_interceptor::NativeResponseInterceptor;
+use policy_deny_interceptor::PolicyDenyInterceptor;
 use tokio::sync::Notify;
-use vernal_context::ApplicationContextBuilder;
+use vernal_aop::{Advisor, Operation};
+use vernal_context::{ApplicationContextBuilder, VernalApplicationBuilder};
 use vernal_gotham::{VernalGothamMiddleware, VernalGothamStateExt};
+use vernal_http::HttpRequestSnapshot;
 use vernal_ioc::{ComponentDefinition, RegistryBuilder};
 
 struct Greeting(&'static str);
@@ -42,6 +59,21 @@ async fn ready_context() -> Arc<vernal_context::ApplicationContext> {
     );
     context.refresh().await.expect("context refresh");
     context.start().await.expect("context start");
+    context
+}
+
+async fn ready_aop_context(
+    operation: Operation,
+    advisor: Option<Advisor>,
+) -> Arc<vernal_context::ApplicationContext> {
+    let mut builder = VernalApplicationBuilder::new(tokio::runtime::Handle::current());
+    builder.operation(operation);
+    if let Some(advisor) = advisor {
+        builder.advisor(advisor);
+    }
+    let context = Arc::new(builder.build().expect("AOP context build"));
+    context.refresh().await.expect("AOP context refresh");
+    context.start().await.expect("AOP context start");
     context
 }
 
@@ -186,4 +218,202 @@ async fn gotham_body_preserves_data_trailers_and_backpressure() {
         .expect("trailer payload");
     assert_eq!(trailers["x-vernal-trailer"], "kept");
     assert!(body.frame().await.is_none());
+}
+
+#[tokio::test]
+async fn strict_aop_uses_declared_pattern_and_owned_snapshot() {
+    let context = ready_aop_context(Operation::new("/orders/:id", "GET"), None).await;
+    let middleware = VernalGothamMiddleware::strict_aop(context, "/orders/:id");
+
+    let result = middleware
+        .call(request_state("/orders/42"), |state| {
+            Box::pin(async move {
+                let request_context = state
+                    .vernal_request_context()
+                    .expect("strict request context");
+                let snapshot = request_context
+                    .extensions()
+                    .get::<HttpRequestSnapshot>()
+                    .await
+                    .expect("owned HTTP snapshot");
+
+                assert_eq!(request_context.route().handler(), "/orders/:id");
+                assert_eq!(request_context.route().operation_name(), "GET");
+                assert_eq!(request_context.route().path_template(), "/orders/:id");
+                assert_eq!(snapshot.uri().path(), "/orders/42");
+                Ok((state, Response::new("woven".into_body())))
+            })
+        })
+        .await;
+    let (_state, response) = expect_response(result);
+
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(
+        response
+            .into_body()
+            .collect()
+            .await
+            .expect("response body")
+            .to_bytes(),
+        "woven"
+    );
+}
+
+#[tokio::test]
+async fn strict_aop_maps_policy_failure_without_calling_handler() {
+    let called = Arc::new(AtomicBool::new(false));
+    let context = ready_aop_context(
+        Operation::new("/protected", "GET"),
+        Some(Advisor::new(
+            |_: &Operation| true,
+            PolicyDenyInterceptor,
+            -1000,
+        )),
+    )
+    .await;
+    let handler_called = Arc::clone(&called);
+    let middleware = VernalGothamMiddleware::strict_aop(context, "/protected");
+
+    let result = middleware
+        .call(request_state("/protected"), move |state| {
+            handler_called.store(true, Ordering::SeqCst);
+            Box::pin(async move { Ok((state, Response::new("unreachable".into_body()))) })
+        })
+        .await;
+    let (_state, response) = expect_response(result);
+
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    assert_eq!(
+        response
+            .into_body()
+            .collect()
+            .await
+            .expect("response body")
+            .to_bytes(),
+        "Authentication is required"
+    );
+    assert!(!called.load(Ordering::SeqCst));
+}
+
+#[tokio::test]
+async fn strict_aop_fails_closed_when_plan_is_missing() {
+    let called = Arc::new(AtomicBool::new(false));
+    let context = ready_aop_context(Operation::new("/different", "GET"), None).await;
+    let handler_called = Arc::clone(&called);
+    let middleware = VernalGothamMiddleware::strict_aop(context, "/missing-plan");
+
+    let result = middleware
+        .call(request_state("/missing-plan"), move |state| {
+            handler_called.store(true, Ordering::SeqCst);
+            Box::pin(async move { Ok((state, Response::new("unreachable".into_body()))) })
+        })
+        .await;
+    let (_state, response) = expect_response(result);
+
+    assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    assert_eq!(
+        response
+            .into_body()
+            .collect()
+            .await
+            .expect("response body")
+            .to_bytes(),
+        "Vernal AOP invocation failed"
+    );
+    assert!(!called.load(Ordering::SeqCst));
+}
+
+#[tokio::test]
+async fn strict_aop_fails_closed_when_pattern_is_empty() {
+    let called = Arc::new(AtomicBool::new(false));
+    let context = ready_aop_context(Operation::new("/empty", "GET"), None).await;
+    let handler_called = Arc::clone(&called);
+    let middleware = VernalGothamMiddleware::strict_aop(context, "");
+
+    let result = middleware
+        .call(request_state("/empty"), move |state| {
+            handler_called.store(true, Ordering::SeqCst);
+            Box::pin(async move { Ok((state, Response::new("unreachable".into_body()))) })
+        })
+        .await;
+    let (_state, response) = expect_response(result);
+
+    assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    assert_eq!(
+        response
+            .into_body()
+            .collect()
+            .await
+            .expect("response body")
+            .to_bytes(),
+        "Gotham route pattern is unavailable"
+    );
+    assert!(!called.load(Ordering::SeqCst));
+}
+
+#[tokio::test]
+async fn strict_aop_preserves_native_gotham_handler_error() {
+    let context = ready_aop_context(Operation::new("/native-error", "GET"), None).await;
+    let middleware = VernalGothamMiddleware::strict_aop(context, "/native-error");
+
+    let result = middleware
+        .call(request_state("/native-error"), |state| {
+            Box::pin(async move {
+                Err((
+                    state,
+                    HandlerError::from(io::Error::other("native failure"))
+                        .with_status(StatusCode::IM_A_TEAPOT),
+                ))
+            })
+        })
+        .await;
+    let Err((_state, error)) = result else {
+        panic!("native Gotham error must remain an error");
+    };
+
+    assert_eq!(error.status(), StatusCode::IM_A_TEAPOT);
+    assert_eq!(
+        error
+            .cause()
+            .downcast_ref::<io::Error>()
+            .expect("native source")
+            .to_string(),
+        "native failure"
+    );
+}
+
+#[tokio::test]
+async fn strict_aop_interceptor_can_return_native_response_without_handler() {
+    let called = Arc::new(AtomicBool::new(false));
+    let context = ready_aop_context(
+        Operation::new("/native-short", "GET"),
+        Some(Advisor::new(
+            |_: &Operation| true,
+            NativeResponseInterceptor,
+            -1000,
+        )),
+    )
+    .await;
+    let handler_called = Arc::clone(&called);
+    let middleware = VernalGothamMiddleware::strict_aop(context, "/native-short");
+
+    let result = middleware
+        .call(request_state("/native-short"), move |state| {
+            handler_called.store(true, Ordering::SeqCst);
+            Box::pin(async move { Ok((state, Response::new("unreachable".into_body()))) })
+        })
+        .await;
+    let (_state, response) = expect_response(result);
+
+    assert_eq!(response.status(), StatusCode::ACCEPTED);
+    assert_eq!(
+        response
+            .into_body()
+            .collect()
+            .await
+            .expect("response body")
+            .to_bytes(),
+        "native-short-circuit"
+    );
+    assert!(!called.load(Ordering::SeqCst));
 }
