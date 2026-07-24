@@ -37,8 +37,8 @@ Hutool-Rust · Sa-Token-Rust · Ddd4r · general Rust applications
 > kernel, Phase 3 application context, and the Phase 4 Web/HTTP/Tower/Hyper
 > foundations are callable and contract-tested. All ten selected framework
 > adapters—Axum, Actix Web, Rocket, Warp, Salvo, Poem, Ntex, Gotham, Tide, and
-> Tonic—are runnable; procedural macros remain a skeleton. Nothing is published
-> yet.
+> Tonic—are runnable. The explicit Component derive and context-local async AOP
+> method macro are callable but still experimental. Nothing is published yet.
 
 ## 1. Vision
 
@@ -117,7 +117,7 @@ Detailed decisions, flows, failure semantics, and acceptance criteria are in:
 | `vernal-ioc` | Phase 1 implemented | Definitions, scopes, resolution, graph validation |
 | `vernal-aop` | Phase 2 kernel implemented | Around/Next, pointcuts, immutable plans, cancellation |
 | `vernal-context` | Phase 3 kernel implemented | Managed bootstrap, built-in components, AOP plans, lifecycle, events, shutdown |
-| `vernal-macros` | Component derive implemented | Explicit `Arc<T>` injection metadata; AOP method macro remains planned |
+| `vernal-macros` | Phase 2 macros implemented | Explicit `Arc<T>` injection metadata and context-local async method weaving |
 | `vernal-web` | Phase 4 contract implemented | Framework-neutral context, request scope, handler, and error contracts |
 | `vernal-http` | Phase 4 contract implemented | HTTP request, response, body, streaming, cancellation, and backpressure |
 | `vernal-tower` | Phase 4 foundation implemented | Tower context injection and request-scope lifecycle |
@@ -249,6 +249,39 @@ Every unmarked field must be `Arc<T>` and becomes a declared dependency.
 still call `RegistryBuilder::register`, so registration provenance stays
 explicit.
 
+An AOP-enabled component explicitly receives its context-local plan catalog
+and cancellation token. The method macro then performs ordinary async Rust
+calls through the precompiled plan:
+
+```rust
+use std::sync::Arc;
+use vernal_aop::{
+    CancellationToken, InvocationError, InvocationPlanCatalog,
+};
+
+#[derive(vernal_macros::Component)]
+#[component(aop)]
+struct OrderService {
+    invocation_plans: Arc<InvocationPlanCatalog>,
+    cancellation: Arc<CancellationToken>,
+}
+
+impl OrderService {
+    #[vernal_macros::intercept(component = "OrderService")]
+    async fn create(
+        self: Arc<Self>,
+        order_id: u64,
+    ) -> Result<u64, InvocationError> {
+        Ok(order_id)
+    }
+}
+```
+
+The first macro contract intentionally accepts only `async fn`, an owned
+`self: Arc<Self>` receiver, owned arguments, and
+`Result<T, InvocationError>`. These restrictions make the generated target
+future `'static` without reflection, process-global lookup, or hidden cloning.
+
 Any `Send + Sync + 'static` Rust value can be a component, including
 `reqwest::Client`, database pools, Tower services, framework state, Tokio
 synchronization primitives, and user-defined objects. Their dependencies stay
@@ -329,8 +362,9 @@ runtime capture and built-in registration are not wanted.
 | Diagnostics | Introspectable graph and startup report without secret leakage | Planned |
 
 “Phase 1” and “Phase 2 kernel” mean callable implementation and contract tests
-exist, but the API is still experimental. Phase 2 is not complete until the
-procedural macros and compile-fail matrix land. “Planned” means no callable
+exist, but the API is still experimental. The first Component and AOP method
+macros are implemented with compile-fail coverage; broader method signatures,
+expanded diagnostics, and benchmarks remain open. “Planned” means no callable
 implementation exists yet. No label is a compatibility or performance claim.
 
 ## 7. Ecosystem role
@@ -406,8 +440,11 @@ The Phase 2 AOP kernel currently has eight contract tests covering ordered
 enter/reverse exit, short circuit, success and error transformation, typed
 context across `.await`, cancellation/deadline, pointcut selection, and
 64-task concurrent plan reuse, plus deduplicated plan-catalog compilation.
-The Component derive has runtime and compile-fail coverage; the AOP method
-macro and benchmarks remain open.
+The macro frontend has three runtime tests covering singleton Component
+injection, transient construction, and context-local intercepted invocation,
+plus three compile-fail cases for invalid component fields, non-async
+interception, and borrowed receivers. Broader signature support, expanded
+diagnostic snapshots, and AOP benchmarks remain open.
 The Phase 3 kernel has nine tests covering dependency-order startup,
 reverse shutdown, initialize/start rollback, invalid transitions, idempotent
 close, concurrent close serialization, and context-local typed event

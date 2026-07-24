@@ -65,7 +65,11 @@
 - `[已确认]` `vernal-macros` 已提供显式 `Arc<T>` 构造注入的
   `#[derive(Component)]`，支持 Singleton/Transient 与 default 字段，并通过
   运行时和 compile-fail 合同测试；它不使用 linkme 或全局自动注册。
-- `[设计目标]` AOP 方法宏、剩余消费方生态桥接与后续生产门禁仍需实现和验收。
+- `[已确认]` `#[component(aop)]` 与 `#[intercept]` 已把 Context-local
+  `InvocationPlanCatalog`、取消令牌和异步组件方法连接起来；无全局实例 Map，
+  计划缺失、取消和返回类型不匹配均通过结构化错误返回。
+- `[设计目标]` 更广泛的方法签名、剩余消费方生态桥接、性能基准与后续生产门禁
+  仍需实现和验收。
 
 ## 2. 品牌寓意与架构主张
 
@@ -405,6 +409,43 @@ Vernal 不使用 `self as *const Self as usize` 作为长期身份。目标方�
 
 这样链的生命周期与所有者一致，无需全局清理，也不会因为地址复用关联到错误实例。
 
+### 9.6 方法宏安全合同
+
+第一版方法织入选择一个窄而明确的 Rust 合同：
+
+1. 组件使用 `#[component(aop)]`，并显式持有
+   `Arc<InvocationPlanCatalog>` 与 `Arc<CancellationToken>`；
+2. 被拦截方法必须是 `async fn`，接收器必须写成 `self: Arc<Self>`；
+3. 参数必须拥有所有权，返回值必须是 `Result<T, InvocationError>`；
+4. 参数通过一次性 `Mutex<Option<Tuple>>` 转交给目标调用，不强制业务类型实现
+   `Clone`；
+5. 计划缺失、重复推进目标、取消和返回类型不匹配均返回结构化错误，不使用 panic。
+
+`self: Arc<Self>` 和 owned 参数不是 Java 风格限制，而是为了让
+`InvocationTarget` 安全地产生 `'static` Future，使 Around 链能跨 `.await`
+持有目标。`Next` 按合同只能推进一次；若自定义拦截器重复调用，宏生成的目标会返回
+`TargetAlreadyInvoked`，避免悄悄重复执行有副作用的业务方法。
+
+```mermaid
+sequenceDiagram
+    participant Caller as 调用方
+    participant Macro as intercept 包装
+    participant Component as AopComponent
+    participant Catalog as Context-local Plan Catalog
+    participant Plan as InvocationPlan
+    participant Target as 原业务方法
+
+    Caller->>Macro: Arc<Service>.method(owned args)
+    Macro->>Component: 读取计划目录和取消令牌
+    Macro->>Catalog: 按 Operation 查找计划
+    Catalog-->>Macro: Arc<InvocationPlan>
+    Macro->>Plan: invoke(context, one-shot target)
+    Plan->>Target: Around 链推进到业务方法
+    Target-->>Plan: Result<T, InvocationError>
+    Plan-->>Macro: 类型擦除结果
+    Macro-->>Caller: 恢复 T 或返回结构化错误
+```
+
 ## 10. ApplicationContext 与生命周期
 
 ### 10.1 Context 职责
@@ -656,8 +697,10 @@ qualifier、隐藏依赖拒绝、原生值注册和 Tokio Handle 真实 task；�
 
 Phase 2 AOP 内核另有 8 个合同测试，覆盖顺序进入/逆序退出、短路、结果/
 错误改写、跨 `.await` 类型化上下文、取消/deadline、切点过滤和 64 task 并发
-复用，以及重复 Operation 合并的计划目录编译。Component derive 另有 2 个运行时
-测试和 1 个中文诊断 trybuild；AOP 方法宏完成前，Phase 2 仍不能宣布整体完成。
+复用，以及重复 Operation 合并的计划目录编译。宏前端另有 3 个运行时测试，覆盖
+Singleton Component 注入、Transient 构造和 Context-local 方法织入，并有 3 个
+compile-fail 用例覆盖非法组件字段、非异步方法和借用接收器。Phase 2 已具备可调用
+闭环，但更广泛的方法签名、诊断矩阵、性能基准和稳定性承诺仍未完成。
 
 Phase 3 内核另有 9 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
 回滚、非法转换、幂等关闭、并发关闭串行化、Context-local 类型化事件隔离，

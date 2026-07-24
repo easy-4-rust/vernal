@@ -21,6 +21,16 @@ pub enum InvocationError {
         /// 实际调用操作。
         actual: Operation,
     },
+    /// 当前应用没有为目标操作预编译调用计划。
+    PlanNotFound {
+        /// 缺少计划的组件操作。
+        operation: Operation,
+    },
+    /// 最终目标被重复推进，已拥有的参数不能再次消费。
+    TargetAlreadyInvoked {
+        /// 被重复执行的组件操作。
+        operation: Operation,
+    },
     /// 目标方法或拦截器返回业务错误。
     Target {
         /// 原始错误。
@@ -52,6 +62,12 @@ impl fmt::Display for InvocationError {
                     formatter,
                     "invocation plan mismatch: expected {expected}, got {actual}"
                 )
+            }
+            Self::PlanNotFound { operation } => {
+                write!(formatter, "invocation plan not found: {operation}")
+            }
+            Self::TargetAlreadyInvoked { operation } => {
+                write!(formatter, "invocation target already executed: {operation}")
             }
             Self::Target { source } => write!(formatter, "invocation target failed: {source}"),
             Self::ReturnTypeMismatch { expected } => {

@@ -1,0 +1,5 @@
+error: #[intercept] 只支持 async fn
+  --> tests/ui/intercept_non_async.rs:11:5
+   |
+11 |     fn execute(self: Arc<Self>) -> Result<(), InvocationError> {
+   |     ^^

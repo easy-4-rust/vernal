@@ -74,8 +74,12 @@
   `Arc<T>` constructor injection, Singleton/Transient scope, and default
   fields, with runtime and compile-fail tests. It uses neither linkme nor
   global auto-registration.
-- `[Target]` The AOP method macro, remaining consumer ecosystem bridges, and
-  later production gates remain.
+- `[Confirmed]` `#[component(aop)]` and `#[intercept]` connect context-local
+  invocation plans, cancellation, and async component methods. Missing plans,
+  cancellation, and return-type mismatches remain structured errors, without a
+  global instance map.
+- `[Target]` Broader method signatures, remaining consumer ecosystem bridges,
+  benchmarks, and later production gates remain.
 
 ## 2. Brand meaning and architecture thesis
 
@@ -404,6 +408,45 @@ Vernal does not use `self as *const Self as usize` as durable identity:
 
 Ownership and cleanup therefore follow the actual wrapper/context lifecycle.
 
+### 9.5 Method macro safety contract
+
+The first weaving frontend intentionally exposes a narrow Rust contract:
+
+1. `#[component(aop)]` requires explicit `Arc<InvocationPlanCatalog>` and
+   `Arc<CancellationToken>` fields.
+2. An intercepted method is `async fn` with `self: Arc<Self>`.
+3. Arguments are owned and the return type is
+   `Result<T, InvocationError>`.
+4. A one-shot `Mutex<Option<Tuple>>` transfers arguments into the target
+   without requiring business values to implement `Clone`.
+5. Missing plans, repeated target advancement, cancellation, and return-type
+   mismatches are structured errors rather than panics.
+
+The owned receiver and arguments let `InvocationTarget` produce a safe
+`'static` future across `.await`. `Next` is a one-shot continuation; a custom
+interceptor that advances it twice receives `TargetAlreadyInvoked` instead of
+silently repeating a side-effecting business method.
+
+```mermaid
+sequenceDiagram
+    participant Caller
+    participant Macro as "intercept wrapper"
+    participant Component as "AopComponent"
+    participant Catalog as "Context-local plan catalog"
+    participant Plan as "InvocationPlan"
+    participant Target as "Business method"
+
+    Caller->>Macro: Arc<Service>.method(owned arguments)
+    Macro->>Component: read catalog and cancellation
+    Macro->>Catalog: find plan by Operation
+    Catalog-->>Macro: Arc<InvocationPlan>
+    Macro->>Plan: invoke(context, one-shot target)
+    Plan->>Target: advance Around chain
+    Target-->>Plan: Result<T, InvocationError>
+    Plan-->>Macro: type-erased value
+    Macro-->>Caller: recover T or structured error
+```
+
 ## 10. ApplicationContext and lifecycle
 
 The context composes registry, container, AOP plans, local typed events,
@@ -636,9 +679,13 @@ IoC rather than runtime state in its resolution hot path.
 The Phase 2 AOP kernel additionally has eight contract tests for
 ordered entry/reverse exit, short circuit, result/error transformation, typed
 context across `.await`, cancellation/deadline, pointcut filtering, and
-64-task concurrent reuse, plus deduplicated plan-catalog compilation. The
-Component derive additionally has two runtime tests and one compile-fail
-diagnostic test; Phase 2 remains incomplete until the AOP method macro exists.
+64-task concurrent reuse, plus deduplicated plan-catalog compilation. The macro
+frontend additionally has three runtime tests for singleton Component
+injection, transient construction, and context-local intercepted invocation,
+plus three compile-fail cases for invalid component fields, non-async methods,
+and borrowed receivers. Phase 2 now has a callable loop, while broader
+signatures, diagnostic coverage, benchmarks, and stability guarantees remain
+open.
 
 The Phase 3 kernel has nine contract tests for dependency-order
 startup, reverse shutdown, initialize/start rollback, invalid transitions,

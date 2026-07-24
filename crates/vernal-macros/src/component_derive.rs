@@ -11,15 +11,20 @@ use syn::{
 pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
     reject_generics(input)?;
     let ioc = ioc_crate_path()?;
-    let transient = parse_transient_scope(&input.attrs)?;
+    let (transient, aop_enabled) = parse_component_options(&input.attrs)?;
     let component_name = &input.ident;
     let fields = component_fields(&input.data)?;
     let mut initializers = Vec::with_capacity(fields.len());
     let mut dependencies = Vec::new();
+    let aop_implementation = if aop_enabled {
+        generate_aop_implementation(component_name, &fields)?
+    } else {
+        TokenStream::new()
+    };
 
     // 每个未标记 default 的字段都必须是 Arc<T>，宏同时生成构造表达式和显式
     // 依赖元数据，保证 Resolver 的运行期访问与启动期依赖图完全一致。
-    for field in fields {
+    for field in &fields {
         let field_name = field
             .ident
             .as_ref()
@@ -72,6 +77,8 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
                 #definition
             }
         }
+
+        #aop_implementation
     })
 }
 
@@ -97,6 +104,28 @@ fn ioc_crate_path() -> syn::Result<TokenStream> {
     }
 }
 
+/// 解析消费方实际使用的 AOP crate 路径，兼容 Cargo 依赖重命名和统一门面。
+fn aop_crate_path() -> syn::Result<TokenStream> {
+    match crate_name("vernal-aop") {
+        Ok(FoundCrate::Itself) => Ok(quote! { crate }),
+        Ok(FoundCrate::Name(name)) => {
+            let crate_name = syn::Ident::new(&name, proc_macro2::Span::call_site());
+            Ok(quote! { ::#crate_name })
+        }
+        Err(_) => match crate_name("vernal") {
+            Ok(FoundCrate::Itself) => Ok(quote! { crate::aop }),
+            Ok(FoundCrate::Name(name)) => {
+                let crate_name = syn::Ident::new(&name, proc_macro2::Span::call_site());
+                Ok(quote! { ::#crate_name::aop })
+            }
+            Err(_) => Err(syn::Error::new(
+                proc_macro2::Span::call_site(),
+                "#[component(aop)] 需要直接依赖 vernal-aop，或通过 vernal 统一门面使用",
+            )),
+        },
+    }
+}
+
 /// 当前首批宏不展开泛型组件，避免隐式生成不完整的 `'static` 与线程安全边界。
 fn reject_generics(input: &DeriveInput) -> syn::Result<()> {
     if input.generics.params.is_empty() {
@@ -109,16 +138,21 @@ fn reject_generics(input: &DeriveInput) -> syn::Result<()> {
     }
 }
 
-/// 读取 `#[component(scope = \"transient\")]`；默认作用域为 singleton。
-fn parse_transient_scope(attributes: &[Attribute]) -> syn::Result<bool> {
+/// 读取组件作用域和 AOP 接线选项；默认作用域为 singleton。
+fn parse_component_options(attributes: &[Attribute]) -> syn::Result<(bool, bool)> {
     let mut transient = false;
+    let mut aop_enabled = false;
     for attribute in attributes
         .iter()
         .filter(|attribute| attribute.path().is_ident("component"))
     {
         attribute.parse_nested_meta(|metadata| {
+            if metadata.path.is_ident("aop") {
+                aop_enabled = true;
+                return Ok(());
+            }
             if !metadata.path.is_ident("scope") {
-                return Err(metadata.error("结构体 component 属性只支持 scope"));
+                return Err(metadata.error("结构体 component 属性只支持 scope 或 aop"));
             }
             let value = metadata.value()?.parse::<LitStr>()?;
             match value.value().as_str() {
@@ -137,7 +171,80 @@ fn parse_transient_scope(attributes: &[Attribute]) -> syn::Result<bool> {
             }
         })?;
     }
-    Ok(transient)
+    Ok((transient, aop_enabled))
+}
+
+/// 为启用 AOP 的组件生成 Context-local 资源访问实现。
+fn generate_aop_implementation(
+    component_name: &syn::Ident,
+    fields: &[&Field],
+) -> syn::Result<TokenStream> {
+    let mut plans_field = None;
+    let mut cancellation_field = None;
+
+    for field in fields {
+        let Some(field_name) = &field.ident else {
+            continue;
+        };
+        let Ok(dependency) = arc_inner_type(&field.ty) else {
+            continue;
+        };
+        match type_last_ident(dependency).as_deref() {
+            Some("InvocationPlanCatalog") if plans_field.is_some() => {
+                return Err(syn::Error::new_spanned(
+                    field,
+                    "AOP 组件只能包含一个 Arc<InvocationPlanCatalog> 字段",
+                ));
+            }
+            Some("InvocationPlanCatalog") => plans_field = Some(field_name),
+            Some("CancellationToken") if cancellation_field.is_some() => {
+                return Err(syn::Error::new_spanned(
+                    field,
+                    "AOP 组件只能包含一个 Arc<CancellationToken> 字段",
+                ));
+            }
+            Some("CancellationToken") => cancellation_field = Some(field_name),
+            _ => {}
+        }
+    }
+
+    let plans_field = plans_field.ok_or_else(|| {
+        syn::Error::new_spanned(
+            component_name,
+            "#[component(aop)] 需要 Arc<InvocationPlanCatalog> 字段",
+        )
+    })?;
+    let cancellation_field = cancellation_field.ok_or_else(|| {
+        syn::Error::new_spanned(
+            component_name,
+            "#[component(aop)] 需要 Arc<CancellationToken> 字段",
+        )
+    })?;
+    let aop = aop_crate_path()?;
+
+    Ok(quote! {
+        impl #aop::AopComponent for #component_name {
+            fn invocation_plans(&self) -> &#aop::InvocationPlanCatalog {
+                self.#plans_field.as_ref()
+            }
+
+            fn invocation_cancellation(&self) -> #aop::CancellationToken {
+                self.#cancellation_field.as_ref().clone()
+            }
+        }
+    })
+}
+
+/// 返回类型路径最后一段名称，用于识别框架内建资源字段。
+fn type_last_ident(field_type: &Type) -> Option<String> {
+    let Type::Path(type_path) = field_type else {
+        return None;
+    };
+    type_path
+        .path
+        .segments
+        .last()
+        .map(|segment| segment.ident.to_string())
 }
 
 /// 返回结构体具名字段；Unit 组件等价于无依赖组件。
