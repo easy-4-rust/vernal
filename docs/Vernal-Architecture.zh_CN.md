@@ -79,9 +79,10 @@
 - `[已确认]` tx-di 原文参考已从正式 `src/` 移到各 crate 的只读
   `upstream/tx-di/` 证据目录；生产源码不再同时摆放未编译的 Store/App/全局注册表。
 - `[已确认]` `#[component(aop)]` 与 `#[intercept]` 已把 Context-local
-  `InvocationPlanCatalog`、取消令牌和异步组件方法连接起来；无全局实例 Map，
-  计划缺失、取消和返回类型不匹配均通过结构化错误返回。
-- `[设计目标]` 更广泛的方法签名、剩余消费方生态桥接、性能基准与后续生产门禁
+  `InvocationPlanCatalog`、取消令牌和 Arc-owned/共享借用异步组件方法连接起来；
+  无全局实例 Map 或 unsafe 生命周期扩展，计划缺失、取消和返回类型不匹配均通过
+  结构化错误返回。
+- `[设计目标]` Trait/泛型/可变方法签名、剩余消费方生态桥接、性能基准与后续生产门禁
   仍需实现和验收。
 
 ## 2. 品牌寓意与架构主张
@@ -562,20 +563,23 @@ Vernal 不使用 `self as *const Self as usize` 作为长期身份。目标方�
 
 ### 9.8 方法宏安全合同
 
-第一版方法织入选择一个窄而明确的 Rust 合同：
+第一版方法织入提供两套明确的 Rust 所有权合同：
 
 1. 组件使用 `#[component(aop)]`，并显式持有
    `Arc<InvocationPlanCatalog>` 与 `Arc<CancellationToken>`；
-2. 被拦截方法必须是 `async fn`，接收器必须写成 `self: Arc<Self>`；
-3. 参数必须拥有所有权，返回值必须是 `Result<T, InvocationError>`；
-4. 参数通过一次性 `Mutex<Option<Tuple>>` 转交给目标调用，不强制业务类型实现
-   `Clone`；
-5. 计划缺失、重复推进目标、取消和返回类型不匹配均返回结构化错误，不使用 panic。
+2. 被拦截方法必须是 `async fn`，接收器可以是 `self: Arc<Self>` 或普通 `&self`；
+3. Arc 路径要求 owned 参数并生成 `'static` `InvocationTarget`；共享借用路径允许
+   owned 或引用参数，并使用 `invoke_borrowed`；
+4. Arc 路径通过一次性 `Mutex<Option<Tuple>>` 转交参数；借用路径使用
+   `BorrowedInvocationFutureTarget` 保存唯一 `InvocationFuture<'a>`，两者都不要求
+   业务值实现 `Clone`；
+5. 两条路径都返回 `Result<T, InvocationError>`；计划缺失、重复推进目标、取消和
+   返回类型不匹配均返回结构化错误，不使用 panic。
 
-`self: Arc<Self>` 和 owned 参数不是 Java 风格限制，而是为了让
-`InvocationTarget` 安全地产生 `'static` Future，使 Around 链能跨 `.await`
-持有目标。`Next` 按合同只能推进一次；若自定义拦截器重复调用，宏生成的目标会返回
-`TargetAlreadyInvoked`，避免悄悄重复执行有副作用的业务方法。
+owned 接收器路径安全产生 `'static` Future；`&self` 路径把接收器、引用参数和
+业务 Future 一起约束在当前方法 `.await`，既不伪造 `'static`，也不克隆服务对象。
+`Next` 按合同只能推进一次；若自定义拦截器重复调用，宏生成的目标会返回
+`TargetAlreadyInvoked`，避免悄悄重复执行业务副作用。
 
 ```mermaid
 sequenceDiagram
@@ -586,11 +590,11 @@ sequenceDiagram
     participant Plan as InvocationPlan
     participant Target as 原业务方法
 
-    Caller->>Macro: Arc<Service>.method(owned args)
+    Caller->>Macro: Service.method(&self, owned/borrowed args)
     Macro->>Component: 读取计划目录和取消令牌
     Macro->>Catalog: 按 Operation 查找计划
     Catalog-->>Macro: Arc<InvocationPlan>
-    Macro->>Plan: invoke(context, one-shot target)
+    Macro->>Plan: invoke 或 invoke_borrowed(context, one-shot target)
     Plan->>Target: Around 链推进到业务方法
     Target-->>Plan: Result<T, InvocationError>
     Plan-->>Macro: 类型擦除结果
@@ -1167,15 +1171,16 @@ Container 所有权、取消传播、失败后继续逆序清理、关闭等待�
 Tokio 同步与取消能力完成可观察的异步清理。
 `register_all` 原子注册纯组件批次；`register_bundle` 同时原子提交定义与绑定。
 
-Phase 2 AOP 内核另有 10 个 Send 合同测试，覆盖顺序进入/逆序退出、短路、结果/
+Phase 2 AOP 内核另有 11 个 Send 合同测试，覆盖顺序进入/逆序退出、短路、结果/
 错误改写、跨 `.await` 类型化上下文、取消/deadline、切点过滤和 64 task 并发
 复用、借用型非静态目标、重复 Operation 合并的计划目录编译与一次封存；另有 6 个
 Local-AOP 测试覆盖非 `Send` 返回值、顺序、短路、取消、计划目录和借用型本地
 目标。宏前端另有 5 个运行时测试，覆盖
-Singleton Component 注入、Transient 构造、Trait Object 注入和 Context-local
-方法织入及类型驱动自定义 Scope，并有 4 个 compile-fail 用例覆盖非法组件字段、非法集合 qualifier、
-非异步方法和借用接收器。Phase 2 已具备可调用
-闭环，但更广泛的方法签名、诊断矩阵、性能基准和稳定性承诺仍未完成。
+Singleton Component 注入、Transient 构造、Trait Object 注入、Arc-owned 与
+共享借用接收器的 Context-local 方法织入及类型驱动自定义 Scope，并有 4 个
+compile-fail 用例覆盖非法组件字段、非法集合 qualifier、非异步方法和可变接收器。
+Phase 2 已具备可调用闭环，但 Trait/泛型方法、诊断矩阵、性能基准和稳定性承诺
+仍未完成。
 
 Phase 3 内核另有 48 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
 回滚、非法转换、幂等关闭、并发关闭串行化、Context-local 类型化事件隔离，
@@ -1212,7 +1217,7 @@ fail-closed 与条件错误脱敏。
 | ID | 风险 / 待确认 | 影响 | 验证计划 |
 |:---|:---|:---|:---|
 | R-001 | 对象安全异步 Around 的分配成本 | AOP 性能 | 对已实现的 boxed-future 路径做 benchmark |
-| R-002 | proc-macro 对 impl method、trait method 和 async 的覆盖 | 可用性 | trybuild 矩阵 |
+| R-002 | proc-macro 对 Trait、泛型与可变方法的覆盖 | 可用性 | trybuild 矩阵 |
 | R-003 | 编译期自动注册的跨平台链接行为 | 可移植性 | Linux/macOS/Windows CI |
 | R-004 | Request Scope 在不同 Web 框架中的取消/释放差异 | 资源安全 | 跨框架异常链测试 |
 | R-005 | 过度追求 Spring 命名导致非 Rust API | 长期维护 | API review 与 Rust API Guidelines |

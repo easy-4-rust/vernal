@@ -328,18 +328,20 @@ struct OrderService {
 impl OrderService {
     #[vernal_macros::intercept(component = "OrderService")]
     async fn create(
-        self: Arc<Self>,
-        order_id: u64,
+        &self,
+        order_id: &u64,
     ) -> Result<u64, InvocationError> {
-        Ok(order_id)
+        Ok(*order_id)
     }
 }
 ```
 
-The first macro contract intentionally accepts only `async fn`, an owned
-`self: Arc<Self>` receiver, owned arguments, and
-`Result<T, InvocationError>`. These restrictions make the generated target
-future `'static` without reflection, process-global lookup, or hidden cloning.
+The method macro accepts `async fn` with either `self: Arc<Self>` and owned
+arguments, or ordinary `&self` with owned or borrowed arguments. The Arc path
+creates a `'static` target; the shared-reference path uses
+`invoke_borrowed` and cannot escape the current `.await`. Both return
+`Result<T, InvocationError>` without reflection, process-global lookup, unsafe
+lifetime extension, or hidden receiver cloning.
 
 Send and Local interceptors can also be ordinary IoC components. After registering
 an interceptor definition, `advisor_component::<AuditInterceptor, _>` declares
@@ -601,7 +603,7 @@ construction, sibling isolation, parent/child lifetime direction, Container
 ownership, cancellation, reverse cleanup with failure continuation, and close
 waiting for an in-flight factory, cancellation-safe close waiters, bounded
 waiting with background completion, and panic isolation between hooks.
-The Phase 2 AOP kernel currently has ten Send contract tests covering ordered
+The Phase 2 AOP kernel currently has eleven Send contract tests covering ordered
 enter/reverse exit, short circuit, success and error transformation, typed
 context across `.await`, cancellation/deadline, pointcut selection, and
 64-task concurrent plan reuse, borrowed non-static targets, plus deduplicated
@@ -610,10 +612,11 @@ ordering, short circuit, cancellation, plan catalogs, and borrowed local
 targets.
 The macro frontend has five runtime tests covering singleton Component
 injection, transient construction, Trait Object injection, and context-local
-intercepted invocation, plus a type-driven custom Scope declaration and four
+intercepted invocation through both `self: Arc<Self>` and borrowed `&self`,
+plus a type-driven custom Scope declaration and four
 compile-fail cases for invalid component
-fields, invalid collection qualifiers, non-async interception, and borrowed
-receivers. Broader signature support, expanded
+fields, invalid collection qualifiers, non-async interception, and mutable
+receivers. Trait methods, generic methods, expanded
 macro diagnostics, and AOP benchmarks remain open.
 The Phase 3 kernel has forty-eight tests covering dependency-order startup,
 reverse shutdown, initialize/start rollback, invalid transitions, idempotent

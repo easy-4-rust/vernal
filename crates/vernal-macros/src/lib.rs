@@ -4,6 +4,7 @@
 mod component_derive;
 mod component_scope_option;
 mod intercept_macro;
+mod intercept_receiver;
 mod self_reference_rewriter;
 
 use proc_macro::TokenStream;
@@ -25,10 +26,12 @@ pub fn derive_component(input: TokenStream) -> TokenStream {
         .into()
 }
 
-/// 将 `self: Arc<Self>` 异步方法接入组件持有的不可变 AOP 调用计划。
+/// 将 `self: Arc<Self>` 或 `&self` 异步方法接入组件持有的不可变 AOP 调用计划。
 ///
-/// 方法必须返回 `Result<T, InvocationError>`，参数必须为 owned 类型。可通过
-/// `component = "逻辑名"` 与 `method = "操作名"` 对齐应用构建时注册的
+/// 方法必须返回 `Result<T, InvocationError>`。`self: Arc<Self>` 路径要求参数
+/// 拥有所有权并生成 `'static` 目标；`&self` 路径允许引用参数，并把业务 Future
+/// 严格约束在当前方法调用。可通过 `component = "逻辑名"` 与 `method = "操作名"`
+/// 对齐应用构建时注册的
 /// [`vernal_aop::Operation`](https://docs.rs/vernal-aop/latest/vernal_aop/struct.Operation.html)。
 #[proc_macro_attribute]
 pub fn intercept(attributes: TokenStream, item: TokenStream) -> TokenStream {

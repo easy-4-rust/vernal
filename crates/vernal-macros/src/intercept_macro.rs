@@ -8,7 +8,9 @@ use syn::{
     ReturnType, Type, parse::Parser, visit_mut::VisitMut,
 };
 
-use crate::self_reference_rewriter::SelfReferenceRewriter;
+use crate::{
+    intercept_receiver::InterceptReceiver, self_reference_rewriter::SelfReferenceRewriter,
+};
 
 /// 汇集一次方法展开所需的已校验语法片段。
 ///
@@ -23,12 +25,13 @@ struct InterceptCodegen<'a> {
     argument_idents: &'a [Ident],
     business_body: &'a Block,
     self_replacement: &'a Ident,
+    receiver: InterceptReceiver,
 }
 
 /// 解析拦截选项、校验方法签名并生成异步 AOP 调用包装。
 pub(crate) fn expand(attributes: TokenStream, mut method: ImplItemFn) -> syn::Result<TokenStream> {
     let (component, method_name) = parse_options(attributes)?;
-    validate_method(&method)?;
+    let receiver = validate_method(&method)?;
     let (return_type, _) = result_types(&method.sig.output)?;
     let aop = aop_crate_path()?;
     let function_name = &method.sig.ident;
@@ -55,8 +58,8 @@ pub(crate) fn expand(attributes: TokenStream, mut method: ImplItemFn) -> syn::Re
         argument_idents.push(pattern.ident.clone());
     }
 
-    // 目标 Future 必须拥有 receiver 与全部参数。方法体中的 self 被改写为
-    // __vernal_self；参数通过一次性 Mutex 槽转移，不要求实现 Clone。
+    // 方法体中的 self 统一改写为 __vernal_self。Arc 路径让目标拥有 receiver 与
+    // 参数；借用路径则把它们约束在当前方法 Future，二者都不要求隐式 Clone。
     let replacement = syn::Ident::new("__vernal_self", Span::mixed_site());
     let mut business_body = method.block.clone();
     SelfReferenceRewriter::new(replacement.clone()).visit_block_mut(&mut business_body);
@@ -70,6 +73,7 @@ pub(crate) fn expand(attributes: TokenStream, mut method: ImplItemFn) -> syn::Re
         argument_idents: &argument_idents,
         business_body: &business_body,
         self_replacement: &replacement,
+        receiver,
     }
     .render()?;
 
@@ -77,8 +81,16 @@ pub(crate) fn expand(attributes: TokenStream, mut method: ImplItemFn) -> syn::Re
 }
 
 impl InterceptCodegen<'_> {
-    /// 渲染方法体中的计划查找、owned 目标调用与返回类型恢复。
+    /// 根据接收器所有权模型选择静态目标或借用目标代码生成路径。
     fn render(&self) -> syn::Result<Block> {
+        match self.receiver {
+            InterceptReceiver::OwnedArc => self.render_owned(),
+            InterceptReceiver::SharedReference => self.render_borrowed(),
+        }
+    }
+
+    /// 渲染 `self: Arc<Self>` 方法的计划查找、owned 目标与返回类型恢复。
+    fn render_owned(&self) -> syn::Result<Block> {
         let Self {
             aop,
             component,
@@ -88,6 +100,7 @@ impl InterceptCodegen<'_> {
             argument_idents,
             business_body,
             self_replacement,
+            receiver: _,
         } = self;
 
         syn::parse2(quote! {{
@@ -168,6 +181,84 @@ impl InterceptCodegen<'_> {
             }
         }})
     }
+
+    /// 渲染 `&self` 方法的借用型目标调用与返回类型恢复。
+    ///
+    /// 业务 Future 在进入拦截器链前创建，并由
+    /// `BorrowedInvocationFutureTarget` 持有。目标、接收器和引用参数都不会逃出
+    /// 当前 `.await`，同时仍复用 Send-AOP 的顺序、取消和错误语义。
+    fn render_borrowed(&self) -> syn::Result<Block> {
+        let Self {
+            aop,
+            component,
+            method_name,
+            return_type,
+            argument_patterns: _,
+            argument_idents: _,
+            business_body,
+            self_replacement,
+            receiver: _,
+        } = self;
+
+        syn::parse2(quote! {{
+            let __vernal_operation = #aop::Operation::new(#component, #method_name);
+            let __vernal_plan = match #aop::AopComponent::invocation_plans(self)
+                .get(&__vernal_operation)
+                .cloned()
+            {
+                ::core::option::Option::Some(plan) => plan,
+                ::core::option::Option::None => {
+                    return ::core::result::Result::Err(#aop::InvocationError::PlanNotFound {
+                        operation: __vernal_operation,
+                    });
+                }
+            };
+            let __vernal_cancellation =
+                #aop::AopComponent::invocation_cancellation(self);
+            let __vernal_invocation = #aop::Invocation::new(__vernal_operation.clone())
+                .with_cancellation(__vernal_cancellation)
+                .shared();
+
+            // `&self` 与可能存在的引用参数只进入当前调用期 Future，不会被擦除为
+            // `'static`。拦截器短路时该 Future 未被轮询，并在方法返回前安全释放。
+            let __vernal_target_self = self;
+            let __vernal_target_future: #aop::InvocationFuture<'_> =
+                ::std::boxed::Box::pin(async move {
+                    let #self_replacement = __vernal_target_self;
+                    let __vernal_result: ::core::result::Result<
+                        #return_type,
+                        #aop::InvocationError
+                    > = (async move #business_body).await;
+                    __vernal_result.map(|value| {
+                        ::std::boxed::Box::new(value) as #aop::InvocationValue
+                    })
+                });
+            let mut __vernal_target = #aop::BorrowedInvocationFutureTarget::new(
+                __vernal_operation.clone(),
+                __vernal_target_future,
+            );
+
+            let __vernal_value = match __vernal_plan
+                .invoke_borrowed(__vernal_invocation, &mut __vernal_target)
+                .await
+            {
+                ::core::result::Result::Ok(value) => value,
+                ::core::result::Result::Err(error) => {
+                    return ::core::result::Result::Err(error);
+                }
+            };
+            match __vernal_value.downcast::<#return_type>() {
+                ::core::result::Result::Ok(value) => ::core::result::Result::Ok(*value),
+                ::core::result::Result::Err(_) => {
+                    ::core::result::Result::Err(
+                        #aop::InvocationError::ReturnTypeMismatch {
+                            expected: ::core::any::type_name::<#return_type>(),
+                        }
+                    )
+                }
+            }
+        }})
+    }
 }
 
 /// 解析可选的逻辑组件名和方法名。
@@ -189,8 +280,8 @@ fn parse_options(attributes: TokenStream) -> syn::Result<(Option<LitStr>, Option
     Ok((component, method))
 }
 
-/// 校验方法是否能安全转换为 `'static` 异步调用目标。
-fn validate_method(method: &ImplItemFn) -> syn::Result<()> {
+/// 校验方法并返回其安全异步目标所有权模型。
+fn validate_method(method: &ImplItemFn) -> syn::Result<InterceptReceiver> {
     if method.sig.asyncness.is_none() {
         return Err(syn::Error::new_spanned(
             method.sig.fn_token,
@@ -207,27 +298,18 @@ fn validate_method(method: &ImplItemFn) -> syn::Result<()> {
             "#[intercept] 暂不支持 const、unsafe、extern 或泛型方法",
         ));
     }
-    let Some(FnArg::Receiver(receiver)) = method.sig.inputs.first() else {
-        return Err(syn::Error::new_spanned(
-            &method.sig.inputs,
-            "#[intercept] 必须用于具有 self: Arc<Self> 接收器的方法",
-        ));
-    };
-    if receiver.reference.is_some() || !is_arc_self(&receiver.ty) {
-        return Err(syn::Error::new_spanned(
-            receiver,
-            "#[intercept] 的接收器必须写成 self: Arc<Self>",
-        ));
-    }
-    for argument in method.sig.inputs.iter().skip(1) {
-        let FnArg::Typed(argument) = argument else {
-            continue;
-        };
-        if matches!(argument.ty.as_ref(), Type::Reference(_)) {
-            return Err(syn::Error::new_spanned(
-                &argument.ty,
-                "被拦截方法参数必须拥有所有权，不能使用引用类型",
-            ));
+    let receiver = InterceptReceiver::parse(method)?;
+    if !receiver.allows_borrowed_arguments() {
+        for argument in method.sig.inputs.iter().skip(1) {
+            let FnArg::Typed(argument) = argument else {
+                continue;
+            };
+            if matches!(argument.ty.as_ref(), Type::Reference(_)) {
+                return Err(syn::Error::new_spanned(
+                    &argument.ty,
+                    "self: Arc<Self> 被拦截方法的参数必须拥有所有权；如需引用参数请使用 &self",
+                ));
+            }
         }
     }
     let (_, error_type) = result_types(&method.sig.output)?;
@@ -237,28 +319,7 @@ fn validate_method(method: &ImplItemFn) -> syn::Result<()> {
             "被拦截方法必须返回 Result<T, InvocationError>",
         ));
     }
-    Ok(())
-}
-
-/// 判断接收器类型是否为 `Arc<Self>`。
-fn is_arc_self(receiver_type: &Type) -> bool {
-    let Type::Path(type_path) = receiver_type else {
-        return false;
-    };
-    let Some(segment) = type_path.path.segments.last() else {
-        return false;
-    };
-    if segment.ident != "Arc" {
-        return false;
-    }
-    let PathArguments::AngleBracketed(arguments) = &segment.arguments else {
-        return false;
-    };
-    matches!(
-        arguments.args.first(),
-        Some(GenericArgument::Type(Type::Path(inner)))
-            if inner.qself.is_none() && inner.path.is_ident("Self")
-    )
+    Ok(receiver)
 }
 
 /// 从 `Result<T, E>` 返回类型中提取成功与错误类型。

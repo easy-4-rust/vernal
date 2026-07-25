@@ -4,6 +4,7 @@
 mod advised;
 mod advisor;
 mod aop_component;
+mod borrowed_invocation_future_target;
 mod borrowed_invocation_target;
 mod borrowed_local_invocation_target;
 mod interceptor;
@@ -33,6 +34,7 @@ mod target_ref;
 pub use advised::Advised;
 pub use advisor::Advisor;
 pub use aop_component::AopComponent;
+pub use borrowed_invocation_future_target::BorrowedInvocationFutureTarget;
 pub use borrowed_invocation_target::BorrowedInvocationTarget;
 pub use borrowed_local_invocation_target::BorrowedLocalInvocationTarget;
 pub use interceptor::Interceptor;

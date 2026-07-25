@@ -260,6 +260,32 @@ registry.register_bundle(
 `Vec<Arc<dyn MessageSender>>` 注入全部实现。绑定仍指向原始组件实例，不建立
 第二套 Store；模块定义与绑定通过 `register_bundle` 原子提交。
 
+启用 AOP 的组件显式持有 Context-local 计划目录与取消令牌。方法宏支持普通
+`&self` 借用方法，也保留需要 owned `'static` 目标的 `self: Arc<Self>` 路径：
+
+```rust
+use std::sync::Arc;
+use vernal_aop::{CancellationToken, InvocationError, InvocationPlanCatalog};
+
+#[derive(vernal_macros::Component)]
+#[component(aop)]
+struct OrderService {
+    invocation_plans: Arc<InvocationPlanCatalog>,
+    cancellation: Arc<CancellationToken>,
+}
+
+impl OrderService {
+    #[vernal_macros::intercept(component = "OrderService")]
+    async fn create(&self, order_id: &u64) -> Result<u64, InvocationError> {
+        Ok(*order_id)
+    }
+}
+```
+
+`&self` 路径允许 owned 或引用参数，并通过 `invoke_borrowed` 把业务 Future 严格
+限制在当前 `.await`；`self: Arc<Self>` 路径要求 owned 参数并生成 `'static`
+目标。两者都不使用反射、全局查找、unsafe 生命周期扩展或隐式克隆接收器。
+
 Send 与 Local 拦截器都可以作为普通 IoC 组件管理。应用先注册拦截器定义，再通过
 `advisor_component::<AuditInterceptor, _>(pointcut, order)` 声明切面；Context
 会使用最终应用 Container 构造拦截器并注入其 Tokio、Environment 或业务依赖，
@@ -421,12 +447,14 @@ Primary/全部实现、Trait 图环、跨定义/绑定原子模块注册，以�
 Scope 解析不误报。9 项自定义 Scope 合同进一步覆盖同 Scope 并发一次构造、兄弟
 隔离、父子生命周期方向、Container 所有权、取消传播、失败后继续逆序清理，以及
 关闭等待已开始工厂、等待者取消安全、有界等待后后台完成、钩子间 panic 隔离。
-Phase 2 AOP 内核现有 10 个 Send 合同测试，覆盖顺序进入/逆序退出、短路、成功结果
+Phase 2 AOP 内核现有 11 个 Send 合同测试，覆盖顺序进入/逆序退出、短路、成功结果
 与错误改写、跨 `.await` 类型化上下文、取消/deadline、切点选择和 64 task
 并发共享计划、借用型非静态目标、计划目录合并与一次封存；另有 6 个 Local-AOP 测试覆盖
 非 `Send` 返回值、顺序、短路、取消、计划目录和借用型本地目标。性能基准仍未
-完成。宏前端另有 5 个运行时合同测试（包含类型驱动自定义 Scope）和 4 个
-compile-fail 用例。
+完成。宏前端另有 5 个运行时合同测试，覆盖 `self: Arc<Self>` 与借用 `&self`
+方法织入及类型驱动自定义 Scope，并有 4 个 compile-fail 用例覆盖非法组件字段、
+非法集合 qualifier、非异步方法与可变接收器。Trait 方法、泛型方法、更完整诊断
+矩阵和 AOP 基准仍待完成。
 Phase 3 内核现有 48 个测试，覆盖依赖顺序启动、逆序关闭、initialize/start
 回滚、非法状态转换、幂等关闭、并发关闭串行化和 Context-local 类型化事件
 隔离、高层构建器十一类内建资源注入、应用 Scope 取消树、任务错误/panic 传播、

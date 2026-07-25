@@ -92,9 +92,10 @@
   uncompiled parallel Store/App/global-registry implementations in production
   `src/`.
 - `[Confirmed]` `#[component(aop)]` and `#[intercept]` connect context-local
-  invocation plans, cancellation, and async component methods. Missing plans,
-  cancellation, and return-type mismatches remain structured errors, without a
-  global instance map.
+  invocation plans, cancellation, and async component methods through both
+  Arc-owned and shared-reference receivers. Missing plans, cancellation, and
+  return-type mismatches remain structured errors, without a global instance
+  map or unsafe lifetime extension.
 - `[Target]` Broader method signatures, remaining consumer ecosystem bridges,
   benchmarks, and later production gates remain.
 
@@ -595,22 +596,28 @@ Ownership and cleanup therefore follow the actual wrapper/context lifecycle.
 
 ### 9.7 Method macro safety contract
 
-The first weaving frontend intentionally exposes a narrow Rust contract:
+The first weaving frontend exposes two explicit Rust ownership contracts:
 
 1. `#[component(aop)]` requires explicit `Arc<InvocationPlanCatalog>` and
    `Arc<CancellationToken>` fields.
-2. An intercepted method is `async fn` with `self: Arc<Self>`.
-3. Arguments are owned and the return type is
-   `Result<T, InvocationError>`.
-4. A one-shot `Mutex<Option<Tuple>>` transfers arguments into the target
-   without requiring business values to implement `Clone`.
-5. Missing plans, repeated target advancement, cancellation, and return-type
+2. An intercepted method is `async fn` with either `self: Arc<Self>` or
+   shared `&self`.
+3. The Arc path requires owned arguments and produces a `'static`
+   `InvocationTarget`; the shared-reference path accepts owned or borrowed
+   arguments and uses `invoke_borrowed`.
+4. The Arc path transfers arguments through a one-shot
+   `Mutex<Option<Tuple>>`; the borrowed path stores one
+   `InvocationFuture<'a>` in `BorrowedInvocationFutureTarget`. Neither path
+   requires business values to implement `Clone`.
+5. Both paths return `Result<T, InvocationError>`. Missing plans, repeated
+   target advancement, cancellation, and return-type
    mismatches are structured errors rather than panics.
 
-The owned receiver and arguments let `InvocationTarget` produce a safe
-`'static` future across `.await`. `Next` is a one-shot continuation; a custom
-interceptor that advances it twice receives `TargetAlreadyInvoked` instead of
-silently repeating a side-effecting business method.
+The owned receiver path produces a safe `'static` future. The `&self` path
+binds its receiver, reference arguments, and business future to the current
+method `.await`; it neither fabricates `'static` nor clones the service.
+`Next` remains a one-shot continuation, so repeated advancement returns
+`TargetAlreadyInvoked` instead of silently repeating side effects.
 
 ```mermaid
 sequenceDiagram
@@ -621,11 +628,11 @@ sequenceDiagram
     participant Plan as "InvocationPlan"
     participant Target as "Business method"
 
-    Caller->>Macro: Arc<Service>.method(owned arguments)
+    Caller->>Macro: Service.method(&self, owned or borrowed arguments)
     Macro->>Component: read catalog and cancellation
     Macro->>Catalog: find plan by Operation
     Catalog-->>Macro: Arc<InvocationPlan>
-    Macro->>Plan: invoke(context, one-shot target)
+    Macro->>Plan: invoke or invoke_borrowed(context, one-shot target)
     Plan->>Target: advance Around chain
     Target-->>Plan: Result<T, InvocationError>
     Plan-->>Macro: type-erased value
@@ -1231,7 +1238,7 @@ atomically commits definitions and bindings together. Ordinary singleton and
 transient resolution remains synchronous; the custom Scope lifecycle uses
 Tokio synchronization and cancellation directly for observable async cleanup.
 
-The Phase 2 AOP kernel additionally has ten Send contract tests for
+The Phase 2 AOP kernel additionally has eleven Send contract tests for
 ordered entry/reverse exit, short circuit, result/error transformation, typed
 context across `.await`, cancellation/deadline, pointcut filtering, and
 64-task concurrent reuse, borrowed non-static targets, plus deduplicated
@@ -1241,12 +1248,12 @@ ordering, short circuit, cancellation, plan catalogs, and borrowed local
 targets. The macro
 frontend additionally has five runtime tests for singleton Component
 injection, transient construction, Trait Object injection, and context-local
-intercepted invocation, plus a type-driven custom Scope declaration and four
+intercepted invocation through both Arc-owned and shared-reference receivers,
+plus a type-driven custom Scope declaration and four
 compile-fail cases for invalid component
-fields, invalid collection qualifiers, non-async methods, and borrowed
-receivers. Phase 2 now has a callable loop, while broader
-signatures, diagnostic coverage, benchmarks, and stability guarantees remain
-open.
+fields, invalid collection qualifiers, non-async methods, and mutable
+receivers. Phase 2 now has a callable loop, while trait/generic methods,
+diagnostic coverage, benchmarks, and stability guarantees remain open.
 
 The Phase 3 kernel has forty-eight contract tests for dependency-order
 startup, reverse shutdown, initialize/start rollback, invalid transitions,
@@ -1288,7 +1295,7 @@ No phase is complete merely because a crate exists or `cargo check` is green.
 | ID | Risk / open decision | Impact | Validation |
 |:---|:---|:---|:---|
 | R-001 | Object-safe async Around allocation cost | AOP performance | Benchmark the implemented boxed-future path |
-| R-002 | Macro support for impl/trait/async methods | Usability | trybuild matrix |
+| R-002 | Macro support for trait, generic, and mutable methods | Usability | trybuild matrix |
 | R-003 | Cross-platform link-time registration | Portability | Linux/macOS/Windows CI |
 | R-004 | Request-scope cancellation differences | Resource safety | Cross-framework failure tests |
 | R-005 | Spring terminology overwhelms Rust API style | Maintenance | API review and Rust guidelines |

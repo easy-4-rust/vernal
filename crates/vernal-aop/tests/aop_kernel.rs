@@ -17,8 +17,9 @@ use borrowed_target::BorrowedTarget;
 use tokio::{sync::Mutex, task::JoinSet, time::Instant};
 use tokio_util::sync::CancellationToken;
 use vernal_aop::{
-    Advisor, BorrowedInvocationTarget, Interceptor, Invocation, InvocationError, InvocationFuture,
-    InvocationPlanBuilder, InvocationResult, InvocationTarget, InvocationValue, Next, Operation,
+    Advisor, BorrowedInvocationFutureTarget, BorrowedInvocationTarget, Interceptor, Invocation,
+    InvocationError, InvocationFuture, InvocationPlanBuilder, InvocationResult, InvocationTarget,
+    InvocationValue, Next, Operation,
 };
 
 struct RecordingInterceptor {
@@ -134,6 +135,32 @@ async fn borrowed_send_target_stays_inside_current_call_lifetime() {
 
     assert_eq!(value.as_str(), "borrowed-result");
     assert_eq!(events, ["borrowed-target:before", "borrowed-target:after"]);
+}
+
+#[tokio::test]
+async fn borrowed_future_target_owns_arguments_and_rejects_second_execution() {
+    let operation = Operation::new("BorrowedService", "execute");
+    let plan = InvocationPlanBuilder::new().build(operation.clone());
+    let borrowed_value = String::from("current-call");
+    let future: InvocationFuture<'_> =
+        Box::pin(async { Ok(Box::new(borrowed_value.len()) as InvocationValue) });
+    let mut target = BorrowedInvocationFutureTarget::new(operation.clone(), future);
+
+    let value = plan
+        .invoke_borrowed(Invocation::new(operation.clone()).shared(), &mut target)
+        .await
+        .expect("borrowed future target");
+    assert_eq!(*value.downcast::<usize>().expect("usize result"), 12);
+
+    let error = plan
+        .invoke_borrowed(Invocation::new(operation.clone()).shared(), &mut target)
+        .await
+        .expect_err("borrowed future target must execute once");
+    assert!(matches!(
+        error,
+        InvocationError::TargetAlreadyInvoked { operation: actual }
+            if actual == operation
+    ));
 }
 
 #[test]
