@@ -14,6 +14,7 @@ use crate::{
     LifecycleExecutionPolicy, LifecyclePhase,
     application_close_coordinator::ApplicationCloseCoordinator,
     application_context_builder::LifecycleResolver, lifecycle_task_executor::LifecycleTaskExecutor,
+    managed_event_listener::ManagedEventListener,
 };
 
 type OperationResult = Result<(), ContextError>;
@@ -30,6 +31,7 @@ type OperationResult = Result<(), ContextError>;
 pub(crate) struct ApplicationStartupCoordinator {
     container: Arc<Container>,
     lifecycle_resolvers: Arc<[(ComponentKey, Arc<LifecycleResolver>)]>,
+    event_listeners: Arc<[ManagedEventListener]>,
     lifecycle: Arc<ApplicationCloseCoordinator>,
 }
 
@@ -38,11 +40,13 @@ impl ApplicationStartupCoordinator {
     pub(crate) fn new(
         container: Arc<Container>,
         lifecycle_resolvers: Arc<[(ComponentKey, Arc<LifecycleResolver>)]>,
+        event_listeners: Vec<ManagedEventListener>,
         lifecycle: Arc<ApplicationCloseCoordinator>,
     ) -> Arc<Self> {
         Arc::new(Self {
             container,
             lifecycle_resolvers,
+            event_listeners: Arc::from(event_listeners),
             lifecycle,
         })
     }
@@ -101,6 +105,7 @@ impl ApplicationStartupCoordinator {
         self.lifecycle.set_state(ContextState::Refreshing).await;
 
         self.warm_up_container().await?;
+        self.start_event_listeners().await?;
 
         for (key, resolver) in self.lifecycle_resolvers.iter() {
             if self.is_cancelled() {
@@ -121,6 +126,43 @@ impl ApplicationStartupCoordinator {
             return Err(error);
         }
         self.lifecycle.set_state(ContextState::Refreshed).await;
+        Ok(())
+    }
+
+    /// 在任何生命周期 initialize 之前建立全部强类型事件订阅。
+    ///
+    /// 注册顺序已经由 `IoC` 依赖计划稳定排序。任一解析或任务提交失败都会取消应用，
+    /// 排空此前启动的监听任务并让 refresh 进入确定的 Closed 终态。
+    async fn start_event_listeners(&self) -> OperationResult {
+        let Some(managed_tasks) = self.lifecycle.resources().managed_tasks().cloned() else {
+            // 只有高层 VernalApplicationBuilder 能登记事件监听器；此分支保护内部
+            // 不变量，避免未来低层 Context 误装配后 panic。
+            if self.event_listeners.is_empty() {
+                return Ok(());
+            }
+            let error = ContextError::LifecycleCoordinator {
+                operation: "event-listener-start",
+                source: Arc::new(std::io::Error::other(
+                    "managed event listeners require a managed Tokio application context",
+                )),
+            };
+            self.rollback_to_closed().await;
+            return Err(error);
+        };
+        let events = Arc::clone(self.lifecycle.resources().events_arc());
+        for listener in self.event_listeners.iter() {
+            if let Err(error) = listener
+                .start(
+                    &self.container,
+                    Arc::clone(&events),
+                    Arc::clone(&managed_tasks),
+                )
+                .await
+            {
+                self.rollback_to_closed().await;
+                return Err(error);
+            }
+        }
         Ok(())
     }
 

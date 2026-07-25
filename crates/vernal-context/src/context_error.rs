@@ -23,6 +23,29 @@ pub enum ContextError {
         /// 缺失的组件标识。
         component: ComponentKey,
     },
+    /// 注册为应用事件监听器的组件不在 `IoC` 构建计划中。
+    EventListenerDefinitionNotFound {
+        /// 缺失的监听器组件标识。
+        component: ComponentKey,
+        /// 监听的事件 Rust 类型名。
+        event: &'static str,
+    },
+    /// 应用事件监听器使用了无法表达 Context 级任务所有权的作用域。
+    EventListenerScope {
+        /// 作用域不合法的监听器组件身份。
+        component: ComponentKey,
+        /// 被监听事件的 Rust 类型名。
+        event: &'static str,
+        /// 稳定、无业务数据的作用域名称。
+        scope: &'static str,
+    },
+    /// 同一组件与事件类型的监听关系被重复声明。
+    DuplicateEventListener {
+        /// 重复声明的监听器组件身份。
+        component: ComponentKey,
+        /// 被重复监听的事件 Rust 类型名。
+        event: &'static str,
+    },
     /// `IoC` 单例预热失败。
     ContainerWarmUp {
         /// `IoC` 原始解析错误。
@@ -32,6 +55,15 @@ pub enum ContextError {
     ComponentResolution {
         /// 正在解析的组件标识。
         component: ComponentKey,
+        /// `IoC` 原始解析错误。
+        source: Box<ResolveError>,
+    },
+    /// 应用事件监听器组件无法从容器解析。
+    EventListenerResolution {
+        /// 正在解析的监听器组件标识。
+        component: ComponentKey,
+        /// 监听的事件 Rust 类型名。
+        event: &'static str,
         /// `IoC` 原始解析错误。
         source: Box<ResolveError>,
     },
@@ -94,6 +126,24 @@ impl fmt::Display for ContextError {
                     "lifecycle component is not registered in IoC: {component}"
                 )
             }
+            Self::EventListenerDefinitionNotFound { component, event } => write!(
+                formatter,
+                "application event listener component is not registered in IoC: \
+                 {component} for {event}"
+            ),
+            Self::EventListenerScope {
+                component,
+                event,
+                scope,
+            } => write!(
+                formatter,
+                "application event listener component {component} for {event} must be \
+                singleton, not {scope}"
+            ),
+            Self::DuplicateEventListener { component, event } => write!(
+                formatter,
+                "application event listener {component} is registered more than once for {event}"
+            ),
             Self::ContainerWarmUp { source } => {
                 write!(formatter, "failed to warm up IoC container: {source}")
             }
@@ -103,6 +153,14 @@ impl fmt::Display for ContextError {
                     "failed to resolve lifecycle component {component}: {source}"
                 )
             }
+            Self::EventListenerResolution {
+                component,
+                event,
+                source,
+            } => write!(
+                formatter,
+                "failed to resolve application event listener {component} for {event}: {source}"
+            ),
             Self::Lifecycle {
                 component,
                 phase,
@@ -149,9 +207,9 @@ impl fmt::Display for ContextError {
 impl Error for ContextError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
-            Self::ContainerWarmUp { source } | Self::ComponentResolution { source, .. } => {
-                Some(source.as_ref())
-            }
+            Self::ContainerWarmUp { source }
+            | Self::ComponentResolution { source, .. }
+            | Self::EventListenerResolution { source, .. } => Some(source.as_ref()),
             Self::Lifecycle { source, .. }
             | Self::LifecycleCoordinator { source, .. }
             | Self::ShutdownSignal { source } => Some(source.as_ref()),

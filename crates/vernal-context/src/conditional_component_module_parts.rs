@@ -1,0 +1,17 @@
+//! 条件组件模块冻结贡献集合。
+
+use vernal_ioc::{ComponentDefinition, TraitBinding};
+
+use crate::{
+    event_listener_registrar::EventListenerRegistrar, lifecycle_registrar::LifecycleRegistrar,
+};
+
+/// 保存一个条件模块等待按判断结果整体提交或排除的全部贡献。
+///
+/// 命名字段避免四元组随贡献种类增长而发生顺序错误；本对象只存在于应用构建阶段。
+pub(crate) struct ConditionalComponentModuleParts {
+    pub(crate) definitions: Vec<ComponentDefinition>,
+    pub(crate) bindings: Vec<TraitBinding>,
+    pub(crate) lifecycle_registrars: Vec<Box<LifecycleRegistrar>>,
+    pub(crate) event_listener_registrars: Vec<Box<EventListenerRegistrar>>,
+}

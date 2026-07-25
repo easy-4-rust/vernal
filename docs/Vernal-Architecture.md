@@ -871,7 +871,7 @@ eleven framework-native components:
 | `LifecycleExecutionPolicy` | Bound initialize/start/stop and post-abort settlement |
 | `SystemShutdownSignalListener` | Observe cross-platform Tokio process signals |
 | `ApplicationEnvironment` | Freeze source precedence, profiles, and typed property semantics |
-| `EventBus` | Context-local typed events |
+| `EventBus` | Context-local typed publication and per-listener Tokio broadcast receivers |
 | `ScopeCleanupPolicy` | Bound application-owned Web scope cleanup waits |
 | `InvocationPlanCatalog` | Immutable Send-AOP invocation plans |
 | `LocalInvocationPlanCatalog` | Immutable worker-local AOP invocation plans |
@@ -955,7 +955,7 @@ Hutool-Rust may convert `Profile`/`SettingLoader` output into a
 `ApplicationModule` is the public assembly SPI for application-owned starters
 and ecosystem bridges. Its `configure` method writes only to an isolated
 `ApplicationModuleRegistrar`, which can collect component definitions, Trait
-bindings, lifecycle registrations, Send/Local advisors, AOP operations,
+bindings, lifecycle registrations, managed event listeners, Send/Local advisors, AOP operations,
 property sources, active/default profiles, and explicit
 `ConditionalComponentModule` values.
 
@@ -970,7 +970,7 @@ named transaction:
    `ApplicationEnvironmentBuilder`;
 5. validate and commit definitions plus bindings through the atomic IoC
    `register_bundle`;
-6. only after every preflight succeeds, move lifecycle, AOP, operation,
+6. only after every preflight succeeds, move lifecycle, event listener, AOP, operation,
    Environment, and conditional contributions into the real application
    builder.
 
@@ -991,7 +991,7 @@ flowchart LR
     Condition["Conditional identity preflight<br/>application + module batch"]
     Env["Clone Environment<br/>validate sources and profiles"]
     Bundle["IoC register_bundle<br/>definitions and bindings"]
-    Commit["Single application commit<br/>lifecycle · AOP · operations · environment"]
+    Commit["Single application commit<br/>lifecycle · listeners · AOP · operations · environment"]
     Rollback["Return structured error<br/>builder unchanged"]
 
     Bridge --> Stage
@@ -1018,7 +1018,7 @@ container and never depends on Profile or property semantics.
 - `PredicateCondition` adapts a custom, thread-safe closure without exposing
   captured data to diagnostics;
 - `ConditionalComponentModule` atomically groups definitions, Trait bindings,
-  and lifecycle registrations under one condition;
+  lifecycle registrations, and event listener declarations under one condition;
 - evaluation happens once, in module registration order, after Environment
   freeze and before graph planning;
 - a false condition omits the entire module. An unconditional component that
@@ -1041,7 +1041,7 @@ flowchart LR
     Environment["Frozen ApplicationEnvironment"]
     Condition["ComponentCondition<br/>Profile · Property · Predicate"]
     Decision{"Matched?"}
-    Commit["Atomic module commit<br/>definitions + bindings + lifecycle"]
+    Commit["Atomic module commit<br/>definitions + bindings + lifecycle + listeners"]
     Omit["Omit complete module"]
     Graph["RegistryBuilder<br/>graph validation"]
     Snapshot["ConditionEvaluationSnapshot<br/>no property keys or values"]
@@ -1069,6 +1069,7 @@ sequenceDiagram
     participant AOP as "InvocationPlanBuilder"
     participant Graph as "RegistryBuilder"
     participant Context as "ApplicationContext"
+    participant Listener as "Managed event listeners"
 
     App->>Builder: register definitions, conditional modules, advisors
     Builder->>Environment: freeze sources and profiles
@@ -1082,7 +1083,8 @@ sequenceDiagram
     Builder->>Graph: freeze and validate complete graph
     Graph-->>Builder: Registry
     Builder->>Context: create with identical shared resources
-    Context-->>App: refresh/start
+    Context->>Listener: resolve and subscribe during refresh
+    Context-->>App: initialize/start after subscriptions exist
 ```
 
 ```mermaid
@@ -1105,12 +1107,71 @@ Lifecycle order:
 
 ```text
 register → freeze → validate graph and pointcuts
-→ construct singletons → initialize → start → Ready
+→ construct singletons → resolve/subscribe listeners → initialize → start → Ready
 → cancel and drain managed tasks → reverse stop → release scopes
 ```
 
 Failures record completed steps and roll back only successful components.
 `close()` is idempotent.
+
+### IoC-managed application event listeners
+
+`EventBus` remains a small, Context-local typed publisher. Listener ownership is
+composed by `vernal-context` instead of being embedded in IoC or AOP:
+
+- `ApplicationEventListener<E>` is implemented by an ordinary Rust component;
+- the component must be Singleton because its `Arc<L>` is retained by a
+  Context-level task; Transient and custom Scope definitions are rejected;
+- `VernalApplicationBuilder`, `ApplicationModuleRegistrar`, and
+  `ConditionalComponentModule` expose the same typed listener declaration;
+- `refresh()` warms all singletons, resolves listener components in dependency
+  plan order, awaits every `EventBus::subscribe::<E>()`, and only then runs
+  lifecycle `initialize()`;
+- each declaration receives its own Tokio broadcast receiver, so multiple
+  listeners observe the same `Arc<E>` without cloning the event body;
+- delivery between independent listeners is concurrent and has no global
+  ordering guarantee; one listener processes its own events serially;
+- a handler error or `RecvError::Lagged` returns `EventListenerError` from the
+  managed task. The supervisor records the first failure, stops accepting work,
+  and cancels the application rather than silently losing a security or domain
+  event;
+- cancellation wins in the listener `select!`; Context close then drains or
+  aborts the task under `TaskShutdownPolicy`.
+
+```mermaid
+sequenceDiagram
+    participant App as "Application assembly"
+    participant Context as "ApplicationStartupCoordinator"
+    participant IoC as "Container"
+    participant Bus as "EventBus"
+    participant Tasks as "ManagedTaskSupervisor"
+    participant Lifecycle as "Lifecycle component"
+
+    App->>Context: refresh()
+    Context->>IoC: warm up Singletons
+    loop dependency-plan listener order
+        Context->>IoC: resolve Arc&lt;Listener&gt;
+        Context->>Bus: subscribe&lt;Event&gt;().await
+        Context->>Tasks: spawn listener consumer
+    end
+    Context->>Lifecycle: initialize()
+    Lifecycle->>Bus: publish(Event)
+    Bus-->>Tasks: Arc&lt;Event&gt;
+    Tasks->>IoC: listener.on_event(event)
+    alt handler error or lag
+        Tasks->>Tasks: retain first structured failure
+        Tasks-->>Context: cancel application
+    else application close
+        Context->>Tasks: cancel, drain, bounded abort
+    end
+```
+
+This closes gaps observed in the source projects without copying their
+ownership flaws: tx_di callbacks detach Tokio tasks, Sa-Token-Rust adapters
+repeat listener assembly, Hutool-Rust utilities keep subsystem-local listener
+collections, and Ddd4r exposes replaceable event publisher ports. Their domain
+event models stay in the consumer libraries; Vernal supplies only component
+resolution, typed in-process delivery, task ownership, and failure semantics.
 
 ### Application lifecycle ownership
 

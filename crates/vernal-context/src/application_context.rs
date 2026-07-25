@@ -13,7 +13,7 @@ use crate::{
     TaskShutdownPolicy, application_close_coordinator::ApplicationCloseCoordinator,
     application_context_builder::LifecycleResolver,
     application_startup_coordinator::ApplicationStartupCoordinator,
-    context_resources::ContextResources,
+    context_resources::ContextResources, managed_event_listener::ManagedEventListener,
 };
 
 /// 组合 `IoC` 容器与 Tokio 生命周期状态机的应用上下文门面。
@@ -31,6 +31,7 @@ impl ApplicationContext {
     pub(crate) fn new(
         container: Container,
         lifecycle_resolvers: Vec<(ComponentKey, Arc<LifecycleResolver>)>,
+        event_listeners: Vec<ManagedEventListener>,
         resources: ContextResources,
     ) -> Self {
         let container = Arc::new(container);
@@ -44,8 +45,12 @@ impl ApplicationContext {
             resources.diagnostics(),
         );
         let close_coordinator = ApplicationCloseCoordinator::new(resources, diagnostics);
-        let startup_coordinator =
-            ApplicationStartupCoordinator::new(container, lifecycle_resolvers, close_coordinator);
+        let startup_coordinator = ApplicationStartupCoordinator::new(
+            container,
+            lifecycle_resolvers,
+            event_listeners,
+            close_coordinator,
+        );
         Self {
             startup_coordinator,
         }

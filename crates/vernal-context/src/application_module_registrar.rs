@@ -6,10 +6,12 @@ use vernal_aop::{Advisor, Interceptor, LocalAdvisor, LocalInterceptor, Operation
 use vernal_ioc::{Component, ComponentDefinition, Qualifier, TraitBinding};
 
 use crate::{
-    ConditionalComponentModule, ConfigurationProperties, Lifecycle, PropertySource,
-    advisor_registration::AdvisorRegistration, application_module_parts::ApplicationModuleParts,
-    lifecycle_registrar::LifecycleRegistrar, local_advisor_registration::LocalAdvisorRegistration,
-    managed_advisor::ManagedAdvisor, managed_local_advisor::ManagedLocalAdvisor,
+    ApplicationEventListener, ConditionalComponentModule, ConfigurationProperties, Lifecycle,
+    PropertySource, advisor_registration::AdvisorRegistration,
+    application_module_parts::ApplicationModuleParts,
+    event_listener_registrar::EventListenerRegistrar, lifecycle_registrar::LifecycleRegistrar,
+    local_advisor_registration::LocalAdvisorRegistration, managed_advisor::ManagedAdvisor,
+    managed_local_advisor::ManagedLocalAdvisor,
     module_environment_contribution::ModuleEnvironmentContribution,
 };
 
@@ -17,12 +19,13 @@ use crate::{
 ///
 /// 所有方法只修改当前 Registrar，不触碰真实 `VernalApplicationBuilder`。只有
 /// [`crate::VernalApplicationBuilder::register_module`] 完成模块配置、环境预检和
-/// `IoC` bundle 校验后，贡献才按原声明顺序一次提交。
+/// `IoC` bundle 校验后，组件、监听器及其他贡献才按原声明顺序一次提交。
 #[derive(Default)]
 pub struct ApplicationModuleRegistrar {
     definitions: Vec<ComponentDefinition>,
     bindings: Vec<TraitBinding>,
     lifecycle_registrars: Vec<Box<LifecycleRegistrar>>,
+    event_listener_registrars: Vec<Box<EventListenerRegistrar>>,
     advisor_registrations: Vec<AdvisorRegistration>,
     local_advisor_registrations: Vec<LocalAdvisorRegistration>,
     operations: Vec<Operation>,
@@ -103,6 +106,40 @@ impl ApplicationModuleRegistrar {
             builder.lifecycle_qualified::<T>(qualifier);
         }));
         self
+    }
+
+    /// 声明一个由无限定符 Singleton 组件实现的强类型应用事件监听器。
+    pub fn event_listener<E, L>(&mut self) -> &mut Self
+    where
+        E: std::any::Any + Send + Sync + 'static,
+        L: ApplicationEventListener<E>,
+    {
+        self.event_listener_registrars.push(Box::new(|builder| {
+            builder.event_listener::<E, L>();
+        }));
+        self
+    }
+
+    /// 声明一个由带限定符 Singleton 组件实现的强类型应用事件监听器。
+    pub fn event_listener_qualified<E, L>(&mut self, qualifier: Qualifier) -> &mut Self
+    where
+        E: std::any::Any + Send + Sync + 'static,
+        L: ApplicationEventListener<E>,
+    {
+        self.event_listener_registrars
+            .push(Box::new(move |builder| {
+                builder.event_listener_qualified::<E, L>(qualifier);
+            }));
+        self
+    }
+
+    /// 同时暂存派生监听器组件定义及其强类型监听声明。
+    pub fn register_event_listener_component<E, L>(&mut self) -> &mut Self
+    where
+        E: std::any::Any + Send + Sync + 'static,
+        L: Component + ApplicationEventListener<E>,
+    {
+        self.component::<L>().event_listener::<E, L>()
     }
 
     /// 暂存一个已经构造完成的线程安全 Advisor。
@@ -270,6 +307,7 @@ impl ApplicationModuleRegistrar {
             definitions: self.definitions,
             bindings: self.bindings,
             lifecycle_registrars: self.lifecycle_registrars,
+            event_listener_registrars: self.event_listener_registrars,
             advisor_registrations: self.advisor_registrations,
             local_advisor_registrations: self.local_advisor_registrations,
             operations: self.operations,

@@ -530,7 +530,23 @@ cancellation against Ctrl-C, Unix SIGTERM/SIGHUP, and Windows console signals.
 The listener is a normal injectable component; an OS signal is published as a
 typed `ApplicationShutdownSignal` event before cancellation, while signal
 registration failures become structured errors and still trigger conservative
-shutdown. The high-level builder also registers a Context-local
+shutdown.
+
+Application events can also be consumed by ordinary IoC Singleton components.
+An implementation of `ApplicationEventListener<E>` is registered through
+`event_listener::<E, L>()`, a conditional module, or an
+`ApplicationModuleRegistrar`. During `refresh()`, Vernal warms the container,
+resolves listeners in dependency-plan order, completes every typed broadcast
+subscription, and only then calls lifecycle `initialize()`. Each listener owns
+one receiver and runs as a `ManagedTaskSupervisor` task. Handler errors and
+broadcast lag are fail-fast data-consistency failures: the task records a
+structured `EventListenerError`, cancels the application, and exposes the
+original cause only through the explicit error chain. Cancellation and Context
+close stop and drain listeners with the same two-phase task policy. Listener
+components must be Singleton; Vernal never silently promotes Transient or
+custom-scoped instances.
+
+The high-level builder also registers a Context-local
 `ApplicationEnvironment`: applications add ordered `PropertySource` objects
 and profiles explicitly, while components can resolve `${key:default}`
 placeholders or parse values into Rust types such as `u16` and `bool`. TOML,
@@ -562,8 +578,8 @@ errors expose the configuration type, Rust field, property key, and a
 structured cause, but never the property value. Consumer-owned bridges can
 implement `ApplicationModule` and use
 its isolated registrar to contribute component definitions, Trait bindings,
-lifecycle hooks, Send/Local advisors, operations, property sources, and
-profiles as one named unit. A module can also contribute explicit
+lifecycle hooks, managed event listeners, Send/Local advisors, operations,
+property sources, and profiles as one named unit. A module can also contribute explicit
 `ConditionalComponentModule` values so its Profile/Property-gated components
 observe the same final Environment. `register_module` preflights conditional
 identities, a cloned Environment, and an atomic IoC bundle before committing
@@ -572,7 +588,7 @@ leaves the application builder unchanged.
 Modules are installed only by explicit Rust calls; Vernal performs no
 classpath-style discovery or process-global registration.
 `ConditionalComponentModule` can group component definitions,
-Trait bindings, and lifecycle registrations under a `ProfileCondition`,
+Trait bindings, lifecycle registrations, and event listener declarations under a `ProfileCondition`,
 `PropertyCondition`, or custom `PredicateCondition`. Every condition is
 evaluated once after the Environment freezes and before graph validation:
 matched modules are registered atomically, unmatched modules leave no partial
@@ -604,9 +620,9 @@ or a no-yield loop inside an async task.
 | Managed Tokio tasks | Context-owned task handles, failure-driven cancellation, graceful wait, bounded abort, shared shutdown result | Phase 3 kernel |
 | Application environment | Explicit PropertySource precedence, profiles, placeholders, typed lookup, and redacted snapshots | Phase 3 kernel |
 | Type-safe configuration objects | Prefix-based derive binding, required/optional/default/nested fields, redacted errors, and native IoC injection | Phase 3 kernel |
-| Explicit application modules | Atomic Definition/Binding/lifecycle/AOP/operation/environment/conditional assembly for consumer-owned bridges | Phase 3 kernel |
-| Conditional component assembly | Build-time Profile/Property/custom conditions with atomic definition, binding, and lifecycle inclusion | Phase 3 kernel |
-| Events | Context-local typed event publication | Phase 3 kernel |
+| Explicit application modules | Atomic Definition/Binding/lifecycle/event-listener/AOP/operation/environment/conditional assembly for consumer-owned bridges | Phase 3 kernel |
+| Conditional component assembly | Build-time Profile/Property/custom conditions with atomic definition, binding, lifecycle, and listener inclusion | Phase 3 kernel |
+| Events | Context-local typed publication plus IoC-managed, fail-fast, lifecycle-owned listeners | Phase 3 kernel |
 | Async integration | Tokio-native cancellation, deadlines, and typed invocation context | Phase 2 kernel |
 | Web context | Request context, request scope, handler invocation, error mapping | Phase 4 contract |
 | HTTP | Request/response, body frames/trailers, explicit bounded collection, cancellation, backpressure | Phase 4 contract |

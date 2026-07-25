@@ -17,14 +17,17 @@ use vernal_ioc::{
 
 use crate::{
     ApplicationBuildError, ApplicationContext, ApplicationContextBuilder,
-    ApplicationEnvironmentBuilder, ApplicationModule, ApplicationModuleError,
-    ApplicationModuleRegistrar, ConditionError, ConditionalComponentModule,
-    ConfigurationProperties, DiagnosticState, EventBus, Lifecycle, LifecycleExecutionPolicy,
-    ManagedTaskSupervisor, SubsystemStatus, SystemShutdownSignalListener, TaskShutdownPolicy,
+    ApplicationEnvironmentBuilder, ApplicationEventListener, ApplicationModule,
+    ApplicationModuleError, ApplicationModuleRegistrar, ConditionError,
+    ConditionEvaluationSnapshot, ConditionalComponentModule, ConfigurationProperties,
+    DiagnosticState, EventBus, Lifecycle, LifecycleExecutionPolicy, ManagedTaskSupervisor,
+    SubsystemStatus, SystemShutdownSignalListener, TaskShutdownPolicy,
     advisor_registration::AdvisorRegistration, application_module_parts::ApplicationModuleParts,
+    conditional_component_module_parts::ConditionalComponentModuleParts,
     context_resources::ContextResources, diagnostic_configuration::DiagnosticConfiguration,
-    lifecycle_registrar::LifecycleRegistrar, local_advisor_registration::LocalAdvisorRegistration,
-    managed_advisor::ManagedAdvisor, managed_local_advisor::ManagedLocalAdvisor,
+    event_listener_registrar::EventListenerRegistrar, lifecycle_registrar::LifecycleRegistrar,
+    local_advisor_registration::LocalAdvisorRegistration, managed_advisor::ManagedAdvisor,
+    managed_local_advisor::ManagedLocalAdvisor,
 };
 
 /// 统一收集组件、条件模块、生命周期、切面和 Tokio Context 资源的应用建造器。
@@ -49,6 +52,7 @@ use crate::{
 pub struct VernalApplicationBuilder {
     registry: RegistryBuilder,
     lifecycle_registrars: Vec<Box<LifecycleRegistrar>>,
+    event_listener_registrars: Vec<Box<EventListenerRegistrar>>,
     application_module_names: BTreeSet<&'static str>,
     conditional_modules: Vec<ConditionalComponentModule>,
     conditional_module_names: BTreeSet<&'static str>,
@@ -81,6 +85,7 @@ impl VernalApplicationBuilder {
         Self {
             registry: RegistryBuilder::new(),
             lifecycle_registrars: Vec::new(),
+            event_listener_registrars: Vec::new(),
             application_module_names: BTreeSet::new(),
             conditional_modules: Vec::new(),
             conditional_module_names: BTreeSet::new(),
@@ -254,6 +259,7 @@ impl VernalApplicationBuilder {
             definitions,
             bindings,
             lifecycle_registrars,
+            event_listener_registrars,
             advisor_registrations,
             local_advisor_registrations,
             operations,
@@ -306,6 +312,8 @@ impl VernalApplicationBuilder {
             })?;
         self.environment = environment;
         self.lifecycle_registrars.extend(lifecycle_registrars);
+        self.event_listener_registrars
+            .extend(event_listener_registrars);
         self.advisor_registrations.extend(advisor_registrations);
         self.local_advisor_registrations
             .extend(local_advisor_registrations);
@@ -360,6 +368,49 @@ impl VernalApplicationBuilder {
             builder.lifecycle_qualified::<T>(qualifier);
         }));
         self
+    }
+
+    /// 注册一个由无限定符 Singleton 组件实现的强类型应用事件监听器。
+    ///
+    /// 组件实例由最终应用 Container 解析；Vernal 在 `refresh()` 中先建立订阅，
+    /// 再执行任何 Lifecycle `initialize()`。处理失败或 broadcast lag 会让受管
+    /// 任务取消应用，防止安全事件、领域事件或运维事件静默丢失。
+    pub fn event_listener<E, L>(&mut self) -> &mut Self
+    where
+        E: std::any::Any + Send + Sync + 'static,
+        L: ApplicationEventListener<E>,
+    {
+        self.event_listener_registrars.push(Box::new(|builder| {
+            builder.event_listener::<E, L>();
+        }));
+        self
+    }
+
+    /// 注册一个由带限定符 Singleton 组件实现的强类型应用事件监听器。
+    pub fn event_listener_qualified<E, L>(&mut self, qualifier: Qualifier) -> &mut Self
+    where
+        E: std::any::Any + Send + Sync + 'static,
+        L: ApplicationEventListener<E>,
+    {
+        self.event_listener_registrars
+            .push(Box::new(move |builder| {
+                builder.event_listener_qualified::<E, L>(qualifier);
+            }));
+        self
+    }
+
+    /// 同时注册派生监听器组件定义及其强类型监听声明。
+    ///
+    /// # Errors
+    ///
+    /// 同一组件身份已经登记时返回 [`DefinitionError`]；失败不会追加监听声明。
+    pub fn register_event_listener_component<E, L>(&mut self) -> Result<&mut Self, DefinitionError>
+    where
+        E: std::any::Any + Send + Sync + 'static,
+        L: Component + ApplicationEventListener<E>,
+    {
+        self.registry.register(L::definition())?;
+        Ok(self.event_listener::<E, L>())
     }
 
     /// 注册一个 AOP 顾问。
@@ -627,6 +678,32 @@ impl VernalApplicationBuilder {
         Ok(())
     }
 
+    /// 在冻结 Environment 上求值并原子提交全部条件模块。
+    fn apply_conditional_modules(
+        &mut self,
+        environment: &Arc<crate::ApplicationEnvironment>,
+    ) -> Result<Vec<ConditionEvaluationSnapshot>, ApplicationBuildError> {
+        let conditional_modules = std::mem::take(&mut self.conditional_modules);
+        let mut evaluations = Vec::with_capacity(conditional_modules.len());
+        for module in conditional_modules {
+            let matched = module.matches(environment)?;
+            evaluations.push(module.snapshot(matched));
+            if matched {
+                let ConditionalComponentModuleParts {
+                    definitions,
+                    bindings,
+                    lifecycle_registrars,
+                    event_listener_registrars,
+                } = module.into_parts();
+                self.registry.register_bundle(definitions, bindings)?;
+                self.lifecycle_registrars.extend(lifecycle_registrars);
+                self.event_listener_registrars
+                    .extend(event_listener_registrars);
+            }
+        }
+        Ok(evaluations)
+    }
+
     /// 冻结依赖图和 AOP 计划并创建尚未 refresh 的应用上下文。
     ///
     /// # Errors
@@ -638,17 +715,7 @@ impl VernalApplicationBuilder {
         // 命中模块通过 RegistryBuilder 的原子 bundle API 提交，未命中模块不会留下
         // Definition、Trait Binding 或生命周期登记中的任一残片。
         let environment = Arc::new(std::mem::take(&mut self.environment).build());
-        let conditional_modules = std::mem::take(&mut self.conditional_modules);
-        let mut condition_evaluations = Vec::with_capacity(conditional_modules.len());
-        for module in conditional_modules {
-            let matched = module.matches(&environment)?;
-            condition_evaluations.push(module.snapshot(matched));
-            if matched {
-                let (definitions, bindings, lifecycle_registrars) = module.into_parts();
-                self.registry.register_bundle(definitions, bindings)?;
-                self.lifecycle_registrars.extend(lifecycle_registrars);
-            }
-        }
+        let condition_evaluations = self.apply_conditional_modules(&environment)?;
 
         // 两类 AOP 目录先以待封存原生对象进入依赖图：这样由 IoC 管理的 Send 与
         // Local 拦截器都可以注入目录、Tokio 或其他业务组件，随后仍由同一个
@@ -747,6 +814,9 @@ impl VernalApplicationBuilder {
         };
         let mut context = ApplicationContextBuilder::managed(container, resources);
         for registrar in self.lifecycle_registrars {
+            registrar(&mut context);
+        }
+        for registrar in self.event_listener_registrars {
             registrar(&mut context);
         }
         context.build().map_err(Into::into)

@@ -5,8 +5,10 @@ use std::{fmt, sync::Arc};
 use vernal_ioc::{ComponentDefinition, Qualifier, TraitBinding};
 
 use crate::{
-    ApplicationEnvironment, ComponentCondition, ConditionError, ConditionEvaluationSnapshot,
-    ConfigurationProperties, Lifecycle, lifecycle_registrar::LifecycleRegistrar,
+    ApplicationEnvironment, ApplicationEventListener, ComponentCondition, ConditionError,
+    ConditionEvaluationSnapshot, ConfigurationProperties, Lifecycle,
+    conditional_component_module_parts::ConditionalComponentModuleParts,
+    event_listener_registrar::EventListenerRegistrar, lifecycle_registrar::LifecycleRegistrar,
 };
 
 /// 把同一装配条件下的组件定义、Trait Binding 与生命周期登记组成原子模块。
@@ -20,6 +22,7 @@ pub struct ConditionalComponentModule {
     definitions: Vec<ComponentDefinition>,
     bindings: Vec<TraitBinding>,
     lifecycle_registrars: Vec<Box<LifecycleRegistrar>>,
+    event_listener_registrars: Vec<Box<EventListenerRegistrar>>,
 }
 
 impl ConditionalComponentModule {
@@ -41,6 +44,7 @@ impl ConditionalComponentModule {
             definitions: Vec::new(),
             bindings: Vec::new(),
             lifecycle_registrars: Vec::new(),
+            event_listener_registrars: Vec::new(),
         }
     }
 
@@ -106,6 +110,33 @@ impl ConditionalComponentModule {
         self
     }
 
+    /// 声明模块内一个无限定符 Singleton 事件监听器。
+    ///
+    /// 条件未命中时，监听声明与组件定义会一起排除，不会留下后台任务。
+    pub fn event_listener<E, L>(&mut self) -> &mut Self
+    where
+        E: std::any::Any + Send + Sync + 'static,
+        L: ApplicationEventListener<E>,
+    {
+        self.event_listener_registrars.push(Box::new(|builder| {
+            builder.event_listener::<E, L>();
+        }));
+        self
+    }
+
+    /// 声明模块内一个带限定符的 Singleton 事件监听器。
+    pub fn event_listener_qualified<E, L>(&mut self, qualifier: Qualifier) -> &mut Self
+    where
+        E: std::any::Any + Send + Sync + 'static,
+        L: ApplicationEventListener<E>,
+    {
+        self.event_listener_registrars
+            .push(Box::new(move |builder| {
+                builder.event_listener_qualified::<E, L>(qualifier);
+            }));
+        self
+    }
+
     /// 返回条件模块静态名称。
     #[must_use]
     pub const fn name(&self) -> &'static str {
@@ -142,6 +173,7 @@ impl ConditionalComponentModule {
         if self.definitions.is_empty()
             && self.bindings.is_empty()
             && self.lifecycle_registrars.is_empty()
+            && self.event_listener_registrars.is_empty()
         {
             return Err(ConditionError::EmptyModule { name: self.name });
         }
@@ -170,18 +202,18 @@ impl ConditionalComponentModule {
                 .collect(),
             self.bindings.len(),
             self.lifecycle_registrars.len(),
+            self.event_listener_registrars.len(),
         )
     }
 
-    /// 消费模块并返回可原子提交的三类注册项。
-    pub(crate) fn into_parts(
-        self,
-    ) -> (
-        Vec<ComponentDefinition>,
-        Vec<TraitBinding>,
-        Vec<Box<LifecycleRegistrar>>,
-    ) {
-        (self.definitions, self.bindings, self.lifecycle_registrars)
+    /// 消费模块并返回可原子提交的四类注册项。
+    pub(crate) fn into_parts(self) -> ConditionalComponentModuleParts {
+        ConditionalComponentModuleParts {
+            definitions: self.definitions,
+            bindings: self.bindings,
+            lifecycle_registrars: self.lifecycle_registrars,
+            event_listener_registrars: self.event_listener_registrars,
+        }
     }
 }
 
@@ -201,6 +233,10 @@ impl fmt::Debug for ConditionalComponentModule {
             )
             .field("trait_binding_count", &self.bindings.len())
             .field("lifecycle_count", &self.lifecycle_registrars.len())
+            .field(
+                "event_listener_count",
+                &self.event_listener_registrars.len(),
+            )
             .finish()
     }
 }

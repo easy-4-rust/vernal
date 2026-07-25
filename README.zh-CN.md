@@ -388,7 +388,20 @@ Tokio 协调任务负责：某个等待者被丢弃或等待超时都不会遗�
 在应用取消与 Ctrl-C、Unix SIGTERM/SIGHUP、Windows 控制台信号之间竞速。
 `SystemShutdownSignalListener` 是普通可注入组件；OS 信号会先发布成类型化
 `ApplicationShutdownSignal` 事件再取消应用，信号注册失败则转成结构化错误并
-执行保守关闭。高层建造器还会注册 Context-local `ApplicationEnvironment`：
+执行保守关闭。
+
+普通 IoC Singleton 组件还可以实现 `ApplicationEventListener<E>`，再通过
+`event_listener::<E, L>()`、条件模块或 `ApplicationModuleRegistrar` 声明监听关系。
+Vernal 在 `refresh()` 中先预热容器，按依赖计划解析监听器并完成全部类型化
+broadcast 订阅，随后才调用任何 Lifecycle `initialize()`，因此初始化阶段发布的
+事件也不会丢失。每个监听器拥有独立 Receiver，并作为
+`ManagedTaskSupervisor` 受管任务运行。处理错误或 broadcast lag 都是 fail-fast
+数据一致性失败：监督器记录结构化 `EventListenerError`、取消应用，原始根因只从
+显式错误链暴露。Context 取消与关闭沿同一两阶段任务策略停止并排空监听器。
+监听组件必须是 Singleton，Vernal 不会把 Transient 或自定义 Scope 静默提升为
+应用级对象。
+
+高层建造器还会注册 Context-local `ApplicationEnvironment`：
 应用显式添加 `PropertySource` 并声明高低优先级和 Profile，组件可以读取
 `${key:default}` 占位符或转换成 `u16`、`bool` 等 Rust 类型。TOML、YAML、
 Hutool `.setting`、进程环境变量和配置中心仍由 Adapter 加载；Vernal 不建立
@@ -414,13 +427,13 @@ application.configuration_properties::<ServiceProperties>()?;
 会预热全部 Singleton，所以应用模式会在进入 `Refreshed` 前校验配置并快速失败。
 绑定错误只公开配置类型、Rust 字段、属性键和结构化原因，不包含属性值。
 消费方 Bridge 可以实现 `ApplicationModule`，通过隔离 Registrar 把组件定义、
-Trait Binding、生命周期、Send/Local Advisor、Operation、PropertySource 与
+Trait Binding、生命周期、受管事件监听器、Send/Local Advisor、Operation、PropertySource 与
 Profile 组织成一个具名装配单元，也可以携带显式
 `ConditionalComponentModule`，让按 Profile/Property 启用的组件读取同一份最终
 Environment。`register_module` 会先预检条件身份、克隆 Environment 与原子 IoC
 Bundle，再一次提交全部贡献；配置、条件、环境或定义任一失败，真实应用建造器都
 保持不变。模块只能由 Rust 代码显式安装，不进行 classpath 式发现或进程级全局注册。
-`ConditionalComponentModule` 可以把组件定义、Trait Binding 与生命周期登记
+`ConditionalComponentModule` 可以把组件定义、Trait Binding、生命周期登记与事件监听声明
 绑定到同一个 `ProfileCondition`、`PropertyCondition` 或自定义
 `PredicateCondition`。条件只在 Environment 冻结后、依赖图校验前求值一次：
 命中模块原子提交，未命中模块不会留下半条 Binding 或生命周期登记，两类结果都
@@ -449,9 +462,9 @@ Spring Boot 式隐式自动配置。`refresh()` 与
 | 受管 Tokio 任务 | Context 持有任务句柄、失败取消、优雅等待、有界 abort 与共享停机结果 | Phase 3 内核 |
 | 应用环境 | 显式 PropertySource 优先级、Profile、占位符、类型化读取与脱敏快照 | Phase 3 内核 |
 | 类型安全配置对象 | 基于前缀派生绑定必填/可选/默认/嵌套字段、错误脱敏与原生 IoC 注入 | Phase 3 内核 |
-| 显式应用模块 | 为消费方 Bridge 原子装配 Definition/Binding/生命周期/AOP/Operation/Environment/条件模块 | Phase 3 内核 |
-| 条件组件装配 | 构建期 Profile/Property/自定义条件，组件定义、Binding 与生命周期原子进退 | Phase 3 内核 |
-| 事件 | Context 内部隔离的类型化事件发布 | Phase 3 内核 |
+| 显式应用模块 | 为消费方 Bridge 原子装配 Definition/Binding/生命周期/事件监听/AOP/Operation/Environment/条件模块 | Phase 3 内核 |
+| 条件组件装配 | 构建期 Profile/Property/自定义条件，组件定义、Binding、生命周期与监听器原子进退 | Phase 3 内核 |
+| 事件 | Context 内类型化发布，以及 IoC 托管、失败关闭、生命周期持有的监听器 | Phase 3 内核 |
 | 异步集成 | Tokio 原生取消、deadline 与类型化调用上下文 | Phase 2 内核 |
 | Web 上下文 | 请求 Context、请求 Scope、Handler 调用和错误映射 | Phase 4 合同 |
 | HTTP | 请求/响应、Body Frame/Trailer、显式限量收集、取消和背压 | Phase 4 合同 |

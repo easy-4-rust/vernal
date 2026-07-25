@@ -1,10 +1,16 @@
 //! 应用上下文建造器对象。
 
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 use vernal_ioc::{ComponentKey, Container, Qualifier, Registry, ResolveError};
 
-use crate::{ApplicationContext, ContextError, Lifecycle, context_resources::ContextResources};
+use crate::{
+    ApplicationContext, ApplicationEventListener, ContextError, Lifecycle,
+    context_resources::ContextResources, managed_event_listener::ManagedEventListener,
+};
 
 pub(crate) type LifecycleResolver =
     dyn Fn(&Container) -> Result<Arc<dyn Lifecycle>, ResolveError> + Send + Sync + 'static;
@@ -16,6 +22,7 @@ pub(crate) type LifecycleResolver =
 pub struct ApplicationContextBuilder {
     container: Container,
     lifecycle_resolvers: Vec<(ComponentKey, Arc<LifecycleResolver>)>,
+    event_listeners: Vec<ManagedEventListener>,
     resources: ContextResources,
 }
 
@@ -26,6 +33,7 @@ impl ApplicationContextBuilder {
         Self {
             container: registry.into_container(),
             lifecycle_resolvers: Vec::new(),
+            event_listeners: Vec::new(),
             resources: ContextResources::standalone(),
         }
     }
@@ -39,6 +47,7 @@ impl ApplicationContextBuilder {
         Self {
             container,
             lifecycle_resolvers: Vec::new(),
+            event_listeners: Vec::new(),
             resources,
         }
     }
@@ -73,6 +82,28 @@ impl ApplicationContextBuilder {
         self
     }
 
+    /// 登记一个由无限定符 Singleton 组件实现的强类型事件监听器。
+    pub(crate) fn event_listener<E, L>(&mut self) -> &mut Self
+    where
+        E: std::any::Any + Send + Sync + 'static,
+        L: ApplicationEventListener<E>,
+    {
+        self.event_listeners
+            .push(ManagedEventListener::new::<E, L>());
+        self
+    }
+
+    /// 登记一个由带限定符 Singleton 组件实现的强类型事件监听器。
+    pub(crate) fn event_listener_qualified<E, L>(&mut self, qualifier: Qualifier) -> &mut Self
+    where
+        E: std::any::Any + Send + Sync + 'static,
+        L: ApplicationEventListener<E>,
+    {
+        self.event_listeners
+            .push(ManagedEventListener::qualified::<E, L>(qualifier));
+        self
+    }
+
     /// 校验生命周期绑定并创建 Context。
     ///
     /// # Errors
@@ -98,12 +129,37 @@ impl ApplicationContextBuilder {
                 });
             }
         }
+        let mut listener_declarations = HashSet::new();
+        for listener in &self.event_listeners {
+            if !positions.contains_key(listener.component()) {
+                return Err(ContextError::EventListenerDefinitionNotFound {
+                    component: listener.component().clone(),
+                    event: listener.event(),
+                });
+            }
+            if !listener_declarations.insert((listener.component().clone(), listener.event())) {
+                return Err(ContextError::DuplicateEventListener {
+                    component: listener.component().clone(),
+                    event: listener.event(),
+                });
+            }
+            if let Some(scope) = listener.invalid_scope(&self.container) {
+                return Err(ContextError::EventListenerScope {
+                    component: listener.component().clone(),
+                    event: listener.event(),
+                    scope,
+                });
+            }
+        }
 
         self.lifecycle_resolvers
             .sort_by_key(|(key, _)| positions[key]);
+        self.event_listeners
+            .sort_by_key(|listener| positions[listener.component()]);
         Ok(ApplicationContext::new(
             self.container,
             self.lifecycle_resolvers,
+            self.event_listeners,
             self.resources,
         ))
     }

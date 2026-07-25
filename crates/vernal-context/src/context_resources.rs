@@ -94,6 +94,13 @@ impl ContextResources {
         &self.events
     }
 
+    /// 克隆 Context 独占事件总线的共享所有权。
+    ///
+    /// 仅后台监听任务需要延长所有权；普通组件和公开 Context API 继续借用同一对象。
+    pub(crate) fn events_arc(&self) -> &Arc<EventBus> {
+        &self.events
+    }
+
     /// 返回应用作用域共享的清理等待策略。
     pub(crate) fn scope_cleanup_policy(&self) -> &ScopeCleanupPolicy {
         &self.scope_cleanup_policy

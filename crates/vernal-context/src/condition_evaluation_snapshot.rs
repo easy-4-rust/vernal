@@ -14,6 +14,7 @@ pub struct ConditionEvaluationSnapshot {
     components: Vec<String>,
     trait_binding_count: usize,
     lifecycle_count: usize,
+    event_listener_count: usize,
 }
 
 impl ConditionEvaluationSnapshot {
@@ -25,6 +26,7 @@ impl ConditionEvaluationSnapshot {
         components: Vec<String>,
         trait_binding_count: usize,
         lifecycle_count: usize,
+        event_listener_count: usize,
     ) -> Self {
         Self {
             module: module.to_owned(),
@@ -33,6 +35,7 @@ impl ConditionEvaluationSnapshot {
             components,
             trait_binding_count,
             lifecycle_count,
+            event_listener_count,
         }
     }
 
@@ -72,5 +75,11 @@ impl ConditionEvaluationSnapshot {
     #[must_use]
     pub const fn lifecycle_count(&self) -> usize {
         self.lifecycle_count
+    }
+
+    /// 返回模块声明的强类型事件监听器数量。
+    #[must_use]
+    pub const fn event_listener_count(&self) -> usize {
+        self.event_listener_count
     }
 }

@@ -798,7 +798,7 @@ Web server 和外部配置中心仍属于独立适配器；它们可以把结果
 | `LifecycleExecutionPolicy` | 约束 initialize/start/stop 与 abort 后收口时间 |
 | `SystemShutdownSignalListener` | 监听跨平台 Tokio 进程关闭信号 |
 | `ApplicationEnvironment` | 冻结属性来源优先级、Profile 与类型化解析语义 |
-| `EventBus` | 每个 Context 独占的类型化广播事件 |
+| `EventBus` | 每个 Context 独占的类型化发布与监听器 broadcast Receiver |
 | `ScopeCleanupPolicy` | 约束应用拥有的 Web Scope 清理等待 |
 | `InvocationPlanCatalog` | 构建阶段生成的只读 Send-AOP 计划目录 |
 | `LocalInvocationPlanCatalog` | 构建阶段生成的只读 Worker-local AOP 计划目录 |
@@ -817,6 +817,7 @@ sequenceDiagram
     participant AOP as "InvocationPlanBuilder"
     participant Graph as "RegistryBuilder"
     participant Context as "ApplicationContext"
+    participant Listener as "受管事件监听器"
 
     App->>Builder: register definitions, conditional modules, advisors
     Builder->>Environment: 冻结来源与 Profile
@@ -830,7 +831,8 @@ sequenceDiagram
     Builder->>Graph: freeze and validate complete graph
     Graph-->>Builder: Registry
     Builder->>Context: create with identical shared resources
-    Context-->>App: refresh/start
+    Context->>Listener: refresh 中解析并建立订阅
+    Context-->>App: 订阅完成后 initialize/start
 ```
 
 ### 10.2 应用环境
@@ -905,7 +907,7 @@ Hutool-Rust 可以把 `Profile/SettingLoader` 的结果转换成
 
 `ApplicationModule` 是面向应用自有 Starter 与生态 Bridge 的公共装配 SPI。
 模块的 `configure` 只写入隔离的 `ApplicationModuleRegistrar`，可统一暂存组件
-Definition、Trait Binding、生命周期登记、Send/Local Advisor、AOP Operation、
+Definition、Trait Binding、生命周期登记、受管事件监听器、Send/Local Advisor、AOP Operation、
 PropertySource、Active/Default Profile 和显式 `ConditionalComponentModule`。
 
 `VernalApplicationBuilder::register_module` 把这些贡献作为一个具名事务处理：
@@ -915,7 +917,7 @@ PropertySource、Active/Default Profile 和显式 `ConditionalComponentModule`�
 3. 在应用已有名称和当前模块批次两个范围内预检全部内嵌条件模块身份；
 4. 把环境贡献应用到克隆的 `ApplicationEnvironmentBuilder` 完成预检；
 5. 通过 IoC 原子 `register_bundle` 校验并提交 Definition 与 Binding；
-6. 全部预检成功后，才把生命周期、AOP、Operation、Environment 和条件贡献一次
+6. 全部预检成功后，才把生命周期、事件监听、AOP、Operation、Environment 和条件贡献一次
    移入真实应用建造器。
 
 配置失败、条件身份非法/重复、PropertySource 重名、Profile 非法或
@@ -932,7 +934,7 @@ flowchart LR
     Condition["条件身份预检<br/>应用 + 当前模块批次"]
     Env["克隆 Environment<br/>校验来源与 Profile"]
     Bundle["IoC register_bundle<br/>Definition + Binding"]
-    Commit["一次提交应用<br/>生命周期 · AOP · Operation · Environment"]
+    Commit["一次提交应用<br/>生命周期 · 监听器 · AOP · Operation · Environment"]
     Rollback["返回结构化错误<br/>建造器保持不变"]
 
     Bridge --> Stage
@@ -957,7 +959,7 @@ flowchart LR
   match-if-missing，并比较占位符展开后的值；
 - `PredicateCondition` 把线程安全闭包适配成自定义条件，但诊断不会序列化闭包
   捕获的数据；
-- `ConditionalComponentModule` 把 Definition、Trait Binding 与生命周期登记
+- `ConditionalComponentModule` 把 Definition、Trait Binding、生命周期登记与事件监听声明
   绑定为一个原子装配单元；
 - Environment 冻结后按模块注册顺序求值一次，依赖图规划前只提交命中模块；
 - 未命中模块整体排除；若无条件组件仍依赖其中对象，GraphPlanner 继续返回
@@ -976,7 +978,7 @@ flowchart LR
     Environment["冻结的 ApplicationEnvironment"]
     Condition["ComponentCondition<br/>Profile · Property · Predicate"]
     Decision{"是否命中？"}
-    Commit["原子提交模块<br/>Definition + Binding + Lifecycle"]
+    Commit["原子提交模块<br/>Definition + Binding + Lifecycle + Listener"]
     Omit["整体排除模块"]
     Graph["RegistryBuilder<br/>依赖图校验"]
     Snapshot["ConditionEvaluationSnapshot<br/>不含属性键和值"]
@@ -1015,6 +1017,7 @@ register
   → freeze
   → validate graph and pointcuts
   → construct singleton components
+  → resolve and subscribe managed event listeners
   → initialize in dependency order
   → start in dependency order
   → publish Ready
@@ -1026,7 +1029,60 @@ register
 任何阶段失败都要记录已完成步骤，只回滚已经成功的组件。关闭必须幂等；多次
 `close()` 返回相同终态，不重复执行不可重入副作用。
 
-### 10.7 Context 生命周期所有权
+### 10.7 IoC 托管应用事件监听器
+
+`EventBus` 继续保持为小型、Context-local 的强类型发布器；监听器所有权由
+`vernal-context` 组合，不进入纯 IoC 或 AOP 内核：
+
+- 普通 Rust 组件实现 `ApplicationEventListener<E>`；
+- 监听组件必须是 Singleton，因为 Context 级任务会长期持有同一个 `Arc<L>`；
+  Transient 与自定义 Scope 会在构建时被拒绝，不发生静默提升；
+- `VernalApplicationBuilder`、`ApplicationModuleRegistrar` 与
+  `ConditionalComponentModule` 提供一致的类型化监听声明；
+- `refresh()` 先预热 Singleton，再按依赖计划解析监听组件，等待每个
+  `EventBus::subscribe::<E>()` 完成，最后才执行 Lifecycle `initialize()`；
+- 每条监听声明拥有独立 Tokio broadcast Receiver，多个监听器共享同一个
+  `Arc<E>`，无需复制事件正文；
+- 不同监听器并发执行，没有全局顺序保证；单个监听器按其 Receiver 顺序串行处理；
+- 处理器错误或 `RecvError::Lagged` 会从受管任务返回 `EventListenerError`。
+  监督器保存首个失败、停止接收任务并取消应用，不静默丢失安全事件或领域事件；
+- 监听循环的 `select!` 让应用取消优先；Context 关闭再按
+  `TaskShutdownPolicy` 排空或有界 abort。
+
+```mermaid
+sequenceDiagram
+    participant App as "应用装配"
+    participant Context as "ApplicationStartupCoordinator"
+    participant IoC as "Container"
+    participant Bus as "EventBus"
+    participant Tasks as "ManagedTaskSupervisor"
+    participant Lifecycle as "Lifecycle 组件"
+
+    App->>Context: refresh()
+    Context->>IoC: 预热 Singleton
+    loop 监听器依赖计划顺序
+        Context->>IoC: 解析 Arc&lt;Listener&gt;
+        Context->>Bus: subscribe&lt;Event&gt;().await
+        Context->>Tasks: 提交监听消费任务
+    end
+    Context->>Lifecycle: initialize()
+    Lifecycle->>Bus: publish(Event)
+    Bus-->>Tasks: Arc&lt;Event&gt;
+    Tasks->>IoC: listener.on_event(event)
+    alt 处理错误或 lag
+        Tasks->>Tasks: 保存首个结构化失败
+        Tasks-->>Context: 取消应用
+    else 应用关闭
+        Context->>Tasks: cancel、排空、有界 abort
+    end
+```
+
+这项设计吸收来源项目的有效需求，同时拒绝复制所有权缺陷：tx_di 回调会直接
+detach Tokio task，Sa-Token-Rust 的多个 Adapter 重复监听装配，Hutool-Rust
+工具各自维护监听集合，Ddd4r 则提供可替换事件发布端口。事件领域模型继续归消费
+库所有；Vernal 只提供组件解析、进程内类型化投递、任务所有权与失败语义。
+
+### 10.8 Context 生命周期所有权
 
 `ApplicationContext` 是公开门面，不让某个临时调用者 Future 直接拥有生命周期。
 `ApplicationStartupCoordinator` 在独立 Tokio task 中执行 refresh/initialize/
@@ -1102,7 +1158,7 @@ flowchart LR
     Close --> Drain["排空任务并逆序 stop"]
 ```
 
-### 10.8 受管 Tokio 任务
+### 10.9 受管 Tokio 任务
 
 `ManagedTaskSupervisor` 是 Context 对长期 Worker、消息消费、配置监听和
 Hutool-Rust Cron 驱动任务的所有权边界。它不实现这些业务或工具能力，只管理其
