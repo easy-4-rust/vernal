@@ -193,6 +193,7 @@ flowchart TB
 | `Sa-Token-Rust` | Router 流程、Adapter 合同、`sa-token-core/src/config.rs` 与十类 Web/RPC plugin | 同一鉴权流通过框架端口复用；强类型 Builder 需要稳定的外部属性输入 |
 | `Ddd4r` | 根 manifest 与实施计划 | 需要 request context bridge，同时保留 DDD/CQRS 责任 |
 | `Hutool-Rust` | AOP、Reqwest HTTP Client、`hutool-setting` 的 `Profile`/`SettingLoader` | Profile、变量展开和配置文件解析可作为 PropertySource Adapter，文件格式不进入 Context |
+| `RBatis` | `Intercept`、`Action`、`ResultType`、`apply_before`、`apply_after` 与 `RBatis` 拦截器存储 | 可变输入/结果和显式短路值得吸收；运行期修改引擎全局链及按名称 downcast 不适合作为通用 AOP 内核 |
 
 以上是 2026-07-25 的本地源码快照，不等于这些项目当前分支已经对 Vernal 完成集成。
 
@@ -223,6 +224,17 @@ flowchart TB
 | `after` 只修改 `CallResult` 描述 | 不能实现真正 Around/返回值变换 | 引入 `Next`/Continuation 语义 |
 | 生命周期与 Tokio task 固定绑定且缺少统一状态机 | 任务取消和回滚语义分散 | Context 采用 Tokio 原生任务、取消和时间能力，并统一管理状态机 |
 | 全局链接期 Registry 是唯一入口 | 测试隔离和动态组装受限 | 显式 `RegistryBuilder` 为基线，编译期收集为可选前端 |
+
+### 5.4 RBatis 拦截器取舍
+
+| RBatis 机制 | Vernal 决策 |
+|:---|:---|
+| `Action::Next` / `Action::Return` | 通过按值消费的 `Next` 保留显式短路；不调用 `next.run` 直接返回就是类型安全的 Return |
+| 可变 SQL、参数与类型化 `ResultType` | SQL 专属改写继续由 RBatis 拥有；Vernal 提供类型化 `InvocationContext` 和完整结果/错误变换，不制造通用可变参数数组 |
+| Hook 中携带 Executor 与操作种类 | 显式建模稳定 Operation，并在计划编译期使用可复用的操作/组件/方法切点 |
+| `name()` 与 `Any` downcast 查找 | 使用 IoC 组件身份和显式 Advisor 注册；运行期拦截链不承担 Service Locator 职责 |
+| 每个克隆 Engine 共享可变 `SyncVec` | 流量进入前把 Advisor 冻结为每个 Context 独立的不可变计划目录 |
+| 分离且同向遍历的 `before` / `after` | 保留真正 Around 嵌套，让较小 order 先进入、后退出 |
 
 ## 6. 关键架构决策
 
@@ -446,6 +458,12 @@ AOP 同时服务两类用户：
 - 参数值默认不采集；显式启用时必须支持字段级脱敏；
 - 调用 deadline、取消信号和嵌套深度；
 - 业务错误作为原始 source 保留，不压缩成字符串。
+
+可复用切点必须是值对象，而不是每次调用时重新解释的字符串。
+`AnyPointcut`、`OperationPointcut`、`ComponentPointcut` 与
+`MethodPointcut` 分别表达全匹配、精确操作、组件和方法维度；
+`PointcutExt` 可以把内建对象、自定义对象或闭包组合为类型安全的 AND/OR/NOT
+表达式。组合在计划编译期短路求值，生成的运行时计划不再携带切点分支。
 
 ### 9.3 Around 主链
 
@@ -1226,7 +1244,8 @@ Phase 2 AOP 内核另有 11 个 Send 合同测试，覆盖顺序进入/逆序退
 错误改写、跨 `.await` 类型化上下文、取消/deadline、切点过滤和 64 task 并发
 复用、借用型非静态目标、重复 Operation 合并的计划目录编译与一次封存；另有 6 个
 Local-AOP 测试覆盖非 `Send` 返回值、顺序、短路、取消、计划目录和借用型本地
-目标。宏前端另有 5 个运行时测试，覆盖
+目标；另有 4 个切点代数合同测试，覆盖精确 Operation、组件和方法匹配，
+类型安全 AND/OR/NOT 组合、闭包互操作与分支短路求值。宏前端另有 5 个运行时测试，覆盖
 Singleton Component 注入、Transient 构造、Trait Object 注入、Arc-owned 与
 共享借用接收器的 Context-local 方法织入及类型驱动自定义 Scope，并有 4 个
 compile-fail 用例覆盖非法组件字段、非法集合 qualifier、非异步方法和可变接收器。

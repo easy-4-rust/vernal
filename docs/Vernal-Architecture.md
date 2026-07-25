@@ -214,6 +214,7 @@ flowchart TB
 | `Sa-Token-Rust` | Router flow, adapter contracts, core config builder, and ten Web/RPC plugin families | One auth flow is reused through framework ports; typed builders need stable external property inputs |
 | `Ddd4r` | Root manifest and implementation plan | Target stack needs a request-context bridge while retaining DDD/CQRS ownership |
 | `Hutool-Rust` | AOP, Reqwest client, and `hutool-setting` Profile/SettingLoader | Profiles, variable expansion, and parsed settings can feed an adapter without coupling file formats to Context |
+| `RBatis` | `Intercept`, `Action`, `ResultType`, `apply_before`, `apply_after`, and `RBatis` interceptor storage | Mutable input/result interception and explicit short circuit are useful; runtime-mutated global engine chains and name downcasts are not a general AOP kernel |
 
 This is a local source snapshot from 2026-07-25, not evidence that any consumer
 already integrates Vernal.
@@ -245,6 +246,17 @@ already integrates Vernal.
 | `after` changes only a result description | Not true Around semantics | Introduce `Next`/continuation |
 | Lifecycle owns Tokio tasks without one state machine | Cancellation and rollback semantics scatter | Tokio-native context with one lifecycle state machine |
 | Global link-time registry is the only entrypoint | Weak isolation and dynamic assembly | Explicit `RegistryBuilder` baseline |
+
+### 5.4 RBatis interceptor lessons
+
+| RBatis mechanism | Vernal decision |
+|:---|:---|
+| `Action::Next` / `Action::Return` | Preserve explicit short circuit through consuming `Next`; returning without `next.run` is the type-safe Return action |
+| Mutable SQL, arguments, and typed `ResultType` | Keep domain-specific mutation in RBatis; expose typed `InvocationContext` plus full result/error transformation instead of one universal mutable argument vector |
+| Executor and operation kind in the hook contract | Model stable operation identity explicitly and compile reusable operation/component/method pointcuts |
+| Interceptor `name()` and `Any` downcast lookup | Use IoC component identity and explicit Advisor registration; runtime interception is not a service locator |
+| Mutable `SyncVec` on every cloned engine | Freeze Advisors into immutable per-Context catalogs before serving traffic |
+| Separate forward `before` and forward `after` loops | Retain true Around nesting so lower order enters first and exits last |
 
 ## 6. Architecture decisions
 
@@ -478,6 +490,13 @@ read-only context extensions, deadline, cancellation, and nesting depth.
 Argument values are not captured by default. Explicit capture must support
 field-level redaction. Business errors retain their source rather than becoming
 strings.
+
+Reusable pointcuts are values rather than strings interpreted on every call.
+`AnyPointcut`, `OperationPointcut`, `ComponentPointcut`, and
+`MethodPointcut` provide explicit dimensions. `PointcutExt` composes any
+built-in, custom, or closure pointcut with typed AND/OR/NOT objects. Composition
+short-circuits during plan compilation; the resulting runtime plan contains no
+pointcut branch.
 
 ### 9.3 Around flow
 
@@ -1308,7 +1327,9 @@ context across `.await`, cancellation/deadline, pointcut filtering, and
 plan-catalog compilation and one-time catalog sealing. Six Local-AOP tests
 cover non-`Send` values,
 ordering, short circuit, cancellation, plan catalogs, and borrowed local
-targets. The macro
+targets. Four pointcut-algebra contracts additionally cover exact operation,
+component, and method matching; typed AND/OR/NOT composition; closure
+interoperability; and branch short-circuiting. The macro
 frontend additionally has five runtime tests for singleton Component
 injection, transient construction, Trait Object injection, and context-local
 intercepted invocation through both Arc-owned and shared-reference receivers,

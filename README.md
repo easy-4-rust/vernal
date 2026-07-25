@@ -115,7 +115,7 @@ Detailed decisions, flows, failure semantics, and acceptance criteria are in:
 | `vernal` | Experimental facade | Facade, prelude, feature composition |
 | `vernal-core` | Experimental | Shared contracts for the Tokio-first framework |
 | `vernal-ioc` | Phase 1/diagnostics kernel implemented | Definitions, scopes, resolution, graph validation, read-only snapshots |
-| `vernal-aop` | Phase 2 kernel implemented | Send/Local Around/Next, pointcuts, immutable plans, cancellation |
+| `vernal-aop` | Phase 2 kernel implemented | Send/Local Around/Next, composable pointcut algebra, immutable plans, cancellation |
 | `vernal-context` | Phase 3/diagnostics kernel implemented | Managed bootstrap, application environment, conditional assembly, lifecycle, events, redacted startup reports |
 | `vernal-macros` | Phase 2 macros implemented | Explicit `Arc<T>` injection metadata and context-local async method weaving |
 | `vernal-web` | Phase 4 contract implemented | Framework-neutral context, request scope, handler, and error contracts |
@@ -628,7 +628,9 @@ context across `.await`, cancellation/deadline, pointcut selection, and
 64-task concurrent plan reuse, borrowed non-static targets, plus deduplicated
 plan-catalog compilation and one-time catalog sealing. Six Local-AOP tests cover non-`Send` values,
 ordering, short circuit, cancellation, plan catalogs, and borrowed local
-targets.
+targets. Four additional contracts cover exact operation, component, and method
+pointcuts; AND/OR/NOT composition; closure interoperability; and logical
+short-circuit evaluation.
 The macro frontend has five runtime tests covering singleton Component
 injection, transient construction, Trait Object injection, and context-local
 intercepted invocation through both `self: Arc<Self>` and borrowed `&self`,
