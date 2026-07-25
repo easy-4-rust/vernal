@@ -419,8 +419,10 @@ Sa-Token-Rust now owns the experimental `sa-token-vernal` bridge:
 - adapt `HttpRequestSnapshot` to `SaRequest` and reuse `run_auth_flow`;
 - project login identity and roles into `RequestContext::SecurityPrincipal`;
 - run downstream futures inside the request's `SaTokenContext`;
-- atomically register the manager, bridge, policy, and authentication/
-  authorization Advisor through `SaTokenComponents`;
+- use `SaTokenComponents` as the named `sa-token.security`
+  `ApplicationModule` to atomically register the manager, bridge, policy, and
+  matching Send/Local authentication/authorization Advisors; duplicate module
+  names or definitions leave no partial security plan;
   `VernalSaTokenPointcut` covers declared operations and
   `VernalSaTokenInterceptor` authenticates before enforcing operation-scoped
   all/any role and permission requirements;

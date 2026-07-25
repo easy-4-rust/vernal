@@ -1053,9 +1053,11 @@ Request Scope 传播鉴权结果。Token、Session、Role、Permission、Cookie 
 Sa-Token-Rust 仓库现已实现消费方持有、暂不发布的 `sa-token-vernal`。它固定到
 已经验证的 Vernal Git Revision，把 `HttpRequestSnapshot` 适配为 `SaRequest`，
 将已认证角色投影为 `SecurityPrincipal`，并让下游 Future 运行在请求级
-`SaTokenContext` 中。`SaTokenComponents` 保留调用方传入的原始
-`Arc<SaTokenManager>`、Bridge 与 Policy 身份，把三者原子安装为经过图校验的
-组件关系，并注册认证与授权 Advisor。`VernalSaTokenInterceptor` 先认证，再在
+`SaTokenContext` 中。`SaTokenComponents` 是具名 `sa-token.security`
+`ApplicationModule`，保留调用方传入的原始 `Arc<SaTokenManager>`、Bridge 与
+Policy 身份，并把这些定义以及 Send/Local 两类认证授权 Advisor 作为一个事务
+安装。模块名或组件定义冲突时完整拒绝，不泄漏残缺调用计划。
+`VernalSaTokenInterceptor` 先认证，再在
 完整 Tokio 调用 Future 上执行按 Operation 声明的角色/权限 all/any 规则，并
 保留 Sa-Token 全局与前缀通配符语义：匿名访问受保护操作返回 401，已认证但权限
 不足返回 403，权限后端失败保持内部 500。Axum/Poem/Tonic Adapter 将这些
@@ -1066,8 +1068,8 @@ Sa-Token-Rust 仓库现已实现消费方持有、暂不发布的 `sa-token-vern
 `VernalSaTokenConfigBinder` 现已把不可变 `ApplicationEnvironment` 映射到
 Sa-Token 原生 `SaTokenConfigBuilder`，覆盖 Builder 已公开的稳定标量与枚举设置；
 缺失键继续采用 Sa-Token 默认值，非法值错误保持脱敏。Storage、Listener、Manager
-创建和 Runtime 安装仍由 Sa-Token 显式负责。目标 crate 原有 11 个 Bridge 测试与
-新增 2 个配置绑定测试已一起通过。
+创建和 Runtime 安装仍由 Sa-Token 显式负责。目标 crate 的 12 个 Bridge 测试
+（包括模块与定义冲突回滚合同）和 2 个配置绑定测试已一起通过。
 
 ### 12.3 Ddd4r
 

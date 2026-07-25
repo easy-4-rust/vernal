@@ -370,8 +370,10 @@ Sa-Token-Rust 现已持有实验性的 `sa-token-vernal` Bridge：
 - 将 `HttpRequestSnapshot` 适配为 `SaRequest` 并复用 `run_auth_flow`；
 - 把登录身份和角色投影到 `RequestContext::SecurityPrincipal`；
 - 让下游 Future 运行在当前请求的 `SaTokenContext` 中；
-- 由 `SaTokenComponents` 原子注册 Manager、Bridge、Policy 与认证/授权
-  Advisor；`VernalSaTokenPointcut` 覆盖声明的操作，
+- 以 `SaTokenComponents` 作为具名 `sa-token.security`
+  `ApplicationModule`，原子注册 Manager、Bridge、Policy 与 Send/Local
+  两类认证授权 Advisor；模块名或定义冲突时不遗留残缺安全计划；
+  `VernalSaTokenPointcut` 覆盖声明的操作，
   `VernalSaTokenInterceptor` 先认证，再执行 Operation 级角色/权限 all/any
   规则；
 - 与 Axum/Poem 的 `Operation(path_template, http_method)`、Tonic 的

@@ -1119,10 +1119,12 @@ result through request scope. Token, session, role, permission, cookie, and
 consumer-owned, unpublished bridge. It pins a verified Vernal Git revision,
 adapts `HttpRequestSnapshot` to `SaRequest`, projects authenticated roles into
 `SecurityPrincipal`, and runs downstream futures inside request-level
-`SaTokenContext`. `SaTokenComponents` additionally preserves the caller's exact
-`Arc<SaTokenManager>`, bridge, and policy identities, atomically installs all
-three as a validated component graph, and registers an authentication and
-authorization Advisor. `VernalSaTokenInterceptor` authenticates, then enforces
+`SaTokenContext`. `SaTokenComponents` is the named `sa-token.security`
+`ApplicationModule`. It preserves the caller's exact `Arc<SaTokenManager>`,
+bridge, and policy identities, then atomically installs those definitions plus
+matching Send and Local authentication/authorization Advisors. Duplicate module
+names or component definitions reject the complete transaction without leaking
+partial plans. `VernalSaTokenInterceptor` authenticates, then enforces
 operation-scoped all/any role and permission requirements, including Sa-Token
 global and prefix wildcard semantics, across the complete Tokio invocation
 future. Anonymous protected calls return 401, authenticated but insufficient
@@ -1136,8 +1138,9 @@ matrix, not code that Vernal silently vendors.
 Sa-Token's native `SaTokenConfigBuilder`. It supports the builder's stable
 scalar and enum settings, preserves Sa-Token defaults for missing keys, and
 redacts invalid values. Storage, listeners, manager creation, and runtime
-installation remain explicit Sa-Token concerns. The original eleven bridge
-tests and two configuration binding tests pass together in the target crate.
+installation remain explicit Sa-Token concerns. Twelve bridge tests, including
+module and definition rollback contracts, and two configuration binding tests
+pass together in the target crate.
 
 ### 12.3 Ddd4r
 

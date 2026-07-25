@@ -544,9 +544,11 @@ flowchart LR
   authorization. Vernal supplies component lifecycle and interception, not a
   competing security kernel. Its consumer-owned `sa-token-vernal` bridge now
   adapts `HttpRequestSnapshot`, projects `SecurityPrincipal`, and preserves
-  request-level `SaTokenContext` across Tokio futures. `SaTokenComponents`
-  atomically installs the caller's exact `Arc<SaTokenManager>`, bridge, and
-  operation policy into a validated Vernal dependency graph. Its Advisor
+  request-level `SaTokenContext` across Tokio futures. `SaTokenComponents` is
+  the named `sa-token.security` `ApplicationModule`; it atomically installs
+  the caller's exact `Arc<SaTokenManager>`, bridge, operation policy, and both
+  Send/Local security Advisors. Module-name or component-definition conflicts
+  reject the complete transaction without partial plans. Its interceptor
   authenticates and enforces operation-scoped all/any role and permission
   rules, including Sa-Token global and prefix wildcards, with stable 401/403
   failures before handlers. `VernalSaTokenConfigBinder` maps the immutable
@@ -596,8 +598,10 @@ under design. There is no crates.io installation command or stable API yet.
 | 6 | Preview release | MSRV, SemVer, security, docs.rs, and package gates |
 
 Phase 5 is in progress: Sa-Token-Rust owns a tested and remotely integrated
-`sa-token-vernal` authentication and operation-authorization AOP bridge,
-including Environment binding to Sa-Token's native builder. Hutool-Rust owns a
+`sa-token-vernal` authentication and operation-authorization AOP bridge. Its
+named application module installs the native security graph and both execution
+planes atomically; twelve bridge tests and two Environment-binding tests pass.
+Hutool-Rust owns a
 tested and remotely integrated `hutool-vernal` bridge whose named application
 module atomically composes HTTP components, Hutool Setting PropertySource
 snapshots, and profiles; both consumer bridges pin verified Vernal Git

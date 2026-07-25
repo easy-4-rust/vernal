@@ -398,9 +398,11 @@ flowchart LR
   授权语义；Vernal 只提供组件生命周期与拦截编排，不重复建设安全内核。由
   Sa-Token-Rust 持有的 `sa-token-vernal` 已实现 `HttpRequestSnapshot` 适配、
   `SecurityPrincipal` 投影及跨 Tokio Future 的请求级 `SaTokenContext`；
-  `SaTokenComponents` 将调用方原始 Manager、Bridge 与操作授权策略原子注册，
-  Advisor 在 Handler 前认证并执行角色/权限 all/any 规则，以及 Sa-Token
-  全局/前缀通配符语义，以稳定 401/403 短路。
+  `SaTokenComponents` 是具名 `sa-token.security` `ApplicationModule`，把调用方
+  原始 Manager、Bridge、操作授权策略及 Send/Local 两类安全 Advisor 作为一个
+  事务安装；模块名或组件定义冲突时完整回滚，不遗留残缺调用计划。拦截器在
+  Handler 前认证并执行角色/权限 all/any 规则，以及 Sa-Token 全局/前缀通配符
+  语义，以稳定 401/403 短路。
   `VernalSaTokenConfigBinder` 还会把不可变 Environment 映射到 Sa-Token 原生
   Builder，但不接管 Storage、Listener、Manager 或 Runtime 构造。
 - **Ddd4r** 通过消费方持有的 `ddd4r-vernal` 直接注册原生 `Registry` 和
@@ -445,7 +447,9 @@ crates.io 安装命令，也没有稳定 API 承诺。
 | Phase 6 | Preview 发布 | MSRV、SemVer、安全、docs.rs 和打包门禁 |
 
 Phase 5 正在进行：Sa-Token-Rust 已远端集成 `sa-token-vernal` 认证、操作授权
-AOP 与 Environment 配置绑定；Hutool-Rust 已远端集成 `hutool-vernal`，通过
+AOP 与 Environment 配置绑定；其具名应用模块会原子安装原生安全组件图和两个
+执行平面，12 个 Bridge 测试与 2 个配置绑定测试通过。Hutool-Rust 已远端集成
+`hutool-vernal`，通过
 具名应用模块原子装配 HTTP 组件、Setting PropertySource 与 Profile；Ddd4r 本地
 已实现 `ddd4r-vernal`，其真实 Tokio 测试、Clippy 和文档构建已在独立依赖图通过。
 Ddd4r 全 Workspace 门禁仍被既有、当前不可获取的 `rbatis-r2dbc` Git Revision
