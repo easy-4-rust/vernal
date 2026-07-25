@@ -46,6 +46,10 @@ mod pointcut;
 mod pointcut_ext;
 mod qualifier_pointcut;
 mod shared_invocation_argument;
+mod simple_call_result;
+mod simple_interceptor;
+mod simple_interceptor_chain;
+mod simple_invocation_context;
 mod tag_pointcut;
 mod target_ref;
 
@@ -96,6 +100,10 @@ pub use pointcut::Pointcut;
 pub use pointcut_ext::PointcutExt;
 pub use qualifier_pointcut::QualifierPointcut;
 pub use shared_invocation_argument::SharedInvocationArgument;
+pub use simple_call_result::SimpleCallResult;
+pub use simple_interceptor::SimpleInterceptor;
+pub use simple_interceptor_chain::SimpleInterceptorChain;
+pub use simple_invocation_context::SimpleInvocationContext;
 pub use tag_pointcut::TagPointcut;
 /// AOP 组件和宏共用的 Tokio 协作取消令牌。
 pub use tokio_util::sync::CancellationToken;
