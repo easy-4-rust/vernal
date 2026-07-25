@@ -401,6 +401,14 @@ broadcast 订阅，随后才调用任何 Lifecycle `initialize()`，因此初始
 监听组件必须是 Singleton，Vernal 不会把 Transient 或自定义 Scope 静默提升为
 应用级对象。
 
+Context 会在状态成功提交后，通过同一 EventBus 发布两个框架事实：全部 Singleton
+预热、监听订阅和 Lifecycle 初始化完成并提交 `Refreshed` 后发布
+`ApplicationRefreshedEvent`；全部必要组件启动并提交 `Ready` 后发布
+`ApplicationReadyEvent`。发布只负责把不可变事实放入队列，不是启动屏障，也不
+保证不同监听器的完成顺序。监听器失败因此通过受管任务取消和关闭错误链异步暴露；
+refresh/start 失败则不会发布对应事实。Vernal 刻意不提供语义虚假的 Closed
+事件：任务排空后已没有监听器，取消前发布又无法诚实保证关闭投递完成。
+
 高层建造器还会注册 Context-local `ApplicationEnvironment`：
 应用显式添加 `PropertySource` 并声明高低优先级和 Profile，组件可以读取
 `${key:default}` 占位符或转换成 `u16`、`bool` 等 Rust 类型。TOML、YAML、
@@ -464,7 +472,7 @@ Spring Boot 式隐式自动配置。`refresh()` 与
 | 类型安全配置对象 | 基于前缀派生绑定必填/可选/默认/嵌套字段、错误脱敏与原生 IoC 注入 | Phase 3 内核 |
 | 显式应用模块 | 为消费方 Bridge 原子装配 Definition/Binding/生命周期/事件监听/AOP/Operation/Environment/条件模块 | Phase 3 内核 |
 | 条件组件装配 | 构建期 Profile/Property/自定义条件，组件定义、Binding、生命周期与监听器原子进退 | Phase 3 内核 |
-| 事件 | Context 内类型化发布，以及 IoC 托管、失败关闭、生命周期持有的监听器 | Phase 3 内核 |
+| 事件 | Context 内类型化发布、Refreshed/Ready 事实及 IoC 托管的 fail-fast 监听器 | Phase 3 内核 |
 | 异步集成 | Tokio 原生取消、deadline 与类型化调用上下文 | Phase 2 内核 |
 | Web 上下文 | 请求 Context、请求 Scope、Handler 调用和错误映射 | Phase 4 合同 |
 | HTTP | 请求/响应、Body Frame/Trailer、显式限量收集、取消和背压 | Phase 4 合同 |
@@ -584,9 +592,10 @@ fail-closed 构建。宏前端运行合同覆盖 `self: Arc<Self>`、借用 `&se
 拦截器的 Criterion 0.7 Tokio 基准；本机首轮中位估计分别为 2.55 ns、336 ns、
 476 ns 和 727 ns。该结果只用于绝对成本与链长度趋势分析，不承诺跨硬件 SLA，
 也不作“零开销”宣传。宏 API 稳定性与稳定硬件回归阈值仍待完成。
-Phase 3 内核现有 56 个测试，覆盖依赖顺序启动、逆序关闭、initialize/start
+Phase 3 内核现有 66 个测试，覆盖依赖顺序启动、逆序关闭、initialize/start
 回滚、非法状态转换、幂等关闭、并发关闭串行化和 Context-local 类型化事件
-隔离、高层构建器十一类内建资源注入、应用 Scope 取消树、任务错误/panic 传播、
+隔离、IoC 托管监听器所有权/失败，以及状态提交后如实发布 Refreshed/Ready
+事实；还覆盖高层构建器十一类内建资源注入、应用 Scope 取消树、任务错误/panic 传播、
 取消安全的共享任务停机、超时 abort、任务先于组件 stop 的顺序、关闭等待者取消
 后的继续释放、refresh/start 等待者取消后的继续回滚、start 前应用取消、任务
 失败驱动 `run_until_cancelled()` 关闭、initialize/start 有界超时回滚、stop

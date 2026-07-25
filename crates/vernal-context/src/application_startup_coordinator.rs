@@ -10,8 +10,8 @@ use tokio::{
 use vernal_ioc::{ComponentKey, Container, ResolveError};
 
 use crate::{
-    ContextError, ContextState, DiagnosticOutcome, DiagnosticPhase, Lifecycle,
-    LifecycleExecutionPolicy, LifecyclePhase,
+    ApplicationReadyEvent, ApplicationRefreshedEvent, ContextError, ContextState,
+    DiagnosticOutcome, DiagnosticPhase, Lifecycle, LifecycleExecutionPolicy, LifecyclePhase,
     application_close_coordinator::ApplicationCloseCoordinator,
     application_context_builder::LifecycleResolver, lifecycle_task_executor::LifecycleTaskExecutor,
     managed_event_listener::ManagedEventListener,
@@ -126,6 +126,14 @@ impl ApplicationStartupCoordinator {
             return Err(error);
         }
         self.lifecycle.set_state(ContextState::Refreshed).await;
+        // 状态先提交再发布事实事件。监听器已经在 initialize 前建立订阅，但事件
+        // 处理属于受管后台任务，refresh 不把异步消费伪装成同步完成屏障。
+        let _delivered = self
+            .lifecycle
+            .resources()
+            .events()
+            .publish(ApplicationRefreshedEvent::new())
+            .await;
         Ok(())
     }
 
@@ -317,6 +325,14 @@ impl ApplicationStartupCoordinator {
             return Err(error);
         }
         self.lifecycle.set_state(ContextState::Ready).await;
+        // Ready 事件只在全部 start 成功且取消检查通过后发布。监听器失败会稍后由
+        // 任务监督器取消应用，不反向改写已经提交的状态转换结果。
+        let _delivered = self
+            .lifecycle
+            .resources()
+            .events()
+            .publish(ApplicationReadyEvent::new())
+            .await;
         Ok(())
     }
 

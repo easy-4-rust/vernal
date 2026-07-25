@@ -1091,7 +1091,7 @@ sequenceDiagram
 stateDiagram-v2
     [*] --> Created
     Created --> Refreshing: refresh
-    Refreshing --> Refreshed: graph and plans valid
+    Refreshing --> Refreshed: graph, subscriptions, initialize valid
     Refreshing --> Failed: validation/build failure
     Refreshed --> Starting: start
     Starting --> Ready: required components started
@@ -1107,7 +1107,9 @@ Lifecycle order:
 
 ```text
 register → freeze → validate graph and pointcuts
-→ construct singletons → resolve/subscribe listeners → initialize → start → Ready
+→ construct singletons → resolve/subscribe listeners → initialize
+→ commit Refreshed → publish ApplicationRefreshedEvent
+→ start → commit Ready → publish ApplicationReadyEvent
 → cancel and drain managed tasks → reverse stop → release scopes
 ```
 
@@ -1138,6 +1140,21 @@ composed by `vernal-context` instead of being embedded in IoC or AOP:
 - cancellation wins in the listener `select!`; Context close then drains or
   aborts the task under `TaskShutdownPolicy`.
 
+The Context itself emits two deliberately small lifecycle facts:
+
+- `ApplicationRefreshedEvent` follows the successful `Refreshed` state commit,
+  after singleton warm-up, all subscriptions, and lifecycle initialization;
+- `ApplicationReadyEvent` follows the successful `Ready` state commit, after
+  every required lifecycle component starts;
+- publication is asynchronous queueing, not a startup completion barrier.
+  Independent listeners have no cross-listener completion order, and handler
+  failures follow the managed-task cancellation path;
+- a failed refresh/start emits no corresponding fact;
+- no `ApplicationClosedEvent` exists: publishing after task drain has no
+  consumers, while publishing before cancellation cannot guarantee delivery.
+  A close result and `ContextState::Closed` remain the truthful shutdown
+  contract.
+
 ```mermaid
 sequenceDiagram
     participant App as "Application assembly"
@@ -1155,8 +1172,12 @@ sequenceDiagram
         Context->>Tasks: spawn listener consumer
     end
     Context->>Lifecycle: initialize()
-    Lifecycle->>Bus: publish(Event)
-    Bus-->>Tasks: Arc&lt;Event&gt;
+    Context->>Context: commit Refreshed
+    Context->>Bus: publish(ApplicationRefreshedEvent)
+    Context->>Lifecycle: start()
+    Context->>Context: commit Ready
+    Context->>Bus: publish(ApplicationReadyEvent)
+    Bus-->>Tasks: Arc&lt;typed event&gt;
     Tasks->>IoC: listener.on_event(event)
     alt handler error or lag
         Tasks->>Tasks: retain first structured failure
@@ -1167,11 +1188,13 @@ sequenceDiagram
 ```
 
 This closes gaps observed in the source projects without copying their
-ownership flaws: tx_di callbacks detach Tokio tasks, Sa-Token-Rust adapters
-repeat listener assembly, Hutool-Rust utilities keep subsystem-local listener
-collections, and Ddd4r exposes replaceable event publisher ports. Their domain
-event models stay in the consumer libraries; Vernal supplies only component
-resolution, typed in-process delivery, task ownership, and failure semantics.
+ownership flaws: tx_di callbacks detach Tokio tasks and expose lifecycle
+callbacks around global application state; Sa-Token-Rust snapshots
+subsystem-owned security listeners; Hutool-Rust utilities keep local listener
+collections; and Ddd4r exposes replaceable event publisher ports. Their domain
+event models stay in the consumer libraries. Vernal generalizes only
+Context-state facts, component resolution, typed in-process delivery, task
+ownership, and failure semantics.
 
 ### Application lifecycle ownership
 
@@ -1635,10 +1658,11 @@ non-Send mutable targets, and non-Send/Sync outputs, plus a passing associated
 output case. Tokio benchmarks are also implemented; macro API stability,
 cross-machine thresholds, and release guarantees remain open.
 
-The Phase 3 kernel has fifty-six contract tests for dependency-order
+The Phase 3 kernel has sixty-six contract tests for dependency-order
 startup, reverse shutdown, initialize/start rollback, invalid transitions,
 idempotent close, concurrent close serialization, and context-local typed
-event isolation, plus runtime-unavailable diagnostics, same-instance injection
+event isolation, IoC-managed listener ownership/failure, and truthful
+Refreshed/Ready facts after state commit, plus runtime-unavailable diagnostics, same-instance injection
 of the eleven built-in resources, application-owned Scope cancellation,
 task failure/panic propagation, cancellation-safe shared task shutdown,
 timeout abort, task-before-component stop ordering, cancelled close-waiter

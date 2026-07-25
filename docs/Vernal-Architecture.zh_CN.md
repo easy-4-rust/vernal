@@ -998,7 +998,7 @@ flowchart LR
 stateDiagram-v2
     [*] --> Created
     Created --> Refreshing: refresh
-    Refreshing --> Refreshed: graph and plans valid
+    Refreshing --> Refreshed: graph/subscription/initialize valid
     Refreshing --> Failed: validation/build failure
     Refreshed --> Starting: start
     Starting --> Ready: all required components started
@@ -1019,8 +1019,11 @@ register
   → construct singleton components
   → resolve and subscribe managed event listeners
   → initialize in dependency order
+  → commit Refreshed
+  → publish ApplicationRefreshedEvent
   → start in dependency order
-  → publish Ready
+  → commit Ready
+  → publish ApplicationReadyEvent
   → cancel and drain managed tasks
   → stop in reverse dependency order
   → release scopes
@@ -1049,6 +1052,18 @@ register
 - 监听循环的 `select!` 让应用取消优先；Context 关闭再按
   `TaskShutdownPolicy` 排空或有界 abort。
 
+Context 自身只发布两个刻意保持最小的生命周期事实：
+
+- 全部 Singleton 预热、监听订阅和 Lifecycle 初始化成功，并先提交
+  `Refreshed` 状态后，发布 `ApplicationRefreshedEvent`；
+- 全部必要 Lifecycle 组件启动成功，并先提交 `Ready` 状态后，发布
+  `ApplicationReadyEvent`；
+- 发布是异步入队，不是启动完成屏障。不同监听器没有跨监听器完成顺序，处理失败
+  继续沿受管任务取消路径收口；
+- refresh/start 失败不会发布对应事实；
+- 不定义 `ApplicationClosedEvent`：任务排空后已无消费者，取消前发布又无法保证
+  投递完成。关闭结果和 `ContextState::Closed` 才是可信的停机合同。
+
 ```mermaid
 sequenceDiagram
     participant App as "应用装配"
@@ -1066,8 +1081,12 @@ sequenceDiagram
         Context->>Tasks: 提交监听消费任务
     end
     Context->>Lifecycle: initialize()
-    Lifecycle->>Bus: publish(Event)
-    Bus-->>Tasks: Arc&lt;Event&gt;
+    Context->>Context: 提交 Refreshed
+    Context->>Bus: publish(ApplicationRefreshedEvent)
+    Context->>Lifecycle: start()
+    Context->>Context: 提交 Ready
+    Context->>Bus: publish(ApplicationReadyEvent)
+    Bus-->>Tasks: Arc&lt;类型化事件&gt;
     Tasks->>IoC: listener.on_event(event)
     alt 处理错误或 lag
         Tasks->>Tasks: 保存首个结构化失败
@@ -1078,9 +1097,10 @@ sequenceDiagram
 ```
 
 这项设计吸收来源项目的有效需求，同时拒绝复制所有权缺陷：tx_di 回调会直接
-detach Tokio task，Sa-Token-Rust 的多个 Adapter 重复监听装配，Hutool-Rust
-工具各自维护监听集合，Ddd4r 则提供可替换事件发布端口。事件领域模型继续归消费
-库所有；Vernal 只提供组件解析、进程内类型化投递、任务所有权与失败语义。
+detach Tokio task，并围绕全局应用状态暴露生命周期回调；Sa-Token-Rust 会快照
+安全子系统自有的监听集合；Hutool-Rust 工具各自维护局部监听集合；Ddd4r 则提供
+可替换事件发布端口。事件领域模型继续归消费库所有；Vernal 只泛化 Context 状态
+事实、组件解析、进程内类型化投递、任务所有权与失败语义。
 
 ### 10.8 Context 生命周期所有权
 
@@ -1493,9 +1513,10 @@ Local-AOP 测试覆盖非 `Send` 返回值、顺序、短路、取消、计划�
 正向用例证明宏可投影复杂类型。Tokio 性能基准亦已落地；剩余的是宏 API 稳定性、
 跨机器性能阈值和发布承诺。
 
-Phase 3 内核另有 56 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
+Phase 3 内核另有 66 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
 回滚、非法转换、幂等关闭、并发关闭串行化、Context-local 类型化事件隔离，
-高层构建器的 Runtime 缺失诊断、十一类内建组件同实例注入、应用 Scope 取消树、
+IoC 托管监听器所有权/失败，以及状态提交后如实发布 Refreshed/Ready 事实；
+还覆盖高层构建器的 Runtime 缺失诊断、十一类内建组件同实例注入、应用 Scope 取消树、
 任务错误/panic 传播、取消安全共享停机、超时 abort、任务先于组件 stop 的顺序、
 关闭等待者取消后继续完成组件释放、refresh/start 等待者取消后继续失败回滚、
 start 前应用取消、任务失败驱动 `run_until_cancelled()` 进入 `Closed`、stop

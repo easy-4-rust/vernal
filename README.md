@@ -546,6 +546,17 @@ close stop and drain listeners with the same two-phase task policy. Listener
 components must be Singleton; Vernal never silently promotes Transient or
 custom-scoped instances.
 
+After a successful state commit, the Context publishes two framework-owned
+facts through the same bus: `ApplicationRefreshedEvent` after all singleton
+warm-up, listener subscriptions, and lifecycle initialization complete, then
+`ApplicationReadyEvent` after every required component starts. Publication
+only queues an immutable fact; it is not a startup barrier and does not impose
+completion order across listeners. A listener failure is therefore reported
+asynchronously through managed-task cancellation and the shutdown error chain.
+Failed refresh/start phases publish neither fact. Vernal deliberately exposes
+no misleading closed event: after task draining no listener remains, while
+publishing before cancellation could not honestly guarantee close delivery.
+
 The high-level builder also registers a Context-local
 `ApplicationEnvironment`: applications add ordered `PropertySource` objects
 and profiles explicitly, while components can resolve `${key:default}`
@@ -622,7 +633,7 @@ or a no-yield loop inside an async task.
 | Type-safe configuration objects | Prefix-based derive binding, required/optional/default/nested fields, redacted errors, and native IoC injection | Phase 3 kernel |
 | Explicit application modules | Atomic Definition/Binding/lifecycle/event-listener/AOP/operation/environment/conditional assembly for consumer-owned bridges | Phase 3 kernel |
 | Conditional component assembly | Build-time Profile/Property/custom conditions with atomic definition, binding, lifecycle, and listener inclusion | Phase 3 kernel |
-| Events | Context-local typed publication plus IoC-managed, fail-fast, lifecycle-owned listeners | Phase 3 kernel |
+| Events | Context-local typed publication, Refreshed/Ready facts, and IoC-managed fail-fast listeners | Phase 3 kernel |
 | Async integration | Tokio-native cancellation, deadlines, and typed invocation context | Phase 2 kernel |
 | Web context | Request context, request scope, handler invocation, error mapping | Phase 4 contract |
 | HTTP | Request/response, body frames/trailers, explicit bounded collection, cancellation, backpressure | Phase 4 contract |
@@ -770,10 +781,11 @@ are 2.55 ns, 336 ns, 476 ns, and 727 ns respectively. These values describe
 absolute overhead and chain-length scaling only; they are not a cross-hardware
 SLA or a zero-cost claim. Macro API stability and stable-hardware regression
 thresholds remain open.
-The Phase 3 kernel has fifty-six tests covering dependency-order startup,
+The Phase 3 kernel has sixty-six tests covering dependency-order startup,
 reverse shutdown, initialize/start rollback, invalid transitions, idempotent
 close, concurrent close serialization, and context-local typed event
-isolation, plus managed injection of eleven framework resources,
+isolation, IoC-managed listener ownership/failure, and truthful
+Refreshed/Ready publication after state commit, plus managed injection of eleven framework resources,
 application-owned Scope cancellation, task failure/panic propagation,
 cancellation-safe shared task shutdown, timeout abort, task-before-component
 stop ordering, cancelled close-waiter recovery, failure-driven
