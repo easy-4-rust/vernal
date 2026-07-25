@@ -115,8 +115,13 @@
   benchmark for direct async, empty-plan, one-, and four-interceptor paths.
   Criterion is pinned to MSRV-compatible 0.7 and plan compilation is excluded
   from the timed path.
-- `[Target]` remaining consumer ecosystem bridges, generic-bound diagnostics,
-  cross-machine performance thresholds, and later production gates remain.
+- `[Confirmed]` `#[intercept]` projects owned arguments, borrowed-method
+  value/mutable arguments, shared-reference targets, and successful outputs
+  into four named transport contracts. Trybuild covers all four failures plus
+  a passing associated-output case instead of relying on boxed-future or Any
+  cast diagnostics.
+- `[Target]` remaining consumer ecosystem bridges, cross-machine performance
+  thresholds, macro API stability, and later production gates remain.
 
 ## 2. Brand meaning and architecture thesis
 
@@ -781,6 +786,14 @@ The descriptor frontend statically validates tags and qualifier, while
 No global inventory, link-time scanner, or process-wide mutable registration is
 introduced. Pointcuts still compile only after the application explicitly
 accepts the descriptor.
+
+The macro also writes unavoidable transport capabilities into the final
+method's `where` clause. Owned `self: Arc<Self>` arguments use
+`OwnedInvocationArgument`; by-value and `&mut T` arguments on borrowed methods
+use `BorrowedInvocationArgument`; shared `&T` targets use
+`SharedInvocationArgument`; and successful values or associated outputs use
+`InvocationOutput`. Blanket implementations map these names to the underlying
+Send, Sync, Any, and lifetime requirements.
 
 ```mermaid
 sequenceDiagram
@@ -1555,8 +1568,11 @@ component fields, invalid collection qualifiers, non-async methods, bare value
 receivers, invalid operation metadata, and malformed descriptor paths. Phase 2
 has a callable loop. Runtime and compile contracts now cover Trait default
 methods, pure Trait boundaries, UFCS descriptors, abstract-method rejection,
-and rejection of invocation on a non-AOP implementor. Generic-bound
-diagnostics, benchmarks, and stability guarantees remain open.
+and rejection of invocation on a non-AOP implementor. The generic transport
+matrix adds named failures for non-Send owned inputs, non-Sync shared targets,
+non-Send mutable targets, and non-Send/Sync outputs, plus a passing associated
+output case. Tokio benchmarks are also implemented; macro API stability,
+cross-machine thresholds, and release guarantees remain open.
 
 The Phase 3 kernel has fifty-six contract tests for dependency-order
 startup, reverse shutdown, initialize/start rollback, invalid transitions,
@@ -1607,7 +1623,7 @@ No phase is complete merely because a crate exists or `cargo check` is green.
 | ID | Risk / open decision | Impact | Validation |
 |:---|:---|:---|:---|
 | R-001 | Object-safe async Around allocation has a first local baseline but no cross-machine regression threshold | AOP performance | Track CI trends and set an absolute budget on stable hardware |
-| R-002 | Implementation/default-Trait/generic/mutable methods have contracts; complex generic-bound diagnostics remain incomplete | Usability | Extend the bound-diagnostic trybuild matrix |
+| R-002 | Four named generic transport diagnostics are covered; future receivers or Local method macros may alter the boundary | Usability | Lock owned/shared/mutable/output and associated-type contracts with trybuild |
 | R-003 | Cross-platform link-time registration | Portability | Linux/macOS/Windows CI |
 | R-004 | Request-scope cancellation differences | Resource safety | Cross-framework failure tests |
 | R-005 | Spring terminology overwhelms Rust API style | Maintenance | API review and Rust guidelines |

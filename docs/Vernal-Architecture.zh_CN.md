@@ -97,8 +97,11 @@
 - `[已确认]` `vernal-aop` 已提供可重复执行的 Tokio 调用计划基准，分别测量直接
   async、空计划、一个和四个透传拦截器；基准依赖固定为兼容 MSRV 1.85 的
   Criterion 0.7，并明确排除计划编译阶段。
-- `[设计目标]` 剩余消费方生态桥接、泛型边界诊断矩阵、跨机器性能门槛与后续
-  生产门禁仍需实现和验收。
+- `[已确认]` `#[intercept]` 已把 owned 参数、借用方法的按值/可变引用参数、
+  共享引用目标和成功返回值分别投影为四个具名传输合同；trybuild 覆盖四类失败
+  及关联输出正向编译，不再把首要诊断留给 Box Future 或 Any cast。
+- `[设计目标]` 剩余消费方生态桥接、跨机器性能门槛、宏 API 稳定性与后续生产
+  门禁仍需实现和验收。
 
 ## 2. 品牌寓意与架构主张
 
@@ -708,6 +711,13 @@ owned 接收器路径安全产生 `'static` Future；两种引用路径把接收
 描述符前端在编译期校验标签和 qualifier，`OperationMetadata` 在生成声明时再次
 执行不变量校验。该方案不引入全局 inventory、链接期扫描或进程级可变注册；
 只有应用显式接纳描述符后，Pointcut 才会在计划编译阶段匹配它。
+
+宏还会把不可避免的传输能力写入最终方法的 `where` 子句：`self: Arc<Self>` 的
+owned 参数使用 `OwnedInvocationArgument`；借用方法中的按值参数和 `&mut T`
+使用 `BorrowedInvocationArgument`；`&T` 的目标类型使用
+`SharedInvocationArgument`；成功返回值与关联输出使用 `InvocationOutput`。
+四个 trait 均由满足底层 `Send`、`Sync`、`Any` 与生命周期要求的类型自动实现，
+业务类型不应手工实现标记。
 
 ```mermaid
 sequenceDiagram
@@ -1422,7 +1432,10 @@ Local-AOP 测试覆盖非 `Send` 返回值、顺序、短路、取消、计划�
 类型驱动自定义 Scope；compile-fail 矩阵覆盖非法组件字段、非法集合 qualifier、
 非异步方法、裸 `self` 接收器、非法操作元数据和错误描述符路径。Phase 2 已具备
 可调用闭环；Trait 默认方法、纯 Trait 边界、UFCS 描述符、抽象方法拒绝和非 AOP
-实现调用拒绝已有运行/编译合同，剩余泛型边界诊断、性能基准和稳定性承诺仍未完成。
+实现调用拒绝已有运行/编译合同。新增泛型传输矩阵覆盖 owned 非 Send 参数、共享
+引用非 Sync 目标、可变引用非 Send 目标、非 Send/Sync 返回值，并以关联输出
+正向用例证明宏可投影复杂类型。Tokio 性能基准亦已落地；剩余的是宏 API 稳定性、
+跨机器性能阈值和发布承诺。
 
 Phase 3 内核另有 56 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
 回滚、非法转换、幂等关闭、并发关闭串行化、Context-local 类型化事件隔离，
@@ -1464,7 +1477,7 @@ fail-closed 与条件错误脱敏，并覆盖显式 ApplicationModule 安装、�
 | ID | 风险 / 待确认 | 影响 | 验证计划 |
 |:---|:---|:---|:---|
 | R-001 | 对象安全异步 Around 的分配成本已有首轮本机基线，尚无跨机器回归阈值 | AOP 性能 | CI 收集趋势，在稳定硬件上确定绝对预算 |
-| R-002 | 实现/默认 Trait/泛型/可变方法已有合同，复杂泛型边界诊断仍不完整 | 可用性 | 扩展 bound-diagnostic trybuild 矩阵 |
+| R-002 | 四类具名泛型传输诊断已覆盖，未来新增接收器或 Local 方法宏可能改变边界 | 可用性 | 以 trybuild 矩阵锁定 owned/shared/mutable/output 与关联类型合同 |
 | R-003 | 编译期自动注册的跨平台链接行为 | 可移植性 | Linux/macOS/Windows CI |
 | R-004 | Request Scope 在不同 Web 框架中的取消/释放差异 | 资源安全 | 跨框架异常链测试 |
 | R-005 | 过度追求 Spring 命名导致非 Rust API | 长期维护 | API review 与 Rust API Guidelines |

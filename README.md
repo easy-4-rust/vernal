@@ -745,12 +745,15 @@ fields, invalid collection qualifiers, non-async interception, bare value
 receivers, invalid operation metadata, and malformed descriptor paths. It also
 verifies Trait default methods, pure Trait boundaries, UFCS descriptors,
 abstract-method rejection, and rejection when a non-AOP implementor invokes
-the method. A Criterion 0.7 Tokio benchmark now covers direct async, empty
+the method. A new trybuild matrix names the owned, shared-reference,
+mutable-reference, and output Send/Sync/lifetime requirements as stable Vernal
+transport contracts and verifies a passing associated output. A Criterion 0.7
+Tokio benchmark now covers direct async, empty
 plans, and one/four pass-through interceptors; the first local median estimates
 are 2.55 ns, 336 ns, 476 ns, and 727 ns respectively. These values describe
 absolute overhead and chain-length scaling only; they are not a cross-hardware
-SLA or a zero-cost claim. Expanded generic-bound diagnostics and
-stable-hardware regression thresholds remain open.
+SLA or a zero-cost claim. Macro API stability and stable-hardware regression
+thresholds remain open.
 The Phase 3 kernel has fifty-six tests covering dependency-order startup,
 reverse shutdown, initialize/start rollback, invalid transitions, idempotent
 close, concurrent close serialization, and context-local typed event

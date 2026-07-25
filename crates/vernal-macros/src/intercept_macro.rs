@@ -56,9 +56,9 @@ pub(crate) fn expand(attributes: TokenStream, mut method: ImplItemFn) -> syn::Re
     let options = InterceptOptions::parse(attributes)?;
     let receiver = validate_method(&method)?;
     let aop = aop_crate_path()?;
-    add_aop_component_bound(&mut method, &aop)?;
     let (return_type, _) = result_types(&method.sig.output)?;
-    let function_name = &method.sig.ident;
+    let return_type = return_type.clone();
+    let function_name = method.sig.ident.clone();
     let method_name = options
         .method()
         .cloned()
@@ -69,15 +69,16 @@ pub(crate) fn expand(attributes: TokenStream, mut method: ImplItemFn) -> syn::Re
     );
     let descriptor_name = format_ident!(
         "__vernal_operation_{}",
-        function_name,
+        &function_name,
         span = function_name.span()
     );
-    let visibility = &method.vis;
+    let visibility = method.vis.clone();
     let tags = options.tags();
     let qualifier = options.qualifier();
 
     let mut argument_patterns = Vec::new();
     let mut argument_idents = Vec::new();
+    let mut argument_types = Vec::new();
     for argument in method.sig.inputs.iter().skip(1) {
         let FnArg::Typed(argument) = argument else {
             continue;
@@ -90,7 +91,10 @@ pub(crate) fn expand(attributes: TokenStream, mut method: ImplItemFn) -> syn::Re
         };
         argument_patterns.push(pattern.clone());
         argument_idents.push(pattern.ident.clone());
+        argument_types.push(argument.ty.as_ref().clone());
     }
+
+    add_invocation_contract_bounds(&mut method, &aop, receiver, &return_type, &argument_types)?;
 
     // 方法体中的 self 统一改写为 __vernal_self。Arc 路径让目标拥有 receiver 与
     // 参数；借用路径则把它们约束在当前方法 Future，二者都不要求隐式 Clone。
@@ -102,7 +106,7 @@ pub(crate) fn expand(attributes: TokenStream, mut method: ImplItemFn) -> syn::Re
         aop: &aop,
         component: &component,
         method_name: &method_name,
-        return_type,
+        return_type: &return_type,
         argument_patterns: &argument_patterns,
         argument_idents: &argument_idents,
         business_body: &business_body,
@@ -328,22 +332,70 @@ impl InterceptCodegen<'_> {
     }
 }
 
-/// 为实现方法或 Trait 默认方法补充运行资源访问边界。
+/// 为实现方法或 Trait 默认方法补充 AOP 运行资源与类型传输边界。
 ///
 /// Trait 本身不必继承 `AopComponent`，只有真正调用被拦截默认方法的实现类型需要
 /// 满足该约束。这样领域端口不会因为一个横切关注点被迫把 Vernal 设为 supertrait；
 /// 普通 inherent impl 也得到同一条显式、可诊断的编译期边界。
-fn add_aop_component_bound(method: &mut ImplItemFn, aop: &TokenStream) -> syn::Result<()> {
-    let predicate: WherePredicate = syn::parse2(quote! {
+///
+/// 参数和返回值约束直接进入方法签名，而不是等 Box Future、动态闭包或 Any cast
+/// 报错。这样关联类型与复杂泛型在声明处保留原始类型，同时由稳定的 Vernal trait
+/// 名称解释 owned、borrowed 和输出值分别缺少哪类能力。
+fn add_invocation_contract_bounds(
+    method: &mut ImplItemFn,
+    aop: &TokenStream,
+    receiver: InterceptReceiver,
+    return_type: &Type,
+    argument_types: &[Type],
+) -> syn::Result<()> {
+    let component_predicate: WherePredicate = syn::parse2(quote! {
         Self: #aop::AopComponent
     })?;
-    method
-        .sig
-        .generics
-        .make_where_clause()
-        .predicates
-        .push(predicate);
+    let output_predicate: WherePredicate = syn::parse2(quote! {
+        #return_type: #aop::InvocationOutput
+    })?;
+    let argument_predicates = argument_types
+        .iter()
+        .map(|argument_type| match receiver {
+            InterceptReceiver::OwnedArc => syn::parse2::<WherePredicate>(quote! {
+                #argument_type: #aop::OwnedInvocationArgument
+            }),
+            InterceptReceiver::SharedReference | InterceptReceiver::MutableReference => {
+                borrowed_argument_predicate(argument_type, aop)
+            }
+        })
+        .collect::<syn::Result<Vec<_>>>()?;
+
+    let predicates = &mut method.sig.generics.make_where_clause().predicates;
+    predicates.push(component_predicate);
+    predicates.push(output_predicate);
+    predicates.extend(argument_predicates);
     Ok(())
+}
+
+/// 按 Rust 引用的真实线程移动规则生成借用方法参数边界。
+///
+/// 顶层 `&T` 要求 `T: Sync`，顶层 `&mut T` 要求 `T: Send`；按值参数直接要求
+/// 自身 `Send`。对引用目标添加约束而不是复制 `&T`，可以保留省略生命周期，
+/// 避免宏在 `where` 子句中制造不存在的 `'static` 或命名生命周期。
+fn borrowed_argument_predicate(
+    argument_type: &Type,
+    aop: &TokenStream,
+) -> syn::Result<WherePredicate> {
+    if let Type::Reference(reference) = argument_type {
+        let element = reference.elem.as_ref();
+        if reference.mutability.is_some() {
+            return syn::parse2(quote! {
+                #element: #aop::BorrowedInvocationArgument
+            });
+        }
+        return syn::parse2(quote! {
+            #element: #aop::SharedInvocationArgument
+        });
+    }
+    syn::parse2(quote! {
+        #argument_type: #aop::BorrowedInvocationArgument
+    })
 }
 
 /// 校验方法并返回其安全异步目标所有权模型。

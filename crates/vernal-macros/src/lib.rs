@@ -53,9 +53,11 @@ pub fn derive_configuration_properties(input: TokenStream) -> TokenStream {
 /// 方法必须返回 `Result<T, InvocationError>`。`self: Arc<Self>` 路径要求参数
 /// 拥有所有权并生成 `'static` 目标；引用路径允许引用参数，并把共享或独占业务
 /// Future 严格约束在当前方法调用。泛型参数继续服从 `InvocationFuture` 的
-/// `Send` 以及返回值 `Any + Send + Sync + 'static` 边界，不产生第二套动态调用
-/// 模型。Trait 默认方法只约束真正调用它的 `Self: AopComponent`，不会强迫整个
-/// 业务 Trait 继承框架接口；抽象 Trait 方法应在具体 impl 中织入。`component`
+/// `Send` 以及返回值 `Any + Send + Sync + 'static` 边界；宏把这些要求投影成
+/// `OwnedInvocationArgument`、`BorrowedInvocationArgument`、
+/// `SharedInvocationArgument` 与 `InvocationOutput` 具名约束，不产生第二套动态
+/// 调用模型。Trait 默认方法只约束真正调用它的 `Self: AopComponent`，不会强迫
+/// 整个业务 Trait 继承框架接口；抽象 Trait 方法应在具体 impl 中织入。`component`
 /// 与 `method` 定义稳定身份，`tags` 与 `qualifier` 定义静态声明元数据；应用通过
 /// [`operation`] 显式取得并注册同一份
 /// [`vernal_aop::Operation`](https://docs.rs/vernal-aop/latest/vernal_aop/struct.Operation.html)。

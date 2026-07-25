@@ -1,0 +1,35 @@
+error[E0277]: the trait bound `Rc<String>: InvocationOutput` is not satisfied
+  --> tests/ui/intercept_output_not_shareable.rs:35:36
+   |
+35 |     let _future = service.create::<Rc<String>>();
+   |                           ------   ^^^^^^^^^^ the trait `Send` is not implemented for `Rc<String>`
+   |                           |
+   |                           required by a bound introduced by this call
+   |
+   = note: required for `Rc<String>` to implement `InvocationOutput`
+note: required by a bound in `OutputService::create`
+  --> tests/ui/intercept_output_not_shareable.rs:25:5
+   |
+25 |     #[vernal_macros::intercept]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `OutputService::create`
+26 |     async fn create<T>(&self) -> Result<T, InvocationError>
+   |              ------ required by a bound in this associated function
+   = note: this error originates in the attribute macro `vernal_macros::intercept` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `Rc<String>: InvocationOutput` is not satisfied
+  --> tests/ui/intercept_output_not_shareable.rs:35:36
+   |
+35 |     let _future = service.create::<Rc<String>>();
+   |                           ------   ^^^^^^^^^^ the trait `Sync` is not implemented for `Rc<String>`
+   |                           |
+   |                           required by a bound introduced by this call
+   |
+   = note: required for `Rc<String>` to implement `InvocationOutput`
+note: required by a bound in `OutputService::create`
+  --> tests/ui/intercept_output_not_shareable.rs:25:5
+   |
+25 |     #[vernal_macros::intercept]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `OutputService::create`
+26 |     async fn create<T>(&self) -> Result<T, InvocationError>
+   |              ------ required by a bound in this associated function
+   = note: this error originates in the attribute macro `vernal_macros::intercept` (in Nightly builds, run with -Z macro-backtrace for more info)
