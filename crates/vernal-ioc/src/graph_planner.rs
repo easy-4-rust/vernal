@@ -289,21 +289,27 @@ impl GraphPlanner {
         ordered: &[usize],
     ) -> Vec<usize> {
         let n = definitions.len();
+        // 初始化所有节点深度为 0（根节点保持 0）
         let mut depths = vec![0usize; n];
-        // 按拓扑序遍历，依赖已在被依赖者之前
+
+        // 按拓扑序遍历（保证处理当前节点时，其所有依赖的深度已计算完毕）
         for &index in ordered {
             let mut max_dep_depth = 0usize;
+            // 遍历当前节点的所有非延迟依赖
             for dep in definitions[index].dependencies() {
+                // Provider 类型的依赖不参与深度计算（它们是延迟构造的）
                 if dep.is_deferred() {
                     continue;
                 }
-                // 在候选表中查找依赖的深度
+                // 在拓扑序中查找匹配的依赖定义，取最大深度
                 for &dep_idx in ordered {
                     if definitions[dep_idx].key().type_id == dep.type_id {
                         max_dep_depth = max_dep_depth.max(depths[dep_idx]);
                     }
                 }
             }
+            // 当前节点深度 = 最深依赖的深度 + 1
+            // （根节点无依赖时 max_dep_depth 保持 0）
             depths[index] = max_dep_depth;
         }
         depths

@@ -62,17 +62,19 @@ impl TransientTracker {
     /// - `type_id`：要查询的组件 TypeId
     #[must_use]
     pub fn surviving_instances(&self, type_id: TypeId) -> Vec<Arc<dyn Any + Send + Sync>> {
+        // 获取锁后遍历指定类型的弱引用列表
         let mut instances = self
             .instances
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some(weak_list) = instances.get_mut(&type_id) {
-            // 升级所有弱引用，过滤掉已回收的
+            // 尝试升级所有弱引用为强引用，升级失败（实例已被回收）的自动过滤
             let alive: Vec<_> = weak_list.iter().filter_map(Weak::upgrade).collect();
-            // 清理已失效的弱引用，防止内存泄漏
+            // 清理已失效的弱引用，防止 Weak 指针堆积导致内存泄漏
             weak_list.retain(|w| w.strong_count() > 0);
             alive
         } else {
+            // 该类型从未创建过 Transient 实例，返回空集合
             Vec::new()
         }
     }

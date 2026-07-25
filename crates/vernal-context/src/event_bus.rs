@@ -90,15 +90,17 @@ impl EventBus {
     where
         T: Any + Send + Sync,
     {
+        // 获取读锁后查找该事件类型的 Sender，返回其 Receiver 计数
         let senders = self.senders.read().await;
         senders
             .get(&TypeId::of::<T>())
             .and_then(|sender| sender.downcast_ref::<broadcast::Sender<Arc<T>>>())
             .map(|sender| sender.receiver_count())
+            // 该事件类型从未发布或订阅过，返回 0
             .unwrap_or(0)
     }
 
-    /// 返回指定事件类型的通道容量。
+    /// 返回每种事件类型的通道容量（环形缓冲区大小）。
     #[must_use]
     pub fn capacity(&self) -> usize {
         self.capacity.get()

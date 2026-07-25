@@ -58,6 +58,11 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
     let error_crate = error_crate_path()?;
     let enum_name = &input.ident;
 
+    // ─── 生成四个 trait 实现 ───
+    // 1. ErrorCode：domain() / code() / message() 三个 match 方法
+    // 2. Display：格式化为 "[domain:code] message"
+    // 3. Error：空实现（错误链通过 VernalError 的 Infrastructure 变体提供）
+    // 4. From<Enum> for VernalError：自动转换为业务错误
     Ok(quote! {
         impl #error_crate::ErrorCode for #enum_name {
             fn domain(&self) -> &'static str {

@@ -94,14 +94,16 @@ impl LinkedComponentCatalog {
     ///
     /// 同组重复稳定名称会返回 [`LinkedComponentCatalogError::DuplicateRegistration`]。
     pub fn discover_all() -> Result<Self, LinkedComponentCatalogError> {
+        // 从全局分布式切片中筛选默认分组（空字符串）的注册条目
         let mut registrations = LINKED_COMPONENT_REGISTRATIONS
             .iter()
             .filter(|registration| registration.group().is_empty())
             .collect::<Vec<_>>();
 
+        // 按名称排序，使重复检测和输出顺序确定
         registrations.sort_unstable_by(|left, right| left.name().cmp(right.name()));
 
-        // 校验重复名称
+        // 逐对校验：格式合法性 + 同组重复名称
         for pair in registrations.windows(2) {
             let [left, right] = pair else {
                 continue;
@@ -129,10 +131,12 @@ impl LinkedComponentCatalog {
     ///
     /// 合并后发现重复注册会返回错误。
     pub fn merge(catalogs: &[&Self]) -> Result<Self, LinkedComponentCatalogError> {
+        // 收集所有目录的注册条目到一个扁平列表
         let mut all: Vec<&'static LinkedComponentRegistration> = Vec::new();
         for catalog in catalogs {
             all.extend(catalog.registrations.iter().copied());
         }
+        // 按 (group, name) 排序，使同组同名的条目相邻，便于重复检测
         all.sort_unstable_by(|left, right| {
             (left.group(), left.name()).cmp(&(right.group(), right.name()))
         });

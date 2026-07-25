@@ -86,17 +86,28 @@ impl SimpleInterceptorChain {
     where
         F: FnOnce() -> SimpleCallResult + Send + 'static,
     {
+        // 空链直接执行原始方法体，避免不必要的闭包分配
         if self.interceptors.is_empty() {
             return body();
         }
-        // 从最内层开始，逐层向外包裹
+
+        // ─── 洋葱模型构建 ───
+        // 从最内层拦截器开始，逐层向外包裹。每层闭包捕获：
+        // - interceptor：当前拦截器的 Arc 引用
+        // - ctx：调用上下文的克隆
+        // - inner：内层闭包（初始为原始方法体）
+        //
+        // 执行时：外层 interceptor.around() 先进入，调用 inner 时触发内层，
+        // 形成 A → B → body → B → A 的洋葱结构。
         let mut chain: Box<dyn FnOnce() -> SimpleCallResult + Send> = Box::new(body);
         for interceptor in self.interceptors.iter().rev() {
             let interceptor = Arc::clone(interceptor);
             let ctx = context.clone();
             let inner = chain;
+            // 将当前层包裹在内层之外，形成新的链头
             chain = Box::new(move || interceptor.around(&ctx, inner));
         }
+        // 触发最外层拦截器，整条链开始执行
         chain()
     }
 }

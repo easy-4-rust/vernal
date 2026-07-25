@@ -131,14 +131,17 @@ impl ManagedTaskSupervisor {
     where
         Fut: Future<Output = Result<(), std::io::Error>> + Send + 'static,
     {
+        // 用 tokio::time::timeout 包裹原始 Future
         let timed_future = async move {
             tokio::time::timeout(task_timeout, future)
                 .await
+                // 超时返回 Err(Elapsed)，转换为 io::Error::TimedOut
                 .unwrap_or(Err(std::io::Error::new(
                     std::io::ErrorKind::TimedOut,
                     "任务超时",
                 )))
         };
+        // 委托给标准 spawn，复用观察器和完成逻辑
         self.spawn(name, timed_future)
     }
 
