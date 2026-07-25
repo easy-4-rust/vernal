@@ -325,6 +325,12 @@ Tokio 协调任务负责：某个等待者被丢弃或等待超时都不会遗�
 `${key:default}` 占位符或转换成 `u16`、`bool` 等 Rust 类型。TOML、YAML、
 Hutool `.setting`、进程环境变量和配置中心仍由 Adapter 加载；Vernal 不建立
 tx-di 式全局配置，也不会在启动报告中序列化属性键和值。
+消费方 Bridge 可以实现 `ApplicationModule`，通过隔离 Registrar 把组件定义、
+Trait Binding、生命周期、Send/Local Advisor、Operation、PropertySource 与
+Profile 组织成一个具名装配单元。`register_module` 会先在克隆 Environment 与
+原子 IoC Bundle 上完成预检，再一次提交全部贡献；配置、环境或定义任一失败，
+真实应用建造器都保持不变。模块只能由 Rust 代码显式安装，不进行 classpath
+式发现或进程级全局注册。
 `ConditionalComponentModule` 可以把组件定义、Trait Binding 与生命周期登记
 绑定到同一个 `ProfileCondition`、`PropertyCondition` 或自定义
 `PredicateCondition`。条件只在 Environment 冻结后、依赖图校验前求值一次：
@@ -352,6 +358,7 @@ Spring Boot 式隐式自动配置。`refresh()` 与
 | ApplicationContext | Tokio 持有 refresh/start/close、系统信号关闭、有界生命周期钩子、确定性回滚和 Context-local 类型化事件 | Phase 3 内核 |
 | 受管 Tokio 任务 | Context 持有任务句柄、失败取消、优雅等待、有界 abort 与共享停机结果 | Phase 3 内核 |
 | 应用环境 | 显式 PropertySource 优先级、Profile、占位符、类型化读取与脱敏快照 | Phase 3 内核 |
+| 显式应用模块 | 为消费方 Bridge 原子装配 Definition/Binding/生命周期/AOP/Operation/Environment | Phase 3 内核 |
 | 条件组件装配 | 构建期 Profile/Property/自定义条件，组件定义、Binding 与生命周期原子进退 | Phase 3 内核 |
 | 事件 | Context 内部隔离的类型化事件发布 | Phase 3 内核 |
 | 异步集成 | Tokio 原生取消、deadline 与类型化调用上下文 | Phase 2 内核 |
@@ -455,7 +462,7 @@ Phase 2 AOP 内核现有 11 个 Send 合同测试，覆盖顺序进入/逆序退
 方法织入及类型驱动自定义 Scope，并有 4 个 compile-fail 用例覆盖非法组件字段、
 非法集合 qualifier、非异步方法与可变接收器。Trait 方法、泛型方法、更完整诊断
 矩阵和 AOP 基准仍待完成。
-Phase 3 内核现有 48 个测试，覆盖依赖顺序启动、逆序关闭、initialize/start
+Phase 3 内核现有 53 个测试，覆盖依赖顺序启动、逆序关闭、initialize/start
 回滚、非法状态转换、幂等关闭、并发关闭串行化和 Context-local 类型化事件
 隔离、高层构建器十一类内建资源注入、应用 Scope 取消树、任务错误/panic 传播、
 取消安全的共享任务停机、超时 abort、任务先于组件 stop 的顺序、关闭等待者取消
@@ -467,7 +474,9 @@ PropertySource 优先级、Profile、类型转换、嵌套占位符、循环/来
 fail-closed、条件错误脱敏，以及成功/失败启动报告的只读性、序列化、环境属性值
 隔离、stop 钩子 panic 隔离和业务错误正文脱敏，并验证 Send/Local IoC 管理
 拦截器的依赖注入、与直接 Advisor 的稳定统一顺序、缺失组件 fail-closed 及
-非 Singleton Advisor 作用域拒绝。
+非 Singleton Advisor 作用域拒绝，并覆盖显式 ApplicationModule 安装、贡献顺序、
+全能力成功装配、配置/Environment/Definition 失败原子回滚、错误脱敏、身份校验、
+重复拒绝及预检失败后的同名重试。
 
 Phase 4 已把 `WebRequestScope` 收敛为 IoC `ScopeContext` 的 Web 门面，十个
 Adapter 的组件提取器均在当前请求 Scope 内解析 Singleton、Transient 或请求级

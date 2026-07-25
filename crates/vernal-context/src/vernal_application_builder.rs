@@ -17,12 +17,14 @@ use vernal_ioc::{
 
 use crate::{
     ApplicationBuildError, ApplicationContext, ApplicationContextBuilder,
-    ApplicationEnvironmentBuilder, ConditionError, ConditionalComponentModule, DiagnosticState,
+    ApplicationEnvironmentBuilder, ApplicationModule, ApplicationModuleError,
+    ApplicationModuleRegistrar, ConditionError, ConditionalComponentModule, DiagnosticState,
     EventBus, Lifecycle, LifecycleExecutionPolicy, ManagedTaskSupervisor, SubsystemStatus,
     SystemShutdownSignalListener, TaskShutdownPolicy, advisor_registration::AdvisorRegistration,
-    context_resources::ContextResources, diagnostic_configuration::DiagnosticConfiguration,
-    lifecycle_registrar::LifecycleRegistrar, local_advisor_registration::LocalAdvisorRegistration,
-    managed_advisor::ManagedAdvisor, managed_local_advisor::ManagedLocalAdvisor,
+    application_module_parts::ApplicationModuleParts, context_resources::ContextResources,
+    diagnostic_configuration::DiagnosticConfiguration, lifecycle_registrar::LifecycleRegistrar,
+    local_advisor_registration::LocalAdvisorRegistration, managed_advisor::ManagedAdvisor,
+    managed_local_advisor::ManagedLocalAdvisor,
 };
 
 /// 统一收集组件、条件模块、生命周期、切面和 Tokio Context 资源的应用建造器。
@@ -47,6 +49,7 @@ use crate::{
 pub struct VernalApplicationBuilder {
     registry: RegistryBuilder,
     lifecycle_registrars: Vec<Box<LifecycleRegistrar>>,
+    application_module_names: BTreeSet<&'static str>,
     conditional_modules: Vec<ConditionalComponentModule>,
     conditional_module_names: BTreeSet<&'static str>,
     advisor_registrations: Vec<AdvisorRegistration>,
@@ -78,6 +81,7 @@ impl VernalApplicationBuilder {
         Self {
             registry: RegistryBuilder::new(),
             lifecycle_registrars: Vec::new(),
+            application_module_names: BTreeSet::new(),
             conditional_modules: Vec::new(),
             conditional_module_names: BTreeSet::new(),
             advisor_registrations: Vec::new(),
@@ -183,6 +187,89 @@ impl VernalApplicationBuilder {
         bindings: impl IntoIterator<Item = TraitBinding>,
     ) -> Result<&mut Self, DefinitionError> {
         self.registry.register_bundle(definitions, bindings)?;
+        Ok(self)
+    }
+
+    /// 原子安装一个显式应用模块。
+    ///
+    /// 模块先在独立 [`ApplicationModuleRegistrar`] 中声明 Definition、Trait
+    /// Binding、生命周期、Send/Local Advisor、Operation、PropertySource 和
+    /// Profile。Vernal 会在修改真实建造器前完成模块配置、Environment 克隆预检
+    /// 与 `IoC` bundle 校验；任一阶段失败都不会留下部分贡献。
+    ///
+    /// 模块按调用顺序提交，因此同 `order` Advisor、互不依赖组件和属性来源都保留
+    /// 显式装配顺序。该入口不进行自动发现或全局注册。
+    ///
+    /// # Errors
+    ///
+    /// 模块名非法或重复、模块为空、模块配置失败、属性来源/Profile 冲突，或组件
+    /// Definition/Trait Binding 无法原子提交时返回 [`ApplicationModuleError`]。
+    pub fn register_module<M>(&mut self, module: M) -> Result<&mut Self, ApplicationModuleError>
+    where
+        M: ApplicationModule,
+    {
+        let name = module.name();
+        if name.is_empty()
+            || name
+                .chars()
+                .any(|character| character.is_whitespace() || character.is_control())
+        {
+            return Err(ApplicationModuleError::InvalidName { name });
+        }
+        if self.application_module_names.contains(name) {
+            return Err(ApplicationModuleError::DuplicateName { name });
+        }
+
+        // 模块配置只写入隔离 Registrar。即使消费方在声明一半时返回错误，真实
+        // Registry、Environment、Advisor 和生命周期集合仍保持调用前状态。
+        let mut registrar = ApplicationModuleRegistrar::new();
+        module.configure(&mut registrar).map_err(|source| {
+            ApplicationModuleError::Configuration {
+                module: name,
+                source,
+            }
+        })?;
+        let parts = registrar.into_parts();
+        if parts.is_empty() {
+            return Err(ApplicationModuleError::Empty { name });
+        }
+        let ApplicationModuleParts {
+            definitions,
+            bindings,
+            lifecycle_registrars,
+            advisor_registrations,
+            local_advisor_registrations,
+            operations,
+            environment_contributions,
+        } = parts;
+
+        // 属性来源和 Profile 先应用到隔离克隆。只有全部贡献合法，克隆才可能在
+        // Registry bundle 提交成功后替换真实 Environment Builder。
+        let mut environment = self.environment.clone();
+        for contribution in environment_contributions {
+            contribution.apply(&mut environment).map_err(|source| {
+                ApplicationModuleError::Environment {
+                    module: name,
+                    source,
+                }
+            })?;
+        }
+
+        // RegistryBuilder 会先完整验证 Definition 与 Trait Binding，再一次提交。
+        // 后续步骤均为已分配值的顺序转移，不再存在业务校验失败点。
+        self.registry
+            .register_bundle(definitions, bindings)
+            .map_err(|source| ApplicationModuleError::Definition {
+                module: name,
+                source,
+            })?;
+        self.environment = environment;
+        self.lifecycle_registrars.extend(lifecycle_registrars);
+        self.advisor_registrations.extend(advisor_registrations);
+        self.local_advisor_registrations
+            .extend(local_advisor_registrations);
+        self.operations.extend(operations);
+        self.application_module_names.insert(name);
         Ok(self)
     }
 

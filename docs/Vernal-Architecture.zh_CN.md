@@ -705,7 +705,45 @@ Hutool-Rust 可以把 `Profile/SettingLoader` 的结果转换成
 构造自身 `SaTokenConfigBuilder`。Vernal 不认识 Hutool 文件对象或 Sa-Token
 配置类型，从而保持消费方拥有集成。
 
-### 10.3 条件组件装配
+### 10.3 显式应用模块
+
+`ApplicationModule` 是面向应用自有 Starter 与生态 Bridge 的公共装配 SPI。
+模块的 `configure` 只写入隔离的 `ApplicationModuleRegistrar`，可统一暂存组件
+Definition、Trait Binding、生命周期登记、Send/Local Advisor、AOP Operation、
+PropertySource 和 Active/Default Profile。
+
+`VernalApplicationBuilder::register_module` 把这些贡献作为一个具名事务处理：
+
+1. 校验静态模块身份，并拒绝已经成功提交的同名模块；
+2. 在隔离 Registrar 中执行模块配置；
+3. 把环境贡献应用到克隆的 `ApplicationEnvironmentBuilder` 完成预检；
+4. 通过 IoC 原子 `register_bundle` 校验并提交 Definition 与 Binding；
+5. 两类预检都成功后，才把生命周期、AOP、Operation 和 Environment 贡献一次
+   移入真实应用建造器。
+
+配置失败、PropertySource 重名、Profile 非法或 Definition/Binding 冲突都不会
+留下模块前缀，也不会占用模块名，修正后的模块可以重试。全部声明顺序保持稳定。
+模块属于显式 Rust 链接期装配，不是 classpath 扫描、全局清单，也不会让 Vernal
+反向依赖 Hutool-Rust、Sa-Token-Rust、Ddd4r 或具体 Web 框架。
+
+```mermaid
+flowchart LR
+    Bridge["消费方 Bridge<br/>ApplicationModule"]
+    Stage["隔离 Registrar<br/>暂存全部贡献"]
+    Env["克隆 Environment<br/>校验来源与 Profile"]
+    Bundle["IoC register_bundle<br/>Definition + Binding"]
+    Commit["一次提交应用<br/>生命周期 · AOP · Operation · Environment"]
+    Rollback["返回结构化错误<br/>建造器保持不变"]
+
+    Bridge --> Stage
+    Stage --> Env
+    Env -->|"通过"| Bundle
+    Env -->|"失败"| Rollback
+    Bundle -->|"通过"| Commit
+    Bundle -->|"失败"| Rollback
+```
+
+### 10.4 条件组件装配
 
 条件判断位于 `vernal-context`，因为 Context 同时拥有冻结后的 Environment 与
 应用装配流程；纯 `vernal-ioc` 不认识 Profile、属性键或配置格式。
@@ -750,7 +788,7 @@ flowchart LR
     Omit -.->|"仍被依赖"| Graph
 ```
 
-### 10.4 状态机
+### 10.5 状态机
 
 ```mermaid
 stateDiagram-v2
@@ -768,7 +806,7 @@ stateDiagram-v2
     Closed --> [*]
 ```
 
-### 10.5 生命周期顺序
+### 10.6 生命周期顺序
 
 ```text
 register
@@ -786,7 +824,7 @@ register
 任何阶段失败都要记录已完成步骤，只回滚已经成功的组件。关闭必须幂等；多次
 `close()` 返回相同终态，不重复执行不可重入副作用。
 
-### 10.6 Context 生命周期所有权
+### 10.7 Context 生命周期所有权
 
 `ApplicationContext` 是公开门面，不让某个临时调用者 Future 直接拥有生命周期。
 `ApplicationStartupCoordinator` 在独立 Tokio task 中执行 refresh/initialize/
@@ -862,7 +900,7 @@ flowchart LR
     Close --> Drain["排空任务并逆序 stop"]
 ```
 
-### 10.7 受管 Tokio 任务
+### 10.8 受管 Tokio 任务
 
 `ManagedTaskSupervisor` 是 Context 对长期 Worker、消息消费、配置监听和
 Hutool-Rust Cron 驱动任务的所有权边界。它不实现这些业务或工具能力，只管理其
@@ -1182,7 +1220,7 @@ compile-fail 用例覆盖非法组件字段、非法集合 qualifier、非异步
 Phase 2 已具备可调用闭环，但 Trait/泛型方法、诊断矩阵、性能基准和稳定性承诺
 仍未完成。
 
-Phase 3 内核另有 48 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
+Phase 3 内核另有 53 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
 回滚、非法转换、幂等关闭、并发关闭串行化、Context-local 类型化事件隔离，
 高层构建器的 Runtime 缺失诊断、十一类内建组件同实例注入、应用 Scope 取消树、
 任务错误/panic 传播、取消安全共享停机、超时 abort、任务先于组件 stop 的顺序、
@@ -1196,7 +1234,9 @@ Profile、类型转换、嵌套占位符、循环/来源失败，以及成功/�
 拦截器依赖注入、直接/组件 Advisor 稳定统一顺序、缺失拦截器 fail-closed 和
 非 Singleton Advisor 作用域拒绝，以及
 Profile/Property/自定义条件选择、条件 Definition/Lifecycle 原子进退、依赖图
-fail-closed 与条件错误脱敏。
+fail-closed 与条件错误脱敏，并覆盖显式 ApplicationModule 安装、贡献顺序、
+全能力成功装配、配置/Environment/Definition 失败原子回滚、错误脱敏、身份校验、
+重复拒绝及预检失败后的同名重试。
 
 ## 16. 实施路线
 

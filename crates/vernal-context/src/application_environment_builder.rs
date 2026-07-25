@@ -9,6 +9,7 @@ use crate::{ApplicationEnvironment, EnvironmentError, PropertySource};
 /// `PropertySource` 顺序是显式合同：索引越小优先级越高。调用方使用
 /// [`Self::add_first`] 或 [`Self::add_last`] 表达覆盖关系，避免依赖隐含的文件
 /// 加载顺序。构建结果不可变，可安全作为普通 `IoC` Singleton 共享。
+#[derive(Clone)]
 pub struct ApplicationEnvironmentBuilder {
     sources: Vec<Arc<dyn PropertySource>>,
     active_profiles: BTreeSet<String>,

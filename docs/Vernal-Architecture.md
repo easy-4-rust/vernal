@@ -704,6 +704,50 @@ Hutool-Rust may convert `Profile`/`SettingLoader` output into a
 `MapPropertySource`; a Sa-Token-Rust bridge may read its keys and then construct
 `SaTokenConfigBuilder`. Vernal knows neither consumer type.
 
+### Explicit application modules
+
+`ApplicationModule` is the public assembly SPI for application-owned starters
+and ecosystem bridges. Its `configure` method writes only to an isolated
+`ApplicationModuleRegistrar`, which can collect component definitions, Trait
+bindings, lifecycle registrations, Send/Local advisors, AOP operations,
+property sources, and active/default profiles.
+
+`VernalApplicationBuilder::register_module` treats those contributions as one
+named transaction:
+
+1. validate the static module identity and reject a previously committed name;
+2. run module configuration in the isolated registrar;
+3. apply environment contributions to a cloned
+   `ApplicationEnvironmentBuilder`;
+4. validate and commit definitions plus bindings through the atomic IoC
+   `register_bundle`;
+5. only after both preflights succeed, move lifecycle, AOP, operation, and
+   Environment contributions into the real application builder.
+
+A failed configuration, duplicate property source, invalid profile, or
+Definition/Binding conflict leaves no module prefix behind and does not reserve
+the module name, so a corrected module may be retried. Declaration order is
+preserved. Modules are explicit link-time Rust composition—not classpath
+scanning, global inventory tables, or a reverse dependency from Vernal into
+Hutool-Rust, Sa-Token-Rust, Ddd4r, or a web framework.
+
+```mermaid
+flowchart LR
+    Bridge["Consumer bridge<br/>ApplicationModule"]
+    Stage["Isolated registrar<br/>all contributions"]
+    Env["Clone Environment<br/>validate sources and profiles"]
+    Bundle["IoC register_bundle<br/>definitions and bindings"]
+    Commit["Single application commit<br/>lifecycle · AOP · operations · environment"]
+    Rollback["Return structured error<br/>builder unchanged"]
+
+    Bridge --> Stage
+    Stage --> Env
+    Env -->|"valid"| Bundle
+    Env -->|"error"| Rollback
+    Bundle -->|"valid"| Commit
+    Bundle -->|"error"| Rollback
+```
+
 ### Conditional component assembly
 
 `vernal-context` evaluates conditions because it owns both the frozen
@@ -1255,7 +1299,7 @@ fields, invalid collection qualifiers, non-async methods, and mutable
 receivers. Phase 2 now has a callable loop, while trait/generic methods,
 diagnostic coverage, benchmarks, and stability guarantees remain open.
 
-The Phase 3 kernel has forty-eight contract tests for dependency-order
+The Phase 3 kernel has fifty-three contract tests for dependency-order
 startup, reverse shutdown, initialize/start rollback, invalid transitions,
 idempotent close, concurrent close serialization, and context-local typed
 event isolation, plus runtime-unavailable diagnostics, same-instance injection
@@ -1274,7 +1318,11 @@ plus Send/Local IoC-managed interceptor injection, stable ordering shared by
 direct and component advisors, fail-closed missing-interceptor resolution,
 rejection of non-singleton advisor scopes,
 Profile/Property/custom condition selection, atomic definition/lifecycle
-inclusion, fail-closed graph validation, and redacted condition failures.
+inclusion, fail-closed graph validation, and redacted condition failures,
+plus explicit application-module installation, stable contribution ordering,
+full-stack success, configuration/environment/definition rollback, redacted
+failure chains, identity validation, duplicate rejection, and retry after a
+failed atomic preflight.
 
 ## 16. Delivery roadmap
 
