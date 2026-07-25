@@ -108,6 +108,40 @@ impl ManagedTaskSupervisor {
         Ok(id)
     }
 
+    /// 带超时的任务派生。
+    ///
+    /// 与 [`Self::spawn`] 相同，但为任务附加单个超时限制。
+    /// 超时后任务被 abort，等效于调用方自行用 `tokio::time::timeout` 包裹。
+    ///
+    /// # 参数
+    /// - `name`：任务静态名称（用于诊断）
+    /// - `task_timeout`：单个任务超时
+    /// - `future`：要监督的异步任务
+    ///
+    /// # Errors
+    ///
+    /// 监督器已经观察到关键任务失败或开始停机时返回
+    /// [`ManagedTaskError::SpawnRejected`]。
+    pub fn spawn_with_timeout<Fut>(
+        self: &Arc<Self>,
+        name: &'static str,
+        task_timeout: std::time::Duration,
+        future: Fut,
+    ) -> Result<ManagedTaskId, ManagedTaskError>
+    where
+        Fut: Future<Output = Result<(), std::io::Error>> + Send + 'static,
+    {
+        let timed_future = async move {
+            tokio::time::timeout(task_timeout, future)
+                .await
+                .unwrap_or(Err(std::io::Error::new(
+                    std::io::ErrorKind::TimedOut,
+                    "任务超时",
+                )))
+        };
+        self.spawn(name, timed_future)
+    }
+
     /// 返回供单个任务监听的应用取消树子令牌。
     ///
     /// 调用方通常在提交任务前取得该令牌，并在循环中与业务输入一起 `select!`。

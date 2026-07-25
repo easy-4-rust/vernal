@@ -82,6 +82,27 @@ impl EventBus {
             delivered
         }
     }
+
+    /// 返回指定事件类型的当前订阅方数量。
+    ///
+    /// 用于诊断和监控。注意：此值是瞬时快照，可能在返回后立即变化。
+    pub async fn subscriber_count<T>(&self) -> usize
+    where
+        T: Any + Send + Sync,
+    {
+        let senders = self.senders.read().await;
+        senders
+            .get(&TypeId::of::<T>())
+            .and_then(|sender| sender.downcast_ref::<broadcast::Sender<Arc<T>>>())
+            .map(|sender| sender.receiver_count())
+            .unwrap_or(0)
+    }
+
+    /// 返回指定事件类型的通道容量。
+    #[must_use]
+    pub fn capacity(&self) -> usize {
+        self.capacity.get()
+    }
 }
 
 impl Default for EventBus {
