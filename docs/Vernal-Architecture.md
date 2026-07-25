@@ -710,38 +710,48 @@ Hutool-Rust may convert `Profile`/`SettingLoader` output into a
 and ecosystem bridges. Its `configure` method writes only to an isolated
 `ApplicationModuleRegistrar`, which can collect component definitions, Trait
 bindings, lifecycle registrations, Send/Local advisors, AOP operations,
-property sources, and active/default profiles.
+property sources, active/default profiles, and explicit
+`ConditionalComponentModule` values.
 
 `VernalApplicationBuilder::register_module` treats those contributions as one
 named transaction:
 
 1. validate the static module identity and reject a previously committed name;
 2. run module configuration in the isolated registrar;
-3. apply environment contributions to a cloned
+3. validate every nested conditional identity against both the application and
+   the current module batch;
+4. apply environment contributions to a cloned
    `ApplicationEnvironmentBuilder`;
-4. validate and commit definitions plus bindings through the atomic IoC
+5. validate and commit definitions plus bindings through the atomic IoC
    `register_bundle`;
-5. only after both preflights succeed, move lifecycle, AOP, operation, and
-   Environment contributions into the real application builder.
+6. only after every preflight succeeds, move lifecycle, AOP, operation,
+   Environment, and conditional contributions into the real application
+   builder.
 
-A failed configuration, duplicate property source, invalid profile, or
-Definition/Binding conflict leaves no module prefix behind and does not reserve
-the module name, so a corrected module may be retried. Declaration order is
-preserved. Modules are explicit link-time Rust composition—not classpath
-scanning, global inventory tables, or a reverse dependency from Vernal into
-Hutool-Rust, Sa-Token-Rust, Ddd4r, or a web framework.
+A failed configuration, duplicate/invalid conditional identity, duplicate
+property source, invalid profile, or Definition/Binding conflict leaves no
+module prefix behind and does not reserve the module name, so a corrected
+module may be retried. Nested conditions are evaluated later against the same
+final Environment that includes their outer module's sources and profiles.
+Declaration order is preserved. Modules are explicit link-time Rust
+composition—not classpath scanning, global inventory tables, or a reverse
+dependency from Vernal into Hutool-Rust, Sa-Token-Rust, Ddd4r, or a web
+framework.
 
 ```mermaid
 flowchart LR
     Bridge["Consumer bridge<br/>ApplicationModule"]
     Stage["Isolated registrar<br/>all contributions"]
+    Condition["Conditional identity preflight<br/>application + module batch"]
     Env["Clone Environment<br/>validate sources and profiles"]
     Bundle["IoC register_bundle<br/>definitions and bindings"]
     Commit["Single application commit<br/>lifecycle · AOP · operations · environment"]
     Rollback["Return structured error<br/>builder unchanged"]
 
     Bridge --> Stage
-    Stage --> Env
+    Stage --> Condition
+    Condition -->|"valid"| Env
+    Condition -->|"error"| Rollback
     Env -->|"valid"| Bundle
     Env -->|"error"| Rollback
     Bundle -->|"valid"| Commit
@@ -1299,7 +1309,7 @@ fields, invalid collection qualifiers, non-async methods, and mutable
 receivers. Phase 2 now has a callable loop, while trait/generic methods,
 diagnostic coverage, benchmarks, and stability guarantees remain open.
 
-The Phase 3 kernel has fifty-three contract tests for dependency-order
+The Phase 3 kernel has fifty-five contract tests for dependency-order
 startup, reverse shutdown, initialize/start rollback, invalid transitions,
 idempotent close, concurrent close serialization, and context-local typed
 event isolation, plus runtime-unavailable diagnostics, same-instance injection
@@ -1322,7 +1332,9 @@ inclusion, fail-closed graph validation, and redacted condition failures,
 plus explicit application-module installation, stable contribution ordering,
 full-stack success, configuration/environment/definition rollback, redacted
 failure chains, identity validation, duplicate rejection, and retry after a
-failed atomic preflight.
+failed atomic preflight, plus nested conditional modules that read the same
+staged Environment and roll back the outer module on invalid or duplicate
+condition identities.
 
 ## 16. Delivery roadmap
 

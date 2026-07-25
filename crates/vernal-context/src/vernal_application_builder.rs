@@ -193,17 +193,19 @@ impl VernalApplicationBuilder {
     /// 原子安装一个显式应用模块。
     ///
     /// 模块先在独立 [`ApplicationModuleRegistrar`] 中声明 Definition、Trait
-    /// Binding、生命周期、Send/Local Advisor、Operation、PropertySource 和
-    /// Profile。Vernal 会在修改真实建造器前完成模块配置、Environment 克隆预检
-    /// 与 `IoC` bundle 校验；任一阶段失败都不会留下部分贡献。
+    /// Binding、生命周期、Send/Local Advisor、Operation、PropertySource、
+    /// Profile 和条件组件模块。Vernal 会在修改真实建造器前完成模块配置、条件
+    /// 身份、Environment 克隆与 `IoC` bundle 预检；任一阶段失败都不会留下部分
+    /// 贡献。
     ///
     /// 模块按调用顺序提交，因此同 `order` Advisor、互不依赖组件和属性来源都保留
     /// 显式装配顺序。该入口不进行自动发现或全局注册。
     ///
     /// # Errors
     ///
-    /// 模块名非法或重复、模块为空、模块配置失败、属性来源/Profile 冲突，或组件
-    /// Definition/Trait Binding 无法原子提交时返回 [`ApplicationModuleError`]。
+    /// 模块名非法或重复、模块为空、模块配置失败、条件模块非法/重复、属性来源/
+    /// Profile 冲突，或组件 Definition/Trait Binding 无法原子提交时返回
+    /// [`ApplicationModuleError`]。
     pub fn register_module<M>(&mut self, module: M) -> Result<&mut Self, ApplicationModuleError>
     where
         M: ApplicationModule,
@@ -241,7 +243,31 @@ impl VernalApplicationBuilder {
             local_advisor_registrations,
             operations,
             environment_contributions,
+            conditional_modules,
         } = parts;
+
+        // 条件模块的自身合同和全应用名称空间也必须在真实 Registry 提交前完成
+        // 预检。同一外层模块内的重复名称使用局部集合识别，不提前污染应用集合。
+        let mut conditional_module_names = BTreeSet::new();
+        for conditional_module in &conditional_modules {
+            conditional_module
+                .validate()
+                .map_err(|source| ApplicationModuleError::Condition {
+                    module: name,
+                    source,
+                })?;
+            let conditional_name = conditional_module.name();
+            if self.conditional_module_names.contains(conditional_name)
+                || !conditional_module_names.insert(conditional_name)
+            {
+                return Err(ApplicationModuleError::Condition {
+                    module: name,
+                    source: ConditionError::DuplicateModule {
+                        name: conditional_name,
+                    },
+                });
+            }
+        }
 
         // 属性来源和 Profile 先应用到隔离克隆。只有全部贡献合法，克隆才可能在
         // Registry bundle 提交成功后替换真实 Environment Builder。
@@ -269,6 +295,9 @@ impl VernalApplicationBuilder {
         self.local_advisor_registrations
             .extend(local_advisor_registrations);
         self.operations.extend(operations);
+        self.conditional_module_names
+            .extend(conditional_module_names);
+        self.conditional_modules.extend(conditional_modules);
         self.application_module_names.insert(name);
         Ok(self)
     }

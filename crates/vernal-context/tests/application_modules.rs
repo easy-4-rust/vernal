@@ -5,11 +5,14 @@ mod application_module_support;
 use std::{error::Error, sync::Arc};
 
 use application_module_support::{
-    CommerceModule, DefinitionConflictModule, EmptyModule, EnvironmentConflictModule,
-    FailingModule, InvalidModule, ModuleProbe, ModuleService,
+    CommerceModule, ConditionalApplicationModule, DefinitionConflictModule, EmptyModule,
+    EnvironmentConflictModule, FailingModule, InvalidModule, ModuleProbe, ModuleService,
 };
 use vernal_aop::{Invocation, InvocationTarget, InvocationValue, Operation};
-use vernal_context::{ApplicationModuleError, MapPropertySource, VernalApplicationBuilder};
+use vernal_context::{
+    ApplicationModuleError, ConditionError, ConditionalComponentModule, MapPropertySource,
+    PropertyCondition, VernalApplicationBuilder,
+};
 use vernal_ioc::ComponentDefinition;
 
 /// 创建一个由当前 Tokio Runtime 驱动的高层应用建造器。
@@ -237,5 +240,127 @@ async fn module_identity_rejects_invalid_empty_and_duplicate_declarations() {
         Err(ApplicationModuleError::DuplicateName {
             name: "commerce.core"
         })
+    ));
+}
+
+#[tokio::test]
+async fn module_condition_uses_the_same_staged_environment_and_reports_match() {
+    let probe = Arc::new(ModuleProbe::default());
+    let mut application = application();
+    application
+        .register_module(ConditionalApplicationModule::new(
+            Arc::clone(&probe),
+            vec!["conditional.application.component"],
+        ))
+        .expect("conditional application module");
+
+    let context = application.build().expect("conditional module context");
+    context
+        .refresh()
+        .await
+        .expect("conditional component warm-up");
+    assert!(Arc::ptr_eq(
+        &context
+            .container()
+            .resolve::<ModuleProbe>()
+            .expect("matched conditional component"),
+        &probe
+    ));
+    let report = context.startup_report().await;
+    let evaluation = report
+        .condition_evaluations()
+        .iter()
+        .find(|evaluation| evaluation.module() == "conditional.application.component")
+        .expect("nested condition evaluation");
+    assert!(evaluation.matched());
+}
+
+#[tokio::test]
+async fn invalid_or_duplicate_nested_conditions_roll_back_the_outer_module() {
+    let probe = Arc::new(ModuleProbe::default());
+    let mut application = application();
+    let invalid = module_error(
+        application.register_module(ConditionalApplicationModule::new(
+            Arc::clone(&probe),
+            vec!["invalid conditional name"],
+        )),
+    );
+    assert!(matches!(
+        invalid,
+        ApplicationModuleError::Condition {
+            module: "conditional.application",
+            ..
+        }
+    ));
+    assert!(!invalid.to_string().contains("invalid conditional name"));
+    assert!(!format!("{invalid:?}").contains("invalid conditional name"));
+    assert!(matches!(
+        invalid.source(),
+        Some(source)
+            if source
+                .downcast_ref::<ConditionError>()
+                .is_some_and(|source| matches!(
+                    source,
+                    ConditionError::InvalidModuleName { .. }
+                ))
+    ));
+
+    let mut existing = ConditionalComponentModule::new(
+        "existing.conditional",
+        PropertyCondition::missing("existing.disabled").expect("valid existing condition"),
+    );
+    existing.register(ComponentDefinition::shared_value(17_u16));
+    application
+        .register_conditional(existing)
+        .expect("existing conditional module");
+    let existing_collision = module_error(application.register_module(
+        ConditionalApplicationModule::new(Arc::clone(&probe), vec!["existing.conditional"]),
+    ));
+    assert!(matches!(
+        existing_collision.source(),
+        Some(source)
+            if source
+                .downcast_ref::<ConditionError>()
+                .is_some_and(|source| matches!(
+                    source,
+                    ConditionError::DuplicateModule {
+                        name: "existing.conditional"
+                    }
+                ))
+    ));
+
+    let duplicate = module_error(
+        application.register_module(ConditionalApplicationModule::new(
+            Arc::clone(&probe),
+            vec!["duplicate.conditional", "duplicate.conditional"],
+        )),
+    );
+    assert!(matches!(
+        duplicate.source(),
+        Some(source)
+            if source
+                .downcast_ref::<ConditionError>()
+                .is_some_and(|source| matches!(
+                    source,
+                    ConditionError::DuplicateModule {
+                        name: "duplicate.conditional"
+                    }
+                ))
+    ));
+
+    // 两次失败后，同一外层模块名、PropertySource 名和组件身份仍可一起成功重试。
+    application
+        .register_module(ConditionalApplicationModule::new(
+            Arc::clone(&probe),
+            vec!["conditional.retry.component"],
+        ))
+        .expect("failed outer module must remain reusable");
+    let context = application.build().expect("retried conditional module");
+    assert!(Arc::ptr_eq(
+        &context
+            .container()
+            .resolve::<ModuleProbe>()
+            .expect("retried conditional component"),
+        &probe
     ));
 }

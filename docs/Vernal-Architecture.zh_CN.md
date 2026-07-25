@@ -710,33 +710,39 @@ Hutool-Rust 可以把 `Profile/SettingLoader` 的结果转换成
 `ApplicationModule` 是面向应用自有 Starter 与生态 Bridge 的公共装配 SPI。
 模块的 `configure` 只写入隔离的 `ApplicationModuleRegistrar`，可统一暂存组件
 Definition、Trait Binding、生命周期登记、Send/Local Advisor、AOP Operation、
-PropertySource 和 Active/Default Profile。
+PropertySource、Active/Default Profile 和显式 `ConditionalComponentModule`。
 
 `VernalApplicationBuilder::register_module` 把这些贡献作为一个具名事务处理：
 
 1. 校验静态模块身份，并拒绝已经成功提交的同名模块；
 2. 在隔离 Registrar 中执行模块配置；
-3. 把环境贡献应用到克隆的 `ApplicationEnvironmentBuilder` 完成预检；
-4. 通过 IoC 原子 `register_bundle` 校验并提交 Definition 与 Binding；
-5. 两类预检都成功后，才把生命周期、AOP、Operation 和 Environment 贡献一次
+3. 在应用已有名称和当前模块批次两个范围内预检全部内嵌条件模块身份；
+4. 把环境贡献应用到克隆的 `ApplicationEnvironmentBuilder` 完成预检；
+5. 通过 IoC 原子 `register_bundle` 校验并提交 Definition 与 Binding；
+6. 全部预检成功后，才把生命周期、AOP、Operation、Environment 和条件贡献一次
    移入真实应用建造器。
 
-配置失败、PropertySource 重名、Profile 非法或 Definition/Binding 冲突都不会
-留下模块前缀，也不会占用模块名，修正后的模块可以重试。全部声明顺序保持稳定。
-模块属于显式 Rust 链接期装配，不是 classpath 扫描、全局清单，也不会让 Vernal
-反向依赖 Hutool-Rust、Sa-Token-Rust、Ddd4r 或具体 Web 框架。
+配置失败、条件身份非法/重复、PropertySource 重名、Profile 非法或
+Definition/Binding 冲突都不会留下模块前缀，也不会占用模块名，修正后的模块可以
+重试。内嵌条件会在后续构建阶段读取包含外层模块来源与 Profile 的同一份最终
+Environment。全部声明顺序保持稳定。模块属于显式 Rust 链接期装配，不是
+classpath 扫描、全局清单，也不会让 Vernal 反向依赖 Hutool-Rust、
+Sa-Token-Rust、Ddd4r 或具体 Web 框架。
 
 ```mermaid
 flowchart LR
     Bridge["消费方 Bridge<br/>ApplicationModule"]
     Stage["隔离 Registrar<br/>暂存全部贡献"]
+    Condition["条件身份预检<br/>应用 + 当前模块批次"]
     Env["克隆 Environment<br/>校验来源与 Profile"]
     Bundle["IoC register_bundle<br/>Definition + Binding"]
     Commit["一次提交应用<br/>生命周期 · AOP · Operation · Environment"]
     Rollback["返回结构化错误<br/>建造器保持不变"]
 
     Bridge --> Stage
-    Stage --> Env
+    Stage --> Condition
+    Condition -->|"通过"| Env
+    Condition -->|"失败"| Rollback
     Env -->|"通过"| Bundle
     Env -->|"失败"| Rollback
     Bundle -->|"通过"| Commit
@@ -1220,7 +1226,7 @@ compile-fail 用例覆盖非法组件字段、非法集合 qualifier、非异步
 Phase 2 已具备可调用闭环，但 Trait/泛型方法、诊断矩阵、性能基准和稳定性承诺
 仍未完成。
 
-Phase 3 内核另有 53 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
+Phase 3 内核另有 55 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
 回滚、非法转换、幂等关闭、并发关闭串行化、Context-local 类型化事件隔离，
 高层构建器的 Runtime 缺失诊断、十一类内建组件同实例注入、应用 Scope 取消树、
 任务错误/panic 传播、取消安全共享停机、超时 abort、任务先于组件 stop 的顺序、
@@ -1236,7 +1242,8 @@ Profile、类型转换、嵌套占位符、循环/来源失败，以及成功/�
 Profile/Property/自定义条件选择、条件 Definition/Lifecycle 原子进退、依赖图
 fail-closed 与条件错误脱敏，并覆盖显式 ApplicationModule 安装、贡献顺序、
 全能力成功装配、配置/Environment/Definition 失败原子回滚、错误脱敏、身份校验、
-重复拒绝及预检失败后的同名重试。
+重复拒绝及预检失败后的同名重试，并验证内嵌条件模块读取同一暂存 Environment，
+条件身份非法或重复时整个外层模块回滚。
 
 ## 16. 实施路线
 

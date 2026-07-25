@@ -461,9 +461,12 @@ and startup diagnostics serialize source/profile names but never property keys
 or values. Consumer-owned bridges can implement `ApplicationModule` and use
 its isolated registrar to contribute component definitions, Trait bindings,
 lifecycle hooks, Send/Local advisors, operations, property sources, and
-profiles as one named unit. `register_module` preflights a cloned Environment
-and an atomic IoC bundle before committing anything, so a configuration,
-environment, or definition failure leaves the application builder unchanged.
+profiles as one named unit. A module can also contribute explicit
+`ConditionalComponentModule` values so its Profile/Property-gated components
+observe the same final Environment. `register_module` preflights conditional
+identities, a cloned Environment, and an atomic IoC bundle before committing
+anything, so a configuration, condition, environment, or definition failure
+leaves the application builder unchanged.
 Modules are installed only by explicit Rust calls; Vernal performs no
 classpath-style discovery or process-global registration.
 `ConditionalComponentModule` can group component definitions,
@@ -497,7 +500,7 @@ or a no-yield loop inside an async task.
 | Application context | Tokio-owned refresh/start/close, OS signal shutdown, bounded lifecycle hooks, deterministic rollback, context-local typed events | Phase 3 kernel |
 | Managed Tokio tasks | Context-owned task handles, failure-driven cancellation, graceful wait, bounded abort, shared shutdown result | Phase 3 kernel |
 | Application environment | Explicit PropertySource precedence, profiles, placeholders, typed lookup, and redacted snapshots | Phase 3 kernel |
-| Explicit application modules | Atomic Definition/Binding/lifecycle/AOP/operation/environment assembly for consumer-owned bridges | Phase 3 kernel |
+| Explicit application modules | Atomic Definition/Binding/lifecycle/AOP/operation/environment/conditional assembly for consumer-owned bridges | Phase 3 kernel |
 | Conditional component assembly | Build-time Profile/Property/custom conditions with atomic definition, binding, and lifecycle inclusion | Phase 3 kernel |
 | Events | Context-local typed event publication | Phase 3 kernel |
 | Async integration | Tokio-native cancellation, deadlines, and typed invocation context | Phase 2 kernel |
@@ -627,7 +630,7 @@ compile-fail cases for invalid component
 fields, invalid collection qualifiers, non-async interception, and mutable
 receivers. Trait methods, generic methods, expanded
 macro diagnostics, and AOP benchmarks remain open.
-The Phase 3 kernel has fifty-three tests covering dependency-order startup,
+The Phase 3 kernel has fifty-five tests covering dependency-order startup,
 reverse shutdown, initialize/start rollback, invalid transitions, idempotent
 close, concurrent close serialization, and context-local typed event
 isolation, plus managed injection of eleven framework resources,
@@ -648,7 +651,9 @@ rejection of non-singleton advisor scopes, explicit application-module
 installation, stable contribution ordering, full-stack success,
 configuration/environment/definition rollback, redacted failure chains,
 identity validation, duplicate rejection, and retry after a failed atomic
-preflight.
+preflight, plus nested conditional modules that read the same staged
+Environment and roll back the outer module on invalid or duplicate condition
+identities.
 
 Phase 4 now makes `WebRequestScope` the Web facade over IoC `ScopeContext`.
 All ten adapters resolve singleton, transient, and request-scoped components

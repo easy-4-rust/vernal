@@ -4,8 +4,8 @@ use vernal_aop::Operation;
 use vernal_ioc::{ComponentDefinition, TraitBinding};
 
 use crate::{
-    advisor_registration::AdvisorRegistration, lifecycle_registrar::LifecycleRegistrar,
-    local_advisor_registration::LocalAdvisorRegistration,
+    ConditionalComponentModule, advisor_registration::AdvisorRegistration,
+    lifecycle_registrar::LifecycleRegistrar, local_advisor_registration::LocalAdvisorRegistration,
     module_environment_contribution::ModuleEnvironmentContribution,
 };
 
@@ -21,6 +21,7 @@ pub(crate) struct ApplicationModuleParts {
     pub(crate) local_advisor_registrations: Vec<LocalAdvisorRegistration>,
     pub(crate) operations: Vec<Operation>,
     pub(crate) environment_contributions: Vec<ModuleEnvironmentContribution>,
+    pub(crate) conditional_modules: Vec<ConditionalComponentModule>,
 }
 
 impl ApplicationModuleParts {
@@ -33,5 +34,6 @@ impl ApplicationModuleParts {
             && self.local_advisor_registrations.is_empty()
             && self.operations.is_empty()
             && self.environment_contributions.is_empty()
+            && self.conditional_modules.is_empty()
     }
 }

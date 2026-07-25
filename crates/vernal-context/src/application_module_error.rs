@@ -5,7 +5,7 @@ use std::{error::Error, fmt};
 use vernal_core::BoxError;
 use vernal_ioc::DefinitionError;
 
-use crate::EnvironmentError;
+use crate::{ConditionError, EnvironmentError};
 
 /// 描述显式应用模块在声明、配置、环境预检或原子提交阶段的失败。
 ///
@@ -42,6 +42,13 @@ pub enum ApplicationModuleError {
         /// 结构化环境错误。
         source: EnvironmentError,
     },
+    /// 模块携带的条件组件声明非法或与应用中已有名称冲突。
+    Condition {
+        /// 失败外层模块的静态名称。
+        module: &'static str,
+        /// 结构化条件模块错误。
+        source: ConditionError,
+    },
     /// 模块 Definition 或 Trait Binding 无法原子提交。
     Definition {
         /// 失败模块的静态名称。
@@ -69,6 +76,12 @@ impl fmt::Display for ApplicationModuleError {
                 write!(
                     formatter,
                     "application module {module} has an invalid environment contribution"
+                )
+            }
+            Self::Condition { module, .. } => {
+                write!(
+                    formatter,
+                    "application module {module} has an invalid conditional contribution"
                 )
             }
             Self::Definition { module, .. } => {
@@ -103,6 +116,11 @@ impl fmt::Debug for ApplicationModuleError {
                 .field("module", module)
                 .field("source", &"<redacted>")
                 .finish(),
+            Self::Condition { module, .. } => formatter
+                .debug_struct("Condition")
+                .field("module", module)
+                .field("source", &"<redacted>")
+                .finish(),
             Self::Definition { module, .. } => formatter
                 .debug_struct("Definition")
                 .field("module", module)
@@ -117,6 +135,7 @@ impl Error for ApplicationModuleError {
         match self {
             Self::Configuration { source, .. } => Some(source.as_ref()),
             Self::Environment { source, .. } => Some(source),
+            Self::Condition { source, .. } => Some(source),
             Self::Definition { source, .. } => Some(source),
             Self::InvalidName { .. } | Self::DuplicateName { .. } | Self::Empty { .. } => None,
         }

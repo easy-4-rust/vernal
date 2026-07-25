@@ -6,10 +6,10 @@ use vernal_aop::{Advisor, Interceptor, LocalAdvisor, LocalInterceptor, Operation
 use vernal_ioc::{Component, ComponentDefinition, Qualifier, TraitBinding};
 
 use crate::{
-    Lifecycle, PropertySource, advisor_registration::AdvisorRegistration,
-    application_module_parts::ApplicationModuleParts, lifecycle_registrar::LifecycleRegistrar,
-    local_advisor_registration::LocalAdvisorRegistration, managed_advisor::ManagedAdvisor,
-    managed_local_advisor::ManagedLocalAdvisor,
+    ConditionalComponentModule, Lifecycle, PropertySource,
+    advisor_registration::AdvisorRegistration, application_module_parts::ApplicationModuleParts,
+    lifecycle_registrar::LifecycleRegistrar, local_advisor_registration::LocalAdvisorRegistration,
+    managed_advisor::ManagedAdvisor, managed_local_advisor::ManagedLocalAdvisor,
     module_environment_contribution::ModuleEnvironmentContribution,
 };
 
@@ -27,6 +27,7 @@ pub struct ApplicationModuleRegistrar {
     local_advisor_registrations: Vec<LocalAdvisorRegistration>,
     operations: Vec<Operation>,
     environment_contributions: Vec<ModuleEnvironmentContribution>,
+    conditional_modules: Vec<ConditionalComponentModule>,
 }
 
 impl ApplicationModuleRegistrar {
@@ -234,6 +235,24 @@ impl ApplicationModuleRegistrar {
         self
     }
 
+    /// 暂存一个在最终 Environment 冻结后求值的条件组件模块。
+    ///
+    /// 条件模块的声明身份会与当前应用以及同一外层模块内的其他条件模块统一预检。
+    /// 外层模块注册失败时，条件定义、Binding 和生命周期登记都不会进入真实建造器。
+    pub fn conditional(&mut self, module: ConditionalComponentModule) -> &mut Self {
+        self.conditional_modules.push(module);
+        self
+    }
+
+    /// 暂存一组条件组件模块并保留输入顺序。
+    pub fn conditionals(
+        &mut self,
+        modules: impl IntoIterator<Item = ConditionalComponentModule>,
+    ) -> &mut Self {
+        self.conditional_modules.extend(modules);
+        self
+    }
+
     /// 消费 Registrar 并返回等待原子提交的命名贡献集合。
     pub(crate) fn into_parts(self) -> ApplicationModuleParts {
         ApplicationModuleParts {
@@ -244,6 +263,7 @@ impl ApplicationModuleRegistrar {
             local_advisor_registrations: self.local_advisor_registrations,
             operations: self.operations,
             environment_contributions: self.environment_contributions,
+            conditional_modules: self.conditional_modules,
         }
     }
 }
