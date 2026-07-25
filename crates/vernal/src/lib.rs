@@ -7,6 +7,8 @@ pub use vernal_aop as aop;
 pub use vernal_context as context;
 /// 框架共享合同命名空间。
 pub use vernal_core as core;
+/// 统一错误体系命名空间。
+pub use vernal_core::error;
 /// `IoC` 内核命名空间。
 pub use vernal_ioc as ioc;
 /// 过程宏命名空间。

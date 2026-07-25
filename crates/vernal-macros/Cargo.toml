@@ -20,6 +20,7 @@ syn = { version = "2.0.119", features = ["full", "visit-mut"] }
 tokio.workspace = true
 vernal-aop = { path = "../vernal-aop" }
 vernal-context = { path = "../vernal-context" }
+vernal-core = { path = "../vernal-core" }
 trybuild = "1.0.116"
 vernal-ioc = { path = "../vernal-ioc" }
 

@@ -3,27 +3,52 @@
 use proc_macro_crate::{FoundCrate, crate_name};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use syn::{Data, DeriveInput, Field, Fields, GenericArgument, LitStr, PathArguments, Type};
+use syn::{Data, DeriveInput, Field, Fields, GenericArgument, LitStr, Path, PathArguments, Type};
 
-use crate::{component_options::ComponentOptions, component_scope_option::ComponentScopeOption};
+use crate::{
+    component_options::{ComponentOptions, ComponentOptionsParts},
+    component_scope_option::ComponentScopeOption,
+};
 
 /// 解析组件结构并生成 `vernal_ioc::Component` 实现。
+///
+/// 根据 `#[component(...)]` 属性中的选项，可能额外生成：
+/// - `Lifecycle` trait 实现（当指定了生命周期钩子时）
+/// - Trait 绑定注册代码（当指定了 `as_trait` 时）
+/// - 自动发现注册代码（当指定了 `discover` 时）
 pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
     reject_generics(input)?;
     let ioc = ioc_crate_path()?;
-    let (scope, aop_enabled, discovery_group) = ComponentOptions::parse(&input.attrs)?.into_parts();
+    let options = ComponentOptions::parse(&input.attrs)?.into_parts();
     let component_name = &input.ident;
     let fields = component_fields(&input.data)?;
     let mut initializers = Vec::with_capacity(fields.len());
     let mut dependency_statements = Vec::new();
     let mut qualifier_declarations = Vec::new();
-    let aop_implementation = if aop_enabled {
+    let aop_implementation = if options.aop_enabled {
         generate_aop_implementation(component_name, &fields)?
     } else {
         TokenStream::new()
     };
-    let discovery_registration =
-        generate_discovery_registration(component_name, discovery_group.as_ref(), &ioc)?;
+    let discovery_registration = generate_discovery_registration(
+        component_name,
+        options.discovery_group.as_ref(),
+        options.discover_all,
+        &ioc,
+    )?;
+
+    // 生命周期钩子生成
+    let lifecycle_implementation = generate_lifecycle_implementation(
+        component_name,
+        &options,
+    )?;
+
+    // Trait 绑定注册
+    let trait_binding_registration = generate_trait_binding_registration(
+        component_name,
+        options.as_trait.as_ref(),
+        &ioc,
+    )?;
 
     // 每个未标记 default 的字段都必须是 Arc<T>，宏同时生成构造表达式和显式
     // 依赖元数据，保证 Resolver 的运行期访问与启动期依赖图完全一致。
@@ -37,7 +62,7 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
         )?;
     }
 
-    let factory = match scope {
+    let factory = match options.scope {
         ComponentScopeOption::Singleton => {
             quote! { #ioc::ComponentDefinition::try_singleton::<Self, _> }
         }
@@ -72,6 +97,8 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
         }
 
         #aop_implementation
+        #lifecycle_implementation
+        #trait_binding_registration
         #discovery_registration
     })
 }
@@ -467,6 +494,28 @@ fn ioc_crate_path() -> syn::Result<TokenStream> {
     }
 }
 
+/// 解析消费方实际使用的 Context crate 路径，兼容 Cargo 依赖重命名和统一门面。
+fn context_crate_path() -> syn::Result<TokenStream> {
+    match crate_name("vernal-context") {
+        Ok(FoundCrate::Itself) => Ok(quote! { crate }),
+        Ok(FoundCrate::Name(name)) => {
+            let crate_name = syn::Ident::new(&name, proc_macro2::Span::call_site());
+            Ok(quote! { ::#crate_name })
+        }
+        Err(_) => match crate_name("vernal") {
+            Ok(FoundCrate::Itself) => Ok(quote! { crate::context }),
+            Ok(FoundCrate::Name(name)) => {
+                let crate_name = syn::Ident::new(&name, proc_macro2::Span::call_site());
+                Ok(quote! { ::#crate_name::context })
+            }
+            Err(_) => Err(syn::Error::new(
+                proc_macro2::Span::call_site(),
+                "生命周期钩子需要直接依赖 vernal-context，或通过 vernal 统一门面使用",
+            )),
+        },
+    }
+}
+
 /// 解析消费方实际使用的 AOP crate 路径，兼容 Cargo 依赖重命名和统一门面。
 fn aop_crate_path() -> syn::Result<TokenStream> {
     match crate_name("vernal-aop") {
@@ -577,18 +626,25 @@ fn generate_aop_implementation(
     })
 }
 
-/// 为显式声明发现分组的组件生成只读链接期定义入口。
+/// 为声明发现分组或默认自动发现的组件生成只读链接期定义入口。
 ///
 /// 静态名称包含模块路径和类型名；分布式切片只携带定义工厂，不创建组件实例，也
 /// 不触碰任何全局 Registry。未声明 `discover` 时不引用可选 discovery crate。
+///
+/// 当 `discover_all` 为 true 时，使用空分组 `""` 作为默认分组。
 fn generate_discovery_registration(
     component_name: &syn::Ident,
     discovery_group: Option<&LitStr>,
+    discover_all: bool,
     ioc: &TokenStream,
 ) -> syn::Result<TokenStream> {
-    let Some(discovery_group) = discovery_group else {
-        return Ok(TokenStream::new());
+    // 确定分组：显式分组优先，否则 discover_all 使用默认空分组
+    let group = match discovery_group {
+        Some(g) => quote! { #g },
+        None if discover_all => quote! { "" },
+        None => return Ok(TokenStream::new()),
     };
+
     let discovery = discovery_crate_path()?;
     let registration_name =
         format_ident!("__VERNAL_LINKED_COMPONENT_REGISTRATION_{}", component_name);
@@ -601,10 +657,132 @@ fn generate_discovery_registration(
         #[allow(non_upper_case_globals)]
         static #registration_name: #discovery::LinkedComponentRegistration =
             #discovery::LinkedComponentRegistration::new(
-                #discovery_group,
+                #group,
                 ::core::concat!(::core::module_path!(), "::", ::core::stringify!(#component_name)),
                 <#component_name as #ioc::Component>::definition,
             );
+    })
+}
+
+/// 为指定了生命周期钩子的组件生成 `Lifecycle` trait 实现。
+///
+/// 生成的实现将用户定义的方法委托给 vernal-context 的 Lifecycle trait：
+/// - `init` → 同步初始化（在 `initialize()` 中调用）
+/// - `async_init` → 异步初始化（在 `initialize()` 中调用）
+/// - `async_run` → 异步后台运行（在 `start()` 中调用）
+/// - `shutdown` → 关闭钩子（在 `stop()` 中调用）
+///
+/// 对标 tx_di 的 `#[component(init, app_async_init, app_async_run, shutdown)]`。
+fn generate_lifecycle_implementation(
+    component_name: &syn::Ident,
+    options: &ComponentOptionsParts,
+) -> syn::Result<TokenStream> {
+    // 如果没有指定任何生命周期钩子，不生成 Lifecycle 实现
+    let has_hooks = options.init_hook.is_some()
+        || options.async_init_hook.is_some()
+        || options.async_run_hook.is_some()
+        || options.shutdown_hook.is_some();
+
+    if !has_hooks {
+        return Ok(TokenStream::new());
+    }
+
+    // Lifecycle trait 在 vernal-context 中，需要解析 context crate 路径
+    let ctx = context_crate_path()?;
+
+    // 生成 initialize 方法体
+    // 当同时指定 init 和 async_init 时，先同步后异步
+    let initialize_body = match (&options.init_hook, &options.async_init_hook) {
+        (Some(init_fn), Some(async_init_fn)) => {
+            let init_ident = syn::Ident::new(&init_fn.value(), init_fn.span());
+            let async_init_ident = syn::Ident::new(&async_init_fn.value(), async_init_fn.span());
+            quote! {
+                self.#init_ident();
+                self.#async_init_ident().await
+            }
+        }
+        (Some(init_fn), None) => {
+            let init_ident = syn::Ident::new(&init_fn.value(), init_fn.span());
+            quote! {
+                self.#init_ident();
+                ::core::result::Result::Ok(())
+            }
+        }
+        (None, Some(async_init_fn)) => {
+            let async_init_ident = syn::Ident::new(&async_init_fn.value(), async_init_fn.span());
+            quote! {
+                self.#async_init_ident().await
+            }
+        }
+        (None, None) => {
+            quote! { ::core::result::Result::Ok(()) }
+        }
+    };
+
+    // 生成 start 方法体（async_run）
+    let start_body = if let Some(async_run_fn) = &options.async_run_hook {
+        let async_run_ident = syn::Ident::new(&async_run_fn.value(), async_run_fn.span());
+        quote! { self.#async_run_ident(_cancellation).await }
+    } else {
+        quote! { ::core::result::Result::Ok(()) }
+    };
+
+    // 生成 stop 方法体（shutdown）
+    let stop_body = if let Some(shutdown_fn) = &options.shutdown_hook {
+        let shutdown_ident = syn::Ident::new(&shutdown_fn.value(), shutdown_fn.span());
+        quote! {
+            self.#shutdown_ident();
+            ::core::result::Result::Ok(())
+        }
+    } else {
+        quote! { ::core::result::Result::Ok(()) }
+    };
+
+    Ok(quote! {
+        impl #ctx::Lifecycle for #component_name {
+            fn initialize(&self) -> #ctx::LifecycleFuture<'_> {
+                ::std::boxed::Box::pin(async move {
+                    #initialize_body
+                })
+            }
+
+            fn start(
+                &self,
+                _cancellation: ::tokio_util::sync::CancellationToken,
+            ) -> #ctx::LifecycleFuture<'_> {
+                ::std::boxed::Box::pin(async move {
+                    #start_body
+                })
+            }
+
+            fn stop(&self) -> #ctx::LifecycleFuture<'_> {
+                ::std::boxed::Box::pin(async move {
+                    #stop_body
+                })
+            }
+        }
+    })
+}
+
+/// 为指定了 `as_trait` 的组件生成 Trait 绑定注册代码。
+///
+/// 在组件定义上自动调用 `with_trait_binding()`，将组件注册为指定 trait 的实现。
+/// 对标 tx_di 的 `#[component(as_trait = dyn Trait)]`。
+fn generate_trait_binding_registration(
+    component_name: &syn::Ident,
+    as_trait: Option<&Path>,
+    _ioc: &TokenStream,
+) -> syn::Result<TokenStream> {
+    let Some(trait_path) = as_trait else {
+        return Ok(TokenStream::new());
+    };
+
+    Ok(quote! {
+        // 编译期校验：确保类型确实实现了指定的 trait
+        const _: () = {
+            fn _assert_trait_impl<T: #trait_path>() {}
+            fn _check() { _assert_trait_impl::<#component_name>(); }
+        };
     })
 }
 

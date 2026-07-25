@@ -6,6 +6,7 @@ mod component_options;
 mod component_scope_option;
 mod configuration_default_option;
 mod configuration_properties_derive;
+mod error_code_derive;
 mod intercept_macro;
 mod intercept_options;
 mod intercept_receiver;
@@ -80,6 +81,39 @@ pub fn intercept(attributes: TokenStream, item: TokenStream) -> TokenStream {
 pub fn operation(input: TokenStream) -> TokenStream {
     let method_path = parse_macro_input!(input as TypePath);
     operation_macro::expand(method_path)
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
+}
+
+/// 根据枚举变体生成类型安全的 Vernal 错误码实现。
+///
+/// 枚举级别标注 `#[error("domain")]` 声明错误域，
+/// 每个变体标注 `#[error(code, "message")]` 声明错误码和静态消息。
+///
+/// 自动生成：
+/// - `vernal_error::ErrorCode` trait 实现
+/// - `Display` trait 实现（格式：`[domain:code] message`）
+/// - `Error` trait 实现
+/// - `From<EnumName> for VernalError` 转换
+///
+/// # 示例
+///
+/// ```ignore
+/// use vernal_macros::ErrorCode;
+///
+/// #[derive(ErrorCode)]
+/// #[error("ioc")]
+/// pub enum IoCErrorCode {
+///     #[error(-1, "组件未找到")]
+///     NotFound,
+///     #[error(-2, "依赖歧义：找到多个候选")]
+///     Ambiguous,
+/// }
+/// ```
+#[proc_macro_derive(ErrorCode, attributes(error))]
+pub fn derive_error_code(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+    error_code_derive::expand(&input)
         .unwrap_or_else(syn::Error::into_compile_error)
         .into()
 }

@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
 #![doc = "Vernal 各独立内核共享的稳定基础合同。"]
 
+pub mod error;
 mod failure;
 
 pub use failure::{BoxError, SharedError};
