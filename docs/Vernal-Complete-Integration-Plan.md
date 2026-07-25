@@ -152,7 +152,7 @@ vernal/                                    # 框架核心（不含任何工具�
 │   │
 │   ├── ─── 横切基础设施（对标 spring-jcl/observability）───
 │   ├── vernal-log               ← ❌ 新增（框架门面，底层 tracing）
-│   ├── vernal-observability     ← ❌ 新增（框架门面）
+│   ├── vernal-actuator         ← ❌ 新增（对标 spring-actuator）
 │   │
 │   ├── ─── 测试与文档（对标 spring-test）───
 │   ├── vernal-test              ← ❌ 新增
@@ -415,7 +415,7 @@ hutool-rust/                              # 工具库（独立仓库，不变）
 - [ ] **E-2-3** `LogFactory`（桥接 tracing）
   - 工作量：1.5 天
 
-#### E-3：vernal-observability（对标 spring-actuator，**桥接 hutool-observability**）
+#### E-3：vernal-actuator（对标 spring-actuator，**桥接 hutool-observability**）
 
 - [ ] **E-3-1** crate 结构搭建
   - 工作量：0.5 天
