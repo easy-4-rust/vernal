@@ -61,6 +61,37 @@ impl<'a> Resolver<'a> {
         self.resolve_dependency(&Dependency::qualified::<T>(qualifier.clone()))
     }
 
+    /// 解析一项允许没有候选的立即具体类型依赖。
+    ///
+    /// 只有根候选不存在时返回 `Ok(None)`；候选歧义、构造失败、类型恢复和 Scope
+    /// 错误仍保持结构化失败。
+    ///
+    /// # Errors
+    ///
+    /// 依赖未声明，或已存在候选无法完成选择、构造和类型恢复时返回
+    /// [`ResolveError`]。
+    pub fn resolve_optional<T>(&self) -> Result<Option<Arc<T>>, ResolveError>
+    where
+        T: Any + Send + Sync,
+    {
+        self.resolve_optional_dependency(&Dependency::optional_of::<T>())
+    }
+
+    /// 解析一项允许没有精确限定符候选的立即具体类型依赖。
+    ///
+    /// # Errors
+    ///
+    /// 依赖未声明，或匹配候选存在但解析失败时返回 [`ResolveError`]。
+    pub fn resolve_optional_qualified<T>(
+        &self,
+        qualifier: &Qualifier,
+    ) -> Result<Option<Arc<T>>, ResolveError>
+    where
+        T: Any + Send + Sync,
+    {
+        self.resolve_optional_dependency(&Dependency::optional_qualified::<T>(qualifier.clone()))
+    }
+
     /// 创建一个延迟解析唯一具体类型依赖的 Provider。
     ///
     /// Provider 只持有这里校验过的选择器，后续不能请求其他类型。
@@ -200,6 +231,37 @@ impl<'a> Resolver<'a> {
         self.resolve_trait_dependency(&Dependency::trait_qualified::<T>(qualifier.clone()))
     }
 
+    /// 解析一项允许没有绑定的立即 Trait Object 依赖。
+    ///
+    /// 零绑定返回 `Ok(None)`；多个绑定仍要求唯一候选或单一 Primary。
+    ///
+    /// # Errors
+    ///
+    /// 依赖未声明、绑定歧义、目标构造或 Trait 投影失败时返回 [`ResolveError`]。
+    pub fn resolve_optional_trait<T>(&self) -> Result<Option<Arc<T>>, ResolveError>
+    where
+        T: ?Sized + Send + Sync + 'static,
+    {
+        self.resolve_optional_trait_dependency(&Dependency::optional_trait_of::<T>())
+    }
+
+    /// 解析一项允许没有精确限定符绑定的立即 Trait Object 依赖。
+    ///
+    /// # Errors
+    ///
+    /// 依赖未声明，或匹配绑定存在但解析失败时返回 [`ResolveError`]。
+    pub fn resolve_optional_qualified_trait<T>(
+        &self,
+        qualifier: &Qualifier,
+    ) -> Result<Option<Arc<T>>, ResolveError>
+    where
+        T: ?Sized + Send + Sync + 'static,
+    {
+        self.resolve_optional_trait_dependency(&Dependency::optional_trait_qualified::<T>(
+            qualifier.clone(),
+        ))
+    }
+
     /// 解析一项已声明 Trait Object 的全部实现。
     ///
     /// 没有绑定时返回空集合；绑定目标的构造或转换失败仍返回结构化错误。
@@ -233,6 +295,19 @@ impl<'a> Resolver<'a> {
             .resolve_typed(dependency, self.stack, self.scope)
     }
 
+    /// 校验声明后执行立即具体类型的可选解析。
+    fn resolve_optional_dependency<T>(
+        &self,
+        dependency: &Dependency,
+    ) -> Result<Option<Arc<T>>, ResolveError>
+    where
+        T: Any + Send + Sync,
+    {
+        self.ensure_declared(dependency)?;
+        self.container
+            .resolve_optional_typed(dependency, self.stack, self.scope)
+    }
+
     /// 校验声明后委托容器执行 Trait 单值解析。
     fn resolve_trait_dependency<T>(&self, dependency: &Dependency) -> Result<Arc<T>, ResolveError>
     where
@@ -241,6 +316,19 @@ impl<'a> Resolver<'a> {
         self.ensure_declared(dependency)?;
         self.container
             .resolve_trait_typed(dependency, self.stack, self.scope)
+    }
+
+    /// 校验声明后执行立即 Trait Object 的可选解析。
+    fn resolve_optional_trait_dependency<T>(
+        &self,
+        dependency: &Dependency,
+    ) -> Result<Option<Arc<T>>, ResolveError>
+    where
+        T: ?Sized + Send + Sync + 'static,
+    {
+        self.ensure_declared(dependency)?;
+        self.container
+            .resolve_optional_trait_typed(dependency, self.stack, self.scope)
     }
 
     /// 校验 Provider 元数据并创建共享当前 Container 身份的受限句柄。

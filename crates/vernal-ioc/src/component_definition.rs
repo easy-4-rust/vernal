@@ -144,6 +144,15 @@ impl ComponentDefinition {
         self
     }
 
+    /// 声明一项允许没有候选的立即具体类型依赖。
+    ///
+    /// 目标存在时仍进入 eager 依赖图；只有根候选不存在时工厂才会得到 `None`。
+    #[must_use]
+    pub fn depends_on_optional<T: 'static>(mut self) -> Self {
+        self.dependencies.push(Dependency::optional_of::<T>());
+        self
+    }
+
     /// 声明一个由 [`crate::ComponentProvider`] 延迟解析的具体类型依赖。
     ///
     /// Registry 会校验目标存在且唯一，但构建计划不会把它当作 eager 构造边。
@@ -166,6 +175,14 @@ impl ComponentDefinition {
     pub fn depends_on_qualified<T: 'static>(mut self, qualifier: Qualifier) -> Self {
         self.dependencies
             .push(Dependency::qualified::<T>(qualifier));
+        self
+    }
+
+    /// 声明一项允许没有精确限定符候选的立即具体类型依赖。
+    #[must_use]
+    pub fn depends_on_optional_qualified<T: 'static>(mut self, qualifier: Qualifier) -> Self {
+        self.dependencies
+            .push(Dependency::optional_qualified::<T>(qualifier));
         self
     }
 
@@ -197,11 +214,31 @@ impl ComponentDefinition {
         self
     }
 
+    /// 声明一项允许没有绑定的立即 Trait Object 依赖。
+    ///
+    /// 存在多个绑定时仍要求唯一候选或单一 Primary，不会静默选择首个实现。
+    #[must_use]
+    pub fn depends_on_optional_trait<T: ?Sized + 'static>(mut self) -> Self {
+        self.dependencies.push(Dependency::optional_trait_of::<T>());
+        self
+    }
+
     /// 声明一项带限定符的 Trait Object 依赖。
     #[must_use]
     pub fn depends_on_qualified_trait<T: ?Sized + 'static>(mut self, qualifier: Qualifier) -> Self {
         self.dependencies
             .push(Dependency::trait_qualified::<T>(qualifier));
+        self
+    }
+
+    /// 声明一项允许没有精确限定符绑定的立即 Trait Object 依赖。
+    #[must_use]
+    pub fn depends_on_optional_qualified_trait<T: ?Sized + 'static>(
+        mut self,
+        qualifier: Qualifier,
+    ) -> Self {
+        self.dependencies
+            .push(Dependency::optional_trait_qualified::<T>(qualifier));
         self
     }
 

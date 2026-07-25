@@ -1,0 +1,6 @@
+error: Option<Arc<T>> 已直接表达可选注入，请移除 #[component(optional)]
+ --> tests/ui/component_redundant_option_attribute.rs:5:5
+  |
+5 | /     #[component(optional)]
+6 | |     value: Option<Arc<String>>,
+  | |______________________________^

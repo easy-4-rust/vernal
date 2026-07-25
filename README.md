@@ -283,7 +283,8 @@ struct OrderRepository;
 let definition = OrderService::definition();
 ```
 
-Every unmarked field must be `Arc<T>` and becomes a declared dependency.
+Every unmarked field must be `Arc<T>`, `Option<Arc<T>>`, or one of the
+documented trait/provider collection forms, and becomes a declared dependency.
 `#[component(default)]` is opt-in for local default state, while
 `#[component(scope = "transient")]` changes the generated scope. Applications
 still call `RegistryBuilder::register`, so registration provenance stays
@@ -307,6 +308,26 @@ The Component derive injects the unique or primary implementation into
 `#[component(qualifier = "email")]`, and injects every implementation into
 `Vec<Arc<dyn MessageSender>>`. A binding reuses the original component
 instance; `register_bundle` atomically commits definitions and bindings.
+
+When construction needs zero or one component, use Rust-native
+`Option<Arc<T>>` or `Option<Arc<dyn Trait>>` directly:
+
+```rust
+#[derive(vernal_macros::Component)]
+struct OptionalExtensions {
+    metrics: Option<Arc<Metrics>>,
+    sender: Option<Arc<dyn MessageSender>>,
+    #[component(qualifier = "strict")]
+    policy: Option<Arc<SecurityPolicy>>,
+}
+```
+
+An Option dependency is still an eager graph edge: an existing target
+participates in topological ordering and is resolved while the consumer is
+constructed. Only zero candidates become `None`; ambiguity, factory failure,
+trait projection, and scope errors remain fail-closed. The field type already
+expresses optionality, so `#[component(optional)]` is reserved for the deferred
+providers below.
 
 Components that need a transient per call, an optional extension, or the
 caller's current request scope can declare a restricted provider:
@@ -576,7 +597,7 @@ or a no-yield loop inside an async task.
 | Scopes | Singleton, transient, typed custom ScopeContext, cancellation-safe cleanup, and IoC-backed WebRequestScope | Phase 1.2/4 kernel |
 | Dependency graph | Deterministic build order and structured missing/ambiguous/cycle diagnostics | Phase 1 |
 | Trait binding | Named/primary/multiple implementations without string lookup | Phase 1.1 kernel |
-| Type-safe providers | Graph-constrained concrete and trait-binding deferred resolution with transient/optional/qualified/explicit-scope access | Phase 1.3 kernel |
+| Type-safe optional dependencies and providers | Eager `Option<Arc<T>>` injection plus graph-constrained concrete/trait transient, optional, qualified, and explicit-scope deferred resolution | Phase 1.3 kernel |
 | Interceptor chain | Ordered Around/Next composition with short circuit and result/error transformation | Phase 2 kernel |
 | Pointcuts | Operation matching compiled into immutable invocation plans | Phase 2 kernel |
 | Application context | Tokio-owned refresh/start/close, OS signal shutdown, bounded lifecycle hooks, deterministic rollback, context-local typed events | Phase 3 kernel |
@@ -693,14 +714,14 @@ gate, and documentation build pass in an isolated dependency graph. The full
 Ddd4r workspace gate remains blocked by its pre-existing, currently unavailable
 `rbatis-r2dbc` Git revision and is not reported as passing.
 
-Phase 1/1.1/1.2 now has 36 IoC contract tests for 1,000-node deterministic
+Phase 1/1.1/1.2/1.3 now has 55 IoC contract tests for 1,000-node deterministic
 planning, structured graph diagnostics, concurrent singleton construction,
-container isolation, transient resolution, native objects, named/primary/all
-Trait bindings, Trait graph cycles, hidden-dependency rejection, atomic
-definition-plus-binding module registration, stable Registry serialization,
-and per-Container successful-resolution tracking with deterministic unused
-definition snapshots.
-The nine custom-Scope contracts additionally cover per-Scope concurrent
+container isolation, transient resolution, native objects, eager Option
+dependencies, concrete/trait Providers, named/primary/all Trait bindings,
+Trait graph cycles, hidden-dependency rejection, atomic definition-plus-binding
+module registration, stable Registry serialization, and per-Container
+successful-resolution tracking with deterministic unused definition snapshots.
+Of these, nine custom-Scope contracts additionally cover per-Scope concurrent
 construction, sibling isolation, parent/child lifetime direction, Container
 ownership, cancellation, reverse cleanup with failure continuation, and close
 waiting for an in-flight factory, cancellation-safe close waiters, bounded

@@ -6,6 +6,8 @@ fn invalid_component_fields_have_actionable_diagnostics() {
     tests.compile_fail("tests/ui/component_non_arc_field.rs");
     tests.compile_fail("tests/ui/component_all_trait_qualifier.rs");
     tests.compile_fail("tests/ui/component_optional_non_provider.rs");
+    tests.compile_fail("tests/ui/component_invalid_option_shape.rs");
+    tests.compile_fail("tests/ui/component_redundant_option_attribute.rs");
     tests.compile_fail("tests/ui/component_trait_provider.rs");
     tests.compile_fail("tests/ui/component_concrete_trait_provider.rs");
     tests.compile_fail("tests/ui/intercept_non_async.rs");

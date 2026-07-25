@@ -121,10 +121,28 @@ fn generate_field_injection(
             qualifier_declarations,
         );
     }
+    if let Some(dependency) = option_arc_inner(&field.ty)? {
+        if optional {
+            return Err(syn::Error::new_spanned(
+                field,
+                "Option<Arc<T>> 已直接表达可选注入，请移除 #[component(optional)]",
+            ));
+        }
+        generate_optional_eager_injection(
+            field_name,
+            dependency,
+            qualifier,
+            ioc,
+            initializers,
+            dependency_statements,
+            qualifier_declarations,
+        );
+        return Ok(());
+    }
     if optional {
         return Err(syn::Error::new_spanned(
             field,
-            "#[component(optional)] 只支持 ComponentProvider<T> 或 TraitProvider<dyn Trait> 字段",
+            "#[component(optional)] 只支持 ComponentProvider<T> 或 TraitProvider<dyn Trait>；立即可选依赖请使用 Option<Arc<T>>",
         ));
     }
 
@@ -214,6 +232,73 @@ fn generate_eager_injection(
         });
     }
     Ok(())
+}
+
+/// 为 `Option<Arc<T>>` 或 `Option<Arc<dyn Trait>>` 生成立即可选依赖注入。
+///
+/// Option 的类型本身就是可选性事实来源，不需要再增加属性开关。目标存在时仍通过
+/// 普通 eager 图边参与拓扑规划，只有零候选转换为 `None`；宏不会生成吞掉其他错误
+/// 的 `.ok()` 调用。
+#[allow(clippy::too_many_arguments)]
+fn generate_optional_eager_injection(
+    field_name: &syn::Ident,
+    dependency: &Type,
+    qualifier: Option<LitStr>,
+    ioc: &TokenStream,
+    initializers: &mut Vec<TokenStream>,
+    dependency_statements: &mut Vec<TokenStream>,
+    qualifier_declarations: &mut Vec<TokenStream>,
+) {
+    let is_trait = matches!(dependency, Type::TraitObject(_));
+    let Some(qualifier) = qualifier else {
+        if is_trait {
+            initializers.push(quote! {
+                #field_name: __resolver.resolve_optional_trait::<#dependency>()?
+            });
+            dependency_statements.push(quote! {
+                __definition = __definition.depends_on_optional_trait::<#dependency>();
+            });
+        } else {
+            initializers.push(quote! {
+                #field_name: __resolver.resolve_optional::<#dependency>()?
+            });
+            dependency_statements.push(quote! {
+                __definition = __definition.depends_on_optional::<#dependency>();
+            });
+        }
+        return;
+    };
+
+    let definition_qualifier = format_ident!("__vernal_{}_definition_qualifier", field_name);
+    let factory_qualifier = format_ident!("__vernal_{}_factory_qualifier", field_name);
+    qualifier_declarations.push(quote! {
+        let #definition_qualifier = #ioc::Qualifier::new(#qualifier)
+            .expect("Vernal Component 宏已在编译期校验 qualifier");
+        let #factory_qualifier = #definition_qualifier.clone();
+    });
+    if is_trait {
+        initializers.push(quote! {
+            #field_name: __resolver.resolve_optional_qualified_trait::<#dependency>(
+                &#factory_qualifier
+            )?
+        });
+        dependency_statements.push(quote! {
+            __definition = __definition.depends_on_optional_qualified_trait::<#dependency>(
+                #definition_qualifier
+            );
+        });
+    } else {
+        initializers.push(quote! {
+            #field_name: __resolver.resolve_optional_qualified::<#dependency>(
+                &#factory_qualifier
+            )?
+        });
+        dependency_statements.push(quote! {
+            __definition = __definition.depends_on_optional_qualified::<#dependency>(
+                #definition_qualifier
+            );
+        });
+    }
 }
 
 /// 为 `ComponentProvider<T>` 字段生成受限 Provider 和延迟依赖元数据。
@@ -696,6 +781,46 @@ fn arc_inner_type(field_type: &Type) -> syn::Result<&Type> {
         ));
     };
     Ok(dependency)
+}
+
+/// 尝试从 `Option<Arc<T>>` 字段中提取立即可选依赖类型 `T`。
+///
+/// 一旦识别到外层 `Option`，内部形状错误会返回针对可选注入的诊断，避免继续落入
+/// 普通 `Arc<T>` 检查而只报告模糊的字段类型错误。
+fn option_arc_inner(field_type: &Type) -> syn::Result<Option<&Type>> {
+    let Type::Path(type_path) = field_type else {
+        return Ok(None);
+    };
+    let Some(segment) = type_path.path.segments.last() else {
+        return Ok(None);
+    };
+    if segment.ident != "Option" {
+        return Ok(None);
+    }
+    let PathArguments::AngleBracketed(arguments) = &segment.arguments else {
+        return Err(syn::Error::new_spanned(
+            field_type,
+            "Option 可选注入字段缺少 Arc<T> 类型参数",
+        ));
+    };
+    if arguments.args.len() != 1 {
+        return Err(syn::Error::new_spanned(
+            field_type,
+            "Option 可选注入字段必须且只能包含一个 Arc<T> 类型参数",
+        ));
+    }
+    let Some(GenericArgument::Type(item_type)) = arguments.args.first() else {
+        return Err(syn::Error::new_spanned(
+            field_type,
+            "Option 可选注入字段的参数必须是 Arc<T>",
+        ));
+    };
+    arc_inner_type(item_type).map(Some).map_err(|_| {
+        syn::Error::new_spanned(
+            item_type,
+            "立即可选注入只支持 Option<Arc<T>> 或 Option<Arc<dyn Trait>>",
+        )
+    })
 }
 
 /// 尝试从 `Vec<Arc<dyn Trait>>` 字段中提取 Trait Object 类型。

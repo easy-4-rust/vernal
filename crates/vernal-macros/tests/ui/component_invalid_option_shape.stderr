@@ -1,0 +1,5 @@
+error: 立即可选注入只支持 Option<Arc<T>> 或 Option<Arc<dyn Trait>>
+ --> tests/ui/component_invalid_option_shape.rs:5:19
+  |
+5 |     value: Option<String>,
+  |                   ^^^^^^

@@ -260,6 +260,24 @@ registry.register_bundle(
 `Vec<Arc<dyn MessageSender>>` 注入全部实现。绑定仍指向原始组件实例，不建立
 第二套 Store；模块定义与绑定通过 `register_bundle` 原子提交。
 
+只需要在构造时选择“零或一个”组件时，直接使用 Rust 原生
+`Option<Arc<T>>` 或 `Option<Arc<dyn Trait>>`：
+
+```rust
+#[derive(vernal_macros::Component)]
+struct OptionalExtensions {
+    metrics: Option<Arc<Metrics>>,
+    sender: Option<Arc<dyn MessageSender>>,
+    #[component(qualifier = "strict")]
+    policy: Option<Arc<SecurityPolicy>>,
+}
+```
+
+Option 依赖仍是 eager 图边：候选存在时参与拓扑排序并在消费组件构造时解析；
+只有零候选得到 `None`。多个候选、工厂失败、Trait 投影和 Scope 错误保持
+fail-closed。可选性已经由字段类型表达，因此不需要
+`#[component(optional)]`；该属性只用于下面的延迟 Provider。
+
 需要按调用取得 Transient、可选扩展或当前请求 Scope 时，组件可以声明受限
 Provider：具体类型使用 `ComponentProvider<T>`，Trait 端口使用
 `TraitProvider<dyn Trait>`：
@@ -424,7 +442,7 @@ Spring Boot 式隐式自动配置。`refresh()` 与
 | 作用域 | Singleton、Transient、类型化自定义 ScopeContext、取消安全清理与 IoC 驱动的 WebRequestScope | Phase 1.2/4 内核 |
 | 依赖图 | 确定性顺序及缺失、歧义、循环结构化诊断 | Phase 1 |
 | Trait 绑定 | 不依赖字符串查找的命名、Primary 和多实现绑定 | Phase 1.1 内核 |
-| 类型安全 Provider | 具体类型与 Trait 绑定均受依赖图约束，支持 Transient/optional/qualifier/显式 Scope 延迟解析 | Phase 1.3 内核 |
+| 类型安全可选依赖与 Provider | `Option<Arc<T>>` 立即注入，以及具体类型/Trait 绑定的 Transient/optional/qualifier/显式 Scope 延迟解析 | Phase 1.3 内核 |
 | 拦截器链 | 有序 Around/Next、IoC 管理拦截器、短路及结果/错误改写 | Phase 2/3 内核 |
 | 切点 | 操作匹配并编译成不可变调用计划 | Phase 2 内核 |
 | ApplicationContext | Tokio 持有 refresh/start/close、系统信号关闭、有界生命周期钩子、确定性回滚和 Context-local 类型化事件 | Phase 3 内核 |
@@ -527,11 +545,12 @@ AOP 与 Environment 配置绑定；其具名应用模块会原子安装原生安
 Ddd4r 全 Workspace 门禁仍被既有、当前不可获取的 `rbatis-r2dbc` Git Revision
 阻断，不能据此宣称全仓通过。
 
-Phase 1/1.1/1.2 已通过 36 个 IoC 合同测试，覆盖 1,000 节点确定性规划、结构化图
-诊断、并发 Singleton、双 Container 隔离、Transient、原生对象、Trait 命名/
-Primary/全部实现、Trait 图环、跨定义/绑定原子模块注册，以及稳定 Registry
-序列化快照，并覆盖每 Container 隔离的成功解析追踪、确定性未使用定义快照和失败
-Scope 解析不误报。9 项自定义 Scope 合同进一步覆盖同 Scope 并发一次构造、兄弟
+Phase 1/1.1/1.2/1.3 已通过 55 个 IoC 合同测试，覆盖 1,000 节点确定性规划、
+结构化图诊断、并发 Singleton、双 Container 隔离、Transient、原生对象、
+立即 Option 可选依赖、具体类型/Trait Provider、Trait 命名/Primary/全部实现、
+Trait 图环、跨定义/绑定原子模块注册，以及稳定 Registry 序列化快照，并覆盖每
+Container 隔离的成功解析追踪、确定性未使用定义快照和失败 Scope 解析不误报。
+其中 9 项自定义 Scope 合同进一步覆盖同 Scope 并发一次构造、兄弟
 隔离、父子生命周期方向、Container 所有权、取消传播、失败后继续逆序清理，以及
 关闭等待已开始工厂、等待者取消安全、有界等待后后台完成、钩子间 panic 隔离。
 Phase 2 AOP 内核现有 11 个 Send 合同测试，覆盖顺序进入/逆序退出、短路、成功结果

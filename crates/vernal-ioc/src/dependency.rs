@@ -48,6 +48,31 @@ impl Dependency {
         }
     }
 
+    /// 声明允许没有候选定义的立即具体类型依赖。
+    ///
+    /// 该选择器仍参与依赖图规划；目标存在时会形成正常的 eager 图边，只有零候选
+    /// 被解释为 `None`。歧义、构造失败和作用域错误不会被可选语义隐藏。
+    #[must_use]
+    pub fn optional_of<T: 'static>() -> Self {
+        Self {
+            type_id: TypeId::of::<T>(),
+            type_name: type_name::<T>(),
+            qualifier: None,
+            flags: OPTIONAL_FLAG,
+        }
+    }
+
+    /// 声明允许没有精确限定符候选的立即具体类型依赖。
+    #[must_use]
+    pub fn optional_qualified<T: 'static>(qualifier: Qualifier) -> Self {
+        Self {
+            type_id: TypeId::of::<T>(),
+            type_name: type_name::<T>(),
+            qualifier: Some(qualifier),
+            flags: OPTIONAL_FLAG,
+        }
+    }
+
     /// 选择指定 Trait Object 的唯一或 Primary 实现。
     #[must_use]
     pub fn trait_of<T: ?Sized + 'static>() -> Self {
@@ -67,6 +92,31 @@ impl Dependency {
             type_name: type_name::<T>(),
             qualifier: Some(qualifier),
             flags: TRAIT_BINDING_FLAG,
+        }
+    }
+
+    /// 声明允许没有 Trait Binding 的立即 Trait Object 依赖。
+    ///
+    /// 多个候选仍按唯一实现或单一 Primary 规则选择，不能因为依赖可选就静默选取
+    /// 任意实现。
+    #[must_use]
+    pub fn optional_trait_of<T: ?Sized + 'static>() -> Self {
+        Self {
+            type_id: TypeId::of::<T>(),
+            type_name: type_name::<T>(),
+            qualifier: None,
+            flags: TRAIT_BINDING_FLAG | OPTIONAL_FLAG,
+        }
+    }
+
+    /// 声明允许没有精确限定符 Trait Binding 的立即 Trait Object 依赖。
+    #[must_use]
+    pub fn optional_trait_qualified<T: ?Sized + 'static>(qualifier: Qualifier) -> Self {
+        Self {
+            type_id: TypeId::of::<T>(),
+            type_name: type_name::<T>(),
+            qualifier: Some(qualifier),
+            flags: TRAIT_BINDING_FLAG | OPTIONAL_FLAG,
         }
     }
 

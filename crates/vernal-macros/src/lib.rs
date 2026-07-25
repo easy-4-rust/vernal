@@ -21,8 +21,10 @@ use syn::{DeriveInput, TypePath, parse_macro_input};
 /// `#[component(default)]` 字段使用 `Default::default()`，不进入依赖图。
 /// `Arc<dyn Trait>` 使用唯一/Primary Trait Binding，字段级
 /// `#[component(qualifier = "name")]` 使用命名绑定，
-/// `Vec<Arc<dyn Trait>>` 注入全部实现。`ComponentProvider<T>` 延迟解析具体类型，
-/// `TraitProvider<dyn Trait>` 延迟解析唯一、Primary 或命名 Trait Binding；
+/// `Vec<Arc<dyn Trait>>` 注入全部实现，`Option<Arc<T>>` 与
+/// `Option<Arc<dyn Trait>>` 表达只放宽零候选的立即可选依赖。
+/// `ComponentProvider<T>` 延迟解析具体类型，`TraitProvider<dyn Trait>` 延迟解析
+/// 唯一、Primary 或命名 Trait Binding；
 /// `#[component(optional)]` 允许对应 Provider 没有候选定义或绑定。
 #[proc_macro_derive(Component, attributes(component))]
 pub fn derive_component(input: TokenStream) -> TokenStream {

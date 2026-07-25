@@ -83,10 +83,10 @@
   over borrowed `Next`; `vernal-tonic` provides a Context interceptor, typed Request
   extensions, `Status` mapping, and Tower composition.
 - `[Confirmed]` `vernal-macros` provides `#[derive(Component)]` for explicit
-  `Arc<T>`, `Arc<dyn Trait>`, and `Vec<Arc<dyn Trait>>` constructor injection,
-  Singleton/Transient scope, default fields, and field qualifiers, with
-  runtime and compile-fail tests. It uses neither linkme nor global
-  auto-registration.
+  `Arc<T>`, `Arc<dyn Trait>`, `Vec<Arc<dyn Trait>>`, and `Option<Arc<T>>`
+  constructor injection, Singleton/Transient scope, default fields, and field
+  qualifiers, with runtime and compile-fail tests. It uses neither linkme nor
+  global auto-registration.
 - `[Confirmed]` `ComponentProvider<T>` and `TraitProvider<dyn Trait>` provide
   graph-constrained deferred resolution for concrete types and trait bindings,
   including per-call transient construction, required/optional targets,
@@ -420,8 +420,34 @@ Application-owned Web scopes inherit its 30-second default bound or an explicit
 bounded/unbounded policy. A timeout is an observation result, not cancellation
 of the underlying cleanup.
 
-### 8.4 Type-safe deferred providers
+### 8.4 Type-safe optional dependencies and deferred providers
 
+When construction needs zero or one dependency, a component uses Rust-native
+`Option<Arc<T>>` or `Option<Arc<dyn Trait>>`. Optionality comes directly from
+the field type, and the derive emits matching `resolve_optional*` and
+`depends_on_optional*` calls without another attribute switch:
+
+```mermaid
+flowchart LR
+    Field["Option&lt;Arc&lt;T&gt;&gt; field"] --> Selector["optional Dependency"]
+    Selector --> Graph["Registry candidate selection"]
+    Graph -->|"zero candidates"| None["None"]
+    Graph -->|"unique / Primary / qualifier"| Edge["eager graph edge"]
+    Edge --> Target["construct and inject original Arc"]
+    Graph -->|"ambiguity / target failure"| Error["structured error"]
+```
+
+This model adopts only the “target may be absent” intent from tx-di
+`try_inject`; it does not copy the behavior of converting every injection
+error through `.ok()`. An existing candidate remains part of topological
+ordering. Only a missing root candidate becomes `None`; ambiguity,
+construction, downcast, trait projection, and scope failures remain visible.
+Field qualifiers work for both concrete and trait Options.
+`#[component(optional)]` remains specific to deferred providers so the type
+and an attribute cannot become competing sources of truth.
+
+When a target must be deferred until use, constructed as a transient per call,
+or resolved in the caller's current request scope,
 Vernal has two single-purpose Rust-native providers:
 
 - `ComponentProvider<T>` defers a concrete component;
@@ -470,10 +496,11 @@ The contract is intentionally narrower than Spring's `ObjectProvider`:
   trait implementations rather than hiding a dynamic query behind a provider.
 
 This retains useful on-demand component access while rejecting tx-di-style
-broad stores and global registries. Runtime contracts cover transients,
-optional and ambiguous targets, qualifiers, scopes, cross-container rejection,
-construction-time re-entry rejection, deferred cycles, trait primary/qualifier
-projection, and macro generation.
+broad stores and global registries. Runtime contracts cover eager Option
+absence/presence, ambiguity, construction failure, and trait
+primary/qualifier projection, plus Provider transients, optional targets,
+scopes, cross-container rejection, construction-time re-entry rejection,
+deferred cycles, and macro generation.
 
 ### 8.5 Tokio and framework-native components
 
@@ -528,7 +555,8 @@ flowchart LR
 - `register_bundle` preflights definitions and bindings together and leaves no
   partial module on failure.
 - The Component derive emits the same restricted Resolver calls and explicit
-  metadata for `Arc<dyn T>`, field qualifiers, and `Vec<Arc<dyn T>>`.
+  metadata for `Arc<dyn T>`, `Option<Arc<T>>`, `Option<Arc<dyn T>>`, field
+  qualifiers, and `Vec<Arc<dyn T>>`.
 
 ### 8.7 Failure contract
 
@@ -1448,15 +1476,16 @@ Phase 1 minimum acceptance:
    Tokio is allowed when needed.
 5. Normal failures use `Result`, not panic.
 
-As of 2026-07-25, all five items have local evidence: 36 IoC contract tests
+As of 2026-07-25, all five items have local evidence: 55 IoC contract tests
 cover a 1,000-node graph, missing/ambiguous/cycle paths, singleton isolation
 across two concurrent containers, transient creation, qualifiers, hidden
 dependency rejection, native-value registration, a real task spawned through
-an injected Tokio handle, named/primary/all Trait bindings, empty sets,
-missing targets, Trait cycles, naming conflicts, batch atomicity, and
-deterministic Registry serialization without factories or instance addresses,
-plus per-Container successful-resolution tracking and deterministic unused
-definition snapshots that do not count failed Scope resolution as usage.
+an injected Tokio handle, eager Option dependencies, concrete/trait Providers,
+named/primary/all Trait bindings, empty sets, missing targets, Trait cycles,
+naming conflicts, batch atomicity, and deterministic Registry serialization
+without factories or instance addresses, plus per-Container
+successful-resolution tracking and deterministic unused definition snapshots
+that do not count failed Scope resolution as usage.
 Nine of those tests cover typed custom scopes: concurrent once-only
 construction, sibling isolation, safe parent/child visibility, Container
 ownership, cancellation, reverse cleanup with failure continuation, and close

@@ -301,7 +301,7 @@ impl Container {
         })
     }
 
-    /// 为可选 Provider 解析具体类型；只把根候选缺失转换为 `None`。
+    /// 为可选立即依赖或 Provider 解析具体类型；只把根候选缺失转换为 `None`。
     pub(crate) fn resolve_optional_typed<T>(
         &self,
         dependency: &Dependency,
@@ -338,7 +338,7 @@ impl Container {
         self.resolve_binding(binding, stack, scope)
     }
 
-    /// 为可选 Trait Provider 解析单个实现；只把根绑定缺失转换为 `None`。
+    /// 为可选立即依赖或 Trait Provider 解析单个实现；只把根绑定缺失转换为 `None`。
     pub(crate) fn resolve_optional_trait_typed<T>(
         &self,
         dependency: &Dependency,

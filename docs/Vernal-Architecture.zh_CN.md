@@ -72,10 +72,10 @@
   路由模式身份，以及覆盖借用型 `Next` 的 fail-closed 严格 Send-AOP；
   `vernal-tonic` 已提供 Context Interceptor、类型化 Request 扩展、`Status`
   映射与 Tower 组合。
-- `[已确认]` `vernal-macros` 已提供显式 `Arc<T>`、`Arc<dyn Trait>` 和
-  `Vec<Arc<dyn Trait>>` 构造注入的 `#[derive(Component)]`，支持
-  Singleton/Transient、default 与字段 qualifier，并通过运行时和 compile-fail
-  合同测试；它不使用 linkme 或全局自动注册。
+- `[已确认]` `vernal-macros` 已提供显式 `Arc<T>`、`Arc<dyn Trait>`、
+  `Vec<Arc<dyn Trait>>` 与 `Option<Arc<T>>` 构造注入的
+  `#[derive(Component)]`，支持 Singleton/Transient、default 与字段 qualifier，
+  并通过运行时和 compile-fail 合同测试；它不使用 linkme 或全局自动注册。
 - `[已确认]` `ComponentProvider<T>` 与 `TraitProvider<dyn Trait>` 已分别提供
   具体类型和 Trait 绑定的延迟解析，支持 Transient 按次构造、
   required/optional、qualifier 与显式 Scope；Provider 共享原 Container 的
@@ -387,8 +387,29 @@ Scope 生命周期合同是显式的：
 最多等待 30 秒，也可显式选择其他上限或无限等待。超时只是本次观察结果，不会取消
 底层清理。
 
-### 8.4 类型安全延迟 Provider
+### 8.4 类型安全可选依赖与延迟 Provider
 
+构造期只需要“零或一个”依赖时，组件使用 Rust 原生 `Option<Arc<T>>` 或
+`Option<Arc<dyn Trait>>`。其可选性直接来自字段类型，派生宏生成
+`resolve_optional*` 与 `depends_on_optional*` 的成对调用，不需要属性开关：
+
+```mermaid
+flowchart LR
+    Field["Option&lt;Arc&lt;T&gt;&gt; 字段"] --> Selector["optional Dependency"]
+    Selector --> Graph["Registry 候选选择"]
+    Graph -->|"零候选"| None["None"]
+    Graph -->|"唯一 / Primary / qualifier"| Edge["eager 图边"]
+    Edge --> Target["构造并注入原始 Arc"]
+    Graph -->|"歧义 / 目标失败"| Error["结构化错误"]
+```
+
+该模型只吸收 tx-di `try_inject` 的“目标可以不存在”意图，不复制其将任意
+`inject` 错误 `.ok()` 化的行为。候选存在时仍参与拓扑排序；只有根候选不存在
+得到 `None`，歧义、构造失败、类型恢复、Trait 投影和 Scope 错误全部可见。
+`#[component(qualifier = "...")]` 同时适用于具体类型和 Trait Option。
+`#[component(optional)]` 只保留给延迟 Provider，避免类型与属性形成两份事实来源。
+
+当目标必须延迟到调用时、按次创建 Transient，或显式使用当前请求 Scope 时，
 Vernal 使用两个职责单一的 Rust 原生 Provider：
 
 - `ComponentProvider<T>` 延迟解析具体组件；
@@ -428,8 +449,9 @@ flowchart LR
   隐藏成 Provider 的动态查询能力。
 
 这吸收了按需获取组件的实用能力，同时拒绝 tx-di 广域 Store/全局注册表模式。
-运行合同已覆盖 Transient、optional、歧义、qualifier、Scope、跨 Container 拒绝、
-构造期重入拒绝、延迟环、Trait Primary/qualifier 投影和宏生成。
+运行合同已覆盖立即 Option 的缺失/存在/歧义/构造失败、Trait Primary/qualifier
+投影，以及 Provider 的 Transient、optional、Scope、跨 Container 拒绝、构造期
+重入拒绝、延迟环和宏生成。
 
 ### 8.5 Tokio 与框架原生组件
 
@@ -479,7 +501,8 @@ flowchart LR
 - Trait 依赖会转换为目标具体组件的真实图边，因此参与缺失目标、环和启动顺序校验；
 - `register_bundle` 在修改 RegistryBuilder 前同时预检组件定义与绑定，任何冲突
   都不会留下部分模块；
-- Component 宏对 `Arc<dyn T>`、字段 qualifier 和 `Vec<Arc<dyn T>>` 生成相同的
+- Component 宏对 `Arc<dyn T>`、`Option<Arc<T>>`、
+  `Option<Arc<dyn T>>`、字段 qualifier 和 `Vec<Arc<dyn T>>` 生成相同的
   Resolver 调用与显式依赖元数据。
 
 ### 8.7 解析失败合同
@@ -1339,12 +1362,13 @@ Phase 1 最低验收：
 4. `cargo tree` 证明 `vernal-ioc` 不包含具体 Web 或 ORM 框架；允许按需使用 Tokio；
 5. 所有失败通过 `Result` 返回，不依赖 panic。
 
-截至 2026-07-25，上述五项已有本地证据：36 个 IoC 合同测试覆盖 1,000 节点图、
+截至 2026-07-25，上述五项已有本地证据：55 个 IoC 合同测试覆盖 1,000 节点图、
 缺失/歧义/循环路径、两个并行 Container 的 Singleton 隔离、Transient、
-qualifier、隐藏依赖拒绝、原生值注册、Tokio Handle 真实 task，以及 Trait
-命名/Primary/全部实现、空集合、目标缺失、Trait 图环、命名冲突、批量原子性，
-不含工厂与实例地址的确定性 Registry 序列化快照，并覆盖每 Container 成功解析
-追踪、确定性未使用定义快照，以及失败 Scope 解析不被误记为使用。
+qualifier、隐藏依赖拒绝、原生值注册、Tokio Handle 真实 task、立即 Option
+可选依赖、具体类型/Trait Provider，以及 Trait 命名/Primary/全部实现、空集合、
+目标缺失、Trait 图环、命名冲突、批量原子性，不含工厂与实例地址的确定性
+Registry 序列化快照，并覆盖每 Container 成功解析追踪、确定性未使用定义快照，
+以及失败 Scope 解析不被误记为使用。
 其中 9 项验证类型化自定义 Scope 的并发一次构造、兄弟隔离、安全父子可见性、
 Container 所有权、取消传播、失败后继续逆序清理、关闭等待已开始工厂、等待者
 取消安全、超时后后台完成，以及关闭钩子 panic 隔离。
