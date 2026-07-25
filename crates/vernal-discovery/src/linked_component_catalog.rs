@@ -85,6 +85,75 @@ impl LinkedComponentCatalog {
         Ok(Self { registrations })
     }
 
+    /// 收集所有使用默认分组（空字符串 `""`）的注册条目。
+    ///
+    /// 对应 `#[derive(Component)]` 中 `#[component(discover)]`（不带分组值）
+    /// 的组件。这些组件自动进入默认分组，无需显式指定分组名。
+    ///
+    /// # Errors
+    ///
+    /// 同组重复稳定名称会返回 [`LinkedComponentCatalogError::DuplicateRegistration`]。
+    pub fn discover_all() -> Result<Self, LinkedComponentCatalogError> {
+        let mut registrations = LINKED_COMPONENT_REGISTRATIONS
+            .iter()
+            .filter(|registration| registration.group().is_empty())
+            .collect::<Vec<_>>();
+
+        registrations.sort_unstable_by(|left, right| left.name().cmp(right.name()));
+
+        // 校验重复名称
+        for pair in registrations.windows(2) {
+            let [left, right] = pair else {
+                continue;
+            };
+            Self::validate_registration(left)?;
+            if left.name() == right.name() {
+                return Err(LinkedComponentCatalogError::DuplicateRegistration {
+                    group: String::new().into(),
+                    name: left.name().into(),
+                });
+            }
+        }
+        if let Some(last) = registrations.last() {
+            Self::validate_registration(last)?;
+        }
+
+        Ok(Self { registrations })
+    }
+
+    /// 合并多个目录为一个原子批次。
+    ///
+    /// 将多个独立发现的目录合并，用于同时使用显式分组和默认分组的场景。
+    ///
+    /// # Errors
+    ///
+    /// 合并后发现重复注册会返回错误。
+    pub fn merge(catalogs: &[&Self]) -> Result<Self, LinkedComponentCatalogError> {
+        let mut all: Vec<&'static LinkedComponentRegistration> = Vec::new();
+        for catalog in catalogs {
+            all.extend(catalog.registrations.iter().copied());
+        }
+        all.sort_unstable_by(|left, right| {
+            (left.group(), left.name()).cmp(&(right.group(), right.name()))
+        });
+        for pair in all.windows(2) {
+            let [left, right] = pair else {
+                continue;
+            };
+            Self::validate_registration(left)?;
+            if left.group() == right.group() && left.name() == right.name() {
+                return Err(LinkedComponentCatalogError::DuplicateRegistration {
+                    group: left.group().into(),
+                    name: left.name().into(),
+                });
+            }
+        }
+        if let Some(last) = all.last() {
+            Self::validate_registration(last)?;
+        }
+        Ok(Self { registrations: all })
+    }
+
     /// 把目录中的全部定义作为一个原子批次安装到显式注册表。
     ///
     /// 任何定义与现有注册表或批次内其他定义冲突时，底层 `register_all` 会在修改
