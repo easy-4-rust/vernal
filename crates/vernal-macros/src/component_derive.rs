@@ -50,6 +50,15 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
         &ioc,
     )?;
 
+    // 初始化排序：当指定了 init_order 时，生成 with_init_order() 调用
+    let init_order_statement = if let Some(ref order) = options.init_order {
+        quote! {
+            let __definition = __definition.with_init_order(#order);
+        }
+    } else {
+        TokenStream::new()
+    };
+
     // 每个未标记 default 的字段都必须是 Arc<T>，宏同时生成构造表达式和显式
     // 依赖元数据，保证 Resolver 的运行期访问与启动期依赖图完全一致。
     for field in &fields {
@@ -92,6 +101,8 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
                     }
                 );
                 #(#dependency_statements)*
+                // 当指定了 init_order 时，设置同层初始化排序值
+                #init_order_statement
                 __definition
             }
         }

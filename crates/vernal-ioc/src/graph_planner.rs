@@ -11,11 +11,20 @@ const STATE_VISITED: u8 = 2;
 /// 对组件定义执行候选选择、环检测和稳定拓扑排序。
 ///
 /// 规划器无运行时状态，只在注册表冻结阶段工作。使用数值状态而非额外公开对象，
-/// 保持“一文件一核心对象”，同时将 DFS 的临时状态限制在单次调用中。
+/// 保持”一文件一核心对象”，同时将 DFS 的临时状态限制在单次调用中。
+///
+/// ## 初始化排序
+///
+/// DFS 拓扑排序保证依赖先于被依赖者。同一拓扑深度的组件按 `init_order`
+/// 升序排列（越小越早），相同 `init_order` 保持原始注册顺序。
+/// 对标 tx_di 的 `BinaryHeap<Reverse<(i32, usize)>>` 优先队列模式。
 pub(crate) struct GraphPlanner;
 
 impl GraphPlanner {
     /// 生成依赖优先的定义索引。
+    ///
+    /// DFS 拓扑排序保证依赖先于被依赖者。排序后对同一拓扑深度的组件按
+    /// `init_order` 升序排列，相同 `init_order` 保持 DFS 产出的稳定顺序。
     pub(crate) fn plan(
         definitions: &[Arc<ComponentDefinition>],
         bindings: &[Arc<TraitBinding>],
@@ -45,7 +54,24 @@ impl GraphPlanner {
             )?;
         }
 
-        Ok(ordered)
+        // ─── init_order 二次排序 ───
+        // 计算每个节点的拓扑深度（最长路径长度），然后按 (depth, init_order, dfs_position) 排序。
+        // 这保证：1) 依赖先于被依赖者；2) 同层按 init_order 升序；3) 相同 init_order 保持稳定。
+        let depths = Self::compute_depths(definitions, &ordered);
+        let mut indexed: Vec<(usize, usize, i32, usize)> = ordered
+            .iter()
+            .enumerate()
+            .map(|(dfs_pos, &idx)| {
+                let order = definitions[idx].init_order();
+                (idx, depths[idx], order, dfs_pos)
+            })
+            .collect();
+        indexed.sort_by(|a, b| {
+            a.1.cmp(&b.1)                    // 深度优先
+                .then(a.2.cmp(&b.2))          // init_order 升序
+                .then(a.3.cmp(&b.3))          // DFS 位置稳定
+        });
+        Ok(indexed.into_iter().map(|(idx, ..)| idx).collect())
     }
 
     /// 深度优先访问一个定义并在退出节点时写入拓扑顺序。
@@ -252,5 +278,34 @@ impl GraphPlanner {
             .iter()
             .map(|index| definitions[*index].key().to_string())
             .collect()
+    }
+
+    /// 计算每个组件在依赖图中的拓扑深度。
+    ///
+    /// 深度定义为从任意根节点到该节点的最长路径长度。
+    /// 根节点（无依赖）的深度为 0，依赖深度 = max(所有依赖深度) + 1。
+    fn compute_depths(
+        definitions: &[Arc<ComponentDefinition>],
+        ordered: &[usize],
+    ) -> Vec<usize> {
+        let n = definitions.len();
+        let mut depths = vec![0usize; n];
+        // 按拓扑序遍历，依赖已在被依赖者之前
+        for &index in ordered {
+            let mut max_dep_depth = 0usize;
+            for dep in definitions[index].dependencies() {
+                if dep.is_deferred() {
+                    continue;
+                }
+                // 在候选表中查找依赖的深度
+                for &dep_idx in ordered {
+                    if definitions[dep_idx].key().type_id == dep.type_id {
+                        max_dep_depth = max_dep_depth.max(depths[dep_idx]);
+                    }
+                }
+            }
+            depths[index] = max_dep_depth;
+        }
+        depths
     }
 }
