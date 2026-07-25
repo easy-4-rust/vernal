@@ -17,6 +17,8 @@ pub enum DiagnosticPhase {
     Initialize,
     /// 执行组件启动钩子。
     Start,
+    /// 执行一次性应用 Runner。
+    ApplicationRunner,
     /// 正常关闭或失败回滚时执行组件停止钩子。
     Stop,
 }
@@ -30,6 +32,7 @@ impl DiagnosticPhase {
             Self::ComponentResolution => "component_resolution",
             Self::Initialize => "initialize",
             Self::Start => "start",
+            Self::ApplicationRunner => "application_runner",
             Self::Stop => "stop",
         }
     }

@@ -3,6 +3,7 @@
 use vernal_ioc::{ComponentDefinition, TraitBinding};
 
 use crate::{
+    application_runner_registrar::ApplicationRunnerRegistrar,
     event_listener_registrar::EventListenerRegistrar, lifecycle_registrar::LifecycleRegistrar,
 };
 
@@ -14,4 +15,5 @@ pub(crate) struct ConditionalComponentModuleParts {
     pub(crate) bindings: Vec<TraitBinding>,
     pub(crate) lifecycle_registrars: Vec<Box<LifecycleRegistrar>>,
     pub(crate) event_listener_registrars: Vec<Box<EventListenerRegistrar>>,
+    pub(crate) application_runner_registrars: Vec<Box<ApplicationRunnerRegistrar>>,
 }

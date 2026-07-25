@@ -7,7 +7,7 @@ use crate::ApplicationModuleRegistrar;
 /// 由应用或消费方 Bridge 实现的显式装配模块。
 ///
 /// 模块通过 [`ApplicationModuleRegistrar`] 声明组件、Trait Binding、生命周期、
-/// 事件监听器、AOP Advisor、Operation、属性来源和条件组件模块。
+/// 事件监听器、一次性应用 Runner、AOP Advisor、Operation、属性来源和条件组件模块。
 /// `VernalApplicationBuilder`
 /// 会先在隔离的 Registrar 中执行完整配置，再统一校验并提交；配置或提交失败不会
 /// 留下半个模块。

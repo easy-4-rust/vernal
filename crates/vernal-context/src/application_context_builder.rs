@@ -8,8 +8,9 @@ use std::{
 use vernal_ioc::{ComponentKey, Container, Qualifier, Registry, ResolveError};
 
 use crate::{
-    ApplicationContext, ApplicationEventListener, ContextError, Lifecycle,
-    context_resources::ContextResources, managed_event_listener::ManagedEventListener,
+    ApplicationContext, ApplicationEventListener, ApplicationRunner, ContextError, Lifecycle,
+    context_resources::ContextResources, managed_application_runner::ManagedApplicationRunner,
+    managed_event_listener::ManagedEventListener,
 };
 
 pub(crate) type LifecycleResolver =
@@ -23,6 +24,7 @@ pub struct ApplicationContextBuilder {
     container: Container,
     lifecycle_resolvers: Vec<(ComponentKey, Arc<LifecycleResolver>)>,
     event_listeners: Vec<ManagedEventListener>,
+    application_runners: Vec<ManagedApplicationRunner>,
     resources: ContextResources,
 }
 
@@ -34,6 +36,7 @@ impl ApplicationContextBuilder {
             container: registry.into_container(),
             lifecycle_resolvers: Vec::new(),
             event_listeners: Vec::new(),
+            application_runners: Vec::new(),
             resources: ContextResources::standalone(),
         }
     }
@@ -48,6 +51,7 @@ impl ApplicationContextBuilder {
             container,
             lifecycle_resolvers: Vec::new(),
             event_listeners: Vec::new(),
+            application_runners: Vec::new(),
             resources,
         }
     }
@@ -104,12 +108,32 @@ impl ApplicationContextBuilder {
         self
     }
 
-    /// 校验生命周期绑定并创建 Context。
+    /// 登记一个由无限定符 Singleton 组件实现的一次性应用 Runner。
+    pub fn application_runner<R>(&mut self) -> &mut Self
+    where
+        R: ApplicationRunner,
+    {
+        self.application_runners
+            .push(ManagedApplicationRunner::new::<R>());
+        self
+    }
+
+    /// 登记一个由带限定符 Singleton 组件实现的一次性应用 Runner。
+    pub fn application_runner_qualified<R>(&mut self, qualifier: Qualifier) -> &mut Self
+    where
+        R: ApplicationRunner,
+    {
+        self.application_runners
+            .push(ManagedApplicationRunner::qualified::<R>(qualifier));
+        self
+    }
+
+    /// 校验生命周期、监听器和 Runner 绑定并创建 Context。
     ///
     /// # Errors
     ///
-    /// 生命周期类型没有对应 `IoC` 定义时返回
-    /// [`ContextError::LifecycleDefinitionNotFound`]。
+    /// 声明类型没有对应 `IoC` 定义、监听器/Runner 作用域不合法，或声明重复时
+    /// 返回对应的结构化 [`ContextError`]。
     pub fn build(mut self) -> Result<ApplicationContext, ContextError> {
         let positions: HashMap<ComponentKey, usize> = self
             .container
@@ -151,15 +175,37 @@ impl ApplicationContextBuilder {
                 });
             }
         }
+        let mut runner_declarations = HashSet::new();
+        for runner in &self.application_runners {
+            if !positions.contains_key(runner.component()) {
+                return Err(ContextError::ApplicationRunnerDefinitionNotFound {
+                    component: runner.component().clone(),
+                });
+            }
+            if !runner_declarations.insert(runner.component().clone()) {
+                return Err(ContextError::DuplicateApplicationRunner {
+                    component: runner.component().clone(),
+                });
+            }
+            if let Some(scope) = runner.invalid_scope(&self.container) {
+                return Err(ContextError::ApplicationRunnerScope {
+                    component: runner.component().clone(),
+                    scope,
+                });
+            }
+        }
 
         self.lifecycle_resolvers
             .sort_by_key(|(key, _)| positions[key]);
         self.event_listeners
             .sort_by_key(|listener| positions[listener.component()]);
+        self.application_runners
+            .sort_by_key(|runner| positions[runner.component()]);
         Ok(ApplicationContext::new(
             self.container,
             self.lifecycle_resolvers,
             self.event_listeners,
+            self.application_runners,
             self.resources,
         ))
     }

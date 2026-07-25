@@ -6,9 +6,10 @@ use vernal_aop::{Advisor, Interceptor, LocalAdvisor, LocalInterceptor, Operation
 use vernal_ioc::{Component, ComponentDefinition, Qualifier, TraitBinding};
 
 use crate::{
-    ApplicationEventListener, ConditionalComponentModule, ConfigurationProperties, Lifecycle,
-    PropertySource, advisor_registration::AdvisorRegistration,
+    ApplicationEventListener, ApplicationRunner, ConditionalComponentModule,
+    ConfigurationProperties, Lifecycle, PropertySource, advisor_registration::AdvisorRegistration,
     application_module_parts::ApplicationModuleParts,
+    application_runner_registrar::ApplicationRunnerRegistrar,
     event_listener_registrar::EventListenerRegistrar, lifecycle_registrar::LifecycleRegistrar,
     local_advisor_registration::LocalAdvisorRegistration, managed_advisor::ManagedAdvisor,
     managed_local_advisor::ManagedLocalAdvisor,
@@ -19,13 +20,14 @@ use crate::{
 ///
 /// 所有方法只修改当前 Registrar，不触碰真实 `VernalApplicationBuilder`。只有
 /// [`crate::VernalApplicationBuilder::register_module`] 完成模块配置、环境预检和
-/// `IoC` bundle 校验后，组件、监听器及其他贡献才按原声明顺序一次提交。
+/// `IoC` bundle 校验后，组件、监听器、Runner 及其他贡献才按原声明顺序一次提交。
 #[derive(Default)]
 pub struct ApplicationModuleRegistrar {
     definitions: Vec<ComponentDefinition>,
     bindings: Vec<TraitBinding>,
     lifecycle_registrars: Vec<Box<LifecycleRegistrar>>,
     event_listener_registrars: Vec<Box<EventListenerRegistrar>>,
+    application_runner_registrars: Vec<Box<ApplicationRunnerRegistrar>>,
     advisor_registrations: Vec<AdvisorRegistration>,
     local_advisor_registrations: Vec<LocalAdvisorRegistration>,
     operations: Vec<Operation>,
@@ -140,6 +142,37 @@ impl ApplicationModuleRegistrar {
         L: Component + ApplicationEventListener<E>,
     {
         self.component::<L>().event_listener::<E, L>()
+    }
+
+    /// 声明一个由无限定符 Singleton 组件实现的一次性应用 Runner。
+    pub fn application_runner<R>(&mut self) -> &mut Self
+    where
+        R: ApplicationRunner,
+    {
+        self.application_runner_registrars.push(Box::new(|builder| {
+            builder.application_runner::<R>();
+        }));
+        self
+    }
+
+    /// 声明一个由带精确限定符 Singleton 组件实现的一次性应用 Runner。
+    pub fn application_runner_qualified<R>(&mut self, qualifier: Qualifier) -> &mut Self
+    where
+        R: ApplicationRunner,
+    {
+        self.application_runner_registrars
+            .push(Box::new(move |builder| {
+                builder.application_runner_qualified::<R>(qualifier);
+            }));
+        self
+    }
+
+    /// 同时暂存派生 Runner 组件定义及其执行声明。
+    pub fn register_application_runner<R>(&mut self) -> &mut Self
+    where
+        R: Component + ApplicationRunner,
+    {
+        self.component::<R>().application_runner::<R>()
     }
 
     /// 暂存一个已经构造完成的线程安全 Advisor。
@@ -308,6 +341,7 @@ impl ApplicationModuleRegistrar {
             bindings: self.bindings,
             lifecycle_registrars: self.lifecycle_registrars,
             event_listener_registrars: self.event_listener_registrars,
+            application_runner_registrars: self.application_runner_registrars,
             advisor_registrations: self.advisor_registrations,
             local_advisor_registrations: self.local_advisor_registrations,
             operations: self.operations,

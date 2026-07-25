@@ -5,6 +5,7 @@ use vernal_ioc::{ComponentDefinition, TraitBinding};
 
 use crate::{
     ConditionalComponentModule, advisor_registration::AdvisorRegistration,
+    application_runner_registrar::ApplicationRunnerRegistrar,
     event_listener_registrar::EventListenerRegistrar, lifecycle_registrar::LifecycleRegistrar,
     local_advisor_registration::LocalAdvisorRegistration,
     module_environment_contribution::ModuleEnvironmentContribution,
@@ -19,6 +20,7 @@ pub(crate) struct ApplicationModuleParts {
     pub(crate) bindings: Vec<TraitBinding>,
     pub(crate) lifecycle_registrars: Vec<Box<LifecycleRegistrar>>,
     pub(crate) event_listener_registrars: Vec<Box<EventListenerRegistrar>>,
+    pub(crate) application_runner_registrars: Vec<Box<ApplicationRunnerRegistrar>>,
     pub(crate) advisor_registrations: Vec<AdvisorRegistration>,
     pub(crate) local_advisor_registrations: Vec<LocalAdvisorRegistration>,
     pub(crate) operations: Vec<Operation>,
@@ -33,6 +35,7 @@ impl ApplicationModuleParts {
             && self.bindings.is_empty()
             && self.lifecycle_registrars.is_empty()
             && self.event_listener_registrars.is_empty()
+            && self.application_runner_registrars.is_empty()
             && self.advisor_registrations.is_empty()
             && self.local_advisor_registrations.is_empty()
             && self.operations.is_empty()

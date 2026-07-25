@@ -2,9 +2,11 @@
 
 use serde::Serialize;
 
+use crate::condition_contribution_counts::ConditionContributionCounts;
+
 /// 一次条件模块构建期判断的只读、可序列化、脱敏结果。
 ///
-/// 快照只包含静态模块名、条件类型名、命中状态、组件类型标识和声明数量；不会
+/// 快照只包含静态模块名、条件类型名、命中状态、组件类型标识和各类声明数量；不会
 /// 暴露属性键、属性值、期望值或底层错误正文。
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct ConditionEvaluationSnapshot {
@@ -15,6 +17,7 @@ pub struct ConditionEvaluationSnapshot {
     trait_binding_count: usize,
     lifecycle_count: usize,
     event_listener_count: usize,
+    application_runner_count: usize,
 }
 
 impl ConditionEvaluationSnapshot {
@@ -24,18 +27,17 @@ impl ConditionEvaluationSnapshot {
         condition: &'static str,
         matched: bool,
         components: Vec<String>,
-        trait_binding_count: usize,
-        lifecycle_count: usize,
-        event_listener_count: usize,
+        counts: ConditionContributionCounts,
     ) -> Self {
         Self {
             module: module.to_owned(),
             condition: condition.to_owned(),
             matched,
             components,
-            trait_binding_count,
-            lifecycle_count,
-            event_listener_count,
+            trait_binding_count: counts.trait_bindings(),
+            lifecycle_count: counts.lifecycles(),
+            event_listener_count: counts.event_listeners(),
+            application_runner_count: counts.application_runners(),
         }
     }
 
@@ -81,5 +83,11 @@ impl ConditionEvaluationSnapshot {
     #[must_use]
     pub const fn event_listener_count(&self) -> usize {
         self.event_listener_count
+    }
+
+    /// 返回模块声明的一次性应用 Runner 数量。
+    #[must_use]
+    pub const fn application_runner_count(&self) -> usize {
+        self.application_runner_count
     }
 }

@@ -7,7 +7,9 @@ use std::time::Duration;
 /// Vernal 会把每个用户生命周期钩子放入独立 Tokio task：钩子在阶段预算内完成时
 /// 正常返回；超过预算时先请求 Tokio abort，再等待一段受限的收口时间。该策略既
 /// 防止单个组件永久占有 Context 状态机，也把同一份不可变预算作为 `IoC` 原生组件
-/// 提供给需要协调自身子任务的基础设施组件。
+/// 提供给需要协调自身子任务的基础设施组件。一次性
+/// [`crate::ApplicationRunner`] 复用 `start` 与 abort 收口预算，但仍保留独立的
+/// Runner 错误和诊断阶段。
 ///
 /// 生命周期钩子仍必须保持异步友好并定期让出执行权。Tokio 无法强制终止在异步
 /// task 内执行永久阻塞调用或无让出点死循环的代码；这类工作应由组件自行放入
@@ -43,7 +45,7 @@ impl LifecycleExecutionPolicy {
         self.initialize
     }
 
-    /// 返回单个组件 `start` 钩子的最长执行时间。
+    /// 返回单个组件 `start` 钩子或一次性 `ApplicationRunner` 的最长执行时间。
     #[must_use]
     pub const fn start_timeout(self) -> Duration {
         self.start

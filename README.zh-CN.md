@@ -403,11 +403,21 @@ broadcast 订阅，随后才调用任何 Lifecycle `initialize()`，因此初始
 
 Context 会在状态成功提交后，通过同一 EventBus 发布两个框架事实：全部 Singleton
 预热、监听订阅和 Lifecycle 初始化完成并提交 `Refreshed` 后发布
-`ApplicationRefreshedEvent`；全部必要组件启动并提交 `Ready` 后发布
+`ApplicationRefreshedEvent`；全部必要组件启动且全部一次性 Runner 成功并提交
+`Ready` 后发布
 `ApplicationReadyEvent`。发布只负责把不可变事实放入队列，不是启动屏障，也不
 保证不同监听器的完成顺序。监听器失败因此通过受管任务取消和关闭错误链异步暴露；
 refresh/start 失败则不会发布对应事实。Vernal 刻意不提供语义虚假的 Closed
 事件：任务排空后已没有监听器，取消前发布又无法诚实保证关闭投递完成。
+
+普通 Singleton 组件还可以实现 `ApplicationRunner`，表达一次性启动工作。
+Vernal 从最终 Container 解析 Runner，在全部 Lifecycle `start()` 成功后、
+提交 `Ready` 前，按依赖计划顺序串行执行。这适合 Sa-Token-Rust 安全缓存预热、
+Ddd4r 投影恢复检查和 Hutool-Rust 资源/索引预加载，但领域实现仍归消费方所有。
+Runner 接收应用取消树的子令牌，并复用生命周期 start/abort 预算；错误、panic、
+超时或应用取消会阻止后续 Runner 并触发完整逆序回滚。长期 Worker 必须提交给
+`ManagedTaskSupervisor`，不能在 Runner 内 detach。直接、限定符、应用模块与
+条件模块四条注册路径共享同一校验和排序语义。
 
 高层建造器还会注册 Context-local `ApplicationEnvironment`：
 应用显式添加 `PropertySource` 并声明高低优先级和 Profile，组件可以读取
@@ -470,9 +480,10 @@ Spring Boot 式隐式自动配置。`refresh()` 与
 | 受管 Tokio 任务 | Context 持有任务句柄、失败取消、优雅等待、有界 abort 与共享停机结果 | Phase 3 内核 |
 | 应用环境 | 显式 PropertySource 优先级、Profile、占位符、类型化读取与脱敏快照 | Phase 3 内核 |
 | 类型安全配置对象 | 基于前缀派生绑定必填/可选/默认/嵌套字段、错误脱敏与原生 IoC 注入 | Phase 3 内核 |
-| 显式应用模块 | 为消费方 Bridge 原子装配 Definition/Binding/生命周期/事件监听/AOP/Operation/Environment/条件模块 | Phase 3 内核 |
-| 条件组件装配 | 构建期 Profile/Property/自定义条件，组件定义、Binding、生命周期与监听器原子进退 | Phase 3 内核 |
+| 显式应用模块 | 为消费方 Bridge 原子装配 Definition/Binding/生命周期/监听器/Runner/AOP/Operation/Environment/条件模块 | Phase 3 内核 |
+| 条件组件装配 | 构建期 Profile/Property/自定义条件，组件定义、Binding、生命周期、监听器与 Runner 原子进退 | Phase 3 内核 |
 | 事件 | Context 内类型化发布、Refreshed/Ready 事实及 IoC 托管的 fail-fast 监听器 | Phase 3 内核 |
+| 应用 Runner | Ready 前按依赖顺序执行一次性启动工作，支持取消、超时、panic 隔离与回滚 | Phase 3 内核 |
 | 异步集成 | Tokio 原生取消、deadline 与类型化调用上下文 | Phase 2 内核 |
 | Web 上下文 | 请求 Context、请求 Scope、Handler 调用和错误映射 | Phase 4 合同 |
 | HTTP | 请求/响应、Body Frame/Trailer、显式限量收集、取消和背压 | Phase 4 合同 |
@@ -592,10 +603,12 @@ fail-closed 构建。宏前端运行合同覆盖 `self: Arc<Self>`、借用 `&se
 拦截器的 Criterion 0.7 Tokio 基准；本机首轮中位估计分别为 2.55 ns、336 ns、
 476 ns 和 727 ns。该结果只用于绝对成本与链长度趋势分析，不承诺跨硬件 SLA，
 也不作“零开销”宣传。宏 API 稳定性与稳定硬件回归阈值仍待完成。
-Phase 3 内核现有 66 个测试，覆盖依赖顺序启动、逆序关闭、initialize/start
+Phase 3 内核现有 73 个测试，覆盖依赖顺序启动、逆序关闭、initialize/start
 回滚、非法状态转换、幂等关闭、并发关闭串行化和 Context-local 类型化事件
 隔离、IoC 托管监听器所有权/失败，以及状态提交后如实发布 Refreshed/Ready
-事实；还覆盖高层构建器十一类内建资源注入、应用 Scope 取消树、任务错误/panic 传播、
+事实，并覆盖应用 Runner 的依赖顺序、模块/条件/限定符装配、错误短路、
+超时/panic 隔离、脱敏和回滚；还覆盖高层构建器十一类内建资源注入、应用 Scope
+取消树、任务错误/panic 传播、
 取消安全的共享任务停机、超时 abort、任务先于组件 stop 的顺序、关闭等待者取消
 后的继续释放、refresh/start 等待者取消后的继续回滚、start 前应用取消、任务
 失败驱动 `run_until_cancelled()` 关闭、initialize/start 有界超时回滚、stop

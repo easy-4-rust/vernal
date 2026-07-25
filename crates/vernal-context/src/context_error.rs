@@ -5,7 +5,7 @@ use std::{error::Error, fmt, time::Duration};
 use vernal_core::SharedError;
 use vernal_ioc::{ComponentKey, ResolveError};
 
-use crate::{ContextState, LifecyclePhase, ManagedTaskError};
+use crate::{ApplicationRunnerFailure, ContextState, LifecyclePhase, ManagedTaskError};
 
 /// 应用上下文状态转换、组件解析或生命周期执行失败。
 #[derive(Clone, Debug)]
@@ -21,6 +21,23 @@ pub enum ContextError {
     /// 注册为生命周期组件的类型不在 `IoC` 构建计划中。
     LifecycleDefinitionNotFound {
         /// 缺失的组件标识。
+        component: ComponentKey,
+    },
+    /// 注册为应用 Runner 的组件不在 `IoC` 构建计划中。
+    ApplicationRunnerDefinitionNotFound {
+        /// 缺失的 Runner 组件标识。
+        component: ComponentKey,
+    },
+    /// 应用 Runner 使用了无法表达应用级单例身份的作用域。
+    ApplicationRunnerScope {
+        /// 作用域不合法的 Runner 组件身份。
+        component: ComponentKey,
+        /// 稳定、无业务数据的作用域名称。
+        scope: &'static str,
+    },
+    /// 同一 Runner 组件被重复声明。
+    DuplicateApplicationRunner {
+        /// 重复声明的 Runner 组件身份。
         component: ComponentKey,
     },
     /// 注册为应用事件监听器的组件不在 `IoC` 构建计划中。
@@ -66,6 +83,27 @@ pub enum ContextError {
         event: &'static str,
         /// `IoC` 原始解析错误。
         source: Box<ResolveError>,
+    },
+    /// 应用 Runner 组件无法从最终 Container 解析。
+    ApplicationRunnerResolution {
+        /// 正在解析的 Runner 组件标识。
+        component: ComponentKey,
+        /// `IoC` 原始解析错误。
+        source: Box<ResolveError>,
+    },
+    /// 应用 Runner 返回错误或其 Tokio task 发生 panic/异常取消。
+    ApplicationRunnerFailed {
+        /// 默认格式化脱敏、显式错误链保留根因的失败对象。
+        source: ApplicationRunnerFailure,
+    },
+    /// 应用 Runner 超过启动阶段预算并已请求 Tokio abort。
+    ApplicationRunnerTimeout {
+        /// Runner 提供的低基数静态诊断名称。
+        runner: &'static str,
+        /// 复用的生命周期启动阶段最长执行时间。
+        timeout: Duration,
+        /// Tokio task 是否在 abort 收口预算内到达终态。
+        abort_settled: bool,
     },
     /// 组件生命周期钩子执行失败。
     Lifecycle {
@@ -113,6 +151,9 @@ pub enum ContextError {
 
 impl fmt::Display for ContextError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if let Some(result) = self.fmt_application_runner(formatter) {
+            return result;
+        }
         match self {
             Self::InvalidState { operation, state } => {
                 write!(
@@ -125,6 +166,14 @@ impl fmt::Display for ContextError {
                     formatter,
                     "lifecycle component is not registered in IoC: {component}"
                 )
+            }
+            Self::ApplicationRunnerDefinitionNotFound { .. }
+            | Self::ApplicationRunnerScope { .. }
+            | Self::DuplicateApplicationRunner { .. }
+            | Self::ApplicationRunnerResolution { .. }
+            | Self::ApplicationRunnerFailed { .. }
+            | Self::ApplicationRunnerTimeout { .. } => {
+                formatter.write_str("application runner error")
             }
             Self::EventListenerDefinitionNotFound { component, event } => write!(
                 formatter,
@@ -204,15 +253,52 @@ impl fmt::Display for ContextError {
     }
 }
 
+impl ContextError {
+    /// 格式化 Runner 专属错误；其他错误返回 `None` 交给主 Display 分支。
+    fn fmt_application_runner(&self, formatter: &mut fmt::Formatter<'_>) -> Option<fmt::Result> {
+        match self {
+            Self::ApplicationRunnerDefinitionNotFound { component } => Some(write!(
+                formatter,
+                "application runner component is not registered in IoC: {component}"
+            )),
+            Self::ApplicationRunnerScope { component, scope } => Some(write!(
+                formatter,
+                "application runner component {component} must be singleton, not {scope}"
+            )),
+            Self::DuplicateApplicationRunner { component } => Some(write!(
+                formatter,
+                "application runner component is registered more than once: {component}"
+            )),
+            Self::ApplicationRunnerResolution { component, .. } => Some(write!(
+                formatter,
+                "failed to resolve application runner {component}"
+            )),
+            Self::ApplicationRunnerFailed { source } => Some(write!(formatter, "{source}")),
+            Self::ApplicationRunnerTimeout {
+                runner,
+                timeout,
+                abort_settled,
+            } => Some(write!(
+                formatter,
+                "application runner {runner} exceeded startup timeout {timeout:?}; \
+                 Tokio abort settled: {abort_settled}"
+            )),
+            _ => None,
+        }
+    }
+}
+
 impl Error for ContextError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::ContainerWarmUp { source }
             | Self::ComponentResolution { source, .. }
-            | Self::EventListenerResolution { source, .. } => Some(source.as_ref()),
+            | Self::EventListenerResolution { source, .. }
+            | Self::ApplicationRunnerResolution { source, .. } => Some(source.as_ref()),
             Self::Lifecycle { source, .. }
             | Self::LifecycleCoordinator { source, .. }
             | Self::ShutdownSignal { source } => Some(source.as_ref()),
+            Self::ApplicationRunnerFailed { source } => Some(source),
             Self::ManagedTask { source } => Some(source),
             _ => None,
         }

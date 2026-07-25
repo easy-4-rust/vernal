@@ -5,13 +5,16 @@ use std::{fmt, sync::Arc};
 use vernal_ioc::{ComponentDefinition, Qualifier, TraitBinding};
 
 use crate::{
-    ApplicationEnvironment, ApplicationEventListener, ComponentCondition, ConditionError,
-    ConditionEvaluationSnapshot, ConfigurationProperties, Lifecycle,
+    ApplicationEnvironment, ApplicationEventListener, ApplicationRunner, ComponentCondition,
+    ConditionError, ConditionEvaluationSnapshot, ConfigurationProperties, Lifecycle,
+    application_runner_registrar::ApplicationRunnerRegistrar,
+    condition_contribution_counts::ConditionContributionCounts,
     conditional_component_module_parts::ConditionalComponentModuleParts,
     event_listener_registrar::EventListenerRegistrar, lifecycle_registrar::LifecycleRegistrar,
 };
 
-/// 把同一装配条件下的组件定义、Trait Binding 与生命周期登记组成原子模块。
+/// 把同一装配条件下的组件定义、Trait Binding、生命周期、监听器与 Runner
+/// 登记组成原子模块。
 ///
 /// 模块只有在条件命中时才整体提交到 `RegistryBuilder`。这避免组件定义被排除、
 /// Trait Binding 却残留，或生命周期仍尝试解析不存在组件的半装配状态。模块名和
@@ -23,6 +26,7 @@ pub struct ConditionalComponentModule {
     bindings: Vec<TraitBinding>,
     lifecycle_registrars: Vec<Box<LifecycleRegistrar>>,
     event_listener_registrars: Vec<Box<EventListenerRegistrar>>,
+    application_runner_registrars: Vec<Box<ApplicationRunnerRegistrar>>,
 }
 
 impl ConditionalComponentModule {
@@ -45,6 +49,7 @@ impl ConditionalComponentModule {
             bindings: Vec::new(),
             lifecycle_registrars: Vec::new(),
             event_listener_registrars: Vec::new(),
+            application_runner_registrars: Vec::new(),
         }
     }
 
@@ -137,6 +142,31 @@ impl ConditionalComponentModule {
         self
     }
 
+    /// 声明模块内一个无限定符 Singleton 应用 Runner。
+    ///
+    /// 条件未命中时，Runner 声明与组件定义一起排除，不会在启动阶段留下解析计划。
+    pub fn application_runner<R>(&mut self) -> &mut Self
+    where
+        R: ApplicationRunner,
+    {
+        self.application_runner_registrars.push(Box::new(|builder| {
+            builder.application_runner::<R>();
+        }));
+        self
+    }
+
+    /// 声明模块内一个带精确限定符的 Singleton 应用 Runner。
+    pub fn application_runner_qualified<R>(&mut self, qualifier: Qualifier) -> &mut Self
+    where
+        R: ApplicationRunner,
+    {
+        self.application_runner_registrars
+            .push(Box::new(move |builder| {
+                builder.application_runner_qualified::<R>(qualifier);
+            }));
+        self
+    }
+
     /// 返回条件模块静态名称。
     #[must_use]
     pub const fn name(&self) -> &'static str {
@@ -174,6 +204,7 @@ impl ConditionalComponentModule {
             && self.bindings.is_empty()
             && self.lifecycle_registrars.is_empty()
             && self.event_listener_registrars.is_empty()
+            && self.application_runner_registrars.is_empty()
         {
             return Err(ConditionError::EmptyModule { name: self.name });
         }
@@ -200,19 +231,23 @@ impl ConditionalComponentModule {
                 .iter()
                 .map(|definition| definition.key().to_string())
                 .collect(),
-            self.bindings.len(),
-            self.lifecycle_registrars.len(),
-            self.event_listener_registrars.len(),
+            ConditionContributionCounts::new(
+                self.bindings.len(),
+                self.lifecycle_registrars.len(),
+                self.event_listener_registrars.len(),
+                self.application_runner_registrars.len(),
+            ),
         )
     }
 
-    /// 消费模块并返回可原子提交的四类注册项。
+    /// 消费模块并返回可原子提交的五类注册项。
     pub(crate) fn into_parts(self) -> ConditionalComponentModuleParts {
         ConditionalComponentModuleParts {
             definitions: self.definitions,
             bindings: self.bindings,
             lifecycle_registrars: self.lifecycle_registrars,
             event_listener_registrars: self.event_listener_registrars,
+            application_runner_registrars: self.application_runner_registrars,
         }
     }
 }
@@ -236,6 +271,10 @@ impl fmt::Debug for ConditionalComponentModule {
             .field(
                 "event_listener_count",
                 &self.event_listener_registrars.len(),
+            )
+            .field(
+                "application_runner_count",
+                &self.application_runner_registrars.len(),
             )
             .finish()
     }

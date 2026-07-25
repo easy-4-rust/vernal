@@ -907,7 +907,8 @@ Hutool-Rust 可以把 `Profile/SettingLoader` 的结果转换成
 
 `ApplicationModule` 是面向应用自有 Starter 与生态 Bridge 的公共装配 SPI。
 模块的 `configure` 只写入隔离的 `ApplicationModuleRegistrar`，可统一暂存组件
-Definition、Trait Binding、生命周期登记、受管事件监听器、Send/Local Advisor、AOP Operation、
+Definition、Trait Binding、生命周期登记、受管事件监听器、应用 Runner、
+Send/Local Advisor、AOP Operation、
 PropertySource、Active/Default Profile 和显式 `ConditionalComponentModule`。
 
 `VernalApplicationBuilder::register_module` 把这些贡献作为一个具名事务处理：
@@ -917,7 +918,7 @@ PropertySource、Active/Default Profile 和显式 `ConditionalComponentModule`�
 3. 在应用已有名称和当前模块批次两个范围内预检全部内嵌条件模块身份；
 4. 把环境贡献应用到克隆的 `ApplicationEnvironmentBuilder` 完成预检；
 5. 通过 IoC 原子 `register_bundle` 校验并提交 Definition 与 Binding；
-6. 全部预检成功后，才把生命周期、事件监听、AOP、Operation、Environment 和条件贡献一次
+6. 全部预检成功后，才把生命周期、事件监听、Runner、AOP、Operation、Environment 和条件贡献一次
    移入真实应用建造器。
 
 配置失败、条件身份非法/重复、PropertySource 重名、Profile 非法或
@@ -934,7 +935,7 @@ flowchart LR
     Condition["条件身份预检<br/>应用 + 当前模块批次"]
     Env["克隆 Environment<br/>校验来源与 Profile"]
     Bundle["IoC register_bundle<br/>Definition + Binding"]
-    Commit["一次提交应用<br/>生命周期 · 监听器 · AOP · Operation · Environment"]
+    Commit["一次提交应用<br/>生命周期 · 监听器 · Runner · AOP · Operation · Environment"]
     Rollback["返回结构化错误<br/>建造器保持不变"]
 
     Bridge --> Stage
@@ -959,7 +960,8 @@ flowchart LR
   match-if-missing，并比较占位符展开后的值；
 - `PredicateCondition` 把线程安全闭包适配成自定义条件，但诊断不会序列化闭包
   捕获的数据；
-- `ConditionalComponentModule` 把 Definition、Trait Binding、生命周期登记与事件监听声明
+- `ConditionalComponentModule` 把 Definition、Trait Binding、生命周期登记、事件监听与
+  应用 Runner 声明
   绑定为一个原子装配单元；
 - Environment 冻结后按模块注册顺序求值一次，依赖图规划前只提交命中模块；
 - 未命中模块整体排除；若无条件组件仍依赖其中对象，GraphPlanner 继续返回
@@ -978,7 +980,7 @@ flowchart LR
     Environment["冻结的 ApplicationEnvironment"]
     Condition["ComponentCondition<br/>Profile · Property · Predicate"]
     Decision{"是否命中？"}
-    Commit["原子提交模块<br/>Definition + Binding + Lifecycle + Listener"]
+    Commit["原子提交模块<br/>Definition + Binding + Lifecycle + Listener + Runner"]
     Omit["整体排除模块"]
     Graph["RegistryBuilder<br/>依赖图校验"]
     Snapshot["ConditionEvaluationSnapshot<br/>不含属性键和值"]
@@ -1001,7 +1003,7 @@ stateDiagram-v2
     Refreshing --> Refreshed: graph/subscription/initialize valid
     Refreshing --> Failed: validation/build failure
     Refreshed --> Starting: start
-    Starting --> Ready: all required components started
+    Starting --> Ready: lifecycle started and runners succeeded
     Starting --> RollingBack: startup failure
     Ready --> Draining: close requested
     RollingBack --> Closed: reverse cleanup
@@ -1022,6 +1024,7 @@ register
   → commit Refreshed
   → publish ApplicationRefreshedEvent
   → start in dependency order
+  → run ApplicationRunner in dependency order
   → commit Ready
   → publish ApplicationReadyEvent
   → cancel and drain managed tasks
@@ -1056,7 +1059,7 @@ Context 自身只发布两个刻意保持最小的生命周期事实：
 
 - 全部 Singleton 预热、监听订阅和 Lifecycle 初始化成功，并先提交
   `Refreshed` 状态后，发布 `ApplicationRefreshedEvent`；
-- 全部必要 Lifecycle 组件启动成功，并先提交 `Ready` 状态后，发布
+- 全部必要 Lifecycle 组件启动且全部应用 Runner 成功，并先提交 `Ready` 状态后，发布
   `ApplicationReadyEvent`；
 - 发布是异步入队，不是启动完成屏障。不同监听器没有跨监听器完成顺序，处理失败
   继续沿受管任务取消路径收口；
@@ -1072,6 +1075,7 @@ sequenceDiagram
     participant Bus as "EventBus"
     participant Tasks as "ManagedTaskSupervisor"
     participant Lifecycle as "Lifecycle 组件"
+    participant Runner as "ApplicationRunner"
 
     App->>Context: refresh()
     Context->>IoC: 预热 Singleton
@@ -1084,6 +1088,9 @@ sequenceDiagram
     Context->>Context: 提交 Refreshed
     Context->>Bus: publish(ApplicationRefreshedEvent)
     Context->>Lifecycle: start()
+    loop Runner 依赖计划顺序
+        Context->>Runner: run(子取消令牌)
+    end
     Context->>Context: 提交 Ready
     Context->>Bus: publish(ApplicationReadyEvent)
     Bus-->>Tasks: Arc&lt;类型化事件&gt;
@@ -1102,7 +1109,45 @@ detach Tokio task，并围绕全局应用状态暴露生命周期回调；Sa-Tok
 可替换事件发布端口。事件领域模型继续归消费库所有；Vernal 只泛化 Context 状态
 事实、组件解析、进程内类型化投递、任务所有权与失败语义。
 
-### 10.8 Context 生命周期所有权
+### 10.8 IoC 托管应用 Runner
+
+`ApplicationRunner` 表达基础设施已经启动、应用声明就绪之前的一次性有限工作：
+
+- 实现类是普通 IoC Singleton，可以注入框架原生资源或消费方服务；
+- 直接、限定符、`ApplicationModuleRegistrar` 与
+  `ConditionalComponentModule` 声明生成同一种受管计划；
+- Runner 按冻结组件依赖计划排序并串行执行，注册顺序不能覆盖依赖关系；
+- 每次执行接收应用取消令牌的子令牌，在隔离 Tokio task 中运行，并复用
+  `LifecycleExecutionPolicy::start_timeout()` 与 abort 收口预算；
+- 错误、panic、超时或取消会阻止后续 Runner，记录脱敏启动观察，取消应用、
+  排空受管任务，并逆序停止已初始化生命周期组件；
+- `ApplicationRunnerFailure` 保证普通 `Display/Debug` 不包含业务错误正文，
+  显式沿 `Error::source` 仍可取得根因；
+- Runner 不拥有长期任务。Worker、调度器、配置监听和消息消费者必须登记到
+  `ManagedTaskSupervisor`。
+
+Sa-Token-Rust 可以用 Runner 预热鉴权状态，Ddd4r 可以校验或恢复投影检查点，
+Hutool-Rust 集成模块可以预加载资源。Vernal 只负责顺序、取消、预算、诊断和回滚，
+不拥有这些领域算法。
+
+```mermaid
+flowchart LR
+    Started["全部 Lifecycle start 成功"]
+    Plan["冻结的 IoC 依赖计划"]
+    Resolve["解析 Singleton Runner"]
+    Execute["Tokio task<br/>run(子取消令牌)"]
+    Budget["start 超时 + abort 收口"]
+    Next{"执行结果"}
+    Ready["提交 Ready<br/>发布 ApplicationReadyEvent"]
+    Rollback["取消应用<br/>排空任务<br/>逆序 stop"]
+
+    Started --> Plan --> Resolve --> Execute --> Budget --> Next
+    Next -->|"成功且仍有 Runner"| Resolve
+    Next -->|"全部成功"| Ready
+    Next -->|"Err / panic / 超时 / 取消"| Rollback
+```
+
+### 10.9 Context 生命周期所有权
 
 `ApplicationContext` 是公开门面，不让某个临时调用者 Future 直接拥有生命周期。
 `ApplicationStartupCoordinator` 在独立 Tokio task 中执行 refresh/initialize/
@@ -1115,7 +1160,7 @@ flowchart LR
     Caller -.->|"取消等待"| Dropped["仅丢弃 Receiver"]
     Startup["ApplicationStartupCoordinator"] --> Operation["Tokio 阶段任务"]
     Startup --> Observer["Tokio 观察任务"]
-    Operation --> Hooks["initialize / start 钩子"]
+    Operation --> Hooks["initialize / start 钩子 / ApplicationRunner"]
     Hooks --> Budget["LifecycleExecutionPolicy 执行预算"]
     Budget -->|"成功"| Commit["提交 Refreshed / Ready"]
     Budget -->|"Err / panic / 超时 / 应用取消"| Rollback["取消应用并逆序 stop"]
@@ -1178,7 +1223,7 @@ flowchart LR
     Close --> Drain["排空任务并逆序 stop"]
 ```
 
-### 10.9 受管 Tokio 任务
+### 10.10 受管 Tokio 任务
 
 `ManagedTaskSupervisor` 是 Context 对长期 Worker、消息消费、配置监听和
 Hutool-Rust Cron 驱动任务的所有权边界。它不实现这些业务或工具能力，只管理其
@@ -1513,10 +1558,12 @@ Local-AOP 测试覆盖非 `Send` 返回值、顺序、短路、取消、计划�
 正向用例证明宏可投影复杂类型。Tokio 性能基准亦已落地；剩余的是宏 API 稳定性、
 跨机器性能阈值和发布承诺。
 
-Phase 3 内核另有 66 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
+Phase 3 内核另有 73 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
 回滚、非法转换、幂等关闭、并发关闭串行化、Context-local 类型化事件隔离，
 IoC 托管监听器所有权/失败，以及状态提交后如实发布 Refreshed/Ready 事实；
-还覆盖高层构建器的 Runtime 缺失诊断、十一类内建组件同实例注入、应用 Scope 取消树、
+还覆盖应用 Runner 的依赖顺序、直接/限定符/模块/条件装配、错误短路、超时、
+panic 隔离、脱敏与回滚，以及高层构建器的 Runtime 缺失诊断、十一类内建组件
+同实例注入、应用 Scope 取消树、
 任务错误/panic 传播、取消安全共享停机、超时 abort、任务先于组件 stop 的顺序、
 关闭等待者取消后继续完成组件释放、refresh/start 等待者取消后继续失败回滚、
 start 前应用取消、任务失败驱动 `run_until_cancelled()` 进入 `Closed`、stop

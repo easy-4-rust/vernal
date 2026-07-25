@@ -18,11 +18,12 @@ use vernal_ioc::{
 use crate::{
     ApplicationBuildError, ApplicationContext, ApplicationContextBuilder,
     ApplicationEnvironmentBuilder, ApplicationEventListener, ApplicationModule,
-    ApplicationModuleError, ApplicationModuleRegistrar, ConditionError,
+    ApplicationModuleError, ApplicationModuleRegistrar, ApplicationRunner, ConditionError,
     ConditionEvaluationSnapshot, ConditionalComponentModule, ConfigurationProperties,
     DiagnosticState, EventBus, Lifecycle, LifecycleExecutionPolicy, ManagedTaskSupervisor,
     SubsystemStatus, SystemShutdownSignalListener, TaskShutdownPolicy,
     advisor_registration::AdvisorRegistration, application_module_parts::ApplicationModuleParts,
+    application_runner_registrar::ApplicationRunnerRegistrar,
     conditional_component_module_parts::ConditionalComponentModuleParts,
     context_resources::ContextResources, diagnostic_configuration::DiagnosticConfiguration,
     event_listener_registrar::EventListenerRegistrar, lifecycle_registrar::LifecycleRegistrar,
@@ -30,7 +31,7 @@ use crate::{
     managed_local_advisor::ManagedLocalAdvisor,
 };
 
-/// 统一收集组件、条件模块、生命周期、切面和 Tokio Context 资源的应用建造器。
+/// 统一收集组件、条件模块、生命周期、Runner、切面和 Tokio Context 资源的建造器。
 ///
 /// 与接收冻结 [`vernal_ioc::Registry`] 的低层 [`ApplicationContextBuilder`]
 /// 不同，该建造器在依赖图冻结前自动注册十一类框架内建组件：
@@ -53,6 +54,7 @@ pub struct VernalApplicationBuilder {
     registry: RegistryBuilder,
     lifecycle_registrars: Vec<Box<LifecycleRegistrar>>,
     event_listener_registrars: Vec<Box<EventListenerRegistrar>>,
+    application_runner_registrars: Vec<Box<ApplicationRunnerRegistrar>>,
     application_module_names: BTreeSet<&'static str>,
     conditional_modules: Vec<ConditionalComponentModule>,
     conditional_module_names: BTreeSet<&'static str>,
@@ -86,6 +88,7 @@ impl VernalApplicationBuilder {
             registry: RegistryBuilder::new(),
             lifecycle_registrars: Vec::new(),
             event_listener_registrars: Vec::new(),
+            application_runner_registrars: Vec::new(),
             application_module_names: BTreeSet::new(),
             conditional_modules: Vec::new(),
             conditional_module_names: BTreeSet::new(),
@@ -213,10 +216,10 @@ impl VernalApplicationBuilder {
     /// 原子安装一个显式应用模块。
     ///
     /// 模块先在独立 [`ApplicationModuleRegistrar`] 中声明 Definition、Trait
-    /// Binding、生命周期、Send/Local Advisor、Operation、PropertySource、
-    /// Profile 和条件组件模块。Vernal 会在修改真实建造器前完成模块配置、条件
-    /// 身份、Environment 克隆与 `IoC` bundle 预检；任一阶段失败都不会留下部分
-    /// 贡献。
+    /// Binding、生命周期、事件监听器、应用 Runner、Send/Local Advisor、
+    /// Operation、PropertySource、Profile 和条件组件模块。Vernal 会在修改真实
+    /// 建造器前完成模块配置、条件身份、Environment 克隆与 `IoC` bundle 预检；
+    /// 任一阶段失败都不会留下部分贡献。
     ///
     /// 模块按调用顺序提交，因此同 `order` Advisor、互不依赖组件和属性来源都保留
     /// 显式装配顺序。该入口不进行自动发现或全局注册。
@@ -260,6 +263,7 @@ impl VernalApplicationBuilder {
             bindings,
             lifecycle_registrars,
             event_listener_registrars,
+            application_runner_registrars,
             advisor_registrations,
             local_advisor_registrations,
             operations,
@@ -314,6 +318,8 @@ impl VernalApplicationBuilder {
         self.lifecycle_registrars.extend(lifecycle_registrars);
         self.event_listener_registrars
             .extend(event_listener_registrars);
+        self.application_runner_registrars
+            .extend(application_runner_registrars);
         self.advisor_registrations.extend(advisor_registrations);
         self.local_advisor_registrations
             .extend(local_advisor_registrations);
@@ -327,9 +333,9 @@ impl VernalApplicationBuilder {
 
     /// 登记一个在 Environment 冻结后统一评估的条件组件模块。
     ///
-    /// 条件命中时，模块内定义、Trait Binding 和生命周期登记会整体进入应用；
-    /// 未命中时三者整体排除，但仍在启动报告中保留脱敏判断结果。同一模块名只能
-    /// 登记一次，使诊断记录能够稳定定位到唯一装配单元。
+    /// 条件命中时，模块内定义、Trait Binding、生命周期、监听器和 Runner 登记会
+    /// 整体进入应用；未命中时全部排除，但仍在启动报告中保留脱敏判断结果。同一
+    /// 模块名只能登记一次，使诊断记录能够稳定定位到唯一装配单元。
     ///
     /// # Errors
     ///
@@ -411,6 +417,46 @@ impl VernalApplicationBuilder {
     {
         self.registry.register(L::definition())?;
         Ok(self.event_listener::<E, L>())
+    }
+
+    /// 注册一个由无限定符 Singleton 组件实现的一次性应用 Runner。
+    ///
+    /// Runner 在全部 Lifecycle `start()` 成功后、Context 提交 `Ready` 前按依赖
+    /// 计划串行执行。它适合缓存预热、投影恢复或工具索引加载；长期任务应提交给
+    /// [`ManagedTaskSupervisor`]。
+    pub fn application_runner<R>(&mut self) -> &mut Self
+    where
+        R: ApplicationRunner,
+    {
+        self.application_runner_registrars.push(Box::new(|builder| {
+            builder.application_runner::<R>();
+        }));
+        self
+    }
+
+    /// 注册一个由带精确限定符 Singleton 组件实现的一次性应用 Runner。
+    pub fn application_runner_qualified<R>(&mut self, qualifier: Qualifier) -> &mut Self
+    where
+        R: ApplicationRunner,
+    {
+        self.application_runner_registrars
+            .push(Box::new(move |builder| {
+                builder.application_runner_qualified::<R>(qualifier);
+            }));
+        self
+    }
+
+    /// 同时注册派生 Runner 组件定义及其执行声明。
+    ///
+    /// # Errors
+    ///
+    /// 同一组件身份已经登记时返回 [`DefinitionError`]；失败不会追加 Runner 声明。
+    pub fn register_application_runner<R>(&mut self) -> Result<&mut Self, DefinitionError>
+    where
+        R: Component + ApplicationRunner,
+    {
+        self.registry.register(R::definition())?;
+        Ok(self.application_runner::<R>())
     }
 
     /// 注册一个 AOP 顾问。
@@ -694,11 +740,14 @@ impl VernalApplicationBuilder {
                     bindings,
                     lifecycle_registrars,
                     event_listener_registrars,
+                    application_runner_registrars,
                 } = module.into_parts();
                 self.registry.register_bundle(definitions, bindings)?;
                 self.lifecycle_registrars.extend(lifecycle_registrars);
                 self.event_listener_registrars
                     .extend(event_listener_registrars);
+                self.application_runner_registrars
+                    .extend(application_runner_registrars);
             }
         }
         Ok(evaluations)
@@ -708,12 +757,12 @@ impl VernalApplicationBuilder {
     ///
     /// # Errors
     ///
-    /// 条件评估失败、内建组件冲突、依赖图无效或生命周期绑定无效时返回
-    /// [`ApplicationBuildError`]。
+    /// 条件评估失败、内建组件冲突、依赖图无效，或生命周期/监听器/Runner 绑定
+    /// 无效时返回 [`ApplicationBuildError`]。
     pub fn build(mut self) -> Result<ApplicationContext, ApplicationBuildError> {
         // Environment 必须先冻结，所有条件模块才能对同一个不可变快照执行一次判断。
         // 命中模块通过 RegistryBuilder 的原子 bundle API 提交，未命中模块不会留下
-        // Definition、Trait Binding 或生命周期登记中的任一残片。
+        // Definition、Trait Binding、生命周期、监听器或 Runner 登记中的任一残片。
         let environment = Arc::new(std::mem::take(&mut self.environment).build());
         let condition_evaluations = self.apply_conditional_modules(&environment)?;
 
@@ -817,6 +866,9 @@ impl VernalApplicationBuilder {
             registrar(&mut context);
         }
         for registrar in self.event_listener_registrars {
+            registrar(&mut context);
+        }
+        for registrar in self.application_runner_registrars {
             registrar(&mut context);
         }
         context.build().map_err(Into::into)
