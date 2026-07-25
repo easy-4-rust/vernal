@@ -1,0 +1,7 @@
+error: ConfigurationProperties 必须声明 #[configuration(prefix = "...")]
+ --> tests/ui/configuration_missing_prefix.rs:1:10
+  |
+1 | #[derive(vernal_macros::ConfigurationProperties)]
+  |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the derive macro `vernal_macros::ConfigurationProperties` (in Nightly builds, run with -Z macro-backtrace for more info)

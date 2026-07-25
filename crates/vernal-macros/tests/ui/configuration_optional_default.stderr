@@ -1,0 +1,6 @@
+error: Option 配置字段已经表达缺失语义，不能再声明 default
+ --> tests/ui/configuration_optional_default.rs:4:5
+  |
+4 | /     #[configuration(default)]
+5 | |     port: Option<u16>,
+  | |_____________________^

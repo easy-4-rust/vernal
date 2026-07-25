@@ -1,0 +1,6 @@
+error: configuration 字段属性名不能为空、包含点号、空白或控制字符
+ --> tests/ui/configuration_invalid_rename.rs:4:5
+  |
+4 | /     #[configuration(rename = "nested.port")]
+5 | |     port: u16,
+  | |_____________^

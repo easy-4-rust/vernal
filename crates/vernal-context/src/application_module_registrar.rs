@@ -6,7 +6,7 @@ use vernal_aop::{Advisor, Interceptor, LocalAdvisor, LocalInterceptor, Operation
 use vernal_ioc::{Component, ComponentDefinition, Qualifier, TraitBinding};
 
 use crate::{
-    ConditionalComponentModule, Lifecycle, PropertySource,
+    ConditionalComponentModule, ConfigurationProperties, Lifecycle, PropertySource,
     advisor_registration::AdvisorRegistration, application_module_parts::ApplicationModuleParts,
     lifecycle_registrar::LifecycleRegistrar, local_advisor_registration::LocalAdvisorRegistration,
     managed_advisor::ManagedAdvisor, managed_local_advisor::ManagedLocalAdvisor,
@@ -58,6 +58,17 @@ impl ApplicationModuleRegistrar {
         T: Component,
     {
         self.register(T::definition())
+    }
+
+    /// 暂存一个由当前应用 Environment 绑定的类型安全配置对象。
+    ///
+    /// 配置对象以标准 Singleton Definition 进入同一原子模块；模块提交失败时，
+    /// 该定义不会残留。具体配置格式仍由模块贡献的 `PropertySource` 决定。
+    pub fn configuration_properties<T>(&mut self) -> &mut Self
+    where
+        T: ConfigurationProperties,
+    {
+        self.register(T::component_definition())
     }
 
     /// 暂存一个类型安全 Trait Object 绑定。

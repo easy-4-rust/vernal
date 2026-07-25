@@ -3,6 +3,8 @@
 
 mod component_derive;
 mod component_scope_option;
+mod configuration_default_option;
+mod configuration_properties_derive;
 mod intercept_macro;
 mod intercept_options;
 mod intercept_receiver;
@@ -24,6 +26,20 @@ use syn::{DeriveInput, Path, parse_macro_input};
 pub fn derive_component(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     component_derive::expand(&input)
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
+}
+
+/// 根据字段声明生成 Context-local 类型安全配置绑定。
+///
+/// 结构体必须声明 `#[configuration(prefix = "...")]`。普通字段为必填属性，
+/// `Option<T>` 表达可选属性，`#[configuration(default)]` 使用 `Default`，
+/// `#[configuration(default = "expression")]` 使用显式表达式，
+/// `#[configuration(nested)]` 组合嵌套前缀。
+#[proc_macro_derive(ConfigurationProperties, attributes(configuration))]
+pub fn derive_configuration_properties(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+    configuration_properties_derive::expand(&input)
         .unwrap_or_else(syn::Error::into_compile_error)
         .into()
 }

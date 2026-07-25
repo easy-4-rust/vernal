@@ -76,6 +76,9 @@
   `Vec<Arc<dyn Trait>>` 构造注入的 `#[derive(Component)]`，支持
   Singleton/Transient、default 与字段 qualifier，并通过运行时和 compile-fail
   合同测试；它不使用 linkme 或全局自动注册。
+- `[已确认]` `#[derive(ConfigurationProperties)]` 已从 Context-local
+  Environment 绑定必填、可选、默认、改名与嵌套字段，并通过标准 IoC 图注册结果；
+  运行测试与 compile-fail 测试覆盖注入和错误脱敏。
 - `[已确认]` tx-di 原文参考已从正式 `src/` 移到各 crate 的只读
   `upstream/tx-di/` 证据目录；生产源码不再同时摆放未编译的 Store/App/全局注册表。
 - `[已确认]` `#[component(aop)]` 与 `#[intercept]` 已把 Context-local
@@ -720,15 +723,41 @@ flowchart LR
     Environment["ApplicationEnvironment<br/>Context-local immutable"]
     Resolve["占位符展开<br/>循环与深度保护"]
     Typed["FromStr 类型转换"]
-    Component["IoC 组件 / Adapter"]
+    Schema["ConfigurationProperties<br/>编译期字段 Schema"]
+    Component["Context-local Singleton<br/>或自定义 Adapter"]
     Snapshot["EnvironmentSnapshot<br/>仅来源名与 Profile"]
 
     Loader --> Source
     Source --> Environment
     Profiles --> Environment
-    Environment --> Resolve --> Typed --> Component
+    Environment --> Resolve --> Typed
+    Schema --> Typed --> Component
     Environment --> Snapshot
 ```
+
+#### 类型安全配置对象
+
+`ConfigurationProperties` 保留 tx-di“整对象强类型绑定”的有效体验，但不继承
+其全局 TOML 树、Serde 格式所有权与 panic 工厂：
+
+- `#[derive(ConfigurationProperties)]` 根据显式 prefix 生成精确字段读取，不枚举
+  PropertySource，也不建立第二棵进程级全局配置树；
+- 普通 `T: FromStr` 字段默认必填，`Option<T>` 表达可选，`default` 可选择
+  `Default` 或显式 Rust 表达式，`nested` 组合父前缀与字段前缀；
+- `rename` 与 `rename_all = "kebab-case"` 适配外部命名，不在运行期引入宽松且
+  有歧义的键匹配；
+- `component_definition()` 把 `ApplicationEnvironment` 声明成真实图依赖，并由
+  标准受限 Resolver 创建一个 Container-local Singleton；
+- `VernalApplicationBuilder`、`ApplicationModuleRegistrar` 与
+  `ConditionalComponentModule` 使用一致的
+  `configuration_properties::<T>()` 注册合同；
+- `ConfigurationPropertiesError` 只报告类型、字段和键，`Display`/`Debug`
+  均不输出属性值。
+
+这种 Schema 驱动设计是有意选择：`PropertySource` 继续作为安全的点查端口，无需
+暴露全部键。Hutool-Rust 继续拥有 `.setting` 加载与扁平化；Sa-Token-Rust 可对
+实现 `FromStr` 的字段派生中间属性对象，而需要领域 Builder 或专用枚举转换时，
+现有自定义 Binder 仍是合理边界。
 
 Hutool-Rust 可以把 `Profile/SettingLoader` 的结果转换成
 `MapPropertySource`；Sa-Token-Rust Bridge 可以从 Environment 读取所需键，再
@@ -1277,6 +1306,8 @@ start 前应用取消、任务失败驱动 `run_until_cancelled()` 进入 `Close
 类型化 OS 信号发布、应用取消优先结束信号等待，PropertySource 优先级、
 Profile、类型转换、嵌套占位符、循环/来源失败，以及成功/失败启动报告的只读
 快照、Serde 序列化、环境属性值隔离与业务错误正文脱敏，并覆盖
+派生配置对象的必填/可选/默认/改名/嵌套字段、占位符展开、同实例 IoC 注入与
+绑定错误脱敏，并覆盖
 由真实 Container 解析记录驱动的动态未使用定义快照、Send/Local IoC 管理
 拦截器依赖注入、直接/组件 Advisor 稳定统一顺序、缺失拦截器 fail-closed 和
 非 Singleton Advisor 作用域拒绝，以及
@@ -1318,6 +1349,8 @@ fail-closed 与条件错误脱敏，并覆盖显式 ApplicationModule 安装、�
   具体 Web/ORM 类型；
 - [x] ApplicationEnvironment 保持 Context 隔离，配置格式与消费方类型留在
   Adapter，并提供不含属性键和值的诊断快照；
+- [x] 类型安全配置对象通过显式字段 Schema 绑定，成为普通 Context-local IoC
+  Singleton，并保证错误不包含属性值；
 - [x] 条件模块只对冻结 Environment 求值一次，并原子包含 Definition、Trait
   Binding 与生命周期登记；
 - [ ] 组件图、拦截链和生命周期都有成功、失败与回滚测试；

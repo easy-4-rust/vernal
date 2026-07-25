@@ -116,8 +116,8 @@ Detailed decisions, flows, failure semantics, and acceptance criteria are in:
 | `vernal-core` | Experimental | Shared contracts for the Tokio-first framework |
 | `vernal-ioc` | Phase 1/diagnostics kernel implemented | Definitions, scopes, resolution, graph validation, read-only snapshots |
 | `vernal-aop` | Phase 2 kernel implemented | Send/Local Around/Next, immutable operation metadata, composable pointcut algebra, immutable plans, cancellation |
-| `vernal-context` | Phase 3/diagnostics kernel implemented | Managed bootstrap, application environment, conditional assembly, lifecycle, events, redacted startup reports |
-| `vernal-macros` | Phase 2 macros implemented | Explicit `Arc<T>` injection metadata, operation declarations, and context-local async method weaving |
+| `vernal-context` | Phase 3/diagnostics kernel implemented | Managed bootstrap, application environment, typed configuration objects, conditional assembly, lifecycle, events, redacted startup reports |
+| `vernal-macros` | Phase 2/3 macros implemented | Component/configuration metadata, operation declarations, and context-local async method weaving |
 | `vernal-web` | Phase 4 contract implemented | Framework-neutral context, request scope, handler, and error contracts |
 | `vernal-web-testkit` | Phase 4 binding/lifecycle contracts implemented | Shared Context/scope/component binding and success/error/drop cleanup assertions for all ten adapters |
 | `vernal-http` | Phase 4 contract implemented | HTTP request, response, body, streaming, cancellation, and backpressure |
@@ -471,7 +471,27 @@ placeholders or parse values into Rust types such as `u16` and `bool`. TOML,
 YAML, Hutool `.setting`, process environments, and configuration centers
 remain adapter concerns. Vernal creates no tx-di-style global configuration,
 and startup diagnostics serialize source/profile names but never property keys
-or values. Consumer-owned bridges can implement `ApplicationModule` and use
+or values. `#[derive(ConfigurationProperties)]` can bind a known Rust struct
+from an explicit prefix with required, optional, defaulted, renamed, and nested
+fields. The resulting object is a normal Context-local Singleton that declares
+`ApplicationEnvironment` as an IoC dependency:
+
+```rust
+#[derive(vernal::macros::ConfigurationProperties)]
+#[configuration(prefix = "service", rename_all = "kebab-case")]
+struct ServiceProperties {
+    port: u16,
+    token: Option<String>,
+    #[configuration(default)]
+    graceful_shutdown: bool,
+}
+
+application.configuration_properties::<ServiceProperties>()?;
+```
+
+Binding errors expose the configuration type, Rust field, property key, and a
+structured cause, but never the property value. Consumer-owned bridges can
+implement `ApplicationModule` and use
 its isolated registrar to contribute component definitions, Trait bindings,
 lifecycle hooks, Send/Local advisors, operations, property sources, and
 profiles as one named unit. A module can also contribute explicit
@@ -513,6 +533,7 @@ or a no-yield loop inside an async task.
 | Application context | Tokio-owned refresh/start/close, OS signal shutdown, bounded lifecycle hooks, deterministic rollback, context-local typed events | Phase 3 kernel |
 | Managed Tokio tasks | Context-owned task handles, failure-driven cancellation, graceful wait, bounded abort, shared shutdown result | Phase 3 kernel |
 | Application environment | Explicit PropertySource precedence, profiles, placeholders, typed lookup, and redacted snapshots | Phase 3 kernel |
+| Type-safe configuration objects | Prefix-based derive binding, required/optional/default/nested fields, redacted errors, and native IoC injection | Phase 3 kernel |
 | Explicit application modules | Atomic Definition/Binding/lifecycle/AOP/operation/environment/conditional assembly for consumer-owned bridges | Phase 3 kernel |
 | Conditional component assembly | Build-time Profile/Property/custom conditions with atomic definition, binding, and lifecycle inclusion | Phase 3 kernel |
 | Events | Context-local typed event publication | Phase 3 kernel |

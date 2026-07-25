@@ -6,7 +6,7 @@ use vernal_ioc::{ComponentDefinition, Qualifier, TraitBinding};
 
 use crate::{
     ApplicationEnvironment, ComponentCondition, ConditionError, ConditionEvaluationSnapshot,
-    Lifecycle, lifecycle_registrar::LifecycleRegistrar,
+    ConfigurationProperties, Lifecycle, lifecycle_registrar::LifecycleRegistrar,
 };
 
 /// 把同一装配条件下的组件定义、Trait Binding 与生命周期登记组成原子模块。
@@ -57,6 +57,17 @@ impl ConditionalComponentModule {
     ) -> &mut Self {
         self.definitions.extend(definitions);
         self
+    }
+
+    /// 向条件模块追加一个类型安全配置对象定义。
+    ///
+    /// 只有条件命中时该配置对象才进入依赖图，绑定时读取最终冻结的同一份
+    /// [`ApplicationEnvironment`]。
+    pub fn configuration_properties<T>(&mut self) -> &mut Self
+    where
+        T: ConfigurationProperties,
+    {
+        self.register(T::component_definition())
     }
 
     /// 向模块追加一个 Trait Object 绑定。

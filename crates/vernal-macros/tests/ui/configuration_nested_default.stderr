@@ -1,0 +1,6 @@
+error: nested 配置字段不能同时声明 default
+ --> tests/ui/configuration_nested_default.rs:4:5
+  |
+4 | /     #[configuration(nested, default)]
+5 | |     child: Child,
+  | |________________^

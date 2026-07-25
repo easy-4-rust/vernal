@@ -18,13 +18,13 @@ use vernal_ioc::{
 use crate::{
     ApplicationBuildError, ApplicationContext, ApplicationContextBuilder,
     ApplicationEnvironmentBuilder, ApplicationModule, ApplicationModuleError,
-    ApplicationModuleRegistrar, ConditionError, ConditionalComponentModule, DiagnosticState,
-    EventBus, Lifecycle, LifecycleExecutionPolicy, ManagedTaskSupervisor, SubsystemStatus,
-    SystemShutdownSignalListener, TaskShutdownPolicy, advisor_registration::AdvisorRegistration,
-    application_module_parts::ApplicationModuleParts, context_resources::ContextResources,
-    diagnostic_configuration::DiagnosticConfiguration, lifecycle_registrar::LifecycleRegistrar,
-    local_advisor_registration::LocalAdvisorRegistration, managed_advisor::ManagedAdvisor,
-    managed_local_advisor::ManagedLocalAdvisor,
+    ApplicationModuleRegistrar, ConditionError, ConditionalComponentModule,
+    ConfigurationProperties, DiagnosticState, EventBus, Lifecycle, LifecycleExecutionPolicy,
+    ManagedTaskSupervisor, SubsystemStatus, SystemShutdownSignalListener, TaskShutdownPolicy,
+    advisor_registration::AdvisorRegistration, application_module_parts::ApplicationModuleParts,
+    context_resources::ContextResources, diagnostic_configuration::DiagnosticConfiguration,
+    lifecycle_registrar::LifecycleRegistrar, local_advisor_registration::LocalAdvisorRegistration,
+    managed_advisor::ManagedAdvisor, managed_local_advisor::ManagedLocalAdvisor,
 };
 
 /// 统一收集组件、条件模块、生命周期、切面和 Tokio Context 资源的应用建造器。
@@ -132,6 +132,21 @@ impl VernalApplicationBuilder {
     ) -> Result<&mut Self, DefinitionError> {
         self.registry.register(definition)?;
         Ok(self)
+    }
+
+    /// 注册一个由最终 `ApplicationEnvironment` 绑定的类型安全配置对象。
+    ///
+    /// 配置对象使用标准 Singleton Definition，并显式声明对
+    /// [`crate::ApplicationEnvironment`] 的依赖。
+    ///
+    /// # Errors
+    ///
+    /// 同一配置类型已经注册时返回 [`DefinitionError`]。
+    pub fn configuration_properties<T>(&mut self) -> Result<&mut Self, DefinitionError>
+    where
+        T: ConfigurationProperties,
+    {
+        self.register(T::component_definition())
     }
 
     /// 原子注册一组业务或基础设施组件定义。

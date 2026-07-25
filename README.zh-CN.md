@@ -105,8 +105,8 @@ Vernal 遵守四条不可退化的规则：
 | `vernal-core` | 实验性 | Tokio-first 框架的公共合同 |
 | `vernal-ioc` | Phase 1/诊断内核已实现 | 定义、作用域、解析、依赖图和只读快照 |
 | `vernal-aop` | Phase 2 内核已实现 | Send/Local Around/Next、不可变操作元数据、可组合切点代数、不可变计划和取消 |
-| `vernal-context` | Phase 3/诊断内核已实现 | 应用环境、条件装配、生命周期、回滚、事件和脱敏启动报告 |
-| `vernal-macros` | Phase 2 宏已实现 | 显式注入元数据、Operation 声明与 Context-local 异步方法织入 |
+| `vernal-context` | Phase 3/诊断内核已实现 | 应用环境、类型安全配置对象、条件装配、生命周期、回滚、事件和脱敏启动报告 |
+| `vernal-macros` | Phase 2/3 宏已实现 | 组件/配置元数据、Operation 声明与 Context-local 异步方法织入 |
 | `vernal-web` | Phase 4 合同已实现 | 框架中立的 Context、请求 Scope、Handler 和错误合同 |
 | `vernal-web-testkit` | Phase 4 绑定/生命周期合同已实现 | 十个 Adapter 共享 Context/Scope/组件绑定及成功、错误、Drop 清理断言 |
 | `vernal-http` | Phase 4 合同已实现 | HTTP 请求、响应、Body、流、取消和背压合同 |
@@ -337,6 +337,24 @@ Tokio 协调任务负责：某个等待者被丢弃或等待超时都不会遗�
 `${key:default}` 占位符或转换成 `u16`、`bool` 等 Rust 类型。TOML、YAML、
 Hutool `.setting`、进程环境变量和配置中心仍由 Adapter 加载；Vernal 不建立
 tx-di 式全局配置，也不会在启动报告中序列化属性键和值。
+`#[derive(ConfigurationProperties)]` 可以从显式前缀绑定已知 Rust 结构体，
+支持必填、可选、默认值、字段改名与嵌套配置。绑定结果是声明
+`ApplicationEnvironment` IoC 依赖的普通 Context-local Singleton：
+
+```rust
+#[derive(vernal::macros::ConfigurationProperties)]
+#[configuration(prefix = "service", rename_all = "kebab-case")]
+struct ServiceProperties {
+    port: u16,
+    token: Option<String>,
+    #[configuration(default)]
+    graceful_shutdown: bool,
+}
+
+application.configuration_properties::<ServiceProperties>()?;
+```
+
+绑定错误只公开配置类型、Rust 字段、属性键和结构化原因，不包含属性值。
 消费方 Bridge 可以实现 `ApplicationModule`，通过隔离 Registrar 把组件定义、
 Trait Binding、生命周期、Send/Local Advisor、Operation、PropertySource 与
 Profile 组织成一个具名装配单元，也可以携带显式
@@ -371,6 +389,7 @@ Spring Boot 式隐式自动配置。`refresh()` 与
 | ApplicationContext | Tokio 持有 refresh/start/close、系统信号关闭、有界生命周期钩子、确定性回滚和 Context-local 类型化事件 | Phase 3 内核 |
 | 受管 Tokio 任务 | Context 持有任务句柄、失败取消、优雅等待、有界 abort 与共享停机结果 | Phase 3 内核 |
 | 应用环境 | 显式 PropertySource 优先级、Profile、占位符、类型化读取与脱敏快照 | Phase 3 内核 |
+| 类型安全配置对象 | 基于前缀派生绑定必填/可选/默认/嵌套字段、错误脱敏与原生 IoC 注入 | Phase 3 内核 |
 | 显式应用模块 | 为消费方 Bridge 原子装配 Definition/Binding/生命周期/AOP/Operation/Environment/条件模块 | Phase 3 内核 |
 | 条件组件装配 | 构建期 Profile/Property/自定义条件，组件定义、Binding 与生命周期原子进退 | Phase 3 内核 |
 | 事件 | Context 内部隔离的类型化事件发布 | Phase 3 内核 |

@@ -87,6 +87,10 @@
   Singleton/Transient scope, default fields, and field qualifiers, with
   runtime and compile-fail tests. It uses neither linkme nor global
   auto-registration.
+- `[Confirmed]` `#[derive(ConfigurationProperties)]` binds required, optional,
+  defaulted, renamed, and nested fields from a Context-local Environment and
+  registers the result through the normal IoC graph. Runtime and compile-fail
+  tests verify injection and redacted failure behavior.
 - `[Confirmed]` verbatim tx-di references now live under each crate's
   read-only `upstream/tx-di/` evidence directory instead of appearing as
   uncompiled parallel Store/App/global-registry implementations in production
@@ -730,15 +734,47 @@ flowchart LR
     Environment["ApplicationEnvironment<br/>context-local immutable"]
     Resolve["Placeholder expansion<br/>cycle and depth guards"]
     Typed["FromStr conversion"]
-    Component["IoC component / adapter"]
+    Schema["ConfigurationProperties<br/>compile-time field schema"]
+    Component["Context-local Singleton<br/>or custom adapter"]
     Snapshot["EnvironmentSnapshot<br/>source/profile names only"]
 
     Loader --> Source
     Source --> Environment
     Profiles --> Environment
-    Environment --> Resolve --> Typed --> Component
+    Environment --> Resolve --> Typed
+    Schema --> Typed --> Component
     Environment --> Snapshot
 ```
+
+#### Type-safe configuration objects
+
+`ConfigurationProperties` preserves tx-di's useful “bind one complete typed
+configuration object” experience without inheriting its global TOML tree,
+Serde-format ownership, or panic-based factory:
+
+- `#[derive(ConfigurationProperties)]` generates exact field reads from a
+  declared prefix; it does not enumerate a PropertySource or build a second
+  process-global configuration tree;
+- ordinary `T: FromStr` fields are required, `Option<T>` fields are optional,
+  `default` supports `Default` or an explicit Rust expression, and `nested`
+  composes the parent and field prefix;
+- `rename` and `rename_all = "kebab-case"` adapt external naming without
+  adding relaxed, ambiguous key matching to the runtime;
+- `component_definition()` declares `ApplicationEnvironment` as a real graph
+  dependency and constructs one Container-local Singleton through the normal
+  restricted Resolver;
+- `VernalApplicationBuilder`, `ApplicationModuleRegistrar`, and
+  `ConditionalComponentModule` expose the same
+  `configuration_properties::<T>()` registration contract;
+- `ConfigurationPropertiesError` reports type, field, and key while keeping
+  values out of `Display` and `Debug`.
+
+This schema-driven design is deliberate: `PropertySource` remains a secure
+point-lookup port and need not reveal all keys. Hutool-Rust keeps ownership of
+`.setting` loading and flattening. Sa-Token-Rust can derive an intermediate
+properties object where fields implement `FromStr`, while its existing custom
+binder remains appropriate when values must be translated through a
+domain-specific builder or enum parser.
 
 Hutool-Rust may convert `Profile`/`SettingLoader` output into a
 `MapPropertySource`; a Sa-Token-Rust bridge may read its keys and then construct
@@ -1379,6 +1415,9 @@ publication, application cancellation winning the signal race, stop-hook
 panic isolation, PropertySource precedence, profiles, typed conversion, nested
 placeholders, cycle/source failures, and owned/redacted serialization of
 successful and failed startup reports without environment keys or values,
+plus derived configuration properties covering required/optional/defaulted,
+renamed and nested fields, placeholder expansion, same-instance IoC injection,
+and redacted binding failures,
 live unused-definition snapshots backed by actual Container resolution,
 plus Send/Local IoC-managed interceptor injection, stable ordering shared by
 direct and component advisors, fail-closed missing-interceptor resolution,
@@ -1424,6 +1463,8 @@ No phase is complete merely because a crate exists or `cargo check` is green.
   configuration formats or concrete web/ORM types into generic kernels.
 - [x] ApplicationEnvironment is context-local, keeps format/consumer types in
   adapters, and exposes a snapshot without property keys or values.
+- [x] Typed configuration objects bind through an explicit field schema,
+  become ordinary Context-local IoC singletons, and keep values out of errors.
 - [x] Conditional modules evaluate once against the frozen Environment and
   atomically include definitions, Trait bindings, and lifecycle registrations.
 - [ ] Graph, interception, and lifecycle include success/failure/rollback tests.
