@@ -13,7 +13,7 @@ vernal-ioc = { path = "../vernal-ioc" }
 
 [dev-dependencies]
 tokio.workspace = true
-trybuild = "1.0.116"
+trybuild.workspace = true
 vernal-context = { path = "../vernal-context" }
 vernal-macros = { path = "../vernal-macros" }
 

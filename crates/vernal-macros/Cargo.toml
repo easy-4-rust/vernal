@@ -11,17 +11,17 @@ publish = false
 proc-macro = true
 
 [dependencies]
-proc-macro2 = "1.0.107"
-proc-macro-crate = "3.5.0"
-quote = "1.0.47"
-syn = { version = "2.0.119", features = ["full", "visit-mut"] }
+proc-macro2.workspace = true
+proc-macro-crate.workspace = true
+quote.workspace = true
+syn = { workspace = true, features = ["visit-mut"] }
 
 [dev-dependencies]
 tokio.workspace = true
 vernal-aop = { path = "../vernal-aop" }
 vernal-context = { path = "../vernal-context" }
 vernal-core = { path = "../vernal-core" }
-trybuild = "1.0.116"
+trybuild.workspace = true
 vernal-ioc = { path = "../vernal-ioc" }
 
 [lints]
