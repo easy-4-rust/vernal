@@ -14,6 +14,7 @@ mod invocation_id;
 mod invocation_plan;
 mod invocation_plan_builder;
 mod invocation_plan_catalog;
+mod invocation_plan_catalog_initialization_error;
 mod invocation_result;
 mod local_advisor;
 mod local_interceptor;
@@ -42,6 +43,7 @@ pub use invocation_id::InvocationId;
 pub use invocation_plan::InvocationPlan;
 pub use invocation_plan_builder::InvocationPlanBuilder;
 pub use invocation_plan_catalog::InvocationPlanCatalog;
+pub use invocation_plan_catalog_initialization_error::InvocationPlanCatalogInitializationError;
 pub use invocation_result::{
     InvocationFuture, InvocationResult, InvocationTarget, InvocationValue,
 };

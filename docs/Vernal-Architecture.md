@@ -500,7 +500,52 @@ order. Pointcuts compile into immutable `InvocationPlan` values during
 high-level application construction; context refresh consumes the frozen
 catalog.
 
-### 9.4 Two execution planes, one semantic model
+### 9.4 IoC-managed interceptors
+
+Vernal supports both directly constructed `Advisor` values and `Interceptor`
+components managed by the application Container. A managed advisor is
+registered explicitly with `advisor_component` and resolved from the same
+final Container that is transferred into `ApplicationContext`:
+
+1. a deferred `InvocationPlanCatalog` first enters the graph as a native Rust
+   object;
+2. the final Container constructs interceptors and injects their Tokio,
+   Environment, or business dependencies;
+3. direct and component advisors retain one shared registration order;
+4. pointcut compilation seals the catalog exactly once, and existing clones
+   observe the final plans;
+5. runtime plans retain `Arc<dyn Interceptor>` and never use the Container as a
+   service locator.
+
+Resolution failure aborts application construction before a Context is
+published. This creates no bootstrap store, duplicates no singleton, and uses
+no process-global instance-pointer map. `LocalInterceptor` objects also satisfy
+`Send + Sync`; only call futures, targets, and values may be `!Send`, so Local
+advisors support the same component resolution and one-time sealing model.
+Component advisors must be singleton-scoped. Transient or custom scopes fail
+application construction with a structured error, preventing a precompiled
+plan from silently promoting a short-lived component to application lifetime.
+
+```mermaid
+sequenceDiagram
+    participant B as VernalApplicationBuilder
+    participant G as Registry / Graph
+    participant C as Final Container
+    participant I as Interceptor Component
+    participant P as Deferred Plan Catalog
+    participant A as ApplicationContext
+
+    B->>P: register deferred native catalog
+    B->>G: freeze complete dependency graph
+    G-->>C: create the single application Container
+    B->>C: resolve Interceptor
+    C->>I: construct and inject dependencies
+    I-->>B: Arc<dyn Interceptor>
+    B->>P: seal precompiled plans once
+    B-->>A: transfer the same Container and Catalog
+```
+
+### 9.5 Two execution planes, one semantic model
 
 Rust web frameworks do not agree that every Service future is `Send`. Vernal
 therefore exposes two explicit execution planes instead of weakening either
@@ -537,7 +582,7 @@ is tied to `&self` and cannot escape `LocalInvocationPlan::invoke_borrowed`.
 This keeps Ntex's `ServiceCtx` inside the current Pipeline call without
 requiring `Send`, `Sync`, `'static`, cloning, or unsafe lifetime extension.
 
-### 9.5 No instance-pointer map
+### 9.6 No instance-pointer map
 
 Vernal does not use `self as *const Self as usize` as durable identity:
 
@@ -548,7 +593,7 @@ Vernal does not use `self as *const Self as usize` as durable identity:
 
 Ownership and cleanup therefore follow the actual wrapper/context lifecycle.
 
-### 9.6 Method macro safety contract
+### 9.7 Method macro safety contract
 
 The first weaving frontend intentionally exposes a narrow Rust contract:
 
@@ -1138,9 +1183,10 @@ The implemented contract is:
   bound `WebRequestScope` uses it to retain
   `web.request-scope.cleanup-failed` when asynchronous close hooks fail,
   including body-drop paths that can no longer return a response error.
-- unused definitions cannot be inferred safely from “no incoming edges”; the
-  collection remains empty until exact resolution tracking exists. Adapter
-  auto-discovery is likewise delegated to future integration-crate wiring;
+- unused definitions come from successful resolution records isolated to each
+  Container. Failed resolution does not count as usage, and output follows the
+  validated build order rather than graph-indegree heuristics. Adapter
+  auto-discovery is still delegated to future integration-crate wiring;
   applications can register current states explicitly.
 
 ## 15. Verification and acceptance
@@ -1185,11 +1231,12 @@ atomically commits definitions and bindings together. Ordinary singleton and
 transient resolution remains synchronous; the custom Scope lifecycle uses
 Tokio synchronization and cancellation directly for observable async cleanup.
 
-The Phase 2 AOP kernel additionally has nine Send contract tests for
+The Phase 2 AOP kernel additionally has ten Send contract tests for
 ordered entry/reverse exit, short circuit, result/error transformation, typed
 context across `.await`, cancellation/deadline, pointcut filtering, and
 64-task concurrent reuse, borrowed non-static targets, plus deduplicated
-plan-catalog compilation. Five Local-AOP tests cover non-`Send` values,
+plan-catalog compilation and one-time catalog sealing. Six Local-AOP tests
+cover non-`Send` values,
 ordering, short circuit, cancellation, plan catalogs, and borrowed local
 targets. The macro
 frontend additionally has five runtime tests for singleton Component
@@ -1201,7 +1248,7 @@ receivers. Phase 2 now has a callable loop, while broader
 signatures, diagnostic coverage, benchmarks, and stability guarantees remain
 open.
 
-The Phase 3 kernel has forty-four contract tests for dependency-order
+The Phase 3 kernel has forty-eight contract tests for dependency-order
 startup, reverse shutdown, initialize/start rollback, invalid transitions,
 idempotent close, concurrent close serialization, and context-local typed
 event isolation, plus runtime-unavailable diagnostics, same-instance injection
@@ -1216,7 +1263,10 @@ panic isolation, PropertySource precedence, profiles, typed conversion, nested
 placeholders, cycle/source failures, and owned/redacted serialization of
 successful and failed startup reports without environment keys or values,
 live unused-definition snapshots backed by actual Container resolution,
-plus Profile/Property/custom condition selection, atomic definition/lifecycle
+plus Send/Local IoC-managed interceptor injection, stable ordering shared by
+direct and component advisors, fail-closed missing-interceptor resolution,
+rejection of non-singleton advisor scopes,
+Profile/Property/custom condition selection, atomic definition/lifecycle
 inclusion, fail-closed graph validation, and redacted condition failures.
 
 ## 16. Delivery roadmap

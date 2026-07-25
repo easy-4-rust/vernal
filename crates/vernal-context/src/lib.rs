@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
 #![doc = "Vernal 的 Tokio-first 应用上下文与生命周期编排。"]
 
+mod advisor_registration;
 mod application_build_error;
 mod application_close_coordinator;
 mod application_context;
@@ -29,6 +30,9 @@ mod lifecycle_future;
 mod lifecycle_phase;
 mod lifecycle_registrar;
 mod lifecycle_task_executor;
+mod local_advisor_registration;
+mod managed_advisor;
+mod managed_local_advisor;
 mod managed_task_error;
 mod managed_task_id;
 mod managed_task_registry;

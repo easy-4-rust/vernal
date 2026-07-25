@@ -480,7 +480,45 @@ sequenceDiagram
 5. Pointcut 在高层应用构建阶段编译为不可变 `InvocationPlan`，Context refresh
    只消费已经冻结的目录。
 
-### 9.5 双执行平面、同一语义模型
+### 9.5 IoC 管理的拦截器
+
+Vernal 同时支持调用方直接构造的 `Advisor`，以及由应用 Container 管理的
+`Interceptor` 组件。后者通过 `advisor_component` 显式登记，在依赖图冻结后由
+最终 `ApplicationContext` 持有的同一个 Container 解析：
+
+1. `InvocationPlanCatalog::deferred()` 先作为普通 Rust 原生对象进入依赖图；
+2. Container 按组件定义构造拦截器并注入其 Tokio、Environment 或业务依赖；
+3. 直接 Advisor 与组件 Advisor 按统一登记顺序进入计划建造器；
+4. Pointcut 匹配完成后目录只允许封存一次，既有 Clone 同时看到最终计划；
+5. 运行期计划直接持有 `Arc<dyn Interceptor>`，不再访问 Container。
+
+拦截器解析失败会让应用构建 fail-closed，不会发布半初始化 Context。该过程不创建
+bootstrap Store，不复制 Singleton，也不使用 tx-di 的进程级实例指针 Map。
+组件 Advisor 必须声明为 Singleton；Transient 或自定义 Scope 在构建阶段通过
+结构化错误被拒绝，避免预编译计划把短生命周期组件隐式提升为应用生命周期。
+`LocalInterceptor` 对象本身同样满足 `Send + Sync`，只有调用 Future、目标和
+返回值允许 `!Send`，因此 Local Advisor 也支持完全相同的组件化解析与一次封存。
+
+```mermaid
+sequenceDiagram
+    participant B as VernalApplicationBuilder
+    participant G as Registry / Graph
+    participant C as 最终 Container
+    participant I as Interceptor Component
+    participant P as Deferred Plan Catalog
+    participant A as ApplicationContext
+
+    B->>P: 创建待封存目录并注册为原生组件
+    B->>G: 冻结完整依赖图
+    G-->>C: 创建唯一应用 Container
+    B->>C: resolve Interceptor
+    C->>I: 构造并注入依赖
+    I-->>B: Arc<dyn Interceptor>
+    B->>P: 一次性封存预编译计划
+    B-->>A: 移交同一个 Container 与 Catalog
+```
+
+### 9.6 双执行平面、同一语义模型
 
 Rust Web 框架并不保证所有 Service Future 都满足 `Send`。Vernal 不通过放宽
 类型约束来伪装统一，而是明确提供两个执行平面：
@@ -512,7 +550,7 @@ Worker-local 状态的框架 Service 则实现对象安全的
 当前 Pipeline 调用内，无需附加 `Send`、`Sync`、`'static`、克隆或不安全的
 生命周期扩展。
 
-### 9.6 不采用实例指针 Map
+### 9.7 不采用实例指针 Map
 
 Vernal 不使用 `self as *const Self as usize` 作为长期身份。目标方案按场景选择：
 
@@ -522,7 +560,7 @@ Vernal 不使用 `self as *const Self as usize` 作为长期身份。目标方�
 
 这样链的生命周期与所有者一致，无需全局清理，也不会因为地址复用关联到错误实例。
 
-### 9.7 方法宏安全合同
+### 9.8 方法宏安全合同
 
 第一版方法织入选择一个窄而明确的 Rust 合同：
 
@@ -1090,9 +1128,9 @@ flowchart LR
   Context。应用绑定的 `WebRequestScope` 在异步关闭钩子失败时统一记录
   `web.request-scope.cleanup-failed`；即使 Body 已被 Drop、无法回传响应错误，
   运维快照仍能看到脱敏证据；
-- 未使用 Definition 不能通过“没有入边”可靠判断；在引入精确解析追踪前该集合
-  保持为空，避免把合法入口组件误报为死定义。Adapter 自动探测同样留给各集成
-  crate 后续接入，当前由应用显式登记。
+- 未使用 Definition 由每个 Container 的成功解析记录生成；失败解析不计入使用，
+  结果按已验证构建顺序稳定输出，不使用“没有入边”等启发式判断。Adapter 自动
+  探测仍留给各集成 crate 后续接入，当前由应用显式登记。
 
 ## 15. 测试与架构验收
 
@@ -1129,9 +1167,9 @@ Container 所有权、取消传播、失败后继续逆序清理、关闭等待�
 Tokio 同步与取消能力完成可观察的异步清理。
 `register_all` 原子注册纯组件批次；`register_bundle` 同时原子提交定义与绑定。
 
-Phase 2 AOP 内核另有 9 个 Send 合同测试，覆盖顺序进入/逆序退出、短路、结果/
+Phase 2 AOP 内核另有 10 个 Send 合同测试，覆盖顺序进入/逆序退出、短路、结果/
 错误改写、跨 `.await` 类型化上下文、取消/deadline、切点过滤和 64 task 并发
-复用、借用型非静态目标，以及重复 Operation 合并的计划目录编译；另有 5 个
+复用、借用型非静态目标、重复 Operation 合并的计划目录编译与一次封存；另有 6 个
 Local-AOP 测试覆盖非 `Send` 返回值、顺序、短路、取消、计划目录和借用型本地
 目标。宏前端另有 5 个运行时测试，覆盖
 Singleton Component 注入、Transient 构造、Trait Object 注入和 Context-local
@@ -1139,7 +1177,7 @@ Singleton Component 注入、Transient 构造、Trait Object 注入和 Context-l
 非异步方法和借用接收器。Phase 2 已具备可调用
 闭环，但更广泛的方法签名、诊断矩阵、性能基准和稳定性承诺仍未完成。
 
-Phase 3 内核另有 44 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
+Phase 3 内核另有 48 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
 回滚、非法转换、幂等关闭、并发关闭串行化、Context-local 类型化事件隔离，
 高层构建器的 Runtime 缺失诊断、十一类内建组件同实例注入、应用 Scope 取消树、
 任务错误/panic 传播、取消安全共享停机、超时 abort、任务先于组件 stop 的顺序、
@@ -1149,7 +1187,9 @@ start 前应用取消、任务失败驱动 `run_until_cancelled()` 进入 `Close
 类型化 OS 信号发布、应用取消优先结束信号等待，PropertySource 优先级、
 Profile、类型转换、嵌套占位符、循环/来源失败，以及成功/失败启动报告的只读
 快照、Serde 序列化、环境属性值隔离与业务错误正文脱敏，并覆盖
-由真实 Container 解析记录驱动的动态未使用定义快照，以及
+由真实 Container 解析记录驱动的动态未使用定义快照、Send/Local IoC 管理
+拦截器依赖注入、直接/组件 Advisor 稳定统一顺序、缺失拦截器 fail-closed 和
+非 Singleton Advisor 作用域拒绝，以及
 Profile/Property/自定义条件选择、条件 Definition/Lifecycle 原子进退、依赖图
 fail-closed 与条件错误脱敏。
 

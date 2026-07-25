@@ -299,6 +299,28 @@ async fn typed_context_is_available_across_await_boundaries() {
     );
 }
 
+#[test]
+fn deferred_catalog_is_visible_to_existing_clones_after_exactly_one_initialization() {
+    let operation = Operation::new("ManagedService", "execute");
+    let deferred = vernal_aop::InvocationPlanCatalog::deferred();
+    let injected_clone = deferred.clone();
+    assert!(injected_clone.is_empty());
+
+    let compiled = InvocationPlanBuilder::new().build_catalog([operation.clone()]);
+    deferred
+        .initialize_from(&compiled)
+        .expect("first initialization");
+
+    assert!(
+        injected_clone.get(&operation).is_some(),
+        "a clone injected before IoC advisor resolution must observe the sealed plans"
+    );
+    assert!(
+        deferred.initialize_from(&compiled).is_err(),
+        "runtime replacement of an already published plan catalog must be rejected"
+    );
+}
+
 #[tokio::test]
 async fn cancellation_and_deadline_stop_pending_chain() {
     let operation = Operation::new("JobService", "run");

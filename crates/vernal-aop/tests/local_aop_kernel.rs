@@ -121,6 +121,28 @@ async fn local_plan_catalog_coalesces_operations_and_rejects_mismatch() {
     ));
 }
 
+#[test]
+fn deferred_local_catalog_is_visible_to_existing_clones_after_one_initialization() {
+    let operation = Operation::new("ManagedLocalService", "execute");
+    let deferred = vernal_aop::LocalInvocationPlanCatalog::deferred();
+    let injected_clone = deferred.clone();
+    assert!(injected_clone.is_empty());
+
+    let compiled = LocalInvocationPlanBuilder::new().build_catalog([operation.clone()]);
+    deferred
+        .initialize_from(&compiled)
+        .expect("first local initialization");
+
+    assert!(
+        injected_clone.get(&operation).is_some(),
+        "an injected clone must observe the sealed local plans"
+    );
+    assert!(
+        deferred.initialize_from(&compiled).is_err(),
+        "an already published local catalog cannot be replaced"
+    );
+}
+
 #[tokio::test]
 async fn cancellation_stops_pending_non_send_local_target() {
     let operation = Operation::new("ActixJobEndpoint", "POST");

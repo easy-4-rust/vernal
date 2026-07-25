@@ -8,16 +8,21 @@ use std::{
 use tokio::runtime::Handle;
 use tokio_util::sync::CancellationToken;
 use vernal_aop::{
-    Advisor, InvocationPlanBuilder, LocalAdvisor, LocalInvocationPlanBuilder, Operation,
+    Advisor, Interceptor, InvocationPlanBuilder, InvocationPlanCatalog, LocalAdvisor,
+    LocalInterceptor, LocalInvocationPlanBuilder, LocalInvocationPlanCatalog, Operation, Pointcut,
 };
-use vernal_ioc::{ComponentDefinition, DefinitionError, Qualifier, RegistryBuilder, TraitBinding};
+use vernal_ioc::{
+    Component, ComponentDefinition, DefinitionError, Qualifier, RegistryBuilder, TraitBinding,
+};
 
 use crate::{
     ApplicationBuildError, ApplicationContext, ApplicationContextBuilder,
     ApplicationEnvironmentBuilder, ConditionError, ConditionalComponentModule, DiagnosticState,
     EventBus, Lifecycle, LifecycleExecutionPolicy, ManagedTaskSupervisor, SubsystemStatus,
-    SystemShutdownSignalListener, TaskShutdownPolicy, context_resources::ContextResources,
-    diagnostic_configuration::DiagnosticConfiguration, lifecycle_registrar::LifecycleRegistrar,
+    SystemShutdownSignalListener, TaskShutdownPolicy, advisor_registration::AdvisorRegistration,
+    context_resources::ContextResources, diagnostic_configuration::DiagnosticConfiguration,
+    lifecycle_registrar::LifecycleRegistrar, local_advisor_registration::LocalAdvisorRegistration,
+    managed_advisor::ManagedAdvisor, managed_local_advisor::ManagedLocalAdvisor,
 };
 
 /// 统一收集组件、条件模块、生命周期、切面和 Tokio Context 资源的应用建造器。
@@ -44,8 +49,8 @@ pub struct VernalApplicationBuilder {
     lifecycle_registrars: Vec<Box<LifecycleRegistrar>>,
     conditional_modules: Vec<ConditionalComponentModule>,
     conditional_module_names: BTreeSet<&'static str>,
-    invocation_plans: InvocationPlanBuilder,
-    local_invocation_plans: LocalInvocationPlanBuilder,
+    advisor_registrations: Vec<AdvisorRegistration>,
+    local_advisor_registrations: Vec<LocalAdvisorRegistration>,
     operations: Vec<Operation>,
     runtime: Arc<Handle>,
     cancellation: Arc<CancellationToken>,
@@ -75,8 +80,8 @@ impl VernalApplicationBuilder {
             lifecycle_registrars: Vec::new(),
             conditional_modules: Vec::new(),
             conditional_module_names: BTreeSet::new(),
-            invocation_plans: InvocationPlanBuilder::new(),
-            local_invocation_plans: LocalInvocationPlanBuilder::new(),
+            advisor_registrations: Vec::new(),
+            local_advisor_registrations: Vec::new(),
             operations: Vec::new(),
             runtime,
             cancellation,
@@ -228,14 +233,134 @@ impl VernalApplicationBuilder {
 
     /// 注册一个 AOP 顾问。
     pub fn advisor(&mut self, advisor: Advisor) -> &mut Self {
-        self.invocation_plans.register(advisor);
+        self.advisor_registrations
+            .push(AdvisorRegistration::Instance(advisor));
         self
     }
 
-    /// 注册一个面向 `!Send` 目标 Future 的 Local-AOP 顾问。
-    pub fn local_advisor(&mut self, advisor: LocalAdvisor) -> &mut Self {
-        self.local_invocation_plans.register(advisor);
+    /// 注册一个由无限定符 `IoC` 组件实现的线程安全 AOP 顾问。
+    ///
+    /// 拦截器定义必须已经通过 [`Self::register`]、[`Self::register_all`] 或条件模块
+    /// 进入应用。Vernal 会在依赖图冻结后使用最终应用 Container 解析该组件，所以
+    /// 拦截器可以注入其他组件，并与业务代码观察到同一个 Singleton。解析只发生
+    /// 一次，运行期计划直接持有 `Arc<dyn Interceptor>`，不会退化为 Service Locator。
+    /// 组件必须声明为 Singleton；Transient 或 Custom Scope 会在构建阶段被拒绝，
+    /// 避免其生命周期被应用级计划静默改变。
+    pub fn advisor_component<I, P>(&mut self, pointcut: P, order: i32) -> &mut Self
+    where
+        I: Interceptor,
+        P: Pointcut,
+    {
+        self.advisor_registrations
+            .push(AdvisorRegistration::Component(ManagedAdvisor::new::<I, P>(
+                pointcut, order,
+            )));
         self
+    }
+
+    /// 注册一个由精确限定符 `IoC` 组件实现的线程安全 AOP 顾问。
+    ///
+    /// 限定符同时参与依赖图身份和 Container 解析，不进行按名称字符串查找或
+    /// 运行期候选回退。
+    pub fn advisor_component_qualified<I, P>(
+        &mut self,
+        qualifier: Qualifier,
+        pointcut: P,
+        order: i32,
+    ) -> &mut Self
+    where
+        I: Interceptor,
+        P: Pointcut,
+    {
+        let managed = ManagedAdvisor::qualified::<I, P>(qualifier, pointcut, order);
+        self.advisor_registrations
+            .push(AdvisorRegistration::Component(managed));
+        self
+    }
+
+    /// 原子注册可派生拦截器组件定义及其 AOP 顾问声明。
+    ///
+    /// 该便利入口适合一个拦截器只声明一个切点的常见场景。需要让同一个组件实例
+    /// 服务多个切点时，应先注册一次 [`Component::definition`]，再多次调用
+    /// [`Self::advisor_component`]。
+    ///
+    /// # Errors
+    ///
+    /// 拦截器组件身份已存在时返回 [`DefinitionError`]；失败时不会留下 Advisor
+    /// 登记。
+    pub fn register_advisor_component<I, P>(
+        &mut self,
+        pointcut: P,
+        order: i32,
+    ) -> Result<&mut Self, DefinitionError>
+    where
+        I: Component + Interceptor,
+        P: Pointcut,
+    {
+        self.registry.register(I::definition())?;
+        Ok(self.advisor_component::<I, P>(pointcut, order))
+    }
+
+    /// 注册一个面向 `!Send` 目标 Future 的 Local-AOP 顾问。
+    ///
+    /// 该入口保留调用方直接提供实例的低层组合方式；组件化入口见
+    /// [`Self::local_advisor_component`]。
+    pub fn local_advisor(&mut self, advisor: LocalAdvisor) -> &mut Self {
+        self.local_advisor_registrations
+            .push(LocalAdvisorRegistration::Instance(advisor));
+        self
+    }
+
+    /// 注册一个由无限定符 `IoC` 组件实现的 Local-AOP 顾问。
+    ///
+    /// `LocalInterceptor` 对象本身仍满足 `Send + Sync`，因此可以由 Container
+    /// 构造并注入依赖；只有调用时 Future、目标和返回值保持 Worker-local。
+    /// 与 Send Advisor 一样，组件必须使用 Singleton 作用域。
+    pub fn local_advisor_component<I, P>(&mut self, pointcut: P, order: i32) -> &mut Self
+    where
+        I: LocalInterceptor,
+        P: Pointcut,
+    {
+        let managed = ManagedLocalAdvisor::new::<I, P>(pointcut, order);
+        self.local_advisor_registrations
+            .push(LocalAdvisorRegistration::Component(managed));
+        self
+    }
+
+    /// 注册一个由精确限定符 `IoC` 组件实现的 Local-AOP 顾问。
+    pub fn local_advisor_component_qualified<I, P>(
+        &mut self,
+        qualifier: Qualifier,
+        pointcut: P,
+        order: i32,
+    ) -> &mut Self
+    where
+        I: LocalInterceptor,
+        P: Pointcut,
+    {
+        let managed = ManagedLocalAdvisor::qualified::<I, P>(qualifier, pointcut, order);
+        self.local_advisor_registrations
+            .push(LocalAdvisorRegistration::Component(managed));
+        self
+    }
+
+    /// 原子注册可派生本地拦截器组件定义及其 Local Advisor 声明。
+    ///
+    /// # Errors
+    ///
+    /// 拦截器组件身份已存在时返回 [`DefinitionError`]；失败时不会留下 Local
+    /// Advisor 登记。
+    pub fn register_local_advisor_component<I, P>(
+        &mut self,
+        pointcut: P,
+        order: i32,
+    ) -> Result<&mut Self, DefinitionError>
+    where
+        I: Component + LocalInterceptor,
+        P: Pointcut,
+    {
+        self.registry.register(I::definition())?;
+        Ok(self.local_advisor_component::<I, P>(pointcut, order))
     }
 
     /// 设置应用拥有的 Scope 清理等待策略。
@@ -319,38 +444,17 @@ impl VernalApplicationBuilder {
         self
     }
 
-    /// 冻结依赖图和 AOP 计划并创建尚未 refresh 的应用上下文。
+    /// 在图冻结前注册 Context 拥有的十一类原生框架对象。
     ///
-    /// # Errors
-    ///
-    /// 条件评估失败、内建组件冲突、依赖图无效或生命周期绑定无效时返回
-    /// [`ApplicationBuildError`]。
-    pub fn build(mut self) -> Result<ApplicationContext, ApplicationBuildError> {
-        // Environment 必须先冻结，所有条件模块才能对同一个不可变快照执行一次判断。
-        // 命中模块通过 RegistryBuilder 的原子 bundle API 提交，未命中模块不会留下
-        // Definition、Trait Binding 或生命周期登记中的任一残片。
-        let environment = Arc::new(self.environment.build());
-        let mut condition_evaluations = Vec::with_capacity(self.conditional_modules.len());
-        for module in self.conditional_modules {
-            let matched = module.matches(&environment)?;
-            condition_evaluations.push(module.snapshot(matched));
-            if matched {
-                let (definitions, bindings, lifecycle_registrars) = module.into_parts();
-                self.registry.register_bundle(definitions, bindings)?;
-                self.lifecycle_registrars.extend(lifecycle_registrars);
-            }
-        }
-
-        // Pointcut 只在启动阶段匹配；运行期目录保持不可变。
-        let invocation_plans = Arc::new(
-            self.invocation_plans
-                .build_catalog(self.operations.iter().cloned()),
-        );
-        let local_invocation_plans =
-            Arc::new(self.local_invocation_plans.build_catalog(self.operations));
-
-        // 内建原生对象必须在图冻结前进入注册表，业务组件对它们的依赖才会被
-        // GraphPlanner 与其他依赖完全一致地校验。
+    /// 该步骤集中维护高层建造器与组件图之间的身份合同，避免主构建流程被重复的
+    /// `shared_arc` 细节淹没。任一身份冲突都会立即返回，RegistryBuilder 保留此前
+    /// 已明确登记的业务内容供错误链诊断。
+    fn register_builtin_components(
+        &mut self,
+        environment: &Arc<crate::ApplicationEnvironment>,
+        invocation_plans: &Arc<InvocationPlanCatalog>,
+        local_invocation_plans: &Arc<LocalInvocationPlanCatalog>,
+    ) -> Result<(), DefinitionError> {
         self.registry
             .register(ComponentDefinition::shared_arc(Arc::clone(&self.runtime)))?;
         self.registry
@@ -374,7 +478,7 @@ impl VernalApplicationBuilder {
                 &self.shutdown_signals,
             )))?;
         self.registry
-            .register(ComponentDefinition::shared_arc(Arc::clone(&environment)))?;
+            .register(ComponentDefinition::shared_arc(Arc::clone(environment)))?;
         self.registry
             .register(ComponentDefinition::shared_arc(Arc::clone(&self.events)))?;
         self.registry
@@ -383,12 +487,106 @@ impl VernalApplicationBuilder {
             )))?;
         self.registry
             .register(ComponentDefinition::shared_arc(Arc::clone(
-                &invocation_plans,
+                invocation_plans,
             )))?;
         self.registry
             .register(ComponentDefinition::shared_arc(Arc::clone(
-                &local_invocation_plans,
+                local_invocation_plans,
             )))?;
+        Ok(())
+    }
+
+    /// 冻结依赖图和 AOP 计划并创建尚未 refresh 的应用上下文。
+    ///
+    /// # Errors
+    ///
+    /// 条件评估失败、内建组件冲突、依赖图无效或生命周期绑定无效时返回
+    /// [`ApplicationBuildError`]。
+    pub fn build(mut self) -> Result<ApplicationContext, ApplicationBuildError> {
+        // Environment 必须先冻结，所有条件模块才能对同一个不可变快照执行一次判断。
+        // 命中模块通过 RegistryBuilder 的原子 bundle API 提交，未命中模块不会留下
+        // Definition、Trait Binding 或生命周期登记中的任一残片。
+        let environment = Arc::new(std::mem::take(&mut self.environment).build());
+        let conditional_modules = std::mem::take(&mut self.conditional_modules);
+        let mut condition_evaluations = Vec::with_capacity(conditional_modules.len());
+        for module in conditional_modules {
+            let matched = module.matches(&environment)?;
+            condition_evaluations.push(module.snapshot(matched));
+            if matched {
+                let (definitions, bindings, lifecycle_registrars) = module.into_parts();
+                self.registry.register_bundle(definitions, bindings)?;
+                self.lifecycle_registrars.extend(lifecycle_registrars);
+            }
+        }
+
+        // 两类 AOP 目录先以待封存原生对象进入依赖图：这样由 IoC 管理的 Send 与
+        // Local 拦截器都可以注入目录、Tokio 或其他业务组件，随后仍由同一个
+        // Container 构造。`!Send` 边界只存在于 Local 调用 Future 和返回值。
+        let operations = std::mem::take(&mut self.operations);
+        let invocation_plans = Arc::new(InvocationPlanCatalog::deferred());
+        let local_invocation_plans = Arc::new(LocalInvocationPlanCatalog::deferred());
+
+        // 内建原生对象必须在图冻结前进入注册表，业务组件对它们的依赖才会被
+        // GraphPlanner 与其他依赖完全一致地校验。
+        self.register_builtin_components(&environment, &invocation_plans, &local_invocation_plans)?;
+
+        // 依赖图只冻结一次；随后创建的 Container 就是最终 ApplicationContext 持有
+        // 的实例。IoC 拦截器在这里解析，其 Singleton 身份、依赖和失败追踪不会因
+        // AOP 装配再创建第二套 Store 或 bootstrap Container。
+        let registry = self.registry.build()?;
+        let container = registry.into_container();
+        let mut invocation_plan_builder = InvocationPlanBuilder::new();
+        for registration in self.advisor_registrations {
+            match registration {
+                AdvisorRegistration::Instance(advisor) => {
+                    invocation_plan_builder.register(advisor);
+                }
+                AdvisorRegistration::Component(managed) => {
+                    let component = managed.component().clone();
+                    if let Some(scope) = managed.invalid_scope(&container) {
+                        return Err(ApplicationBuildError::AdvisorScope { component, scope });
+                    }
+                    let advisor = managed.resolve(&container).map_err(|source| {
+                        ApplicationBuildError::AdvisorResolution {
+                            component,
+                            source: Box::new(source),
+                        }
+                    })?;
+                    invocation_plan_builder.register(advisor);
+                }
+            }
+        }
+
+        // Pointcut 仍只在应用构建阶段匹配。封存成功后目录没有修改入口，业务方法
+        // 与 Web Adapter 的热路径只执行 Operation 查找和预排序拦截器链。
+        let compiled_invocation_plans =
+            invocation_plan_builder.build_catalog(operations.iter().cloned());
+        invocation_plans.initialize_from(&compiled_invocation_plans)?;
+
+        let mut local_invocation_plan_builder = LocalInvocationPlanBuilder::new();
+        for registration in self.local_advisor_registrations {
+            match registration {
+                LocalAdvisorRegistration::Instance(advisor) => {
+                    local_invocation_plan_builder.register(advisor);
+                }
+                LocalAdvisorRegistration::Component(managed) => {
+                    let component = managed.component().clone();
+                    if let Some(scope) = managed.invalid_scope(&container) {
+                        return Err(ApplicationBuildError::AdvisorScope { component, scope });
+                    }
+                    let advisor = managed.resolve(&container).map_err(|source| {
+                        ApplicationBuildError::LocalAdvisorResolution {
+                            component,
+                            source: Box::new(source),
+                        }
+                    })?;
+                    local_invocation_plan_builder.register(advisor);
+                }
+            }
+        }
+        let compiled_local_invocation_plans =
+            local_invocation_plan_builder.build_catalog(operations);
+        local_invocation_plans.initialize_from(&compiled_local_invocation_plans)?;
 
         let resources = ContextResources {
             runtime: Some(self.runtime),
@@ -416,8 +614,7 @@ impl VernalApplicationBuilder {
                 self.warnings.into_iter().collect(),
             ),
         };
-        let registry = self.registry.build()?;
-        let mut context = ApplicationContextBuilder::managed(registry, resources);
+        let mut context = ApplicationContextBuilder::managed(container, resources);
         for registrar in self.lifecycle_registrars {
             registrar(&mut context);
         }

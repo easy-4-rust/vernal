@@ -3,7 +3,8 @@
 use std::{error::Error, fmt};
 
 use tokio::runtime::TryCurrentError;
-use vernal_ioc::{DefinitionError, GraphError};
+use vernal_aop::InvocationPlanCatalogInitializationError;
+use vernal_ioc::{ComponentKey, DefinitionError, GraphError, ResolveError};
 
 use crate::{ConditionError, ContextError};
 
@@ -37,6 +38,32 @@ pub enum ApplicationBuildError {
         /// 条件装配错误。
         source: ConditionError,
     },
+    /// 由 `IoC` 管理的拦截器组件无法完成解析。
+    AdvisorResolution {
+        /// 发生失败的拦截器组件稳定身份。
+        component: ComponentKey,
+        /// Container 返回的结构化解析错误。
+        source: Box<ResolveError>,
+    },
+    /// 由 `IoC` 管理的本地拦截器组件无法完成解析。
+    LocalAdvisorResolution {
+        /// 发生失败的本地拦截器组件稳定身份。
+        component: ComponentKey,
+        /// Container 返回的结构化解析错误。
+        source: Box<ResolveError>,
+    },
+    /// 组件化 Advisor 使用了无法表达应用级计划生命周期的作用域。
+    AdvisorScope {
+        /// 作用域不合法的拦截器组件身份。
+        component: ComponentKey,
+        /// 稳定、无业务数据的作用域名称。
+        scope: &'static str,
+    },
+    /// AOP 调用计划目录违反一次封存合同。
+    AopCatalogInitialization {
+        /// 目录返回的一次封存错误。
+        source: InvocationPlanCatalogInitializationError,
+    },
 }
 
 impl fmt::Display for ApplicationBuildError {
@@ -66,6 +93,30 @@ impl fmt::Display for ApplicationBuildError {
                     "application conditional component assembly failed: {source}"
                 )
             }
+            Self::AdvisorResolution { component, source } => {
+                write!(
+                    formatter,
+                    "application advisor component {component} cannot be resolved: {source}"
+                )
+            }
+            Self::LocalAdvisorResolution { component, source } => {
+                write!(
+                    formatter,
+                    "application local advisor component {component} cannot be resolved: {source}"
+                )
+            }
+            Self::AdvisorScope { component, scope } => {
+                write!(
+                    formatter,
+                    "application advisor component {component} must be singleton, not {scope}"
+                )
+            }
+            Self::AopCatalogInitialization { source } => {
+                write!(
+                    formatter,
+                    "application AOP catalog cannot be initialized: {source}"
+                )
+            }
         }
     }
 }
@@ -78,6 +129,10 @@ impl Error for ApplicationBuildError {
             Self::Graph { source } => Some(source),
             Self::Context { source } => Some(source),
             Self::Condition { source } => Some(source),
+            Self::AdvisorResolution { source, .. }
+            | Self::LocalAdvisorResolution { source, .. } => Some(source.as_ref()),
+            Self::AdvisorScope { .. } => None,
+            Self::AopCatalogInitialization { source } => Some(source),
         }
     }
 }
@@ -103,5 +158,11 @@ impl From<ContextError> for ApplicationBuildError {
 impl From<ConditionError> for ApplicationBuildError {
     fn from(source: ConditionError) -> Self {
         Self::Condition { source }
+    }
+}
+
+impl From<InvocationPlanCatalogInitializationError> for ApplicationBuildError {
+    fn from(source: InvocationPlanCatalogInitializationError) -> Self {
+        Self::AopCatalogInitialization { source }
     }
 }

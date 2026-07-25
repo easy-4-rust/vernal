@@ -14,7 +14,7 @@ pub(crate) type LifecycleResolver =
 /// 生命周期类型只保存解析函数，不提前持有实例。`build` 按 `IoC` 构建计划重新排序，
 /// 从而保证 initialize/start 遵循依赖优先顺序。
 pub struct ApplicationContextBuilder {
-    registry: Registry,
+    container: Container,
     lifecycle_resolvers: Vec<(ComponentKey, Arc<LifecycleResolver>)>,
     resources: ContextResources,
 }
@@ -24,16 +24,20 @@ impl ApplicationContextBuilder {
     #[must_use]
     pub fn new(registry: Registry) -> Self {
         Self {
-            registry,
+            container: registry.into_container(),
             lifecycle_resolvers: Vec::new(),
             resources: ContextResources::standalone(),
         }
     }
 
     /// 基于高层应用建造器准备的内建资源创建 Context 建造器。
-    pub(crate) fn managed(registry: Registry, resources: ContextResources) -> Self {
+    ///
+    /// Container 已经完成 `IoC` 管理拦截器的解析与 AOP 目录封存；Context 必须继续
+    /// 持有同一个实例，不能从 Registry 再创建第二个 Container，否则会破坏
+    /// Singleton 身份和组件使用追踪。
+    pub(crate) fn managed(container: Container, resources: ContextResources) -> Self {
         Self {
-            registry,
+            container,
             lifecycle_resolvers: Vec::new(),
             resources,
         }
@@ -77,7 +81,8 @@ impl ApplicationContextBuilder {
     /// [`ContextError::LifecycleDefinitionNotFound`]。
     pub fn build(mut self) -> Result<ApplicationContext, ContextError> {
         let positions: HashMap<ComponentKey, usize> = self
-            .registry
+            .container
+            .registry()
             .plan()
             .keys()
             .iter()
@@ -97,7 +102,7 @@ impl ApplicationContextBuilder {
         self.lifecycle_resolvers
             .sort_by_key(|(key, _)| positions[key]);
         Ok(ApplicationContext::new(
-            self.registry.container(),
+            self.container,
             self.lifecycle_resolvers,
             self.resources,
         ))

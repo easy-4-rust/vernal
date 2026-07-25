@@ -260,6 +260,16 @@ registry.register_bundle(
 `Vec<Arc<dyn MessageSender>>` 注入全部实现。绑定仍指向原始组件实例，不建立
 第二套 Store；模块定义与绑定通过 `register_bundle` 原子提交。
 
+Send 与 Local 拦截器都可以作为普通 IoC 组件管理。应用先注册拦截器定义，再通过
+`advisor_component::<AuditInterceptor, _>(pointcut, order)` 声明切面；Context
+会使用最终应用 Container 构造拦截器并注入其 Tokio、Environment 或业务依赖，
+随后一次性封存 `InvocationPlanCatalog`。运行期计划直接持有同一个 Singleton，
+不再查询 Container，也不使用 tx-di 的全局实例指针表。缺失或构造失败会在
+`build()` 阶段 fail-closed。`local_advisor_component` 使用相同模型，只有每次
+Local 调用产生的 Future、目标与返回值保持 `!Send`。组件 Advisor 必须声明为
+Singleton；Transient 或自定义 Scope 会在构建期被拒绝，避免调用计划意外延长
+短生命周期实例的存活时间。
+
 已冻结 Registry 和运行中的 Context 都提供拥有自身数据的只读诊断快照：
 
 ```rust
@@ -311,7 +321,7 @@ Spring Boot 式隐式自动配置。`refresh()` 与
 | 作用域 | Singleton、Transient、类型化自定义 ScopeContext、取消安全清理与 IoC 驱动的 WebRequestScope | Phase 1.2/4 内核 |
 | 依赖图 | 确定性顺序及缺失、歧义、循环结构化诊断 | Phase 1 |
 | Trait 绑定 | 不依赖字符串查找的命名、Primary 和多实现绑定 | Phase 1.1 内核 |
-| 拦截器链 | 有序 Around/Next、短路及结果/错误改写 | Phase 2 内核 |
+| 拦截器链 | 有序 Around/Next、IoC 管理拦截器、短路及结果/错误改写 | Phase 2/3 内核 |
 | 切点 | 操作匹配并编译成不可变调用计划 | Phase 2 内核 |
 | ApplicationContext | Tokio 持有 refresh/start/close、系统信号关闭、有界生命周期钩子、确定性回滚和 Context-local 类型化事件 | Phase 3 内核 |
 | 受管 Tokio 任务 | Context 持有任务句柄、失败取消、优雅等待、有界 abort 与共享停机结果 | Phase 3 内核 |
@@ -411,13 +421,13 @@ Primary/全部实现、Trait 图环、跨定义/绑定原子模块注册，以�
 Scope 解析不误报。9 项自定义 Scope 合同进一步覆盖同 Scope 并发一次构造、兄弟
 隔离、父子生命周期方向、Container 所有权、取消传播、失败后继续逆序清理，以及
 关闭等待已开始工厂、等待者取消安全、有界等待后后台完成、钩子间 panic 隔离。
-Phase 2 AOP 内核现有 9 个 Send 合同测试，覆盖顺序进入/逆序退出、短路、成功结果
+Phase 2 AOP 内核现有 10 个 Send 合同测试，覆盖顺序进入/逆序退出、短路、成功结果
 与错误改写、跨 `.await` 类型化上下文、取消/deadline、切点选择和 64 task
-并发共享计划、借用型非静态目标与计划目录合并；另有 5 个 Local-AOP 测试覆盖
+并发共享计划、借用型非静态目标、计划目录合并与一次封存；另有 6 个 Local-AOP 测试覆盖
 非 `Send` 返回值、顺序、短路、取消、计划目录和借用型本地目标。性能基准仍未
 完成。宏前端另有 5 个运行时合同测试（包含类型驱动自定义 Scope）和 4 个
 compile-fail 用例。
-Phase 3 内核现有 44 个测试，覆盖依赖顺序启动、逆序关闭、initialize/start
+Phase 3 内核现有 48 个测试，覆盖依赖顺序启动、逆序关闭、initialize/start
 回滚、非法状态转换、幂等关闭、并发关闭串行化和 Context-local 类型化事件
 隔离、高层构建器十一类内建资源注入、应用 Scope 取消树、任务错误/panic 传播、
 取消安全的共享任务停机、超时 abort、任务先于组件 stop 的顺序、关闭等待者取消
@@ -427,7 +437,9 @@ Phase 3 内核现有 44 个测试，覆盖依赖顺序启动、逆序关闭、in
 PropertySource 优先级、Profile、类型转换、嵌套占位符、循环/来源失败，以及
 构建期 Profile/Property/自定义条件、条件定义与生命周期原子进退、缺失依赖
 fail-closed、条件错误脱敏，以及成功/失败启动报告的只读性、序列化、环境属性值
-隔离、stop 钩子 panic 隔离和业务错误正文脱敏。
+隔离、stop 钩子 panic 隔离和业务错误正文脱敏，并验证 Send/Local IoC 管理
+拦截器的依赖注入、与直接 Advisor 的稳定统一顺序、缺失组件 fail-closed 及
+非 Singleton Advisor 作用域拒绝。
 
 Phase 4 已把 `WebRequestScope` 收敛为 IoC `ScopeContext` 的 Web 门面，十个
 Adapter 的组件提取器均在当前请求 Scope 内解析 Singleton、Transient 或请求级

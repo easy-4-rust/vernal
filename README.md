@@ -341,6 +341,18 @@ The first macro contract intentionally accepts only `async fn`, an owned
 `Result<T, InvocationError>`. These restrictions make the generated target
 future `'static` without reflection, process-global lookup, or hidden cloning.
 
+Send and Local interceptors can also be ordinary IoC components. After registering
+an interceptor definition, `advisor_component::<AuditInterceptor, _>` declares
+its pointcut and order. Context resolves it from the final application
+Container, injects Tokio, Environment, or business dependencies, then seals
+`InvocationPlanCatalog` exactly once. Runtime plans retain the same singleton
+without consulting the Container or a tx-di-style global pointer map. Missing
+or failed interceptor construction aborts `build()` fail-closed.
+`local_advisor_component` uses the same model; only each Local call's future,
+target, and value remain `!Send`. Component advisors must be singleton-scoped;
+transient or custom scopes are rejected during application construction so a
+compiled plan cannot silently extend a short-lived component's lifetime.
+
 Any `Send + Sync + 'static` Rust value can be a component, including
 `reqwest::Client`, database pools, Tower services, framework state, Tokio
 synchronization primitives, and user-defined objects. Their dependencies stay
@@ -589,11 +601,11 @@ construction, sibling isolation, parent/child lifetime direction, Container
 ownership, cancellation, reverse cleanup with failure continuation, and close
 waiting for an in-flight factory, cancellation-safe close waiters, bounded
 waiting with background completion, and panic isolation between hooks.
-The Phase 2 AOP kernel currently has nine Send contract tests covering ordered
+The Phase 2 AOP kernel currently has ten Send contract tests covering ordered
 enter/reverse exit, short circuit, success and error transformation, typed
 context across `.await`, cancellation/deadline, pointcut selection, and
 64-task concurrent plan reuse, borrowed non-static targets, plus deduplicated
-plan-catalog compilation. Five Local-AOP tests cover non-`Send` values,
+plan-catalog compilation and one-time catalog sealing. Six Local-AOP tests cover non-`Send` values,
 ordering, short circuit, cancellation, plan catalogs, and borrowed local
 targets.
 The macro frontend has five runtime tests covering singleton Component
@@ -603,7 +615,7 @@ compile-fail cases for invalid component
 fields, invalid collection qualifiers, non-async interception, and borrowed
 receivers. Broader signature support, expanded
 macro diagnostics, and AOP benchmarks remain open.
-The Phase 3 kernel has forty-four tests covering dependency-order startup,
+The Phase 3 kernel has forty-eight tests covering dependency-order startup,
 reverse shutdown, initialize/start rollback, invalid transitions, idempotent
 close, concurrent close serialization, and context-local typed event
 isolation, plus managed injection of eleven framework resources,
@@ -618,7 +630,9 @@ typed conversion, nested placeholders, cycle/source failures, stop-hook panic
 isolation, build-time Profile/Property/custom conditions, atomic conditional
 definition/lifecycle inclusion, fail-closed missing dependencies, redacted
 condition failures, and read-only/redacted startup reports that exclude
-environment keys and values.
+environment keys and values, plus Send/Local IoC-managed interceptor injection,
+stable ordering shared with direct advisors, fail-closed missing components,
+and rejection of non-singleton advisor scopes.
 
 Phase 4 now makes `WebRequestScope` the Web facade over IoC `ScopeContext`.
 All ten adapters resolve singleton, transient, and request-scoped components

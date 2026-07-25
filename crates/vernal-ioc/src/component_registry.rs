@@ -150,6 +150,16 @@ impl Registry {
         Container::new(self.clone())
     }
 
+    /// 消费注册表并创建拥有该元数据的独立容器。
+    ///
+    /// 与 [`Self::container`] 的可重复克隆入口相比，该方法适合已经完成全部装配、
+    /// 准备把 Registry 所有权交给单个应用上下文的路径，避免无意义增加一次
+    /// `Arc` 引用计数。容器实例缓存仍然只属于新建 Container。
+    #[must_use]
+    pub fn into_container(self) -> Container {
+        Container::new(self)
+    }
+
     /// 返回定义数量。
     #[must_use]
     pub fn len(&self) -> usize {
