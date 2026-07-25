@@ -3,7 +3,8 @@
 use std::{any::Any, sync::Arc};
 
 use crate::{
-    ComponentDefinition, ComponentKey, Container, Dependency, Qualifier, ResolveError, ScopeContext,
+    ComponentDefinition, ComponentKey, ComponentProvider, Container, Dependency, Qualifier,
+    ResolveError, ScopeContext,
 };
 
 /// 传递给组件工厂的受限依赖解析视图。
@@ -15,6 +16,7 @@ pub struct Resolver<'a> {
     definition: &'a ComponentDefinition,
     stack: &'a [ComponentKey],
     scope: Option<&'a ScopeContext>,
+    construction_guard: &'a Arc<()>,
 }
 
 impl<'a> Resolver<'a> {
@@ -24,12 +26,14 @@ impl<'a> Resolver<'a> {
         definition: &'a ComponentDefinition,
         stack: &'a [ComponentKey],
         scope: Option<&'a ScopeContext>,
+        construction_guard: &'a Arc<()>,
     ) -> Self {
         Self {
             container,
             definition,
             stack,
             scope,
+            construction_guard,
         }
     }
 
@@ -55,6 +59,64 @@ impl<'a> Resolver<'a> {
         T: Any + Send + Sync,
     {
         self.resolve_dependency(&Dependency::qualified::<T>(qualifier.clone()))
+    }
+
+    /// 创建一个延迟解析唯一具体类型依赖的 Provider。
+    ///
+    /// Provider 只持有这里校验过的选择器，后续不能请求其他类型。
+    ///
+    /// # Errors
+    ///
+    /// 当前定义没有声明对应 Provider 依赖时返回 [`ResolveError`]。
+    pub fn provider<T>(&self) -> Result<ComponentProvider<T>, ResolveError>
+    where
+        T: Any + Send + Sync,
+    {
+        self.create_provider(Dependency::provider_of::<T>())
+    }
+
+    /// 创建一个带限定符的延迟具体类型 Provider。
+    ///
+    /// # Errors
+    ///
+    /// 当前定义没有声明完全相同的限定符 Provider 时返回 [`ResolveError`]。
+    pub fn qualified_provider<T>(
+        &self,
+        qualifier: &Qualifier,
+    ) -> Result<ComponentProvider<T>, ResolveError>
+    where
+        T: Any + Send + Sync,
+    {
+        self.create_provider(Dependency::provider_qualified::<T>(qualifier.clone()))
+    }
+
+    /// 创建允许没有候选定义的可选 Provider。
+    ///
+    /// # Errors
+    ///
+    /// 当前定义没有声明可选 Provider 时返回 [`ResolveError`]。
+    pub fn optional_provider<T>(&self) -> Result<ComponentProvider<T>, ResolveError>
+    where
+        T: Any + Send + Sync,
+    {
+        self.create_provider(Dependency::optional_provider_of::<T>())
+    }
+
+    /// 创建允许没有精确限定符候选的可选 Provider。
+    ///
+    /// # Errors
+    ///
+    /// 当前定义没有声明完全相同的可选限定符 Provider 时返回 [`ResolveError`]。
+    pub fn optional_qualified_provider<T>(
+        &self,
+        qualifier: &Qualifier,
+    ) -> Result<ComponentProvider<T>, ResolveError>
+    where
+        T: Any + Send + Sync,
+    {
+        self.create_provider(Dependency::optional_provider_qualified::<T>(
+            qualifier.clone(),
+        ))
     }
 
     /// 解析一项已声明的 Trait Object 单值依赖。
@@ -122,6 +184,23 @@ impl<'a> Resolver<'a> {
         self.ensure_declared(dependency)?;
         self.container
             .resolve_trait_typed(dependency, self.stack, self.scope)
+    }
+
+    /// 校验 Provider 元数据并创建共享当前 Container 身份的受限句柄。
+    fn create_provider<T>(
+        &self,
+        dependency: Dependency,
+    ) -> Result<ComponentProvider<T>, ResolveError>
+    where
+        T: Any + Send + Sync,
+    {
+        self.ensure_declared(&dependency)?;
+        Ok(ComponentProvider::new(
+            self.container,
+            self.definition.key().clone(),
+            dependency,
+            Arc::downgrade(self.construction_guard),
+        ))
     }
 
     /// 确认工厂请求的依赖已经进入不可变组件定义。

@@ -87,10 +87,16 @@
   Singleton/Transient scope, default fields, and field qualifiers, with
   runtime and compile-fail tests. It uses neither linkme nor global
   auto-registration.
+- `[Confirmed]` `ComponentProvider<T>` provides graph-constrained deferred
+  resolution for concrete types, including per-call transient construction,
+  required/optional targets, qualifiers, and explicit scopes. It shares the
+  originating Container's caches without arbitrary type lookup or a global
+  Service Locator.
 - `[Confirmed]` `#[derive(ConfigurationProperties)]` binds required, optional,
   defaulted, renamed, and nested fields from a Context-local Environment and
-  registers the result through the normal IoC graph. Runtime and compile-fail
-  tests verify injection and redacted failure behavior.
+  registers the result through the normal IoC graph.
+  `ApplicationContext::refresh()` fails fast while warming these singletons;
+  runtime and compile-fail tests verify injection and redacted failures.
 - `[Confirmed]` verbatim tx-di references now live under each crate's
   read-only `upstream/tx-di/` evidence directory instead of appearing as
   uncompiled parallel Store/App/global-registry implementations in production
@@ -409,7 +415,49 @@ Application-owned Web scopes inherit its 30-second default bound or an explicit
 bounded/unbounded policy. A timeout is an observation result, not cancellation
 of the underlying cleanup.
 
-### 8.4 Tokio and framework-native components
+### 8.4 Type-safe deferred providers
+
+`ComponentProvider<T>` is a restricted Rust-native deferred dependency, not a
+public alias for `Container` and not a Service Locator that can query arbitrary
+types. A definition declares `depends_on_provider::<T>()` or its
+optional/qualified variant; the derive macro emits the same Resolver call and
+dependency metadata for a `ComponentProvider<T>` field.
+
+```mermaid
+flowchart LR
+    Consumer["Singleton consumer"] -->|"injected at construction"| Provider["ComponentProvider&lt;T&gt;<br/>fixed type + qualifier + optional"]
+    Graph["Registry graph"] -->|"validate existence and uniqueness"| Provider
+    Provider -. "get()" .-> Transient["Transient T<br/>new instance per call"]
+    Provider -. "get_in(scope)" .-> Scoped["Scoped T<br/>current scope cache"]
+    Provider -. "origin Container" .-> Singleton["Singleton T<br/>same instance"]
+```
+
+The contract is intentionally narrower than Spring's `ObjectProvider`:
+
+- required providers reject zero candidates during graph construction, and
+  both required and optional providers reject ambiguous candidates;
+- optional converts only a missing root target to `None`; construction,
+  downcast, and scope errors remain visible;
+- a provider edge validates its candidate but does not become an eager
+  topological edge, so the target is constructed only by `get`/`get_in` and a
+  cycle made solely resolvable by deferred access can be broken;
+- scoped targets require the caller's current `ScopeContext`, preventing a
+  singleton from capturing request state;
+- the provider shares the originating Container's caches, resolution tracker,
+  and scope-owner identity, and rejects a scope from another Container;
+- calling a provider before its consumer factory returns produces
+  `ProviderUsedDuringConstruction` instead of re-entering the same singleton
+  `OnceLock`;
+- the current version supports concrete `T`; trait objects continue to use
+  explicit `Arc<dyn Trait>` bindings until provider projection semantics are
+  designed separately.
+
+This retains useful on-demand component access while rejecting tx-di-style
+broad stores and global registries. Runtime contracts cover transients,
+optional and ambiguous targets, qualifiers, scopes, cross-container rejection,
+construction-time re-entry rejection, deferred cycles, and macro generation.
+
+### 8.5 Tokio and framework-native components
 
 Vernal does not require ecosystem objects to be wrapped in framework-specific
 bean types. Any `Send + Sync + 'static` value can be registered directly,
@@ -435,7 +483,7 @@ when tasks, asynchronous synchronization, time, or cancellation require it;
 the framework will not invent a second runtime SPI. The IoC contract tests
 register a native `tokio::runtime::Handle` and use it to run a real Tokio task.
 
-### 8.5 Named, primary, and multiple Trait bindings
+### 8.6 Named, primary, and multiple Trait bindings
 
 Trait bindings join the existing immutable Registry and graph rather than
 enabling tx-di's former parallel Store:
@@ -464,7 +512,7 @@ flowchart LR
 - The Component derive emits the same restricted Resolver calls and explicit
   metadata for `Arc<dyn T>`, field qualifiers, and `Vec<Arc<dyn T>>`.
 
-### 8.5 Failure contract
+### 8.7 Failure contract
 
 | Error | Retry | Required diagnostic |
 |:---|:---:|:---|
@@ -763,6 +811,9 @@ Serde-format ownership, or panic-based factory:
 - `component_definition()` declares `ApplicationEnvironment` as a real graph
   dependency and constructs one Container-local Singleton through the normal
   restricted Resolver;
+- standalone `Container` use binds on first resolution, while
+  `ApplicationContext::refresh()` warms every singleton and therefore validates
+  configuration before entering `Refreshed`;
 - `VernalApplicationBuilder`, `ApplicationModuleRegistrar`, and
   `ConditionalComponentModule` expose the same
   `configuration_properties::<T>()` registration contract;

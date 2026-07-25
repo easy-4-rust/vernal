@@ -44,7 +44,9 @@ pub trait ConfigurationProperties: Any + Send + Sync + Sized {
     /// 创建一个依赖当前 Context `ApplicationEnvironment` 的 Singleton 定义。
     ///
     /// 定义沿用 Vernal 标准依赖图和受限 Resolver，不读取进程级全局状态。配置对象
-    /// 首次被解析时完成绑定，并在该 Container 中保持 Singleton 身份。
+    /// 在纯 `Container` 用法中首次解析时绑定；`ApplicationContext::refresh()` 会
+    /// 预热全部 Singleton，因此应用模式会在进入 `Refreshed` 前完成绑定并快速失败。
+    /// 成功结果在该 Container 中保持 Singleton 身份。
     #[must_use]
     fn component_definition() -> ComponentDefinition {
         ComponentDefinition::try_singleton::<Self, _>(|resolver| -> Result<Self, BoxError> {

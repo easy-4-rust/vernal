@@ -182,6 +182,7 @@ impl WebRequestScope {
     }
 
     /// 返回当前请求作用域状态快照。
+    #[must_use]
     pub fn state(&self) -> ScopeState {
         self.scope.state()
     }

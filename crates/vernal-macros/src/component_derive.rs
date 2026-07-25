@@ -87,12 +87,32 @@ fn generate_field_injection(
         .ident
         .as_ref()
         .ok_or_else(|| syn::Error::new_spanned(field, "组件只支持具名字段"))?;
-    let (uses_default, qualifier) = field_options(field)?;
+    let (uses_default, qualifier, optional) = field_options(field)?;
     if uses_default {
         initializers.push(quote! {
             #field_name: ::core::default::Default::default()
         });
         return Ok(());
+    }
+
+    if let Some(dependency) = component_provider_inner(&field.ty)? {
+        return generate_provider_injection(
+            field,
+            field_name,
+            dependency,
+            qualifier,
+            optional,
+            ioc,
+            initializers,
+            dependency_statements,
+            qualifier_declarations,
+        );
+    }
+    if optional {
+        return Err(syn::Error::new_spanned(
+            field,
+            "#[component(optional)] 只支持 ComponentProvider<T> 字段",
+        ));
     }
 
     if let Some(dependency) = vec_arc_trait_inner(&field.ty)? {
@@ -154,6 +174,76 @@ fn generate_field_injection(
         });
         dependency_statements.push(quote! {
             __definition = __definition.depends_on_qualified::<#dependency>(
+                #definition_qualifier
+            );
+        });
+    }
+    Ok(())
+}
+
+/// 为 `ComponentProvider<T>` 字段生成受限 Provider 和延迟依赖元数据。
+#[allow(clippy::too_many_arguments)]
+fn generate_provider_injection(
+    field: &Field,
+    field_name: &syn::Ident,
+    dependency: &Type,
+    qualifier: Option<LitStr>,
+    optional: bool,
+    ioc: &TokenStream,
+    initializers: &mut Vec<TokenStream>,
+    dependency_statements: &mut Vec<TokenStream>,
+    qualifier_declarations: &mut Vec<TokenStream>,
+) -> syn::Result<()> {
+    if matches!(dependency, Type::TraitObject(_)) {
+        return Err(syn::Error::new_spanned(
+            field,
+            "ComponentProvider 当前只支持具体类型；Trait Object 请继续使用 Arc<dyn Trait>",
+        ));
+    }
+
+    let Some(qualifier) = qualifier else {
+        if optional {
+            initializers.push(quote! {
+                #field_name: __resolver.optional_provider::<#dependency>()?
+            });
+            dependency_statements.push(quote! {
+                __definition = __definition.depends_on_optional_provider::<#dependency>();
+            });
+        } else {
+            initializers.push(quote! {
+                #field_name: __resolver.provider::<#dependency>()?
+            });
+            dependency_statements.push(quote! {
+                __definition = __definition.depends_on_provider::<#dependency>();
+            });
+        }
+        return Ok(());
+    };
+
+    let definition_qualifier = format_ident!("__vernal_{}_definition_qualifier", field_name);
+    let factory_qualifier = format_ident!("__vernal_{}_factory_qualifier", field_name);
+    qualifier_declarations.push(quote! {
+        let #definition_qualifier = #ioc::Qualifier::new(#qualifier)
+            .expect("Vernal Component 宏已在编译期校验 qualifier");
+        let #factory_qualifier = #definition_qualifier.clone();
+    });
+    if optional {
+        initializers.push(quote! {
+            #field_name: __resolver.optional_qualified_provider::<#dependency>(
+                &#factory_qualifier
+            )?
+        });
+        dependency_statements.push(quote! {
+            __definition = __definition.depends_on_optional_qualified_provider::<#dependency>(
+                #definition_qualifier
+            );
+        });
+    } else {
+        initializers.push(quote! {
+            #field_name: __resolver.qualified_provider::<#dependency>(&#factory_qualifier)?
+        });
+        dependency_statements.push(quote! {
+            __definition = __definition.depends_on_qualified_provider::<#dependency>(
                 #definition_qualifier
             );
         });
@@ -350,9 +440,10 @@ fn component_fields(data: &Data) -> syn::Result<Vec<&Field>> {
 }
 
 /// 读取字段的默认值与命名注入选项。
-fn field_options(field: &Field) -> syn::Result<(bool, Option<LitStr>)> {
+fn field_options(field: &Field) -> syn::Result<(bool, Option<LitStr>, bool)> {
     let mut default = false;
     let mut qualifier = None;
+    let mut optional = false;
     for attribute in field
         .attrs
         .iter()
@@ -361,6 +452,10 @@ fn field_options(field: &Field) -> syn::Result<(bool, Option<LitStr>)> {
         attribute.parse_nested_meta(|metadata| {
             if metadata.path.is_ident("default") {
                 default = true;
+                return Ok(());
+            }
+            if metadata.path.is_ident("optional") {
+                optional = true;
                 return Ok(());
             }
             if metadata.path.is_ident("qualifier") {
@@ -378,16 +473,48 @@ fn field_options(field: &Field) -> syn::Result<(bool, Option<LitStr>)> {
                 qualifier = Some(value);
                 return Ok(());
             }
-            Err(metadata.error("字段 component 属性只支持 default 或 qualifier"))
+            Err(metadata.error("字段 component 属性只支持 default、optional 或 qualifier"))
         })?;
     }
-    if default && qualifier.is_some() {
+    if default && (qualifier.is_some() || optional) {
         return Err(syn::Error::new_spanned(
             field,
-            "default 字段不能同时声明 qualifier",
+            "default 字段不能同时声明 qualifier 或 optional",
         ));
     }
-    Ok((default, qualifier))
+    Ok((default, qualifier, optional))
+}
+
+/// 尝试从 `ComponentProvider<T>` 字段提取延迟依赖类型。
+fn component_provider_inner(field_type: &Type) -> syn::Result<Option<&Type>> {
+    let Type::Path(type_path) = field_type else {
+        return Ok(None);
+    };
+    let Some(segment) = type_path.path.segments.last() else {
+        return Ok(None);
+    };
+    if segment.ident != "ComponentProvider" {
+        return Ok(None);
+    }
+    let PathArguments::AngleBracketed(arguments) = &segment.arguments else {
+        return Err(syn::Error::new_spanned(
+            field_type,
+            "ComponentProvider 注入字段缺少依赖类型参数",
+        ));
+    };
+    if arguments.args.len() != 1 {
+        return Err(syn::Error::new_spanned(
+            field_type,
+            "ComponentProvider 注入字段必须且只能包含一个类型参数",
+        ));
+    }
+    let Some(GenericArgument::Type(dependency)) = arguments.args.first() else {
+        return Err(syn::Error::new_spanned(
+            field_type,
+            "ComponentProvider 参数必须是具体 Rust 类型",
+        ));
+    };
+    Ok(Some(dependency))
 }
 
 /// 从 `Arc<T>` 字段类型中提取依赖类型 `T`。

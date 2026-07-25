@@ -260,6 +260,26 @@ registry.register_bundle(
 `Vec<Arc<dyn MessageSender>>` 注入全部实现。绑定仍指向原始组件实例，不建立
 第二套 Store；模块定义与绑定通过 `register_bundle` 原子提交。
 
+需要按调用取得 Transient、可选扩展或当前请求 Scope 时，组件可以声明受限
+`ComponentProvider<T>`：
+
+```rust
+#[derive(vernal_macros::Component)]
+struct JobFactory {
+    jobs: vernal_ioc::ComponentProvider<Job>,
+    #[component(optional)]
+    extension: vernal_ioc::ComponentProvider<Extension>,
+}
+```
+
+Provider 的目标类型、qualifier 和 optional 语义都会写入同一依赖图：required
+目标缺失或候选歧义会在 Registry 构建期失败，optional 只允许零候选，不会吞掉
+歧义、构造或 Scope 错误。Provider 不提供任意类型查询；`get()` 按次取得
+Transient，`get_in(&scope)` 显式使用调用方当前 Scope，并复用原 Container 的
+Singleton/Scope 缓存。它是一条经过建图校验、在调用时才构造目标的延迟依赖边，
+不是全局 Service Locator。当前宏只支持具体类型 Provider；Trait Object 继续使用
+显式 `Arc<dyn Trait>` 绑定。
+
 启用 AOP 的组件显式持有 Context-local 计划目录与取消令牌。方法宏支持普通
 `&self` 借用方法，也保留需要 owned `'static` 目标的 `self: Arc<Self>` 路径：
 
@@ -354,6 +374,8 @@ struct ServiceProperties {
 application.configuration_properties::<ServiceProperties>()?;
 ```
 
+纯 `Container` 会在首次解析该 Singleton 时绑定；`ApplicationContext::refresh()`
+会预热全部 Singleton，所以应用模式会在进入 `Refreshed` 前校验配置并快速失败。
 绑定错误只公开配置类型、Rust 字段、属性键和结构化原因，不包含属性值。
 消费方 Bridge 可以实现 `ApplicationModule`，通过隔离 Registrar 把组件定义、
 Trait Binding、生命周期、Send/Local Advisor、Operation、PropertySource 与
@@ -384,6 +406,7 @@ Spring Boot 式隐式自动配置。`refresh()` 与
 | 作用域 | Singleton、Transient、类型化自定义 ScopeContext、取消安全清理与 IoC 驱动的 WebRequestScope | Phase 1.2/4 内核 |
 | 依赖图 | 确定性顺序及缺失、歧义、循环结构化诊断 | Phase 1 |
 | Trait 绑定 | 不依赖字符串查找的命名、Primary 和多实现绑定 | Phase 1.1 内核 |
+| 类型安全 Provider | 受依赖图约束的 Transient/optional/qualifier/显式 Scope 延迟解析 | Phase 1.3 内核 |
 | 拦截器链 | 有序 Around/Next、IoC 管理拦截器、短路及结果/错误改写 | Phase 2/3 内核 |
 | 切点 | 操作匹配并编译成不可变调用计划 | Phase 2 内核 |
 | ApplicationContext | Tokio 持有 refresh/start/close、系统信号关闭、有界生命周期钩子、确定性回滚和 Context-local 类型化事件 | Phase 3 内核 |

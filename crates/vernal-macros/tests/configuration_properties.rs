@@ -3,7 +3,8 @@
 use std::{error::Error, sync::Arc};
 
 use vernal_context::{
-    ApplicationEnvironment, ConfigurationProperties, MapPropertySource, VernalApplicationBuilder,
+    ApplicationEnvironment, ConfigurationProperties, ContextError, ContextState, MapPropertySource,
+    VernalApplicationBuilder,
 };
 use vernal_ioc::ComponentDefinition;
 
@@ -126,4 +127,39 @@ fn binding_error_identifies_field_and_key_without_exposing_value() {
     assert!(!display.contains("admin"));
     assert!(!display.contains("secret"));
     assert!(!debug.contains("postgres"));
+}
+
+#[tokio::test]
+async fn refresh_warms_configuration_singletons_and_fails_before_ready() {
+    let mut application =
+        VernalApplicationBuilder::current().expect("Tokio runtime should be available");
+    application
+        .environment()
+        .add_last(property_source([
+            ("service.port", "postgres://admin:secret@database"),
+            ("service.application-name", "Vernal"),
+        ]))
+        .expect("property source should register");
+    application
+        .configuration_properties::<ServiceProperties>()
+        .expect("configuration definition should register");
+    let context = application.build().expect("component graph should build");
+
+    let error = context
+        .refresh()
+        .await
+        .expect_err("refresh must eagerly bind singleton configuration");
+    assert!(matches!(error, ContextError::ContainerWarmUp { .. }));
+    assert_eq!(context.state().await, ContextState::Failed);
+    let diagnostic = error.to_string();
+    assert!(diagnostic.contains("service.port"));
+    assert!(!diagnostic.contains("admin"));
+    assert!(!diagnostic.contains("secret"));
+    assert!(!format!("{error:?}").contains("postgres://"));
+
+    context
+        .close()
+        .await
+        .expect("failed context should still close");
+    assert_eq!(context.state().await, ContextState::Closed);
 }

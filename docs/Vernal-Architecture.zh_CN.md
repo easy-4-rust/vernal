@@ -76,9 +76,14 @@
   `Vec<Arc<dyn Trait>>` 构造注入的 `#[derive(Component)]`，支持
   Singleton/Transient、default 与字段 qualifier，并通过运行时和 compile-fail
   合同测试；它不使用 linkme 或全局自动注册。
+- `[已确认]` `ComponentProvider<T>` 已提供受依赖图约束的具体类型延迟解析，
+  支持 Transient 按次构造、required/optional、qualifier 与显式 Scope；Provider
+  共享原 Container 的 Singleton/Scope 缓存，不开放任意类型查询，也不建立全局
+  Service Locator。
 - `[已确认]` `#[derive(ConfigurationProperties)]` 已从 Context-local
   Environment 绑定必填、可选、默认、改名与嵌套字段，并通过标准 IoC 图注册结果；
-  运行测试与 compile-fail 测试覆盖注入和错误脱敏。
+  `ApplicationContext::refresh()` 预热时快速失败，运行测试与 compile-fail 测试
+  覆盖注入和错误脱敏。
 - `[已确认]` tx-di 原文参考已从正式 `src/` 移到各 crate 的只读
   `upstream/tx-di/` 证据目录；生产源码不再同时摆放未编译的 Store/App/全局注册表。
 - `[已确认]` `#[component(aop)]` 与 `#[intercept]` 已把 Context-local
@@ -378,7 +383,41 @@ Scope 生命周期合同是显式的：
 最多等待 30 秒，也可显式选择其他上限或无限等待。超时只是本次观察结果，不会取消
 底层清理。
 
-### 8.4 Tokio 与框架原生组件
+### 8.4 类型安全延迟 Provider
+
+`ComponentProvider<T>` 是 Rust 原生的受限延迟依赖，不是 `Container` 的公开别名，
+也不是可以查询任意类型的 Service Locator。组件定义必须显式声明
+`depends_on_provider::<T>()` 或 optional/qualified 变体；派生宏会根据
+`ComponentProvider<T>` 字段生成完全相同的 Resolver 调用与依赖元数据。
+
+```mermaid
+flowchart LR
+    Consumer["Singleton 消费方"] -->|"构造时注入"| Provider["ComponentProvider&lt;T&gt;<br/>固定类型 + qualifier + optional"]
+    Graph["Registry 依赖图"] -->|"校验存在性与唯一性"| Provider
+    Provider -. "调用 get()" .-> Transient["Transient T<br/>每次新实例"]
+    Provider -. "调用 get_in(scope)" .-> Scoped["Scoped T<br/>复用当前 Scope 缓存"]
+    Provider -. "共享原 Container" .-> Singleton["Singleton T<br/>复用同一实例"]
+```
+
+其约束刻意比 Spring `ObjectProvider` 更窄：
+
+- required Provider 在建图期拒绝零候选，required/optional 都拒绝多候选；
+- optional 只把“根目标不存在”转换为 `None`，不隐藏构造、类型恢复或 Scope 错误；
+- Provider 边参与候选校验，但不进入 eager 拓扑递归，因此目标只在
+  `get`/`get_in` 时构造，并可打破只由延迟访问形成的构造环；
+- Scoped 目标必须由调用方传入当前 `ScopeContext`，Singleton 不会捕获请求 Scope；
+- Provider 共享创建它的 Container 缓存、解析追踪器与 Scope 所有者身份，外部
+  Container 的 Scope 会被拒绝；
+- 消费方工厂尚未返回时调用 Provider 会得到
+  `ProviderUsedDuringConstruction`，避免重入同一个 Singleton `OnceLock`；
+- 当前只支持具体 `T`；Trait Object 继续使用显式 `Arc<dyn Trait>` 绑定，以免在
+  第一版 Provider 中混入多实现投影与生命周期歧义。
+
+这吸收了按需获取组件的实用能力，同时拒绝 tx-di 广域 Store/全局注册表模式。
+运行合同已覆盖 Transient、optional、歧义、qualifier、Scope、跨 Container 拒绝、
+构造期重入拒绝、延迟环和宏生成。
+
+### 8.5 Tokio 与框架原生组件
 
 Vernal 不要求把生态对象包装成专用 Bean 类型。任何满足
 `Send + Sync + 'static` 的对象都可以直接注册，例如：
@@ -404,7 +443,7 @@ crate 可以直接依赖 Tokio，不再人为抽象第二套 Runtime SPI。IoC �
 本身不要求生态对象实现 Vernal trait；当前合同测试已直接注册
 `tokio::runtime::Handle` 并通过该句柄执行真实 Tokio task。
 
-### 8.5 Trait 命名、Primary 与多实现绑定
+### 8.6 Trait 命名、Primary 与多实现绑定
 
 Trait Binding 不启用 tx-di 旧 `Store`，而是进入现有不可变 Registry 与依赖图：
 
@@ -429,7 +468,7 @@ flowchart LR
 - Component 宏对 `Arc<dyn T>`、字段 qualifier 和 `Vec<Arc<dyn T>>` 生成相同的
   Resolver 调用与显式依赖元数据。
 
-### 8.6 解析失败合同
+### 8.7 解析失败合同
 
 | 错误 | 是否可重试 | 诊断要求 |
 |:---|:---:|:---|
@@ -748,6 +787,8 @@ flowchart LR
   有歧义的键匹配；
 - `component_definition()` 把 `ApplicationEnvironment` 声明成真实图依赖，并由
   标准受限 Resolver 创建一个 Container-local Singleton；
+- 纯 `Container` 在首次解析时绑定，`ApplicationContext::refresh()` 则预热全部
+  Singleton，因此应用模式会在进入 `Refreshed` 前完成校验并快速失败；
 - `VernalApplicationBuilder`、`ApplicationModuleRegistrar` 与
   `ConditionalComponentModule` 使用一致的
   `configuration_properties::<T>()` 注册合同；

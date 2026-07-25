@@ -7,6 +7,11 @@ use std::{
 
 use crate::Qualifier;
 
+const TRAIT_BINDING_FLAG: u8 = 1 << 0;
+const MULTIPLE_FLAG: u8 = 1 << 1;
+const OPTIONAL_FLAG: u8 = 1 << 2;
+const DEFERRED_FLAG: u8 = 1 << 3;
+
 /// 组件定义显式声明的一项依赖。
 ///
 /// 无限定符依赖要求候选类型唯一；带限定符依赖只匹配完全相同的
@@ -17,8 +22,7 @@ pub struct Dependency {
     pub(crate) type_id: TypeId,
     type_name: &'static str,
     qualifier: Option<Qualifier>,
-    trait_binding: bool,
-    multiple: bool,
+    flags: u8,
 }
 
 impl Dependency {
@@ -29,8 +33,7 @@ impl Dependency {
             type_id: TypeId::of::<T>(),
             type_name: type_name::<T>(),
             qualifier: None,
-            trait_binding: false,
-            multiple: false,
+            flags: 0,
         }
     }
 
@@ -41,8 +44,7 @@ impl Dependency {
             type_id: TypeId::of::<T>(),
             type_name: type_name::<T>(),
             qualifier: Some(qualifier),
-            trait_binding: false,
-            multiple: false,
+            flags: 0,
         }
     }
 
@@ -53,8 +55,7 @@ impl Dependency {
             type_id: TypeId::of::<T>(),
             type_name: type_name::<T>(),
             qualifier: None,
-            trait_binding: true,
-            multiple: false,
+            flags: TRAIT_BINDING_FLAG,
         }
     }
 
@@ -65,8 +66,7 @@ impl Dependency {
             type_id: TypeId::of::<T>(),
             type_name: type_name::<T>(),
             qualifier: Some(qualifier),
-            trait_binding: true,
-            multiple: false,
+            flags: TRAIT_BINDING_FLAG,
         }
     }
 
@@ -80,8 +80,53 @@ impl Dependency {
             type_id: TypeId::of::<T>(),
             type_name: type_name::<T>(),
             qualifier: None,
-            trait_binding: true,
-            multiple: true,
+            flags: TRAIT_BINDING_FLAG | MULTIPLE_FLAG,
+        }
+    }
+
+    /// 选择由类型安全 Provider 延迟解析的唯一 `T` 组件。
+    ///
+    /// 目标仍会在注册表冻结时完成存在性与唯一性校验，但不会形成 eager 构造边。
+    #[must_use]
+    pub fn provider_of<T: 'static>() -> Self {
+        Self {
+            type_id: TypeId::of::<T>(),
+            type_name: type_name::<T>(),
+            qualifier: None,
+            flags: DEFERRED_FLAG,
+        }
+    }
+
+    /// 选择由类型安全 Provider 延迟解析的带限定符 `T` 组件。
+    #[must_use]
+    pub fn provider_qualified<T: 'static>(qualifier: Qualifier) -> Self {
+        Self {
+            type_id: TypeId::of::<T>(),
+            type_name: type_name::<T>(),
+            qualifier: Some(qualifier),
+            flags: DEFERRED_FLAG,
+        }
+    }
+
+    /// 声明允许没有候选定义的可选 Provider。
+    #[must_use]
+    pub fn optional_provider_of<T: 'static>() -> Self {
+        Self {
+            type_id: TypeId::of::<T>(),
+            type_name: type_name::<T>(),
+            qualifier: None,
+            flags: OPTIONAL_FLAG | DEFERRED_FLAG,
+        }
+    }
+
+    /// 声明允许没有候选定义的带限定符可选 Provider。
+    #[must_use]
+    pub fn optional_provider_qualified<T: 'static>(qualifier: Qualifier) -> Self {
+        Self {
+            type_id: TypeId::of::<T>(),
+            type_name: type_name::<T>(),
+            qualifier: Some(qualifier),
+            flags: OPTIONAL_FLAG | DEFERRED_FLAG,
         }
     }
 
@@ -99,23 +144,48 @@ impl Dependency {
 
     /// 返回该选择器是否通过 Trait Binding 定位组件。
     pub(crate) fn is_trait_binding(&self) -> bool {
-        self.trait_binding
+        self.has_flag(TRAIT_BINDING_FLAG)
     }
 
     /// 返回该选择器是否需要全部 Trait 实现。
     pub(crate) fn is_multiple(&self) -> bool {
-        self.multiple
+        self.has_flag(MULTIPLE_FLAG)
+    }
+
+    /// 返回该选择器是否允许没有候选定义。
+    pub(crate) fn is_optional(&self) -> bool {
+        self.has_flag(OPTIONAL_FLAG)
+    }
+
+    /// 返回该依赖是否只在 Provider 调用时解析。
+    pub(crate) fn is_deferred(&self) -> bool {
+        self.has_flag(DEFERRED_FLAG)
+    }
+
+    /// 判断指定内部语义位是否存在。
+    fn has_flag(&self, flag: u8) -> bool {
+        self.flags & flag != 0
     }
 }
 
 impl fmt::Display for Dependency {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if self.multiple {
+        if self.is_multiple() {
             write!(formatter, "all<{}>", self.type_name)
         } else {
-            match &self.qualifier {
-                Some(qualifier) => write!(formatter, "{}@{qualifier}", self.type_name),
-                None => formatter.write_str(self.type_name),
+            let wrapper = match (self.is_deferred(), self.is_optional()) {
+                (true, true) => Some("optional_provider"),
+                (true, false) => Some("provider"),
+                (false, true) => Some("optional"),
+                (false, false) => None,
+            };
+            match (wrapper, &self.qualifier) {
+                (Some(wrapper), Some(qualifier)) => {
+                    write!(formatter, "{wrapper}<{}@{qualifier}>", self.type_name)
+                }
+                (Some(wrapper), None) => write!(formatter, "{wrapper}<{}>", self.type_name),
+                (None, Some(qualifier)) => write!(formatter, "{}@{qualifier}", self.type_name),
+                (None, None) => formatter.write_str(self.type_name),
             }
         }
     }

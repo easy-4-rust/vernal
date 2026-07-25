@@ -1,0 +1,6 @@
+error: #[component(optional)] 只支持 ComponentProvider<T> 字段
+ --> tests/ui/component_optional_non_provider.rs:5:5
+  |
+5 | /     #[component(optional)]
+6 | |     value: Arc<String>,
+  | |______________________^

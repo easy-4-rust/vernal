@@ -70,6 +70,12 @@ impl GraphPlanner {
         for dependency in definitions[index].dependencies() {
             let dependency_indices =
                 Self::select_dependency(dependency, definitions, bindings, candidates, stack)?;
+            // Provider 目标只在真正调用 get/get_in 时构造。这里已经完成候选存在性与
+            // 唯一性校验，但不能把它误当作 eager 构造边，否则 Provider 无法按次
+            // 创建 Transient，也无法打破仅由延迟访问形成的循环。
+            if dependency.is_deferred() {
+                continue;
+            }
             for dependency_index in dependency_indices {
                 if states[dependency_index] == STATE_VISITING {
                     return Err(Self::cycle_error(dependency_index, definitions, stack));
@@ -118,6 +124,7 @@ impl GraphPlanner {
 
         match matches.as_slice() {
             [index] => Ok(vec![*index]),
+            [] if dependency.is_optional() => Ok(Vec::new()),
             [] => {
                 let mut path = Self::display_stack(definitions, stack);
                 path.push(dependency.to_string());
@@ -161,6 +168,7 @@ impl GraphPlanner {
 
         let selected = match matches.as_slice() {
             [binding] => *binding,
+            [] if dependency.is_optional() => return Ok(Vec::new()),
             [] => {
                 let mut path = Self::display_stack(definitions, stack);
                 path.push(dependency.to_string());

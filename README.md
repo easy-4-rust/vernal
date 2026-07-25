@@ -308,6 +308,29 @@ The Component derive injects the unique or primary implementation into
 `Vec<Arc<dyn MessageSender>>`. A binding reuses the original component
 instance; `register_bundle` atomically commits definitions and bindings.
 
+Components that need a transient per call, an optional extension, or the
+caller's current request scope can declare a restricted
+`ComponentProvider<T>`:
+
+```rust
+#[derive(vernal_macros::Component)]
+struct JobFactory {
+    jobs: vernal_ioc::ComponentProvider<Job>,
+    #[component(optional)]
+    extension: vernal_ioc::ComponentProvider<Extension>,
+}
+```
+
+The target type, qualifier, and optional semantics remain part of the same
+dependency graph. A missing required target or ambiguous candidates fail while
+building the Registry; optional permits zero candidates but does not suppress
+ambiguity, construction, or scope errors. `get()` creates a transient per call,
+while `get_in(&scope)` uses the caller's explicit current scope and shares the
+originating Container's singleton and scope caches. The Provider cannot query
+arbitrary types: it is a build-validated deferred dependency edge, not a global
+Service Locator. The derive currently supports concrete provider targets;
+trait objects continue to use explicit `Arc<dyn Trait>` bindings.
+
 An AOP-enabled component explicitly receives its context-local plan catalog
 and cancellation token. The method macro then performs ordinary async Rust
 calls through the precompiled plan:
@@ -489,7 +512,10 @@ struct ServiceProperties {
 application.configuration_properties::<ServiceProperties>()?;
 ```
 
-Binding errors expose the configuration type, Rust field, property key, and a
+In standalone `Container` use, binding happens when the singleton is first
+resolved. `ApplicationContext::refresh()` warms every singleton, so application
+mode validates configuration and fails before entering `Refreshed`. Binding
+errors expose the configuration type, Rust field, property key, and a
 structured cause, but never the property value. Consumer-owned bridges can
 implement `ApplicationModule` and use
 its isolated registrar to contribute component definitions, Trait bindings,
@@ -528,6 +554,7 @@ or a no-yield loop inside an async task.
 | Scopes | Singleton, transient, typed custom ScopeContext, cancellation-safe cleanup, and IoC-backed WebRequestScope | Phase 1.2/4 kernel |
 | Dependency graph | Deterministic build order and structured missing/ambiguous/cycle diagnostics | Phase 1 |
 | Trait binding | Named/primary/multiple implementations without string lookup | Phase 1.1 kernel |
+| Type-safe providers | Graph-constrained transient/optional/qualified/explicit-scope deferred resolution | Phase 1.3 kernel |
 | Interceptor chain | Ordered Around/Next composition with short circuit and result/error transformation | Phase 2 kernel |
 | Pointcuts | Operation matching compiled into immutable invocation plans | Phase 2 kernel |
 | Application context | Tokio-owned refresh/start/close, OS signal shutdown, bounded lifecycle hooks, deterministic rollback, context-local typed events | Phase 3 kernel |

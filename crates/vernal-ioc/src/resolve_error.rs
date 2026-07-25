@@ -57,6 +57,13 @@ pub enum ResolveError {
         /// 闭合的运行时解析路径。
         path: Vec<String>,
     },
+    /// Provider 在拥有它的组件工厂返回前被调用。
+    ProviderUsedDuringConstruction {
+        /// 尚未完成构造的 Provider 消费方。
+        component: ComponentKey,
+        /// 被提前请求的延迟依赖选择器。
+        dependency: String,
+    },
     /// 自定义作用域组件在没有匹配 Context 的解析路径中被请求。
     ScopeNotActive {
         /// 无法解析的组件。
@@ -122,6 +129,13 @@ impl fmt::Display for ResolveError {
             Self::CircularRuntime { path } => {
                 write!(formatter, "runtime dependency cycle: {}", path.join(" -> "))
             }
+            Self::ProviderUsedDuringConstruction {
+                component,
+                dependency,
+            } => write!(
+                formatter,
+                "component {component} used provider {dependency} before its factory completed"
+            ),
             Self::ScopeNotActive { component, scope } => {
                 write!(
                     formatter,

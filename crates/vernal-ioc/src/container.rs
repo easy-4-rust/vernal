@@ -23,8 +23,8 @@ type SingletonCell = OnceLock<Result<ErasedComponent, ResolveError>>;
 /// 因此多个应用上下文、租户容器和并行测试不会互相覆盖实例。
 pub struct Container {
     registry: Registry,
-    singletons: Mutex<HashMap<ComponentKey, Arc<SingletonCell>>>,
-    resolutions: ResolutionTracker,
+    singletons: Arc<Mutex<HashMap<ComponentKey, Arc<SingletonCell>>>>,
+    resolutions: Arc<ResolutionTracker>,
     owner: Arc<()>,
 }
 
@@ -34,9 +34,22 @@ impl Container {
     pub fn new(registry: Registry) -> Self {
         Self {
             registry,
-            singletons: Mutex::new(HashMap::new()),
-            resolutions: ResolutionTracker::new(),
+            singletons: Arc::new(Mutex::new(HashMap::new())),
+            resolutions: Arc::new(ResolutionTracker::new()),
             owner: Arc::new(()),
+        }
+    }
+
+    /// 创建共享同一实例缓存、解析追踪和 Scope 身份的内部受限句柄。
+    ///
+    /// 该入口不实现公开 `Clone`，只供类型安全 [`crate::ComponentProvider`] 持有。
+    /// [`Registry::container`] 仍会创建完全隔离的新 Container。
+    pub(crate) fn shared_handle(&self) -> Self {
+        Self {
+            registry: self.registry.clone(),
+            singletons: Arc::clone(&self.singletons),
+            resolutions: Arc::clone(&self.resolutions),
+            owner: Arc::clone(&self.owner),
         }
     }
 
@@ -288,6 +301,29 @@ impl Container {
         })
     }
 
+    /// 为可选 Provider 解析具体类型；只把根候选缺失转换为 `None`。
+    pub(crate) fn resolve_optional_typed<T>(
+        &self,
+        dependency: &Dependency,
+        stack: &[ComponentKey],
+        scope: Option<&ScopeContext>,
+    ) -> Result<Option<Arc<T>>, ResolveError>
+    where
+        T: Any + Send + Sync,
+    {
+        let definition = match self.select_definition(dependency, stack) {
+            Ok(definition) => definition,
+            Err(ResolveError::NotFound { .. }) => return Ok(None),
+            Err(error) => return Err(error),
+        };
+        let component = self.resolve_definition(definition, stack, scope)?;
+        Arc::downcast::<T>(component)
+            .map(Some)
+            .map_err(|_| ResolveError::TypeMismatch {
+                component: definition.key().clone(),
+            })
+    }
+
     /// 为受限 Resolver 执行 Trait 单值解析。
     pub(crate) fn resolve_trait_typed<T>(
         &self,
@@ -501,7 +537,10 @@ impl Container {
     ) -> Result<ErasedComponent, ResolveError> {
         let mut next_stack = stack.to_vec();
         next_stack.push(definition.key().clone());
-        let resolver = Resolver::new(self, definition, &next_stack, scope);
+        // Provider 只允许在拥有它的工厂完整返回后使用。弱守卫不会延长构造期，
+        // 但能把工厂内的重入访问转换成结构化错误，避免递归进入 Singleton OnceLock。
+        let construction_guard = Arc::new(());
+        let resolver = Resolver::new(self, definition, &next_stack, scope, &construction_guard);
 
         definition
             .create(&resolver)
@@ -521,7 +560,7 @@ impl Container {
     }
 
     /// 拒绝把另一个 Container 创建的 `ScopeContext` 用作当前实例缓存。
-    fn ensure_scope_owner(&self, scope: &ScopeContext) -> Result<(), ResolveError> {
+    pub(crate) fn ensure_scope_owner(&self, scope: &ScopeContext) -> Result<(), ResolveError> {
         if scope.belongs_to(&self.owner) {
             Ok(())
         } else {

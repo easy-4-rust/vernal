@@ -1,0 +1,18 @@
+error: ComponentProvider 当前只支持具体类型；Trait Object 请继续使用 Arc<dyn Trait>
+ --> tests/ui/component_trait_provider.rs:7:5
+  |
+7 |     extension: ComponentProvider<dyn Extension>,
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0277]: the size for values of type `(dyn Extension + 'static)` cannot be known at compilation time
+ --> tests/ui/component_trait_provider.rs:7:16
+  |
+7 |     extension: ComponentProvider<dyn Extension>,
+  |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ doesn't have a size known at compile-time
+  |
+  = help: the trait `Sized` is not implemented for `(dyn Extension + 'static)`
+note: required by an implicit `Sized` bound in `ComponentProvider`
+ --> $WORKSPACE/crates/vernal-ioc/src/component_provider.rs
+  |
+  | pub struct ComponentProvider<T> {
+  |                              ^ required by the implicit `Sized` requirement on this type parameter in `ComponentProvider`

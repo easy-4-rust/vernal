@@ -144,11 +144,47 @@ impl ComponentDefinition {
         self
     }
 
+    /// 声明一个由 [`crate::ComponentProvider`] 延迟解析的具体类型依赖。
+    ///
+    /// Registry 会校验目标存在且唯一，但构建计划不会把它当作 eager 构造边。
+    #[must_use]
+    pub fn depends_on_provider<T: 'static>(mut self) -> Self {
+        self.dependencies.push(Dependency::provider_of::<T>());
+        self
+    }
+
+    /// 声明一个允许目标不存在的延迟具体类型依赖。
+    #[must_use]
+    pub fn depends_on_optional_provider<T: 'static>(mut self) -> Self {
+        self.dependencies
+            .push(Dependency::optional_provider_of::<T>());
+        self
+    }
+
     /// 声明一项精确限定符依赖。
     #[must_use]
     pub fn depends_on_qualified<T: 'static>(mut self, qualifier: Qualifier) -> Self {
         self.dependencies
             .push(Dependency::qualified::<T>(qualifier));
+        self
+    }
+
+    /// 声明一个带限定符的延迟具体类型依赖。
+    #[must_use]
+    pub fn depends_on_qualified_provider<T: 'static>(mut self, qualifier: Qualifier) -> Self {
+        self.dependencies
+            .push(Dependency::provider_qualified::<T>(qualifier));
+        self
+    }
+
+    /// 声明一个允许目标不存在的带限定符延迟具体类型依赖。
+    #[must_use]
+    pub fn depends_on_optional_qualified_provider<T: 'static>(
+        mut self,
+        qualifier: Qualifier,
+    ) -> Self {
+        self.dependencies
+            .push(Dependency::optional_provider_qualified::<T>(qualifier));
         self
     }
 
