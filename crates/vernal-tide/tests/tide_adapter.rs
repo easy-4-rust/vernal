@@ -21,7 +21,8 @@ use vernal_ioc::{ComponentDefinition, RegistryBuilder};
 use vernal_tide::{TideScopedReader, VernalTideMiddleware, VernalTideRequestExt};
 use vernal_web::WebRequestScope;
 use vernal_web_testkit::{
-    FailingFuturesReader, ScopeCloseProbe, ScopeRejectingInterceptor, WebAdapterContract,
+    FailingFuturesReader, ScopeCleanupTimeoutFixture, ScopeCloseProbe, ScopeRejectingInterceptor,
+    WebAdapterContract,
 };
 
 struct Greeting(&'static str);
@@ -181,6 +182,30 @@ async fn tide_reader_error_closes_scope_before_restoring_upstream_error() {
         .expect_err("synthetic Tide reader must fail");
     assert_eq!(error.to_string(), FailingFuturesReader::error_message());
     WebAdapterContract::assert_scope_closed(&scope);
+}
+
+#[tokio::test]
+async fn tide_reader_reports_cleanup_timeout_while_background_close_continues() {
+    let fixture = ScopeCleanupTimeoutFixture::new(Duration::from_millis(10)).await;
+    let body = Body::from_reader(FailingFuturesReader::new(), None);
+    let mut reader = TideScopedReader::new(
+        body,
+        fixture.scope(),
+        fixture.scope().cancellation().clone(),
+    );
+
+    let error = reader
+        .read_to_end(&mut Vec::new())
+        .await
+        .expect_err("Tide reader must report the scope cleanup timeout");
+    assert!(
+        error.to_string().contains("cleanup exceeded timeout"),
+        "unexpected Tide cleanup error: {error}"
+    );
+    fixture.assert_cleanup_timed_out();
+    fixture.assert_redacted_warning().await;
+    fixture.release();
+    fixture.assert_closed_within(Duration::from_secs(1)).await;
 }
 
 #[tokio::test]

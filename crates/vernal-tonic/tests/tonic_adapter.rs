@@ -26,7 +26,8 @@ use vernal_tonic::{
 };
 use vernal_web::{ProblemDetails, ProblemKind, RequestContext, WebRequestScope};
 use vernal_web_testkit::{
-    FailingHttpBody, ScopeCloseProbe, ScopeRejectingInterceptor, WebAdapterContract,
+    FailingHttpBody, ScopeCleanupTimeoutFixture, ScopeCloseProbe, ScopeRejectingInterceptor,
+    WebAdapterContract,
 };
 
 struct Greeting(&'static str);
@@ -260,6 +261,29 @@ async fn tonic_layer_body_error_closes_scope_before_restoring_upstream_error() {
             if source.to_string() == FailingHttpBody::error_message()
     ));
     probe.assert_closed_within(Duration::from_secs(1)).await;
+}
+
+#[tokio::test]
+async fn tonic_body_reports_cleanup_timeout_while_background_close_continues() {
+    let fixture = ScopeCleanupTimeoutFixture::new(Duration::from_millis(10)).await;
+    let scoped = vernal_tower::ScopedBody::new(
+        FailingHttpBody::new(),
+        fixture.scope(),
+        fixture.scope().cancellation().clone(),
+    );
+
+    let error = scoped
+        .collect()
+        .await
+        .expect_err("Tonic body must report the scope cleanup timeout");
+    assert!(
+        error.to_string().contains("cleanup exceeded timeout"),
+        "unexpected Tonic cleanup error: {error}"
+    );
+    fixture.assert_cleanup_timed_out();
+    fixture.assert_redacted_warning().await;
+    fixture.release();
+    fixture.assert_closed_within(Duration::from_secs(1)).await;
 }
 
 #[tokio::test]

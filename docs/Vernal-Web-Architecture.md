@@ -487,8 +487,13 @@ adapters. This catches both scope bypass and test-assisted cleanup.
 `FailingFuturesReader` only emit deterministic upstream failures. All ten
 adapters use their native body, stream, or reader wrapper to prove that the
 error path waits for scope closure before restoring the original transport
-failure. Client-disconnect, cleanup-timeout, and remaining matrix paths continue
-incrementally. The Axum cancellation contract additionally proves that an
+failure. `ScopeCleanupTimeoutFixture` supplies a real application-bound scope,
+bounded cleanup policy, and controllable hanging hook. Every adapter now proves
+that its native response surface returns the structured timeout within budget,
+records only `web.request-scope.cleanup-failed`, leaves the single cleanup
+coordinator running, and reaches `Closed` exactly once after release. Client
+disconnect and remaining matrix paths continue incrementally. The Axum
+cancellation contract additionally proves that an
 ignored background close error reaches the owning Context as a redacted warning:
 
 | Contract | Required coverage |

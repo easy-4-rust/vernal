@@ -11,7 +11,7 @@ use vernal_http::HttpBody;
 use vernal_ioc::{ComponentDefinition, RegistryBuilder};
 use vernal_tower::{RequestScopeLayer, TowerBodyError, TowerError, VernalLayer};
 use vernal_web::{ScopeState, WebRequestScope};
-use vernal_web_testkit::{FailingHttpBody, ScopeCloseProbe};
+use vernal_web_testkit::{FailingHttpBody, ScopeCleanupTimeoutFixture, ScopeCloseProbe};
 
 async fn ready_context() -> Arc<vernal_context::ApplicationContext> {
     let registry = RegistryBuilder::new().build().expect("empty registry");
@@ -222,6 +222,29 @@ async fn upstream_body_error_closes_scope_before_restoring_transport_failure() {
             if source.to_string() == FailingHttpBody::error_message()
     ));
     probe.assert_closed_within(Duration::from_secs(1)).await;
+}
+
+#[tokio::test]
+async fn response_body_reports_cleanup_timeout_without_cancelling_background_close() {
+    let fixture = ScopeCleanupTimeoutFixture::new(Duration::from_millis(10)).await;
+    let scoped = vernal_tower::ScopedBody::new(
+        FailingHttpBody::new(),
+        fixture.scope(),
+        fixture.scope().cancellation().clone(),
+    );
+
+    let error = scoped
+        .collect()
+        .await
+        .expect_err("Tower body must report the scope cleanup timeout");
+    assert!(
+        error.to_string().contains("cleanup exceeded timeout"),
+        "unexpected Tower cleanup error: {error}"
+    );
+    fixture.assert_cleanup_timed_out();
+    fixture.assert_redacted_warning().await;
+    fixture.release();
+    fixture.assert_closed_within(Duration::from_secs(1)).await;
 }
 
 #[tokio::test]

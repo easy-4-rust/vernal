@@ -430,8 +430,12 @@ Scope 的实现，也能阻止 testkit 替被测 Adapter 完成清理。
 `FailingHttpBody`、`FailingByteStream`、`FailingTokioReader` 和
 `FailingFuturesReader` 只制造确定性上游错误；十个 Adapter 分别通过自身原生
 Body/Stream/Reader 包装器证明：错误路径会等待 Scope 关闭，再恢复原始传输失败。
-客户端断连、释放超时和下表其余矩阵仍按阶段继续补齐。Axum 取消合同还证明：
-后台关闭结果无法回传响应且被 Adapter 忽略时，所属 Context 仍会收到脱敏告警：
+`ScopeCleanupTimeoutFixture` 提供真实应用绑定 Scope、有界清理策略和可控阻塞
+钩子；十个 Adapter 现已证明原生响应面会在预算内返回结构化超时，只记录
+`web.request-scope.cleanup-failed`，保留唯一后台协调器，并在钩子释放后恰好
+一次进入 `Closed`。客户端断连和下表其余矩阵仍按阶段继续补齐。Axum 取消合同
+还证明：后台关闭结果无法回传响应且被 Adapter 忽略时，所属 Context 仍会收到
+脱敏告警：
 
 | 合同 | 必须覆盖 |
 |:---|:---|

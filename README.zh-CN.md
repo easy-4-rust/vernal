@@ -644,8 +644,11 @@ Adapter 共同验证正常 Body 完成、策略短路和响应 Body Drop 后由 
 关闭真实 Scope，testkit 不参与清理。十个 Adapter 现在还分别以原生
 `http-body`、字节 `Stream`、Tokio `AsyncRead` 或 Futures IO `AsyncRead`
 触发上游流错误，验证 Adapter 会先异步关闭 Scope，再恢复原始传输失败；共享
-失败源仍不持有 Scope。客户端断连、释放超时、Security 集成和其余失败矩阵仍按
-架构清单继续补齐。
+失败源仍不持有 Scope。`ScopeCleanupTimeoutFixture` 还为每个 Adapter 建立采用
+有界策略的真实应用请求 Scope 和可控阻塞钩子，验证原生 Body/Stream/Reader 会
+在预算内返回结构化超时，只记录脱敏告警，并让唯一后台协调器在钩子释放后恰好
+一次进入 `Closed`。客户端断连、Security 集成和其余失败矩阵仍按架构清单继续
+补齐。
 
 ## 10. 贡献与许可证
 

@@ -28,7 +28,8 @@ use vernal_poem::{
 };
 use vernal_web::WebRequestScope;
 use vernal_web_testkit::{
-    FailingByteStream, ScopeCloseProbe, ScopeRejectingInterceptor, WebAdapterContract,
+    FailingByteStream, ScopeCleanupTimeoutFixture, ScopeCloseProbe, ScopeRejectingInterceptor,
+    WebAdapterContract,
 };
 
 struct Greeting(&'static str);
@@ -169,6 +170,29 @@ async fn poem_stream_error_closes_scope_before_restoring_upstream_error() {
         .expect_err("synthetic stream must fail");
     assert_eq!(error.to_string(), FailingByteStream::error_message());
     WebAdapterContract::assert_scope_closed(&scope);
+}
+
+#[tokio::test]
+async fn poem_stream_reports_cleanup_timeout_while_background_close_continues() {
+    let fixture = ScopeCleanupTimeoutFixture::new(Duration::from_millis(10)).await;
+    let mut stream = Box::pin(PoemScopedStream::new(
+        FailingByteStream::new(),
+        fixture.scope(),
+        fixture.scope().cancellation().clone(),
+    ));
+
+    let error = poll_fn(|context| Pin::as_mut(&mut stream).poll_next(context))
+        .await
+        .expect("Poem stream must report one cleanup error")
+        .expect_err("Poem stream must report the scope cleanup timeout");
+    assert!(
+        error.to_string().contains("cleanup exceeded timeout"),
+        "unexpected Poem cleanup error: {error}"
+    );
+    fixture.assert_cleanup_timed_out();
+    fixture.assert_redacted_warning().await;
+    fixture.release();
+    fixture.assert_closed_within(Duration::from_secs(1)).await;
 }
 
 #[tokio::test]

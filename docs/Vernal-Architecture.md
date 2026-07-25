@@ -1813,8 +1813,12 @@ policy-short-circuit, response-body-drop, and upstream-stream-error evidence.
 The failure tests retain each framework's native standard `http-body`, byte
 `Stream`, Tokio `AsyncRead`, Futures IO `AsyncRead`, or Ntex byte representation
 and prove that native wrappers close the scope before restoring the transport
-error. The shared testkit only emits failures and observes state; client
-disconnect and cleanup-timeout matrices remain open.
+error. `ScopeCleanupTimeoutFixture` then drives a real bounded policy and
+controllable hanging close hook through every native response wrapper. Each
+adapter returns the structured timeout, records only the redacted warning,
+continues the single background close, and reaches `Closed` exactly once after
+release. The shared testkit never closes the scope itself; the client-disconnect
+matrix remains open.
 
 ## 16. Delivery roadmap
 

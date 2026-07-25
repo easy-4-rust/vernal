@@ -28,7 +28,8 @@ use vernal_http::HttpRequestSnapshot;
 use vernal_ioc::{ComponentDefinition, RegistryBuilder};
 use vernal_web::WebRequestScope;
 use vernal_web_testkit::{
-    FailingByteStream, ScopeCloseProbe, ScopeRejectingInterceptor, WebAdapterContract,
+    FailingByteStream, ScopeCleanupTimeoutFixture, ScopeCloseProbe, ScopeRejectingInterceptor,
+    WebAdapterContract,
 };
 
 struct Greeting(&'static str);
@@ -157,6 +158,30 @@ async fn actix_body_error_closes_scope_before_restoring_upstream_error() {
             if source.to_string() == FailingByteStream::error_message()
     ));
     WebAdapterContract::assert_scope_closed(&scope);
+}
+
+#[actix_web::test]
+async fn actix_body_reports_cleanup_timeout_while_background_close_continues() {
+    let fixture = ScopeCleanupTimeoutFixture::new(Duration::from_millis(10)).await;
+    let body = BodyStream::new(FailingByteStream::new());
+    let mut scoped = Box::pin(ActixScopedBody::new(
+        body,
+        fixture.scope(),
+        fixture.scope().cancellation().clone(),
+    ));
+
+    let error = poll_fn(|context| Pin::as_mut(&mut scoped).poll_next(context))
+        .await
+        .expect("Actix body must report one cleanup error")
+        .expect_err("Actix body must report the scope cleanup timeout");
+    assert!(
+        error.to_string().contains("cleanup exceeded timeout"),
+        "unexpected Actix cleanup error: {error}"
+    );
+    fixture.assert_cleanup_timed_out();
+    fixture.assert_redacted_warning().await;
+    fixture.release();
+    fixture.assert_closed_within(Duration::from_secs(1)).await;
 }
 
 #[actix_web::test]

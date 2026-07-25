@@ -33,7 +33,8 @@ use vernal_http::HttpRequestSnapshot;
 use vernal_ioc::{ComponentDefinition, RegistryBuilder};
 use vernal_web::WebRequestScope;
 use vernal_web_testkit::{
-    FailingHttpBody, ScopeCloseProbe, ScopeRejectingInterceptor, WebAdapterContract,
+    FailingHttpBody, ScopeCleanupTimeoutFixture, ScopeCloseProbe, ScopeRejectingInterceptor,
+    WebAdapterContract,
 };
 
 struct Greeting(&'static str);
@@ -224,6 +225,29 @@ async fn gotham_body_error_closes_scope_before_restoring_upstream_error() {
         .expect_err("synthetic Gotham body must fail");
     assert_eq!(error.to_string(), FailingHttpBody::error_message());
     WebAdapterContract::assert_scope_closed(&scope);
+}
+
+#[tokio::test]
+async fn gotham_body_reports_cleanup_timeout_while_background_close_continues() {
+    let fixture = ScopeCleanupTimeoutFixture::new(Duration::from_millis(10)).await;
+    let scoped = GothamScopedBody::new(
+        FailingHttpBody::new(),
+        fixture.scope(),
+        fixture.scope().cancellation().clone(),
+    );
+
+    let error = scoped
+        .collect()
+        .await
+        .expect_err("Gotham body must report the scope cleanup timeout");
+    assert!(
+        error.to_string().contains("cleanup exceeded timeout"),
+        "unexpected Gotham cleanup error: {error}"
+    );
+    fixture.assert_cleanup_timed_out();
+    fixture.assert_redacted_warning().await;
+    fixture.release();
+    fixture.assert_closed_within(Duration::from_secs(1)).await;
 }
 
 #[tokio::test]

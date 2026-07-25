@@ -25,7 +25,8 @@ use vernal_http::HttpRequestSnapshot;
 use vernal_ioc::{ComponentDefinition, RegistryBuilder};
 use vernal_web::WebRequestScope;
 use vernal_web_testkit::{
-    FailingHttpBody, ScopeCloseProbe, ScopeRejectingInterceptor, WebAdapterContract,
+    FailingHttpBody, ScopeCleanupTimeoutFixture, ScopeCloseProbe, ScopeRejectingInterceptor,
+    WebAdapterContract,
 };
 
 struct Greeting(&'static str);
@@ -187,6 +188,28 @@ async fn axum_body_error_closes_scope_before_restoring_upstream_error() {
         .expect_err("synthetic Axum body must fail");
     assert!(error.to_string().contains(FailingHttpBody::error_message()));
     probe.assert_closed_within(Duration::from_secs(1)).await;
+}
+
+#[tokio::test]
+async fn axum_body_reports_cleanup_timeout_while_background_close_continues() {
+    let fixture = ScopeCleanupTimeoutFixture::new(Duration::from_millis(10)).await;
+    let body = Body::new(vernal_tower::ScopedBody::new(
+        FailingHttpBody::new(),
+        fixture.scope(),
+        fixture.scope().cancellation().clone(),
+    ));
+
+    let error = to_bytes(body, 64)
+        .await
+        .expect_err("Axum body must report the scope cleanup timeout");
+    assert!(
+        error.to_string().contains("cleanup exceeded timeout"),
+        "unexpected Axum cleanup error: {error}"
+    );
+    fixture.assert_cleanup_timed_out();
+    fixture.assert_redacted_warning().await;
+    fixture.release();
+    fixture.assert_closed_within(Duration::from_secs(1)).await;
 }
 
 #[tokio::test]

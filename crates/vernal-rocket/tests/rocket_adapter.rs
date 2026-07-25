@@ -28,7 +28,8 @@ use vernal_rocket::{
 };
 use vernal_web::WebRequestScope;
 use vernal_web_testkit::{
-    FailingTokioReader, ScopeCloseProbe, ScopeRejectingInterceptor, WebAdapterContract,
+    FailingTokioReader, ScopeCleanupTimeoutFixture, ScopeCloseProbe, ScopeRejectingInterceptor,
+    WebAdapterContract,
 };
 
 struct Greeting(&'static str);
@@ -252,6 +253,33 @@ async fn rocket_reader_error_closes_scope_before_restoring_upstream_error() {
         .expect_err("synthetic Rocket reader must fail");
     assert_eq!(error.to_string(), FailingTokioReader::error_message());
     WebAdapterContract::assert_scope_closed(&scope);
+}
+
+#[rocket::async_test]
+async fn rocket_reader_reports_cleanup_timeout_while_background_close_continues() {
+    let fixture = ScopeCleanupTimeoutFixture::new(Duration::from_millis(10)).await;
+    let mut response = RocketResponse::build()
+        .streamed_body(FailingTokioReader::new())
+        .finalize();
+    let body = std::mem::take(response.body_mut());
+    let mut reader = RocketScopedReader::new(
+        body,
+        fixture.scope(),
+        fixture.scope().cancellation().clone(),
+    );
+
+    let error = reader
+        .read_to_end(&mut Vec::new())
+        .await
+        .expect_err("Rocket reader must report the scope cleanup timeout");
+    assert!(
+        error.to_string().contains("cleanup exceeded timeout"),
+        "unexpected Rocket cleanup error: {error}"
+    );
+    fixture.assert_cleanup_timed_out();
+    fixture.assert_redacted_warning().await;
+    fixture.release();
+    fixture.assert_closed_within(Duration::from_secs(1)).await;
 }
 
 #[rocket::async_test]

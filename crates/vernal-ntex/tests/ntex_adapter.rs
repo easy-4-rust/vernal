@@ -29,7 +29,8 @@ use vernal_ntex::{
 };
 use vernal_web::WebRequestScope;
 use vernal_web_testkit::{
-    FailingByteStream, ScopeCloseProbe, ScopeRejectingInterceptor, WebAdapterContract,
+    FailingByteStream, ScopeCleanupTimeoutFixture, ScopeCloseProbe, ScopeRejectingInterceptor,
+    WebAdapterContract,
 };
 
 struct Greeting(&'static str);
@@ -169,6 +170,33 @@ async fn ntex_body_error_closes_scope_before_restoring_upstream_error() {
         .expect_err("synthetic stream must fail");
     assert_eq!(error.to_string(), FailingByteStream::error_message());
     WebAdapterContract::assert_scope_closed(&scope);
+}
+
+#[ntex::test]
+async fn ntex_body_reports_cleanup_timeout_while_background_close_continues() {
+    let fixture = ScopeCleanupTimeoutFixture::new(Duration::from_millis(10)).await;
+    let upstream = stream::iter([Err::<ntex::util::Bytes, _>(io::Error::other(
+        FailingByteStream::error_message(),
+    ))]);
+    let body = ResponseBody::Other(Body::from_message(BodyStream::new(upstream)));
+    let mut scoped = NtexScopedBody::new(
+        body,
+        fixture.scope(),
+        fixture.scope().cancellation().clone(),
+    );
+
+    let error = poll_fn(|context| scoped.poll_next_chunk(context))
+        .await
+        .expect("Ntex body must report one cleanup error")
+        .expect_err("Ntex body must report the scope cleanup timeout");
+    assert!(
+        error.to_string().contains("cleanup exceeded timeout"),
+        "unexpected Ntex cleanup error: {error}"
+    );
+    fixture.assert_cleanup_timed_out();
+    fixture.assert_redacted_warning().await;
+    fixture.release();
+    fixture.assert_closed_within(Duration::from_secs(1)).await;
 }
 
 #[ntex::test]

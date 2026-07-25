@@ -855,8 +855,13 @@ body drop without letting the testkit perform cleanup. All ten adapters now
 also trigger native `http-body`, byte-stream, Tokio `AsyncRead`, or Futures IO
 `AsyncRead` failures and prove that scope closure completes before the original
 transport failure is restored; the shared failure sources never own a scope.
-Client disconnects, cleanup timeouts, security integration, and the remaining
-failure matrix remain incremental architecture work.
+`ScopeCleanupTimeoutFixture` additionally gives every adapter a real
+application-bound scope with a bounded policy and a controllable hanging hook.
+The native Body/Stream/Reader must report the structured timeout within budget,
+record only the redacted warning code, keep the single background coordinator
+running, and reach `Closed` exactly once after the hook is released. Client
+disconnects, security integration, and the remaining failure matrix remain
+incremental architecture work.
 
 ## 10. Contributing and license
 

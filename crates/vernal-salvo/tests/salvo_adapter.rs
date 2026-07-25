@@ -27,7 +27,8 @@ use vernal_salvo::SalvoScopedBody;
 use vernal_salvo::{VernalSalvoDepotExt, VernalSalvoHoop};
 use vernal_web::WebRequestScope;
 use vernal_web_testkit::{
-    FailingByteStream, ScopeCloseProbe, ScopeRejectingInterceptor, WebAdapterContract,
+    FailingByteStream, ScopeCleanupTimeoutFixture, ScopeCloseProbe, ScopeRejectingInterceptor,
+    WebAdapterContract,
 };
 
 struct Greeting(&'static str);
@@ -267,6 +268,30 @@ async fn salvo_stream_error_closes_scope_before_restoring_upstream_error() {
         .expect_err("synthetic Salvo stream must fail");
     assert_eq!(error.to_string(), FailingByteStream::error_message());
     WebAdapterContract::assert_scope_closed(&scope);
+}
+
+#[tokio::test]
+async fn salvo_body_reports_cleanup_timeout_while_background_close_continues() {
+    let fixture = ScopeCleanupTimeoutFixture::new(Duration::from_millis(10)).await;
+    let body = ResBody::stream(FailingByteStream::new());
+    let scoped = SalvoScopedBody::new(
+        body,
+        fixture.scope(),
+        fixture.scope().cancellation().clone(),
+    );
+
+    let error = scoped
+        .collect()
+        .await
+        .expect_err("Salvo body must report the scope cleanup timeout");
+    assert!(
+        error.to_string().contains("cleanup exceeded timeout"),
+        "unexpected Salvo cleanup error: {error}"
+    );
+    fixture.assert_cleanup_timed_out();
+    fixture.assert_redacted_warning().await;
+    fixture.release();
+    fixture.assert_closed_within(Duration::from_secs(1)).await;
 }
 
 #[tokio::test]
