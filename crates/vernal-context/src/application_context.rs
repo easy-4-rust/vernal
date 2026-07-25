@@ -5,7 +5,7 @@ use std::sync::Arc;
 use tokio::runtime::Handle;
 use tokio_util::sync::CancellationToken;
 use vernal_aop::InvocationPlanCatalog;
-use vernal_ioc::{ComponentKey, Container, ScopeContext};
+use vernal_beans::{ComponentKey, Container, ScopeContext};
 
 use crate::{
     ApplicationEnvironment, ApplicationShutdownSignal, ContextError, ContextState, EventBus,

@@ -4,7 +4,7 @@
 mod request_scope;
 
 use request_scope::RequestScope;
-use vernal_ioc::{ComponentDefinition, RegistryBuilder, ResolveError};
+use vernal_beans::{ComponentDefinition, RegistryBuilder, ResolveError};
 
 #[test]
 fn successful_resolution_removes_definition_from_deterministic_unused_snapshot() {

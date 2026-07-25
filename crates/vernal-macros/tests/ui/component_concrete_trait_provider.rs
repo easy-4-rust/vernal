@@ -1,4 +1,4 @@
-use vernal_ioc::TraitProvider;
+use vernal_beans::TraitProvider;
 
 struct ConcreteExtension;
 

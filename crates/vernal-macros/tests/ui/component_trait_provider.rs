@@ -1,4 +1,4 @@
-use vernal_ioc::ComponentProvider;
+use vernal_beans::ComponentProvider;
 
 trait Extension: Send + Sync {}
 

@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 use vernal_aop::{LocalAdvisor, LocalInterceptor, Pointcut};
-use vernal_ioc::{ComponentKey, Container, Qualifier, ResolveError};
+use vernal_beans::{ComponentKey, Container, Qualifier, ResolveError};
 
 type ManagedLocalInterceptorResolver =
     dyn Fn(&Container) -> Result<Arc<dyn LocalInterceptor>, ResolveError> + Send + Sync + 'static;
@@ -77,7 +77,7 @@ impl ManagedLocalAdvisor {
             .find(|definition| definition.key() == &self.component)
             .map(|definition| definition.scope())
             .filter(|scope| !scope.is_singleton())
-            .map(vernal_ioc::Scope::as_str)
+            .map(vernal_beans::Scope::as_str)
     }
 
     /// 解析组件并创建普通不可变 Local Advisor。

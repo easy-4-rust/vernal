@@ -11,7 +11,7 @@ use vernal_aop::{Advisor, LocalAdvisor, Operation};
 use vernal_context::{
     ContextState, DiagnosticOutcome, DiagnosticState, MapPropertySource, VernalApplicationBuilder,
 };
-use vernal_ioc::ComponentDefinition;
+use vernal_beans::ComponentDefinition;
 
 #[tokio::test]
 async fn report_tracks_registry_aop_subsystems_and_lifecycle_without_mutability() {

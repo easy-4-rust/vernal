@@ -6,8 +6,8 @@
 //! # 设计来源
 //!
 //! 对标 tx_di 的 `Store.prototype_instances`（`Weak` 引用 + `shutdown_prototypes()`）。
-//! 与 tx_di 的区别：vernal-ioc 只负责追踪，不直接调用 shutdown（shutdown 由
-//! vernal-context 的 `Lifecycle` trait 定义，vernal-ioc 不依赖 vernal-context）。
+//! 与 tx_di 的区别：vernal-beans 只负责追踪，不直接调用 shutdown（shutdown 由
+//! vernal-context 的 `Lifecycle` trait 定义，vernal-beans 不依赖 vernal-context）。
 
 use std::{
     any::{Any, TypeId},

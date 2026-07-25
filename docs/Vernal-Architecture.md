@@ -41,7 +41,7 @@
   `vernal-web-testkit` provides a shared request-binding contract.
 - `[Confirmed]` Every crate is `publish = false`; no crates.io or stable API
   claim is made.
-- `[Confirmed]` `vernal-core` and `vernal-ioc` provide an explicit registry,
+- `[Confirmed]` `vernal-core` and `vernal-beans` provide an explicit registry,
   deterministic graph planning, isolated containers, singleton/transient
   scopes, named/primary/all Trait bindings, and structured failures.
 - `[Confirmed]` `vernal-aop` provides object-safe async Send and Local
@@ -185,7 +185,7 @@ adapters connect the kernels to web frameworks and downstream ecosystems.**
 
 ### 3.2 Hard constraints
 
-1. `vernal-ioc` and `vernal-aop` do not depend on each other.
+1. `vernal-beans` and `vernal-aop` do not depend on each other.
 2. `vernal-core`, `vernal-aop`, and `vernal-context` may use Tokio and
    `tokio-util` task, synchronization, time, and cancellation primitives, but
    do not depend on concrete web, ORM, authentication, or configuration
@@ -215,7 +215,7 @@ adapters connect the kernels to web frameworks and downstream ecosystems.**
 flowchart TB
     App["Rust application"] --> Facade["vernal facade"]
     Facade --> Context["vernal-context"]
-    Facade --> IoC["vernal-ioc"]
+    Facade --> IoC["vernal-beans"]
     Facade --> AOP["vernal-aop"]
     App --> Discovery["vernal-discovery<br/>optional groups"]
     Discovery --> IoC
@@ -255,12 +255,12 @@ already integrates Vernal.
 
 | tx-di mechanism | Vernal decision | Target crate |
 |:---|:---|:---|
-| Explicit `Component::Deps` | Retain describable constructor dependencies; redesign the stable contract | `vernal-ioc` |
+| Explicit `Component::Deps` | Retain describable constructor dependencies; redesign the stable contract | `vernal-beans` |
 | Link-time component metadata | Implemented as explicitly selected groups with deterministic, atomic per-Registry installation | `vernal-discovery` / `vernal-macros` |
-| `TypeId` plus erased store | Keep typed entrypoints and constrain erasure | `vernal-ioc` |
-| Kahn topological ordering | Rebuild as a deterministic, testable planner | `vernal-ioc` |
-| `debug_registry()` log table | Upgrade to serializable read-only snapshots that reuse the frozen plan | `vernal-ioc` / `vernal-context` |
-| Singleton / Prototype | Implemented as Singleton / Transient / typed Scope SPI | `vernal-ioc` |
+| `TypeId` plus erased store | Keep typed entrypoints and constrain erasure | `vernal-beans` |
+| Kahn topological ordering | Rebuild as a deterministic, testable planner | `vernal-beans` |
+| `debug_registry()` log table | Upgrade to serializable read-only snapshots that reuse the frozen plan | `vernal-beans` / `vernal-context` |
+| Singleton / Prototype | Implemented as Singleton / Transient / typed Scope SPI | `vernal-beans` |
 | Lifecycle hooks | Move to a Context-owned state machine | `vernal-context` |
 | Dot-path configuration lookup | Context-local PropertySource precedence, profiles, placeholders, and typed lookup; format loading stays in adapters | `vernal-context` |
 | Forward before / reverse after | Preserve stack order through a true Around chain | `vernal-aop` |
@@ -310,7 +310,7 @@ flowchart TB
     Adapter["Integration<br/>Tower / Web / bridges"]
     Facade["Facade<br/>vernal"]
     Context["Composition<br/>vernal-context"]
-    IoC["Kernel<br/>vernal-ioc"]
+    IoC["Kernel<br/>vernal-beans"]
     AOP["Kernel<br/>vernal-aop"]
     Core["Contracts<br/>vernal-core"]
     Macros["Compile-time frontend<br/>vernal-macros"]
@@ -435,7 +435,7 @@ Applications declare a custom component with
 `#[component(scope = ScopeMarker)]`, enter it through
 `Container::open_scope::<ScopeMarker>()`, and resolve it with `resolve_in`.
 Request, task, tenant, batch, or security semantics remain consumer-owned
-marker types; no HTTP type enters `vernal-ioc`.
+marker types; no HTTP type enters `vernal-beans`.
 
 ```mermaid
 flowchart LR
@@ -1060,7 +1060,7 @@ flowchart LR
 ### Conditional component assembly
 
 `vernal-context` evaluates conditions because it owns both the frozen
-Environment and application assembly; `vernal-ioc` remains a format-neutral
+Environment and application assembly; `vernal-beans` remains a format-neutral
 container and never depends on Profile or property semantics.
 
 - `ComponentCondition` is the extension contract and receives only the frozen
@@ -1781,7 +1781,7 @@ Phase 1 minimum acceptance:
 1. Deterministically plan a 1,000-node DAG.
 2. Missing, ambiguous, and cycle errors contain readable paths.
 3. Parallel containers do not share singleton instances.
-4. `cargo tree` proves no concrete web or ORM framework in `vernal-ioc`;
+4. `cargo tree` proves no concrete web or ORM framework in `vernal-beans`;
    Tokio is allowed when needed.
 5. Normal failures use `Result`, not panic.
 

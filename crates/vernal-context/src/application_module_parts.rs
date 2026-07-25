@@ -1,7 +1,7 @@
 //! 已暂存应用模块贡献集合。
 
 use vernal_aop::Operation;
-use vernal_ioc::{ComponentDefinition, TraitBinding};
+use vernal_beans::{ComponentDefinition, TraitBinding};
 
 use crate::{
     ConditionalComponentModule, advisor_registration::AdvisorRegistration,

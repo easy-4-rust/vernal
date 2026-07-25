@@ -3,7 +3,7 @@
 use std::{error::Error, fmt};
 
 use tide::{Response, StatusCode};
-use vernal_ioc::ResolveError;
+use vernal_beans::ResolveError;
 
 /// 将 Vernal 基础设施失败映射为稳定、脱敏的 Tide 响应。
 #[derive(Debug)]

@@ -13,7 +13,7 @@ tokio.workspace = true
 tokio-util.workspace = true
 vernal-aop = { path = "../vernal-aop" }
 vernal-core = { path = "../vernal-core" }
-vernal-ioc = { path = "../vernal-ioc" }
+vernal-beans = { path = "../vernal-beans" }
 
 [dev-dependencies]
 serde_json.workspace = true

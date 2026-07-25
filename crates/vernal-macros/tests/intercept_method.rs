@@ -10,7 +10,7 @@ use vernal_aop::{
     QualifierPointcut, TagPointcut,
 };
 use vernal_context::VernalApplicationBuilder;
-use vernal_ioc::Component;
+use vernal_beans::Component;
 
 /// 同时验证 Component 派生接线和异步方法拦截的计算服务。
 #[derive(vernal_macros::Component)]

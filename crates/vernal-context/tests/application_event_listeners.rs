@@ -13,7 +13,7 @@ use vernal_context::{
     ApplicationBuildError, ConditionalComponentModule, ContextError, ProfileCondition,
     VernalApplicationBuilder,
 };
-use vernal_ioc::ComponentDefinition;
+use vernal_beans::ComponentDefinition;
 
 /// 创建使用当前 Tokio Runtime 的测试应用建造器。
 fn application() -> VernalApplicationBuilder {

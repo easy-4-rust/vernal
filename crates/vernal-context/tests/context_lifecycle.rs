@@ -16,7 +16,7 @@ use vernal_context::{
     LifecyclePhase,
 };
 use vernal_core::BoxError;
-use vernal_ioc::{ComponentDefinition, RegistryBuilder};
+use vernal_beans::{ComponentDefinition, RegistryBuilder};
 
 type Events = Arc<Mutex<Vec<&'static str>>>;
 

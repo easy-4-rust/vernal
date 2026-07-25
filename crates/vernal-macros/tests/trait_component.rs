@@ -1,6 +1,6 @@
 //! Component 宏对 Trait 单值、命名与全部实现字段的运行时合同测试。
 
-use vernal_ioc::{Component, Qualifier, RegistryBuilder, TraitBinding};
+use vernal_beans::{Component, Qualifier, RegistryBuilder, TraitBinding};
 
 mod trait_component_support;
 

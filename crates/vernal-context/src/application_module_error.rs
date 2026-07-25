@@ -3,7 +3,7 @@
 use std::{error::Error, fmt};
 
 use vernal_core::BoxError;
-use vernal_ioc::DefinitionError;
+use vernal_beans::DefinitionError;
 
 use crate::{ConditionError, EnvironmentError};
 

@@ -2,7 +2,7 @@
 
 use std::{error::Error, fmt};
 
-use vernal_ioc::ResolveError;
+use vernal_beans::ResolveError;
 use warp::{Rejection, Reply, http::StatusCode, reject::Reject};
 
 /// 将 Vernal 扩展缺失与组件解析错误保存为 Warp 原生 Rejection。

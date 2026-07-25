@@ -7,7 +7,7 @@ use std::sync::Arc;
 use optional_component_support::{
     OptionalDerivedPort, OptionalDerivedService, OptionalNativeClient,
 };
-use vernal_ioc::{Component, ComponentDefinition, Qualifier, RegistryBuilder, TraitBinding};
+use vernal_beans::{Component, ComponentDefinition, Qualifier, RegistryBuilder, TraitBinding};
 
 #[test]
 fn derive_uses_option_type_as_eager_optional_dependency_contract() {

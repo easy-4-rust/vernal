@@ -16,7 +16,7 @@ use vernal_context::{
     PropertyCondition, VernalApplicationBuilder,
 };
 use vernal_core::BoxError;
-use vernal_ioc::{ComponentDefinition, GraphError, TraitBinding};
+use vernal_beans::{ComponentDefinition, GraphError, TraitBinding};
 
 /// 同时用于验证条件定义与条件生命周期登记的一项普通业务组件。
 struct ConditionalService {

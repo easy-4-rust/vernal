@@ -9,7 +9,7 @@ use std::{
 ///
 /// `ScopeKey` 不依赖字符串注册表：相同标记类型在同一进程中具有相同 `TypeId`，
 /// 完整类型名只用于诊断。Request、Task、Tenant 等语义由消费方定义标记类型，
-/// `vernal-ioc` 不引入任何 HTTP 或业务概念。
+/// `vernal-beans` 不引入任何 HTTP 或业务概念。
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct ScopeKey {
     pub(crate) type_id: TypeId,

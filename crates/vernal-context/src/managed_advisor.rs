@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 use vernal_aop::{Advisor, Interceptor, Pointcut};
-use vernal_ioc::{ComponentKey, Container, Qualifier, ResolveError};
+use vernal_beans::{ComponentKey, Container, Qualifier, ResolveError};
 
 type ManagedInterceptorResolver =
     dyn Fn(&Container) -> Result<Arc<dyn Interceptor>, ResolveError> + Send + Sync + 'static;
@@ -82,7 +82,7 @@ impl ManagedAdvisor {
             .find(|definition| definition.key() == &self.component)
             .map(|definition| definition.scope())
             .filter(|scope| !scope.is_singleton())
-            .map(vernal_ioc::Scope::as_str)
+            .map(vernal_beans::Scope::as_str)
     }
 
     /// 从应用 Container 取得拦截器并生成普通不可变 Advisor。

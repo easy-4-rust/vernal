@@ -13,7 +13,7 @@ tokio-util.workspace = true
 vernal-aop = { path = "../vernal-aop" }
 vernal-context = { path = "../vernal-context" }
 vernal-core = { path = "../vernal-core" }
-vernal-ioc = { path = "../vernal-ioc" }
+vernal-beans = { path = "../vernal-beans" }
 
 [lints]
 workspace = true

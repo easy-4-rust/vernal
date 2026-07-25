@@ -3,7 +3,7 @@
 use std::{any::Any, future::Future, pin::Pin, sync::Arc};
 
 use tokio::sync::broadcast;
-use vernal_ioc::{ComponentKey, Container, Qualifier, ResolveError};
+use vernal_beans::{ComponentKey, Container, Qualifier, ResolveError};
 
 use crate::{
     ApplicationEventListener, ContextError, EventBus, EventListenerError, ManagedTaskSupervisor,
@@ -158,7 +158,7 @@ impl ManagedEventListener {
             .find(|definition| definition.key() == &self.component)
             .map(|definition| definition.scope())
             .filter(|scope| !scope.is_singleton())
-            .map(vernal_ioc::Scope::as_str)
+            .map(vernal_beans::Scope::as_str)
     }
 
     /// 解析组件、建立订阅并把消费 Future 交给统一任务监督器。

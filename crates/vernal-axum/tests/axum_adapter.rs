@@ -23,7 +23,7 @@ use vernal_axum::{
 };
 use vernal_context::{ApplicationContextBuilder, VernalApplicationBuilder};
 use vernal_http::HttpRequestSnapshot;
-use vernal_ioc::{ComponentDefinition, RegistryBuilder};
+use vernal_beans::{ComponentDefinition, RegistryBuilder};
 use vernal_web::WebRequestScope;
 use vernal_web_testkit::{
     FailingHttpBody, ScopeCleanupTimeoutFixture, ScopeCloseProbe, ScopeRejectingInterceptor,

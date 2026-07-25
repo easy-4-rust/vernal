@@ -3,7 +3,7 @@
 use std::{error::Error, fmt};
 
 use poem::{Body, Response, error::ResponseError, http::StatusCode};
-use vernal_ioc::ResolveError;
+use vernal_beans::ResolveError;
 use vernal_web::ScopeError;
 
 /// 将 Vernal 基础设施失败映射为脱敏的 Poem 响应。

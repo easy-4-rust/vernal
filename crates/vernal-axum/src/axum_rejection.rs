@@ -6,7 +6,7 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use vernal_ioc::ResolveError;
+use vernal_beans::ResolveError;
 
 /// 将 Vernal 基础设施失败映射为稳定且不泄露内部细节的 Axum 响应。
 #[derive(Debug)]

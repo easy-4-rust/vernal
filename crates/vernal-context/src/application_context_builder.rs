@@ -5,7 +5,7 @@ use std::{
     sync::Arc,
 };
 
-use vernal_ioc::{ComponentKey, Container, Qualifier, Registry, ResolveError};
+use vernal_beans::{ComponentKey, Container, Qualifier, Registry, ResolveError};
 
 use crate::{
     ApplicationContext, ApplicationEventListener, ApplicationRunner, ContextError, Lifecycle,

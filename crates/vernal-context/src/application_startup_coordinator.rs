@@ -7,7 +7,7 @@ use tokio::{
     sync::oneshot,
     task::{JoinError, JoinHandle},
 };
-use vernal_ioc::{ComponentKey, Container, ResolveError};
+use vernal_beans::{ComponentKey, Container, ResolveError};
 
 use crate::{
     ApplicationReadyEvent, ApplicationRefreshedEvent, ContextError, ContextState,
@@ -203,7 +203,7 @@ impl ApplicationStartupCoordinator {
         }
         self.lifecycle
             .record_observation(
-                "vernal_ioc::Container",
+                "vernal_beans::Container",
                 DiagnosticPhase::ContainerWarmUp,
                 DiagnosticOutcome::Succeeded,
                 started,
@@ -583,7 +583,7 @@ impl ApplicationStartupCoordinator {
             ResolveError::TraitBindingTypeMismatch { target, .. } => target.to_string(),
             ResolveError::NotFound { component, .. }
             | ResolveError::Ambiguous { component, .. } => component.clone(),
-            _ => "vernal_ioc::Container".to_owned(),
+            _ => "vernal_beans::Container".to_owned(),
         }
     }
 }

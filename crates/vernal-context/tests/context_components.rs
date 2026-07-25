@@ -11,7 +11,7 @@ use vernal_context::{
     TaskShutdownPolicy, VernalApplicationBuilder,
 };
 use vernal_core::BoxError;
-use vernal_ioc::ComponentDefinition;
+use vernal_beans::ComponentDefinition;
 
 /// 模拟同时使用全部 Context 内建资源的业务服务。
 struct RuntimeAwareService {

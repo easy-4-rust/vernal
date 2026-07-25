@@ -8,7 +8,7 @@ use tokio_util::sync::CancellationToken;
 use tower::{Layer, ServiceExt, service_fn};
 use vernal_context::ApplicationContextBuilder;
 use vernal_http::{HttpBody, HttpRequestSnapshot};
-use vernal_ioc::Registry;
+use vernal_beans::Registry;
 use vernal_tower::{ContextPropagationError, ContextPropagationLayer, RequestScopeLayer};
 use vernal_web::{RequestContext, RouteMetadata, WebRequestScope};
 

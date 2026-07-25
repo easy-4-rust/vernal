@@ -13,7 +13,7 @@ tower.workspace = true
 vernal-aop = { path = "../vernal-aop" }
 vernal-context = { path = "../vernal-context" }
 vernal-http = { path = "../vernal-http" }
-vernal-ioc = { path = "../vernal-ioc" }
+vernal-beans = { path = "../vernal-beans" }
 vernal-tower = { path = "../vernal-tower" }
 vernal-web = { path = "../vernal-web" }
 warp.workspace = true

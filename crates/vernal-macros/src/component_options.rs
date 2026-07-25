@@ -93,22 +93,25 @@ impl ComponentOptions {
                 // ─── discover（无分组 = 默认分组） ───
                 if metadata.path.is_ident("discover") {
                     // 尝试解析 `discover = "group"`；如果没有值则标记 discover_all
-                    if metadata.value().is_ok() {
-                        let group = metadata.value()?.parse::<LitStr>()?;
-                        Self::validate_group(&group)?;
-                        if options.discovery_group.is_some() {
-                            return Err(metadata.error(
-                                "结构体 component 属性只能声明一个 discover 分组",
-                            ));
+                    match metadata.value() {
+                        Ok(value) => {
+                            let group = value.parse::<LitStr>()?;
+                            Self::validate_group(&group)?;
+                            if options.discovery_group.is_some() {
+                                return Err(metadata.error(
+                                    "结构体 component 属性只能声明一个 discover 分组",
+                                ));
+                            }
+                            options.discovery_group = Some(group);
                         }
-                        options.discovery_group = Some(group);
-                    } else {
-                        if options.discover_all {
-                            return Err(metadata.error(
-                                "结构体 component 属性只能声明一次 discover",
-                            ));
+                        Err(_) => {
+                            if options.discover_all {
+                                return Err(metadata.error(
+                                    "结构体 component 属性只能声明一次 discover",
+                                ));
+                            }
+                            options.discover_all = true;
                         }
-                        options.discover_all = true;
                     }
                     return Ok(());
                 }

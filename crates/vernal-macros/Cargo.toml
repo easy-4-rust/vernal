@@ -22,7 +22,7 @@ vernal-aop = { path = "../vernal-aop" }
 vernal-context = { path = "../vernal-context" }
 vernal-core = { path = "../vernal-core" }
 trybuild.workspace = true
-vernal-ioc = { path = "../vernal-ioc" }
+vernal-beans = { path = "../vernal-beans" }
 
 [lints]
 workspace = true

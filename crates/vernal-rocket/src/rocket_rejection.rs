@@ -2,7 +2,7 @@
 
 use std::{error::Error, fmt};
 
-use vernal_ioc::ResolveError;
+use vernal_beans::ResolveError;
 
 /// 保存 Managed State、请求 Scope 与组件解析失败的结构化原因。
 #[derive(Debug)]

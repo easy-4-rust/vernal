@@ -7,7 +7,7 @@ use gotham::{
     state::State,
 };
 use http::{Response, StatusCode};
-use vernal_ioc::ResolveError;
+use vernal_beans::ResolveError;
 use vernal_web::ScopeError;
 
 /// 将 Vernal 基础设施失败映射为稳定、脱敏的 Gotham 响应。

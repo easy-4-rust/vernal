@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use vernal_ioc::{
+use vernal_beans::{
     Component, ComponentProvider, Qualifier, RegistryBuilder, TraitBinding, TraitProvider,
 };
 
@@ -18,7 +18,7 @@ struct GreetingService {
 fn derive_generates_factory_and_explicit_dependency_metadata() {
     let mut registry = RegistryBuilder::new();
     registry
-        .register(vernal_ioc::ComponentDefinition::shared_value(String::from(
+        .register(vernal_beans::ComponentDefinition::shared_value(String::from(
             "vernal",
         )))
         .expect("String dependency should register");
@@ -64,7 +64,7 @@ fn derive_generates_required_and_optional_provider_metadata() {
     let observed = Arc::clone(&counter);
     let mut registry = RegistryBuilder::new();
     registry
-        .register(vernal_ioc::ComponentDefinition::transient::<
+        .register(vernal_beans::ComponentDefinition::transient::<
             GeneratedSequence,
             _,
         >(move |_| {
@@ -73,7 +73,7 @@ fn derive_generates_required_and_optional_provider_metadata() {
         .expect("transient provider target");
     registry
         .register(
-            vernal_ioc::ComponentDefinition::transient::<NamedGeneratedExtension, _>(|_| {
+            vernal_beans::ComponentDefinition::transient::<NamedGeneratedExtension, _>(|_| {
                 NamedGeneratedExtension("blue")
             })
             .qualified(Qualifier::new("blue").expect("valid qualifier")),
@@ -81,7 +81,7 @@ fn derive_generates_required_and_optional_provider_metadata() {
         .expect("blue provider target");
     registry
         .register(
-            vernal_ioc::ComponentDefinition::transient::<NamedGeneratedExtension, _>(|_| {
+            vernal_beans::ComponentDefinition::transient::<NamedGeneratedExtension, _>(|_| {
                 NamedGeneratedExtension("red")
             })
             .qualified(Qualifier::new("red").expect("valid qualifier")),
@@ -154,13 +154,13 @@ fn derive_generates_trait_provider_binding_metadata() {
     let red = Qualifier::new("red").expect("valid qualifier");
     let mut registry = RegistryBuilder::new();
     registry
-        .register(vernal_ioc::ComponentDefinition::transient::<
+        .register(vernal_beans::ComponentDefinition::transient::<
             GeneratedBluePort,
             _,
         >(|_| GeneratedBluePort))
         .expect("blue target");
     registry
-        .register(vernal_ioc::ComponentDefinition::transient::<
+        .register(vernal_beans::ComponentDefinition::transient::<
             GeneratedRedPort,
             _,
         >(|_| GeneratedRedPort))

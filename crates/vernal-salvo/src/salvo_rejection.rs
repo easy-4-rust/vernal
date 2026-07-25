@@ -3,7 +3,7 @@
 use std::{error::Error, fmt};
 
 use salvo::{Scribe, http::StatusCode, writing::Text};
-use vernal_ioc::ResolveError;
+use vernal_beans::ResolveError;
 
 /// 将 Vernal 基础设施失败映射为脱敏的 Salvo 响应。
 #[derive(Debug)]

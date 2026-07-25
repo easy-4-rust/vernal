@@ -13,7 +13,7 @@ use tokio::sync::Mutex;
 use vernal_context::{
     ContextError, ContextState, LifecycleExecutionPolicy, LifecyclePhase, VernalApplicationBuilder,
 };
-use vernal_ioc::{ComponentDefinition, Qualifier};
+use vernal_beans::{ComponentDefinition, Qualifier};
 
 const SHORT_TIMEOUT: Duration = Duration::from_millis(100);
 const SETTLEMENT_TIMEOUT: Duration = Duration::from_secs(1);

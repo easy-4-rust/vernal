@@ -103,7 +103,7 @@ Vernal 遵守四条不可退化的规则：
 |:---|:---:|:---|
 | `vernal` | 实验性 Facade | Facade、prelude 与 feature 组合 |
 | `vernal-core` | 实验性 | Tokio-first 框架的公共合同 |
-| `vernal-ioc` | Phase 1/诊断内核已实现 | 定义、作用域、解析、依赖图和只读快照 |
+| `vernal-beans` | Phase 1/诊断内核已实现 | 定义、作用域、解析、依赖图和只读快照 |
 | `vernal-discovery` | 可选发现前端已实现 | 分组链接期定义元数据、确定性选择与显式 Registry 原子安装 |
 | `vernal-aop` | Phase 2 内核已实现 | Send/Local Around/Next、不可变操作元数据、可组合切点代数、不可变计划和取消 |
 | `vernal-context` | Phase 3/诊断内核已实现 | 应用环境、类型安全配置、条件装配、生命周期、事件、Runner、周期任务和脱敏报告 |
@@ -182,7 +182,7 @@ fail-closed AOP Tower Layer。
 flowchart TB
     APP["应用 / 下游 crate"] --> FACADE["vernal"]
     FACADE --> CONTEXT["vernal-context"]
-    FACADE --> IOC["vernal-ioc"]
+    FACADE --> IOC["vernal-beans"]
     FACADE --> AOP["vernal-aop"]
     FACADE --> MACROS["vernal-macros"]
     CONTEXT --> IOC
@@ -201,7 +201,7 @@ flowchart TB
 
 ```rust
 use std::{error::Error, sync::Arc};
-use vernal_ioc::{ComponentDefinition, RegistryBuilder};
+use vernal_beans::{ComponentDefinition, RegistryBuilder};
 
 type AnyError = Box<dyn Error + Send + Sync + 'static>;
 
@@ -247,7 +247,7 @@ Singleton 状态属于具体 Container，而不是进程级全局 Store。
 
 ```rust
 use std::sync::Arc;
-use vernal_ioc::Component;
+use vernal_beans::Component;
 
 #[derive(vernal_macros::Component)]
 struct OrderService {
@@ -280,7 +280,7 @@ catalog.install(&mut registry)?;
 Trait Object 通过显式、类型安全的绑定进入同一依赖图：
 
 ```rust
-use vernal_ioc::{Component, TraitBinding};
+use vernal_beans::{Component, TraitBinding};
 
 registry.register_bundle(
     [EmailSender::definition()],
@@ -320,12 +320,12 @@ Provider：具体类型使用 `ComponentProvider<T>`，Trait 端口使用
 ```rust
 #[derive(vernal_macros::Component)]
 struct JobFactory {
-    jobs: vernal_ioc::ComponentProvider<Job>,
+    jobs: vernal_beans::ComponentProvider<Job>,
     #[component(optional)]
-    extension: vernal_ioc::ComponentProvider<Extension>,
-    sender: vernal_ioc::TraitProvider<dyn MessageSender>,
+    extension: vernal_beans::ComponentProvider<Extension>,
+    sender: vernal_beans::TraitProvider<dyn MessageSender>,
     #[component(qualifier = "email")]
-    email_sender: vernal_ioc::TraitProvider<dyn MessageSender>,
+    email_sender: vernal_beans::TraitProvider<dyn MessageSender>,
 }
 ```
 
@@ -610,7 +610,7 @@ crates.io 安装命令，也没有稳定 API 承诺。
 | 阶段 | 交付物 | 退出证据 |
 |:---|:---|:---|
 | Phase 0 | 品牌、架构和 Workspace 边界 | 文档与 Workspace 门禁通过 |
-| Phase 1 | `vernal-core` + `vernal-ioc` 最小内核 | 依赖图、作用域和解析测试 |
+| Phase 1 | `vernal-core` + `vernal-beans` 最小内核 | 依赖图、作用域和解析测试 |
 | Phase 2 | `vernal-aop` + 宏 | 顺序、错误、异步和编译失败测试 |
 | Phase 3 | `vernal-context` 生命周期和事件 | 启动、回滚和关闭测试 |
 | Phase 4 | Web/HTTP 合同、Tower/Hyper 与十个 Adapter | 跨框架一致性测试套件 |

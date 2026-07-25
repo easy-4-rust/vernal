@@ -39,7 +39,7 @@
   Web 底座 crate 已提供可调用行为，`vernal-web-testkit` 已提供跨框架共享
   请求绑定合同。
 - `[已确认]` 所有 crate 设置 `publish = false`，没有 crates.io 或稳定 API 声明。
-- `[已确认]` `vernal-core` 与 `vernal-ioc` 已提供显式 Registry、确定性图规划、
+- `[已确认]` `vernal-core` 与 `vernal-beans` 已提供显式 Registry、确定性图规划、
   Container 隔离、Singleton/Transient、Trait 命名/Primary/全部实现绑定和结构化错误。
 - `[已确认]` `vernal-aop` 已提供对象安全的异步 Send/Local 两套 Around/Next
   执行平面、操作切点、不可变计划、类型化扩展、取消和 deadline。
@@ -164,7 +164,7 @@ flowchart LR
 
 ### 3.2 硬约束
 
-1. `vernal-ioc` 不依赖 `vernal-aop`，`vernal-aop` 不依赖 `vernal-ioc`。
+1. `vernal-beans` 不依赖 `vernal-aop`，`vernal-aop` 不依赖 `vernal-beans`。
 2. `vernal-core`、`vernal-aop` 和 `vernal-context` 可以使用 Tokio 及
    `tokio-util` 的任务、同步、时间与取消原语；不得反向依赖具体 Web、ORM、
    鉴权或配置实现。
@@ -187,7 +187,7 @@ flowchart LR
 flowchart TB
     App["Rust application"] --> Facade["vernal facade"]
     Facade --> Context["vernal-context"]
-    Facade --> IoC["vernal-ioc"]
+    Facade --> IoC["vernal-beans"]
     Facade --> AOP["vernal-aop"]
     App --> Discovery["vernal-discovery<br/>可选分组"]
     Discovery --> IoC
@@ -226,12 +226,12 @@ flowchart TB
 
 | tx-di 机制 | Vernal 决策 | 目标 crate |
 |:---|:---|:---|
-| `Component::Deps` 显式依赖 | 保留“构造依赖可描述”思想，重新定义稳定合同 | `vernal-ioc` |
+| `Component::Deps` 显式依赖 | 保留“构造依赖可描述”思想，重新定义稳定合同 | `vernal-beans` |
 | 链接期组件元数据 | 已实现为显式选择分组、确定性排序并按 Registry 原子安装的可选前端 | `vernal-discovery` / `vernal-macros` |
-| `TypeId` + 类型擦除 Store | 保留类型安全入口，限制擦除边界 | `vernal-ioc` |
-| Kahn 拓扑排序与循环诊断 | 重写为确定性、可测试的 Graph Planner | `vernal-ioc` |
-| `debug_registry()` 日志表格 | 升级为复用冻结计划、可 Serde 序列化的只读快照 | `vernal-ioc` / `vernal-context` |
-| Singleton / Prototype | 已实现为 Singleton / Transient / 类型化 Scope SPI | `vernal-ioc` |
+| `TypeId` + 类型擦除 Store | 保留类型安全入口，限制擦除边界 | `vernal-beans` |
+| Kahn 拓扑排序与循环诊断 | 重写为确定性、可测试的 Graph Planner | `vernal-beans` |
+| `debug_registry()` 日志表格 | 升级为复用冻结计划、可 Serde 序列化的只读快照 | `vernal-beans` / `vernal-context` |
+| Singleton / Prototype | 已实现为 Singleton / Transient / 类型化 Scope SPI | `vernal-beans` |
 | 生命周期钩子 | 抽离为 Context 管理的状态机 | `vernal-context` |
 | 点分配置读取 | 升级为 Context-local PropertySource 优先级、Profile、占位符和类型化读取；格式加载留给 Adapter | `vernal-context` |
 | 正序 `before`、逆序 `after` | 保留栈式顺序语义，升级为真正 Around 链 | `vernal-aop` |
@@ -281,7 +281,7 @@ flowchart TB
     Adapter["集成层<br/>Web / HTTP / Tower / Hyper / 十个 Adapter / Bridge"]
     Facade["Facade layer<br/>vernal"]
     Context["Composition layer<br/>vernal-context"]
-    IoC["Kernel<br/>vernal-ioc"]
+    IoC["Kernel<br/>vernal-beans"]
     AOP["Kernel<br/>vernal-aop"]
     Core["Contracts<br/>vernal-core"]
     Macros["Compile-time front end<br/>vernal-macros"]
@@ -401,7 +401,7 @@ IoC 内核现已实现三种构造策略：
 `#[component(scope = ScopeMarker)]` 声明自定义作用域，通过
 `Container::open_scope::<ScopeMarker>()` 进入，再用 `resolve_in` 解析。Request、
 Task、Tenant、Batch 或安全会话等含义仍由消费方标记类型表达，不把 HTTP 类型放入
-`vernal-ioc`。
+`vernal-beans`。
 
 ```mermaid
 flowchart LR
@@ -995,7 +995,7 @@ flowchart LR
 ### 10.4 条件组件装配
 
 条件判断位于 `vernal-context`，因为 Context 同时拥有冻结后的 Environment 与
-应用装配流程；纯 `vernal-ioc` 不认识 Profile、属性键或配置格式。
+应用装配流程；纯 `vernal-beans` 不认识 Profile、属性键或配置格式。
 
 - `ComponentCondition` 是扩展合同，只接收冻结后的
   `ApplicationEnvironment`；
@@ -1624,7 +1624,7 @@ Phase 1 最低验收：
 1. 1,000 节点无环图可以确定性规划；
 2. 缺失、歧义和循环错误包含可读路径；
 3. 两个并行 Container 的 Singleton 不共享；
-4. `cargo tree` 证明 `vernal-ioc` 不包含具体 Web 或 ORM 框架；允许按需使用 Tokio；
+4. `cargo tree` 证明 `vernal-beans` 不包含具体 Web 或 ORM 框架；允许按需使用 Tokio；
 5. 所有失败通过 `Result` 返回，不依赖 panic。
 
 截至 2026-07-25，上述五项已有本地证据：55 个 IoC 合同测试覆盖 1,000 节点图、

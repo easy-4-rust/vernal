@@ -2,7 +2,7 @@
 
 use std::{fmt, sync::Arc};
 
-use vernal_ioc::{ComponentDefinition, Qualifier, TraitBinding};
+use vernal_beans::{ComponentDefinition, Qualifier, TraitBinding};
 
 use crate::{
     ApplicationEnvironment, ApplicationEventListener, ApplicationRunner, ComponentCondition,

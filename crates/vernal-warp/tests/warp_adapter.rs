@@ -14,7 +14,7 @@ use tower::{Layer, ServiceExt, service_fn};
 use vernal_aop::{Advisor, Operation};
 use vernal_context::{ApplicationContextBuilder, VernalApplicationBuilder};
 use vernal_http::HttpRequestSnapshot;
-use vernal_ioc::{ComponentDefinition, RegistryBuilder};
+use vernal_beans::{ComponentDefinition, RegistryBuilder};
 use vernal_warp::{
     VernalWarpAopLayer, VernalWarpComponent, VernalWarpContext, VernalWarpLayer,
     VernalWarpRequestContext, VernalWarpRequestScope, WarpRejection,

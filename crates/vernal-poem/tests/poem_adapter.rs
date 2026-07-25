@@ -21,7 +21,7 @@ use tokio_util::sync::CancellationToken;
 use vernal_aop::{Advisor, Operation};
 use vernal_context::{ApplicationContextBuilder, VernalApplicationBuilder};
 use vernal_http::HttpRequestSnapshot;
-use vernal_ioc::{ComponentDefinition, RegistryBuilder};
+use vernal_beans::{ComponentDefinition, RegistryBuilder};
 use vernal_poem::{
     PoemScopedStream, VernalPoemComponent, VernalPoemContext, VernalPoemMiddleware,
     VernalPoemRequestContext, VernalPoemRequestScope,

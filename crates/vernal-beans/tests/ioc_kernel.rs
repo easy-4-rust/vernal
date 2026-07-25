@@ -10,7 +10,7 @@ use std::{
 };
 
 use vernal_core::BoxError;
-use vernal_ioc::{
+use vernal_beans::{
     ComponentDefinition, DefinitionError, GraphError, Qualifier, Registry, RegistryBuilder,
     ResolveError,
 };

@@ -5,7 +5,7 @@ use std::{future::Future, pin::Pin, sync::Arc};
 use tokio::time::{Instant, MissedTickBehavior};
 use tokio_util::sync::CancellationToken;
 use vernal_core::SharedError;
-use vernal_ioc::{ComponentKey, Container, Qualifier, ResolveError};
+use vernal_beans::{ComponentKey, Container, Qualifier, ResolveError};
 
 use crate::{
     ContextError, ManagedTaskSupervisor, ScheduledTask, ScheduledTaskFailure, TaskSchedule,
@@ -185,7 +185,7 @@ impl ManagedScheduledTask {
             .find(|definition| definition.key() == &self.component)
             .map(|definition| definition.scope())
             .filter(|scope| !scope.is_singleton())
-            .map(vernal_ioc::Scope::as_str)
+            .map(vernal_beans::Scope::as_str)
     }
 
     /// 从最终 Container 解析任务并提交给统一监督器。

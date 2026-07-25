@@ -114,7 +114,7 @@ Detailed decisions, flows, failure semantics, and acceptance criteria are in:
 |:---|:---:|:---|
 | `vernal` | Experimental facade | Facade, prelude, feature composition |
 | `vernal-core` | Experimental | Shared contracts for the Tokio-first framework |
-| `vernal-ioc` | Phase 1/diagnostics kernel implemented | Definitions, scopes, resolution, graph validation, read-only snapshots |
+| `vernal-beans` | Phase 1/diagnostics kernel implemented | Definitions, scopes, resolution, graph validation, read-only snapshots |
 | `vernal-discovery` | Optional discovery frontend implemented | Grouped link-time definition metadata, deterministic selection, and atomic explicit Registry installation |
 | `vernal-aop` | Phase 2 kernel implemented | Send/Local Around/Next, immutable operation metadata, composable pointcut algebra, immutable plans, cancellation |
 | `vernal-context` | Phase 3/diagnostics kernel implemented | Managed bootstrap, environment, typed configuration, conditional assembly, lifecycle, events, runners, scheduled tasks, redacted reports |
@@ -207,7 +207,7 @@ Target dependency direction:
 flowchart TB
     APP["Application / downstream crate"] --> FACADE["vernal"]
     FACADE --> CONTEXT["vernal-context"]
-    FACADE --> IOC["vernal-ioc"]
+    FACADE --> IOC["vernal-beans"]
     FACADE --> AOP["vernal-aop"]
     FACADE --> MACROS["vernal-macros"]
     CONTEXT --> IOC
@@ -226,7 +226,7 @@ flowchart TB
 
 ```rust
 use std::{error::Error, sync::Arc};
-use vernal_ioc::{ComponentDefinition, RegistryBuilder};
+use vernal_beans::{ComponentDefinition, RegistryBuilder};
 
 type AnyError = Box<dyn Error + Send + Sync + 'static>;
 
@@ -270,7 +270,7 @@ auto-registration:
 
 ```rust
 use std::sync::Arc;
-use vernal_ioc::Component;
+use vernal_beans::Component;
 
 #[derive(vernal_macros::Component)]
 struct OrderService {
@@ -317,7 +317,7 @@ Sa-Token-Rust continue to prefer explicit `ApplicationModule` transactions.
 Trait objects join the same graph through explicit, type-checked bindings:
 
 ```rust
-use vernal_ioc::{Component, TraitBinding};
+use vernal_beans::{Component, TraitBinding};
 
 registry.register_bundle(
     [EmailSender::definition()],
@@ -361,12 +361,12 @@ trait ports:
 ```rust
 #[derive(vernal_macros::Component)]
 struct JobFactory {
-    jobs: vernal_ioc::ComponentProvider<Job>,
+    jobs: vernal_beans::ComponentProvider<Job>,
     #[component(optional)]
-    extension: vernal_ioc::ComponentProvider<Extension>,
-    sender: vernal_ioc::TraitProvider<dyn MessageSender>,
+    extension: vernal_beans::ComponentProvider<Extension>,
+    sender: vernal_beans::TraitProvider<dyn MessageSender>,
     #[component(qualifier = "email")]
-    email_sender: vernal_ioc::TraitProvider<dyn MessageSender>,
+    email_sender: vernal_beans::TraitProvider<dyn MessageSender>,
 }
 ```
 
@@ -468,7 +468,7 @@ Prebuilt framework objects can enter the graph without wrapper types:
 ```rust
 use std::sync::Arc;
 use tokio::runtime::Handle;
-use vernal_ioc::{ComponentDefinition, RegistryBuilder};
+use vernal_beans::{ComponentDefinition, RegistryBuilder};
 
 let runtime = Arc::new(Handle::current());
 let mut registry = RegistryBuilder::new();
@@ -781,7 +781,7 @@ under design. There is no crates.io installation command or stable API yet.
 | Phase | Deliverable | Exit evidence |
 |:---|:---|:---|
 | 0 | Brand, architecture, workspace boundaries | Docs and workspace gates pass |
-| 1 | `vernal-core` + `vernal-ioc` minimum kernel | Graph, scope, resolution tests |
+| 1 | `vernal-core` + `vernal-beans` minimum kernel | Graph, scope, resolution tests |
 | 2 | `vernal-aop` + macros | Ordering, error, async, and compile-fail tests |
 | 3 | `vernal-context` lifecycle and events | Startup, rollback, and shutdown tests |
 | 4 | Web/HTTP contracts, Tower/Hyper, and ten adapters | Cross-framework conformance suite |

@@ -2,7 +2,7 @@
 
 use std::collections::{BTreeSet, HashSet};
 
-use vernal_ioc::{DefinitionError, RegistryBuilder};
+use vernal_beans::{DefinitionError, RegistryBuilder};
 
 use crate::{
     LINKED_COMPONENT_REGISTRATIONS, LinkedComponentCatalogError, LinkedComponentRegistration,
@@ -182,7 +182,7 @@ impl LinkedComponentCatalog {
     /// 调用方可把返回迭代器直接交给
     /// `VernalApplicationBuilder::register_all`。迭代器不暴露或缓存实例，每次
     /// 调用都从静态定义工厂重新创建完整批次。
-    pub fn component_definitions(&self) -> impl Iterator<Item = vernal_ioc::ComponentDefinition> {
+    pub fn component_definitions(&self) -> impl Iterator<Item = vernal_beans::ComponentDefinition> {
         self.registrations
             .iter()
             .map(|registration| registration.component_definition())

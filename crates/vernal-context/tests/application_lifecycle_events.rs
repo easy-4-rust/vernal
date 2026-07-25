@@ -12,7 +12,7 @@ use tokio::sync::broadcast;
 use vernal_context::{
     ApplicationReadyEvent, ApplicationRefreshedEvent, ContextError, VernalApplicationBuilder,
 };
-use vernal_ioc::ComponentDefinition;
+use vernal_beans::ComponentDefinition;
 
 /// 创建绑定当前 Tokio Runtime 的测试应用建造器。
 fn application() -> VernalApplicationBuilder {

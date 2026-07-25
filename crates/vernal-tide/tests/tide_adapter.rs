@@ -17,7 +17,7 @@ use tokio_util::sync::CancellationToken;
 use vernal_aop::{Advisor, Operation};
 use vernal_context::{ApplicationContextBuilder, VernalApplicationBuilder};
 use vernal_http::{HttpRequestSnapshot, Method as SnapshotMethod};
-use vernal_ioc::{ComponentDefinition, RegistryBuilder};
+use vernal_beans::{ComponentDefinition, RegistryBuilder};
 use vernal_tide::{TideScopedReader, VernalTideMiddleware, VernalTideRequestExt};
 use vernal_web::WebRequestScope;
 use vernal_web_testkit::{

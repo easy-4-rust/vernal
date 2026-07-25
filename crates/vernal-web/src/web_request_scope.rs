@@ -4,7 +4,7 @@ use std::{any::Any, error::Error, future::Future, sync::Arc};
 
 use tokio_util::sync::CancellationToken;
 use vernal_context::ApplicationContext;
-use vernal_ioc::{
+use vernal_beans::{
     Container, Qualifier, Registry, ResolveError, ScopeContext, ScopeError, ScopeKey, ScopeState,
 };
 

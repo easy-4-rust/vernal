@@ -5,7 +5,7 @@ use std::sync::Arc;
 use vernal_aop::{Interceptor, Invocation, InvocationFuture, Next};
 use vernal_context::{Lifecycle, LifecycleFuture};
 use vernal_core::BoxError;
-use vernal_ioc::{Component, ComponentDefinition};
+use vernal_beans::{Component, ComponentDefinition};
 
 use super::ModuleProbe;
 

@@ -1,6 +1,6 @@
 //! 条件组件模块冻结贡献集合。
 
-use vernal_ioc::{ComponentDefinition, TraitBinding};
+use vernal_beans::{ComponentDefinition, TraitBinding};
 
 use crate::{
     application_runner_registrar::ApplicationRunnerRegistrar,

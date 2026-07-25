@@ -7,7 +7,7 @@ use vernal_context::{
     PropertyCondition, PropertySource,
 };
 use vernal_core::BoxError;
-use vernal_ioc::ComponentDefinition;
+use vernal_beans::ComponentDefinition;
 
 use super::ModuleProbe;
 

@@ -3,7 +3,7 @@
 use std::{error::Error, fmt, time::Duration};
 
 use vernal_core::SharedError;
-use vernal_ioc::{ComponentKey, ResolveError};
+use vernal_beans::{ComponentKey, ResolveError};
 
 use crate::{ApplicationRunnerFailure, ContextState, LifecyclePhase, ManagedTaskError};
 

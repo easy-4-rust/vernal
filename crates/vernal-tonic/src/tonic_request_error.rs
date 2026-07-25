@@ -3,7 +3,7 @@
 use std::{error::Error, fmt};
 
 use tonic::Status;
-use vernal_ioc::ResolveError;
+use vernal_beans::ResolveError;
 
 use crate::TonicStatusMapper;
 

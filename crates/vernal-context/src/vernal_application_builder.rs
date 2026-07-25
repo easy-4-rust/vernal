@@ -11,7 +11,7 @@ use vernal_aop::{
     Advisor, Interceptor, InvocationPlanBuilder, InvocationPlanCatalog, LocalAdvisor,
     LocalInterceptor, LocalInvocationPlanBuilder, LocalInvocationPlanCatalog, Operation, Pointcut,
 };
-use vernal_ioc::{
+use vernal_beans::{
     Component, ComponentDefinition, DefinitionError, Qualifier, RegistryBuilder, TraitBinding,
 };
 
@@ -34,7 +34,7 @@ use crate::{
 
 /// 统一收集组件、生命周期、Runner、周期任务、切面和 Tokio Context 资源的建造器。
 ///
-/// 与接收冻结 [`vernal_ioc::Registry`] 的低层 [`ApplicationContextBuilder`]
+/// 与接收冻结 [`vernal_beans::Registry`] 的低层 [`ApplicationContextBuilder`]
 /// 不同，该建造器在依赖图冻结前自动注册十一类框架内建组件：
 ///
 /// - [`Handle`]：应用绑定的 Tokio Runtime；

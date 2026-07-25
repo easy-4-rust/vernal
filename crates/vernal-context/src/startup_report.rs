@@ -2,7 +2,7 @@
 
 use serde::Serialize;
 use vernal_aop::{InvocationPlanCatalog, LocalInvocationPlanCatalog};
-use vernal_ioc::RegistrySnapshot;
+use vernal_beans::RegistrySnapshot;
 
 use crate::{
     ApplicationEnvironment, ConditionEvaluationSnapshot, EnvironmentSnapshot, StartupObservation,

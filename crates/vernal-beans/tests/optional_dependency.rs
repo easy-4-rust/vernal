@@ -5,7 +5,7 @@ mod optional_dependency_support;
 use std::sync::Arc;
 
 use optional_dependency_support::{OptionalConsumer, OptionalPort, OptionalService};
-use vernal_ioc::{
+use vernal_beans::{
     ComponentDefinition, GraphError, Qualifier, RegistryBuilder, ResolveError, TraitBinding,
 };
 

@@ -33,7 +33,7 @@ use tenant_consumer::TenantConsumer;
 use tenant_scope::TenantScope;
 use tenant_value::TenantValue;
 use tokio::sync::Notify;
-use vernal_ioc::{ComponentDefinition, RegistryBuilder, ResolveError, ScopeError, ScopeState};
+use vernal_beans::{ComponentDefinition, RegistryBuilder, ResolveError, ScopeError, ScopeState};
 
 #[tokio::test]
 async fn custom_scope_requires_context_caches_once_and_isolates_siblings() {

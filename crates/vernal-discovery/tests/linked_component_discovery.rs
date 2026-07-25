@@ -7,7 +7,7 @@ use std::sync::Arc;
 use discovery_support::{AuditWorker, Database, ManualComponent, OrderService};
 use vernal_context::VernalApplicationBuilder;
 use vernal_discovery::{LinkedComponentCatalog, LinkedComponentCatalogError};
-use vernal_ioc::{Component, ComponentDefinition, RegistryBuilder};
+use vernal_beans::{Component, ComponentDefinition, RegistryBuilder};
 
 #[test]
 fn explicit_group_selection_is_deterministic_and_excludes_other_groups() {

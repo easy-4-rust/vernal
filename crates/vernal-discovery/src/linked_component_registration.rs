@@ -1,6 +1,6 @@
 //! 链接期组件注册项对象。
 
-use vernal_ioc::ComponentDefinition;
+use vernal_beans::ComponentDefinition;
 
 /// 一个由过程宏提交到链接期分布式切片的不可变组件定义入口。
 ///

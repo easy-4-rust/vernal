@@ -3,7 +3,7 @@
 use std::any::Any;
 
 use vernal_core::BoxError;
-use vernal_ioc::ComponentDefinition;
+use vernal_beans::ComponentDefinition;
 
 use crate::{ApplicationEnvironment, ConfigurationPropertiesError};
 

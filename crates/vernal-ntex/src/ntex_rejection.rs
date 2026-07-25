@@ -6,7 +6,7 @@ use ntex::{
     http::StatusCode,
     web::{ErrorRenderer, HttpRequest, HttpResponse, WebResponseError},
 };
-use vernal_ioc::ResolveError;
+use vernal_beans::ResolveError;
 use vernal_web::ScopeError;
 
 use crate::NtexAopError;

@@ -5,7 +5,7 @@ mod trait_intercept_support;
 use trait_intercept_support::{TraitCalculatorPort, TraitCalculatorService};
 use vernal_aop::InvocationError;
 use vernal_context::VernalApplicationBuilder;
-use vernal_ioc::Component;
+use vernal_beans::Component;
 
 #[tokio::test]
 async fn trait_default_methods_use_implementor_context_and_ufcs_descriptors() {

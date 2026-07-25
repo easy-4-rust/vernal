@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 use vernal_core::BoxError;
-use vernal_ioc::{ComponentDefinition, Qualifier};
+use vernal_beans::{ComponentDefinition, Qualifier};
 
 use super::{OptionalPort, OptionalService};
 

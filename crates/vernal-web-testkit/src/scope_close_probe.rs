@@ -6,7 +6,7 @@ use std::{
 };
 
 use tokio::{task::yield_now, time::timeout};
-use vernal_ioc::ScopeState;
+use vernal_beans::ScopeState;
 use vernal_web::WebRequestScope;
 
 use crate::WebAdapterContract;

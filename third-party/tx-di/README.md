@@ -21,11 +21,11 @@ would recreate the tx-di crate layout.
 
 | tx-di source | Vernal ownership boundary | Snapshot destination |
 |:---|:---|:---|
-| `tx-di-core/src/component.rs` | IoC component contract | `crates/vernal-ioc/src/component.rs` |
-| `tx-di-core/src/registry.rs` | IoC link-time registry | `crates/vernal-ioc/src/registry.rs` |
-| `tx-di-core/src/scope.rs` | IoC scope model | `crates/vernal-ioc/src/scope.rs` |
-| `tx-di-core/src/store.rs` | IoC component store | `crates/vernal-ioc/src/store.rs` |
-| `tx-di-core/src/topology.rs` | IoC dependency topology | `crates/vernal-ioc/src/topology.rs` |
+| `tx-di-core/src/component.rs` | IoC component contract | `crates/vernal-beans/src/component.rs` |
+| `tx-di-core/src/registry.rs` | IoC link-time registry | `crates/vernal-beans/src/registry.rs` |
+| `tx-di-core/src/scope.rs` | IoC scope model | `crates/vernal-beans/src/scope.rs` |
+| `tx-di-core/src/store.rs` | IoC component store | `crates/vernal-beans/src/store.rs` |
+| `tx-di-core/src/topology.rs` | IoC dependency topology | `crates/vernal-beans/src/topology.rs` |
 | `tx-di-core/src/aop.rs` | AOP runtime | `crates/vernal-aop/src/aop.rs` |
 | `tx-di-core/src/config.rs` | Context configuration loading | `crates/vernal-context/src/config.rs` |
 | `tx-di-core/src/lifecycle.rs` | Application context and lifecycle | `crates/vernal-context/src/lifecycle.rs` |

@@ -18,7 +18,7 @@ use vernal_context::{
     ContextError, ContextState, ManagedTaskError, ManagedTaskSupervisor, TaskShutdownPolicy,
     VernalApplicationBuilder,
 };
-use vernal_ioc::{ComponentDefinition, Qualifier};
+use vernal_beans::{ComponentDefinition, Qualifier};
 
 #[tokio::test]
 async fn task_failure_cancels_application_and_returns_one_shared_result() {

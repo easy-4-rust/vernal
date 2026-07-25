@@ -9,7 +9,7 @@ publish = false
 
 [dependencies]
 linkme.workspace = true
-vernal-ioc = { path = "../vernal-ioc" }
+vernal-beans = { path = "../vernal-beans" }
 
 [dev-dependencies]
 tokio.workspace = true

@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use vernal_context::{ApplicationModule, ApplicationModuleRegistrar};
 use vernal_core::BoxError;
-use vernal_ioc::ComponentDefinition;
+use vernal_beans::ComponentDefinition;
 
 use super::FirstRunner;
 

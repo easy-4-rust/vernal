@@ -4,7 +4,7 @@ use std::{future::Future, pin::Pin, sync::Arc};
 
 use tokio_util::sync::CancellationToken;
 use vernal_core::SharedError;
-use vernal_ioc::{ComponentKey, Container, Qualifier, ResolveError};
+use vernal_beans::{ComponentKey, Container, Qualifier, ResolveError};
 
 use crate::{
     ApplicationRunner, ContextError, LifecycleExecutionPolicy,
@@ -113,7 +113,7 @@ impl ManagedApplicationRunner {
             .find(|definition| definition.key() == &self.component)
             .map(|definition| definition.scope())
             .filter(|scope| !scope.is_singleton())
-            .map(vernal_ioc::Scope::as_str)
+            .map(vernal_beans::Scope::as_str)
     }
 
     /// 使用最终 Container 解析并有界执行 Runner。

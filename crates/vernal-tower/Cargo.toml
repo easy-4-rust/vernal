@@ -22,7 +22,7 @@ vernal-web = { path = "../vernal-web" }
 
 [dev-dependencies]
 http-body-util.workspace = true
-vernal-ioc = { path = "../vernal-ioc" }
+vernal-beans = { path = "../vernal-beans" }
 vernal-web-testkit = { path = "../vernal-web-testkit" }
 
 [lints]

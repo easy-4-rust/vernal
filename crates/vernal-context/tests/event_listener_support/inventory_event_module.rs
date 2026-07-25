@@ -5,7 +5,7 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use vernal_context::{ApplicationModule, ApplicationModuleRegistrar};
 use vernal_core::BoxError;
-use vernal_ioc::ComponentDefinition;
+use vernal_beans::ComponentDefinition;
 
 use super::{InventoryReserved, InventoryReservedListener};
 

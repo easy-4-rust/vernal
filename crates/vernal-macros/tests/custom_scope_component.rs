@@ -9,13 +9,13 @@ use std::sync::Arc;
 
 use request_scope::RequestScope;
 use scoped_greeting::ScopedGreeting;
-use vernal_ioc::{Component, RegistryBuilder, ResolveError};
+use vernal_beans::{Component, RegistryBuilder, ResolveError};
 
 #[tokio::test]
 async fn derive_generates_type_driven_custom_scope_definition() {
     let mut registry = RegistryBuilder::new();
     registry
-        .register(vernal_ioc::ComponentDefinition::shared_value(String::from(
+        .register(vernal_beans::ComponentDefinition::shared_value(String::from(
             "grow components",
         )))
         .expect("message definition");

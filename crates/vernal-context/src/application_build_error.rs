@@ -4,7 +4,7 @@ use std::{error::Error, fmt};
 
 use tokio::runtime::TryCurrentError;
 use vernal_aop::{InvocationPlanCatalogInitializationError, OperationMetadataConflictError};
-use vernal_ioc::{ComponentKey, DefinitionError, GraphError, ResolveError};
+use vernal_beans::{ComponentKey, DefinitionError, GraphError, ResolveError};
 
 use crate::{ConditionError, ContextError};
 

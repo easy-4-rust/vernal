@@ -6,7 +6,7 @@ use std::sync::{
 };
 
 use vernal_core::BoxError;
-use vernal_ioc::{
+use vernal_beans::{
     ComponentDefinition, ComponentProvider, GraphError, Qualifier, RegistryBuilder, ResolveError,
 };
 

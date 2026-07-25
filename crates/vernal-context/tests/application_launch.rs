@@ -9,7 +9,7 @@ use application_launch_support::{
     SuccessfulLifecycle,
 };
 use vernal_context::{ApplicationLaunchError, ContextState, VernalApplicationBuilder};
-use vernal_ioc::ComponentDefinition;
+use vernal_beans::ComponentDefinition;
 
 /// 创建绑定当前 Tokio Runtime 的空应用建造器。
 fn application_builder() -> VernalApplicationBuilder {

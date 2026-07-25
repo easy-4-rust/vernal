@@ -8,7 +8,7 @@ use tokio::sync::{Mutex, Notify};
 use tower::{Layer, ServiceExt, service_fn};
 use vernal_context::ApplicationContextBuilder;
 use vernal_http::HttpBody;
-use vernal_ioc::{ComponentDefinition, RegistryBuilder};
+use vernal_beans::{ComponentDefinition, RegistryBuilder};
 use vernal_tower::{RequestScopeLayer, TowerBodyError, TowerError, VernalLayer};
 use vernal_web::{ScopeState, WebRequestScope};
 use vernal_web_testkit::{FailingHttpBody, ScopeCleanupTimeoutFixture, ScopeCloseProbe};

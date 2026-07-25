@@ -10,7 +10,7 @@ use crate::{
     component_scope_option::ComponentScopeOption,
 };
 
-/// 解析组件结构并生成 `vernal_ioc::Component` 实现。
+/// 解析组件结构并生成 `vernal_beans::Component` 实现。
 ///
 /// 根据 `#[component(...)]` 属性中的选项，可能额外生成：
 /// - `Lifecycle` trait 实现（当指定了生命周期钩子时）
@@ -483,23 +483,23 @@ fn generate_trait_provider_injection(
     Ok(())
 }
 
-/// 解析消费方实际使用的 `IoC` crate 路径，兼容 Cargo 依赖重命名和统一门面。
+/// 解析消费方实际使用的 Beans crate 路径，兼容 Cargo 依赖重命名和统一门面。
 fn ioc_crate_path() -> syn::Result<TokenStream> {
-    match crate_name("vernal-ioc") {
+    match crate_name("vernal-beans") {
         Ok(FoundCrate::Itself) => Ok(quote! { crate }),
         Ok(FoundCrate::Name(name)) => {
             let crate_name = syn::Ident::new(&name, proc_macro2::Span::call_site());
             Ok(quote! { ::#crate_name })
         }
         Err(_) => match crate_name("vernal") {
-            Ok(FoundCrate::Itself) => Ok(quote! { crate::ioc }),
+            Ok(FoundCrate::Itself) => Ok(quote! { crate::beans }),
             Ok(FoundCrate::Name(name)) => {
                 let crate_name = syn::Ident::new(&name, proc_macro2::Span::call_site());
-                Ok(quote! { ::#crate_name::ioc })
+                Ok(quote! { ::#crate_name::beans })
             }
             Err(_) => Err(syn::Error::new(
                 proc_macro2::Span::call_site(),
-                "Component 派生需要直接依赖 vernal-ioc，或通过 vernal 统一门面使用",
+                "Component 派生需要直接依赖 vernal-beans，或通过 vernal 统一门面使用",
             )),
         },
     }

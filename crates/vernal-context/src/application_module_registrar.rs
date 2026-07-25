@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 use vernal_aop::{Advisor, Interceptor, LocalAdvisor, LocalInterceptor, Operation, Pointcut};
-use vernal_ioc::{Component, ComponentDefinition, Qualifier, TraitBinding};
+use vernal_beans::{Component, ComponentDefinition, Qualifier, TraitBinding};
 
 use crate::{
     ApplicationEventListener, ApplicationRunner, ConditionalComponentModule,

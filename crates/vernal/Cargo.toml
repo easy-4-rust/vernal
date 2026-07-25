@@ -11,7 +11,7 @@ publish = false
 vernal-aop = { path = "../vernal-aop" }
 vernal-context = { path = "../vernal-context" }
 vernal-core = { path = "../vernal-core" }
-vernal-ioc = { path = "../vernal-ioc" }
+vernal-beans = { path = "../vernal-beans" }
 vernal-macros = { path = "../vernal-macros" }
 
 [lints]

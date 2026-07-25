@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use vernal_ioc::{Component, RegistryBuilder};
+use vernal_beans::{Component, RegistryBuilder};
 
 /// 验证宏生成 Transient 定义的无依赖组件。
 #[derive(vernal_macros::Component)]

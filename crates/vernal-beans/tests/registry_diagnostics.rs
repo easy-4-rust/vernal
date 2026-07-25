@@ -3,7 +3,7 @@
 mod diagnostic_support;
 
 use diagnostic_support::{Database, EnglishGreeting, Greeting, GreetingConsumer};
-use vernal_ioc::{ComponentDefinition, RegistryBuilder, Scope, TraitBinding};
+use vernal_beans::{ComponentDefinition, RegistryBuilder, Scope, TraitBinding};
 
 #[test]
 fn snapshot_reuses_build_order_and_exposes_only_stable_metadata() {
