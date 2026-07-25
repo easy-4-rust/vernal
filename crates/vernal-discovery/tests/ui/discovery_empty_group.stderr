@@ -1,5 +1,0 @@
-error: discover 分组不能为空，也不能包含空白或控制字符
- --> tests/ui/discovery_empty_group.rs:2:24
-  |
-2 | #[component(discover = "")]
-  |                        ^^

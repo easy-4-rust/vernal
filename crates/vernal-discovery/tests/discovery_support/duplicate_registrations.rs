@@ -13,7 +13,7 @@ fn database_definition() -> ComponentDefinition {
 #[vernal_discovery::linkme::distributed_slice(LINKED_COMPONENT_REGISTRATIONS)]
 #[linkme(crate = vernal_discovery::linkme)]
 static DUPLICATE_REGISTRATION_ONE: LinkedComponentRegistration = LinkedComponentRegistration::new(
-    "test.duplicate",
+    "tests::discovery_support",
     "tests::DuplicateRegistration",
     database_definition,
 );
@@ -21,7 +21,7 @@ static DUPLICATE_REGISTRATION_ONE: LinkedComponentRegistration = LinkedComponent
 #[vernal_discovery::linkme::distributed_slice(LINKED_COMPONENT_REGISTRATIONS)]
 #[linkme(crate = vernal_discovery::linkme)]
 static DUPLICATE_REGISTRATION_TWO: LinkedComponentRegistration = LinkedComponentRegistration::new(
-    "test.duplicate",
+    "tests::discovery_support",
     "tests::DuplicateRegistration",
     database_definition,
 );

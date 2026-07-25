@@ -15,7 +15,7 @@ use crate::{
 /// 根据 `#[component(...)]` 属性中的选项，可能额外生成：
 /// - `Lifecycle` trait 实现（当指定了生命周期钩子时）
 /// - Trait 绑定注册代码（当指定了 `as_trait` 时）
-/// - 自动发现注册代码（当指定了 `discover` 时）
+/// - 链接期自动发现注册代码（所有 `#[derive(Component)]` 自动注册到 linkme）
 pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
     reject_generics(input)?;
     let ioc = ioc_crate_path()?;
@@ -32,8 +32,6 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
     };
     let discovery_registration = generate_discovery_registration(
         component_name,
-        options.discovery_group.as_ref(),
-        options.discover_all,
         &ioc,
     )?;
 
@@ -559,7 +557,7 @@ fn discovery_crate_path() -> syn::Result<TokenStream> {
         }
         Err(_) => Err(syn::Error::new(
             proc_macro2::Span::call_site(),
-            "#[component(discover = \"...\")] 需要直接依赖 vernal-discovery",
+            "Component 派生的自动发现需要直接依赖 vernal-discovery",
         )),
     }
 }
@@ -637,26 +635,27 @@ fn generate_aop_implementation(
     })
 }
 
-/// 为声明发现分组或默认自动发现的组件生成只读链接期定义入口。
+/// 为所有 `#[derive(Component)]` 的组件生成只读链接期定义入口。
+///
+/// 对标 Spring 的 `@Component` 自动进入 classpath 扫描范围：
+/// 每个 `#[derive(Component)]` 的结构体自动注册到 linkme 分布式切片，
+/// 携带模块路径（`module_path!()`）和定义工厂。消费方通过
+/// `ComponentScanModule::base_packages()` 按模块路径过滤。
 ///
 /// 静态名称包含模块路径和类型名；分布式切片只携带定义工厂，不创建组件实例，也
-/// 不触碰任何全局 Registry。未声明 `discover` 时不引用可选 discovery crate。
+/// 不触碰任何全局 Registry。
 ///
-/// 当 `discover_all` 为 true 时，使用空分组 `""` 作为默认分组。
+/// 如果消费方没有依赖 `vernal-discovery`，此函数静默返回空 TokenStream，
+/// 不影响 `#[derive(Component)]` 的其他功能。
 fn generate_discovery_registration(
     component_name: &syn::Ident,
-    discovery_group: Option<&LitStr>,
-    discover_all: bool,
     ioc: &TokenStream,
 ) -> syn::Result<TokenStream> {
-    // 确定分组：显式分组优先，否则 discover_all 使用默认空分组
-    let group = match discovery_group {
-        Some(g) => quote! { #g },
-        None if discover_all => quote! { "" },
-        None => return Ok(TokenStream::new()),
+    // 尝试解析 discovery crate 路径；如果不可用则静默跳过
+    let discovery = match discovery_crate_path() {
+        Ok(path) => path,
+        Err(_) => return Ok(TokenStream::new()),
     };
-
-    let discovery = discovery_crate_path()?;
     let registration_name =
         format_ident!("__VERNAL_LINKED_COMPONENT_REGISTRATION_{}", component_name);
 
@@ -668,7 +667,7 @@ fn generate_discovery_registration(
         #[allow(non_upper_case_globals)]
         static #registration_name: #discovery::LinkedComponentRegistration =
             #discovery::LinkedComponentRegistration::new(
-                #group,
+                ::core::module_path!(),
                 ::core::concat!(::core::module_path!(), "::", ::core::stringify!(#component_name)),
                 <#component_name as #ioc::Component>::definition,
             );

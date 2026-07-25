@@ -1,6 +1,18 @@
 //! 链接期组件目录对象。
+//!
+//! 对标 Spring 的 `ClassPathScanningCandidateComponentProvider`：
+//! 从链接期分布式切片中按模块路径过滤组件，生成确定性、只读的注册目录。
+//!
+//! ## 与 Spring 的对应关系
+//!
+//! | Spring | Vernal |
+//! |--------|--------|
+//! | `ClassPathBeanDefinitionScanner` | `LinkedComponentCatalog` |
+//! | `@ComponentScan(basePackages)` | `LinkedComponentCatalog::scan(base_packages)` |
+//! | package 匹配 | `module_path` 前缀匹配 |
+//! | `scan()` | `scan()` / `scan_all()` |
 
-use std::collections::{BTreeSet, HashSet};
+use std::collections::BTreeSet;
 
 use vernal_beans::{DefinitionError, RegistryBuilder};
 
@@ -8,153 +20,123 @@ use crate::{
     LINKED_COMPONENT_REGISTRATIONS, LinkedComponentCatalogError, LinkedComponentRegistration,
 };
 
-/// 一次显式分组选择得到的确定性、只读组件注册目录。
+/// 一次模块路径扫描得到的确定性、只读组件注册目录。
 ///
-/// Catalog 与具体 `RegistryBuilder` 分离：同一个选择可以安装到多个应用，每次安装
+/// Catalog 与具体 `RegistryBuilder` 分离：同一个扫描结果可以安装到多个应用，每次安装
 /// 都创建新的 Definition，并由各自 Container 独立拥有 Singleton、Scope 缓存和
-/// 解析历史。目录按 `(group, name)` 排序，消除链接器和目标平台对分布式切片顺序
+/// 解析历史。目录按 `(module_path, name)` 排序，消除链接器和目标平台对分布式切片顺序
 /// 的影响。
+///
+/// ## 使用方式（对标 @ComponentScan）
+///
+/// ```rust,ignore
+/// use vernal_discovery::LinkedComponentCatalog;
+///
+/// // 对标 @ComponentScan(basePackages = {"my_app::web", "my_app::service"})
+/// let catalog = LinkedComponentCatalog::scan(["my_app::web", "my_app::service"])?;
+/// catalog.install(&mut registry)?;
+///
+/// // 对标 @ComponentScan（扫描所有已注册组件）
+/// let catalog = LinkedComponentCatalog::scan_all()?;
+/// catalog.install(&mut registry)?;
+/// ```
 #[derive(Clone, Debug)]
 pub struct LinkedComponentCatalog {
     registrations: Vec<&'static LinkedComponentRegistration>,
 }
 
 impl LinkedComponentCatalog {
-    /// 从链接期只读清单中选择一个或多个明确分组。
+    /// 按模块路径前缀扫描组件（对标 `@ComponentScan(basePackages = {...})`）。
     ///
-    /// 空选择、非法分组、未知分组以及同组重复稳定名称全部 fail-closed。没有
-    /// `discover` 标记的普通 `Component` 不会进入目录。
+    /// 从链接期分布式切片中筛选模块路径以任一 `base_packages` 前缀开头的组件。
+    /// 这是 `@ComponentScan(basePackages = {"com.example.web"})` 的 Rust 等价物。
+    ///
+    /// # 参数
+    /// - `base_packages`：模块路径前缀列表（如 `["my_app::web", "my_app::service"]`）
     ///
     /// # Errors
     ///
-    /// 返回 [`LinkedComponentCatalogError`] 描述选择或静态元数据错误。
-    pub fn discover<I, S>(groups: I) -> Result<Self, LinkedComponentCatalogError>
+    /// 空选择或非法模块路径会返回 [`LinkedComponentCatalogError`]。
+    pub fn scan<I, S>(base_packages: I) -> Result<Self, LinkedComponentCatalogError>
     where
         I: IntoIterator<Item = S>,
         S: AsRef<str>,
     {
-        let requested = groups
+        let requested: BTreeSet<String> = base_packages
             .into_iter()
-            .map(|group| group.as_ref().to_owned())
-            .collect::<BTreeSet<_>>();
+            .map(|pkg| pkg.as_ref().to_owned())
+            .collect();
+
         if requested.is_empty() {
             return Err(LinkedComponentCatalogError::EmptySelection);
         }
-        for group in &requested {
-            Self::validate_group(group)?;
+        for pkg in &requested {
+            Self::validate_package(pkg)?;
         }
 
-        // 只读取调用方明确选择的分组；依赖图中其他 crate 即使提交了注册项，也不会
-        // 因为被链接而悄悄进入当前应用。
+        // 按模块路径前缀过滤：组件的 module_path 以任一 base_package 开头
         let mut registrations = LINKED_COMPONENT_REGISTRATIONS
             .iter()
-            .filter(|registration| requested.contains(registration.group()))
+            .filter(|reg| {
+                requested
+                    .iter()
+                    .any(|pkg| reg.module_path().starts_with(pkg.as_str()))
+            })
             .collect::<Vec<_>>();
-        let matched_groups = registrations
-            .iter()
-            .map(|registration| registration.group())
-            .collect::<HashSet<_>>();
-        if let Some(missing) = requested
-            .iter()
-            .find(|group| !matched_groups.contains(group.as_str()))
-        {
-            return Err(LinkedComponentCatalogError::MissingGroup {
-                group: missing.as_str().into(),
-            });
-        }
 
+        // 按 (module_path, name) 排序，使输出顺序确定
         registrations.sort_unstable_by(|left, right| {
-            (left.group(), left.name()).cmp(&(right.group(), right.name()))
+            (left.module_path(), left.name()).cmp(&(right.module_path(), right.name()))
         });
-        for pair in registrations.windows(2) {
-            let [left, right] = pair else {
-                continue;
-            };
-            Self::validate_registration(left)?;
-            if left.group() == right.group() && left.name() == right.name() {
-                return Err(LinkedComponentCatalogError::DuplicateRegistration {
-                    group: left.group().into(),
-                    name: left.name().into(),
-                });
-            }
-        }
-        if let Some(last) = registrations.last() {
-            Self::validate_registration(last)?;
-        }
+
+        // 校验重复名称
+        Self::validate_no_duplicates(&registrations)?;
 
         Ok(Self { registrations })
     }
 
-    /// 收集所有使用默认分组（空字符串 `""`）的注册条目。
+    /// 扫描所有已注册组件（对标 `@ComponentScan` 无参）。
     ///
-    /// 对应 `#[derive(Component)]` 中 `#[component(discover)]`（不带分组值）
-    /// 的组件。这些组件自动进入默认分组，无需显式指定分组名。
+    /// 收集链接期分布式切片中的所有组件，不做模块路径过滤。
+    /// 适用于小型项目或测试场景。
     ///
     /// # Errors
     ///
-    /// 同组重复稳定名称会返回 [`LinkedComponentCatalogError::DuplicateRegistration`]。
-    pub fn discover_all() -> Result<Self, LinkedComponentCatalogError> {
-        // 从全局分布式切片中筛选默认分组（空字符串）的注册条目
-        let mut registrations = LINKED_COMPONENT_REGISTRATIONS
-            .iter()
-            .filter(|registration| registration.group().is_empty())
-            .collect::<Vec<_>>();
+    /// 重复稳定名称会返回 [`LinkedComponentCatalogError::DuplicateRegistration`]。
+    pub fn scan_all() -> Result<Self, LinkedComponentCatalogError> {
+        let mut registrations: Vec<_> = LINKED_COMPONENT_REGISTRATIONS.iter().collect();
 
-        // 按名称排序，使重复检测和输出顺序确定
-        registrations.sort_unstable_by(|left, right| left.name().cmp(right.name()));
+        // 按 (module_path, name) 排序
+        registrations.sort_unstable_by(|left, right| {
+            (left.module_path(), left.name()).cmp(&(right.module_path(), right.name()))
+        });
 
-        // 逐对校验：格式合法性 + 同组重复名称
-        for pair in registrations.windows(2) {
-            let [left, right] = pair else {
-                continue;
-            };
-            Self::validate_registration(left)?;
-            if left.name() == right.name() {
-                return Err(LinkedComponentCatalogError::DuplicateRegistration {
-                    group: String::new().into(),
-                    name: left.name().into(),
-                });
-            }
-        }
-        if let Some(last) = registrations.last() {
-            Self::validate_registration(last)?;
-        }
+        // 校验重复名称
+        Self::validate_no_duplicates(&registrations)?;
 
         Ok(Self { registrations })
     }
 
     /// 合并多个目录为一个原子批次。
     ///
-    /// 将多个独立发现的目录合并，用于同时使用显式分组和默认分组的场景。
+    /// 将多次独立扫描的结果合并，用于组合不同模块路径的场景。
     ///
     /// # Errors
     ///
     /// 合并后发现重复注册会返回错误。
     pub fn merge(catalogs: &[&Self]) -> Result<Self, LinkedComponentCatalogError> {
-        // 收集所有目录的注册条目到一个扁平列表
         let mut all: Vec<&'static LinkedComponentRegistration> = Vec::new();
         for catalog in catalogs {
             all.extend(catalog.registrations.iter().copied());
         }
-        // 按 (group, name) 排序，使同组同名的条目相邻，便于重复检测
+
+        // 按 (module_path, name) 排序
         all.sort_unstable_by(|left, right| {
-            (left.group(), left.name()).cmp(&(right.group(), right.name()))
+            (left.module_path(), left.name()).cmp(&(right.module_path(), right.name()))
         });
-        for pair in all.windows(2) {
-            let [left, right] = pair else {
-                continue;
-            };
-            Self::validate_registration(left)?;
-            if left.group() == right.group() && left.name() == right.name() {
-                return Err(LinkedComponentCatalogError::DuplicateRegistration {
-                    group: left.group().into(),
-                    name: left.name().into(),
-                });
-            }
-        }
-        if let Some(last) = all.last() {
-            Self::validate_registration(last)?;
-        }
+
+        Self::validate_no_duplicates(&all)?;
+
         Ok(Self { registrations: all })
     }
 
@@ -194,48 +176,66 @@ impl LinkedComponentCatalog {
         &self.registrations
     }
 
-    /// 返回本次选择包含的注册项数量。
+    /// 返回本次扫描包含的注册项数量。
     #[must_use]
     pub fn len(&self) -> usize {
         self.registrations.len()
     }
 
-    /// 返回本次选择是否为空。
-    ///
-    /// 成功的 `discover` 至少匹配每个请求分组各一个注册项，因此正常情况下为
-    /// `false`；该方法主要服务通用诊断和未来的过滤组合。
+    /// 返回本次扫描是否为空。
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.registrations.is_empty()
     }
 
-    /// 校验调用方分组或手工静态注册项的分组文本。
-    fn validate_group(group: &str) -> Result<(), LinkedComponentCatalogError> {
-        if group.is_empty()
-            || group
+    /// 校验模块路径前缀的合法性。
+    fn validate_package(package: &str) -> Result<(), LinkedComponentCatalogError> {
+        if package.is_empty()
+            || package
                 .chars()
-                .any(|character| character.is_whitespace() || character.is_control())
+                .any(|c| c.is_whitespace() || c.is_control())
         {
             return Err(LinkedComponentCatalogError::InvalidGroup {
-                group: group.into(),
+                group: package.into(),
             });
         }
         Ok(())
     }
 
-    /// 校验手工提交的稳定声明名，防止空白诊断和不确定身份进入目录。
+    /// 校验注册项列表中无重复名称。
+    fn validate_no_duplicates(
+        registrations: &[&'static LinkedComponentRegistration],
+    ) -> Result<(), LinkedComponentCatalogError> {
+        for pair in registrations.windows(2) {
+            let [left, right] = pair else {
+                continue;
+            };
+            Self::validate_registration(left)?;
+            if left.name() == right.name() {
+                return Err(LinkedComponentCatalogError::DuplicateRegistration {
+                    group: left.module_path().into(),
+                    name: left.name().into(),
+                });
+            }
+        }
+        if let Some(last) = registrations.last() {
+            Self::validate_registration(last)?;
+        }
+        Ok(())
+    }
+
+    /// 校验注册项的声明名合法性。
     fn validate_registration(
         registration: &LinkedComponentRegistration,
     ) -> Result<(), LinkedComponentCatalogError> {
-        Self::validate_group(registration.group())?;
         if registration.name().is_empty()
             || registration
                 .name()
                 .chars()
-                .any(|character| character.is_whitespace() || character.is_control())
+                .any(|c| c.is_whitespace() || c.is_control())
         {
             return Err(LinkedComponentCatalogError::InvalidRegistration {
-                group: registration.group().into(),
+                group: registration.module_path().into(),
                 name: registration.name().into(),
             });
         }
