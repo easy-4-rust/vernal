@@ -5,7 +5,7 @@ use proc_macro2::{Span, TokenStream};
 use quote::{format_ident, quote};
 use syn::{
     Block, FnArg, GenericArgument, Ident, ImplItemFn, LitStr, Pat, PatIdent, PathArguments,
-    ReturnType, Type, visit_mut::VisitMut,
+    ReturnType, TraitItemFn, Type, WherePredicate, visit_mut::VisitMut,
 };
 
 use crate::{
@@ -29,12 +29,35 @@ struct InterceptCodegen<'a> {
     receiver: InterceptReceiver,
 }
 
+/// 解析实现方法或 Trait 方法，并要求 Trait 方法提供可织入的默认实现。
+///
+/// 带方法体的 Trait Item 与 Impl Item 共享 Rust 方法语法，因此统一进入
+/// [`expand`]，不会复制第二套代码生成器。只有分号结尾的抽象 Trait 方法需要单独
+/// 识别并返回面向使用者的诊断；Vernal 不能在没有业务方法体时构造最终调用目标。
+pub(crate) fn expand_item(attributes: TokenStream, item: TokenStream) -> syn::Result<TokenStream> {
+    match syn::parse2::<ImplItemFn>(item.clone()) {
+        Ok(method) => expand(attributes, method),
+        Err(implementation_error) => {
+            if let Ok(trait_method) = syn::parse2::<TraitItemFn>(item) {
+                if trait_method.default.is_none() {
+                    return Err(syn::Error::new_spanned(
+                        trait_method.sig,
+                        "Trait 方法使用 #[intercept] 必须提供默认方法体；抽象方法请在具体 impl 中织入",
+                    ));
+                }
+            }
+            Err(implementation_error)
+        }
+    }
+}
+
 /// 解析拦截选项、校验方法签名并生成异步 AOP 调用包装。
 pub(crate) fn expand(attributes: TokenStream, mut method: ImplItemFn) -> syn::Result<TokenStream> {
     let options = InterceptOptions::parse(attributes)?;
     let receiver = validate_method(&method)?;
-    let (return_type, _) = result_types(&method.sig.output)?;
     let aop = aop_crate_path()?;
+    add_aop_component_bound(&mut method, &aop)?;
+    let (return_type, _) = result_types(&method.sig.output)?;
     let function_name = &method.sig.ident;
     let method_name = options
         .method()
@@ -101,7 +124,10 @@ pub(crate) fn expand(attributes: TokenStream, mut method: ImplItemFn) -> syn::Re
         #[doc(hidden)]
         #[doc = "返回宏在编译期校验过的 AOP Operation 声明。"]
         #[allow(dead_code)]
-        #visibility fn #descriptor_name() -> #aop::Operation {
+        #visibility fn #descriptor_name() -> #aop::Operation
+        where
+            Self: ::core::marker::Sized,
+        {
             let mut __vernal_operation = #aop::Operation::new(#component, #method_name);
             #(
                 __vernal_operation = __vernal_operation
@@ -300,6 +326,24 @@ impl InterceptCodegen<'_> {
             }
         }})
     }
+}
+
+/// 为实现方法或 Trait 默认方法补充运行资源访问边界。
+///
+/// Trait 本身不必继承 `AopComponent`，只有真正调用被拦截默认方法的实现类型需要
+/// 满足该约束。这样领域端口不会因为一个横切关注点被迫把 Vernal 设为 supertrait；
+/// 普通 inherent impl 也得到同一条显式、可诊断的编译期边界。
+fn add_aop_component_bound(method: &mut ImplItemFn, aop: &TokenStream) -> syn::Result<()> {
+    let predicate: WherePredicate = syn::parse2(quote! {
+        Self: #aop::AopComponent
+    })?;
+    method
+        .sig
+        .generics
+        .make_where_clause()
+        .predicates
+        .push(predicate);
+    Ok(())
 }
 
 /// 校验方法并返回其安全异步目标所有权模型。

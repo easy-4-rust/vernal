@@ -1,0 +1,57 @@
+error[E0277]: the trait bound `PlainService: AopComponent` is not satisfied
+  --> tests/ui/intercept_trait_non_aop_implementor.rs:18:21
+   |
+18 |     let _ = service.execute().await;
+   |                     ^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `AopComponent` is not implemented for `PlainService`
+  --> tests/ui/intercept_trait_non_aop_implementor.rs:13:1
+   |
+13 | struct PlainService;
+   | ^^^^^^^^^^^^^^^^^^^
+note: required by a bound in `DefaultPort::execute::{anon_assoc#0}`
+  --> tests/ui/intercept_trait_non_aop_implementor.rs:7:5
+   |
+ 7 |     #[vernal_macros::intercept]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `DefaultPort::execute::{anon_assoc#0}`
+   = note: this error originates in the attribute macro `vernal_macros::intercept` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `PlainService: AopComponent` is not satisfied
+  --> tests/ui/intercept_trait_non_aop_implementor.rs:18:13
+   |
+18 |     let _ = service.execute().await;
+   |             ^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `AopComponent` is not implemented for `PlainService`
+  --> tests/ui/intercept_trait_non_aop_implementor.rs:13:1
+   |
+13 | struct PlainService;
+   | ^^^^^^^^^^^^^^^^^^^
+note: required by a bound in `DefaultPort::execute`
+  --> tests/ui/intercept_trait_non_aop_implementor.rs:7:5
+   |
+ 7 |     #[vernal_macros::intercept]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `DefaultPort::execute`
+ 8 |     async fn execute(&self) -> Result<(), InvocationError> {
+   |              ------- required by a bound in this associated function
+   = note: this error originates in the attribute macro `vernal_macros::intercept` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `PlainService: AopComponent` is not satisfied
+  --> tests/ui/intercept_trait_non_aop_implementor.rs:18:31
+   |
+18 |     let _ = service.execute().await;
+   |                               ^^^^^ unsatisfied trait bound
+   |
+help: the trait `AopComponent` is not implemented for `PlainService`
+  --> tests/ui/intercept_trait_non_aop_implementor.rs:13:1
+   |
+13 | struct PlainService;
+   | ^^^^^^^^^^^^^^^^^^^
+note: required by a bound in `DefaultPort::execute`
+  --> tests/ui/intercept_trait_non_aop_implementor.rs:7:5
+   |
+ 7 |     #[vernal_macros::intercept]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `DefaultPort::execute`
+ 8 |     async fn execute(&self) -> Result<(), InvocationError> {
+   |              ------- required by a bound in this associated function
+   = note: this error originates in the attribute macro `vernal_macros::intercept` (in Nightly builds, run with -Z macro-backtrace for more info)

@@ -91,10 +91,11 @@
   连接起来；无全局实例 Map 或 unsafe 生命周期扩展，计划缺失、取消和返回类型
   不匹配均通过结构化错误返回。
 - `[已确认]` 方法宏已支持 `self: Arc<Self>`、`&self`、`&mut self` 以及
-  type/lifetime/const 泛型异步实现方法；所有路径继续使用同一 Context-local
-  Operation 与类型擦除边界，不引入 unsafe 生命周期扩展。
-- `[设计目标]` Trait 默认方法、剩余消费方生态桥接、性能基准与后续生产门禁仍需
-  实现和验收。
+  type/lifetime/const 泛型异步实现方法和带默认体的异步 Trait 方法；所有路径
+  继续使用同一 Context-local Operation 与类型擦除边界，不引入 unsafe 生命周期
+  扩展。
+- `[设计目标]` 剩余消费方生态桥接、泛型边界诊断矩阵、性能基准与后续生产门禁
+  仍需实现和验收。
 
 ## 2. 品牌寓意与架构主张
 
@@ -661,6 +662,15 @@ Vernal 不使用 `self as *const Self as usize` 作为长期身份。目标方�
 7. type、lifetime 与 const 泛型参数保留在原方法签名中；所有单态化调用共享该
    方法的 Operation 身份，业务 Future 仍必须满足 `Send`，成功返回值仍必须满足
    `Any + Send + Sync + 'static`。
+8. 带默认体的 Trait 方法复用同一代码生成器；宏只给方法添加
+   `Self: AopComponent`，不污染整个业务 Trait 的 supertrait。隐藏描述符带
+   `Self: Sized`，应用可用 `operation!(<Impl as Trait>::method)` 做 UFCS 消歧。
+   分号结尾的抽象 Trait 方法没有最终业务目标，会在编译期要求改到具体 impl 织入。
+9. 未声明 `component` 的 Trait 默认方法按最终 `Self` 类型形成每实现独立的
+   Operation；显式 `component` 可让多个实现共享逻辑端口身份。该能力是静态分派
+   默认方法织入，不承诺原生 `async fn in trait` 的 `dyn Trait` 调用；后者受 Rust
+   当前 dyn compatibility 规则限制，应在具体 impl 织入后再通过 Trait Binding
+   暴露，或使用显式对象安全 Future 签名。
 
 owned 接收器路径安全产生 `'static` Future；两种引用路径把接收器、引用参数和
 业务 Future 一起约束在当前方法 `.await`，既不伪造 `'static`，也不克隆服务对象。
@@ -1354,7 +1364,8 @@ Local-AOP 测试覆盖非 `Send` 返回值、顺序、短路、取消、计划�
 在 owned 与 borrowed 目标中的单态化调用，静态标签/qualifier 描述符投影及
 类型驱动自定义 Scope；compile-fail 矩阵覆盖非法组件字段、非法集合 qualifier、
 非异步方法、裸 `self` 接收器、非法操作元数据和错误描述符路径。Phase 2 已具备
-可调用闭环，但 Trait 默认方法、诊断矩阵、性能基准和稳定性承诺仍未完成。
+可调用闭环；Trait 默认方法、纯 Trait 边界、UFCS 描述符、抽象方法拒绝和非 AOP
+实现调用拒绝已有运行/编译合同，剩余泛型边界诊断、性能基准和稳定性承诺仍未完成。
 
 Phase 3 内核另有 56 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
 回滚、非法转换、幂等关闭、并发关闭串行化、Context-local 类型化事件隔离，
@@ -1396,7 +1407,7 @@ fail-closed 与条件错误脱敏，并覆盖显式 ApplicationModule 安装、�
 | ID | 风险 / 待确认 | 影响 | 验证计划 |
 |:---|:---|:---|:---|
 | R-001 | 对象安全异步 Around 的分配成本 | AOP 性能 | 对已实现的 boxed-future 路径做 benchmark |
-| R-002 | Trait 默认方法与泛型边界诊断仍不完整；泛型实现方法和可变方法已有运行合同 | 可用性 | Trait trybuild 与边界诊断矩阵 |
+| R-002 | 实现/默认 Trait/泛型/可变方法已有合同，复杂泛型边界诊断仍不完整 | 可用性 | 扩展 bound-diagnostic trybuild 矩阵 |
 | R-003 | 编译期自动注册的跨平台链接行为 | 可移植性 | Linux/macOS/Windows CI |
 | R-004 | Request Scope 在不同 Web 框架中的取消/释放差异 | 资源安全 | 跨框架异常链测试 |
 | R-005 | 过度追求 Spring 命名导致非 Rust API | 长期维护 | API review 与 Rust API Guidelines |

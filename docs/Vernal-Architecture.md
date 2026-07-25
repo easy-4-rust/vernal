@@ -107,10 +107,11 @@
   plans, cancellation, and return-type mismatches remain structured errors,
   without a global instance map or unsafe lifetime extension.
 - `[Confirmed]` the method macro supports `self: Arc<Self>`, `&self`,
-  `&mut self`, and type/lifetime/const generic async implementation methods.
-  Every path keeps the same context-local Operation and type-erasure boundary
-  without unsafe lifetime extension.
-- `[Target]` Trait default methods, remaining consumer ecosystem bridges,
+  `&mut self`, type/lifetime/const generic async implementation methods, and
+  async Trait methods with default bodies. Every path keeps the same
+  context-local Operation and type-erasure boundary without unsafe lifetime
+  extension.
+- `[Target]` remaining consumer ecosystem bridges, generic-bound diagnostics,
   benchmarks, and later production gates remain.
 
 ## 2. Brand meaning and architecture thesis
@@ -721,6 +722,19 @@ contracts:
    All monomorphizations share that method's Operation identity; the business
    future still satisfies `Send`, and successful values still satisfy
    `Any + Send + Sync + 'static`.
+8. Trait methods with default bodies reuse the same code generator. The macro
+   adds `Self: AopComponent` only to the method rather than making the business
+   Trait inherit a framework supertrait. Its hidden descriptor has
+   `Self: Sized`, and `operation!(<Impl as Trait>::method)` provides explicit
+   UFCS disambiguation. Abstract Trait methods are rejected because they have
+   no final business target; weave the concrete impl instead.
+9. Without an explicit `component`, a Trait default method creates an
+   implementor-specific Operation from the final `Self` type. An explicit
+   component lets implementations share one logical port identity. This is
+   statically dispatched default-method weaving, not a promise of
+   `dyn Trait` invocation for native `async fn in trait`; Rust's current dyn
+   compatibility rules still require weaving the concrete impl before exposing
+   a Trait Binding, or using an explicitly object-safe Future signature.
 
 The owned receiver path produces a safe `'static` future. Both reference paths
 bind their receiver, reference arguments, and business future to the current
@@ -1471,8 +1485,10 @@ through owned and borrowed targets; static tag/qualifier descriptor projection;
 and a type-driven custom Scope. Its compile-fail matrix covers invalid
 component fields, invalid collection qualifiers, non-async methods, bare value
 receivers, invalid operation metadata, and malformed descriptor paths. Phase 2
-has a callable loop, while Trait default methods, diagnostic coverage,
-benchmarks, and stability guarantees remain open.
+has a callable loop. Runtime and compile contracts now cover Trait default
+methods, pure Trait boundaries, UFCS descriptors, abstract-method rejection,
+and rejection of invocation on a non-AOP implementor. Generic-bound
+diagnostics, benchmarks, and stability guarantees remain open.
 
 The Phase 3 kernel has fifty-six contract tests for dependency-order
 startup, reverse shutdown, initialize/start rollback, invalid transitions,
@@ -1523,7 +1539,7 @@ No phase is complete merely because a crate exists or `cargo check` is green.
 | ID | Risk / open decision | Impact | Validation |
 |:---|:---|:---|:---|
 | R-001 | Object-safe async Around allocation cost | AOP performance | Benchmark the implemented boxed-future path |
-| R-002 | Trait default methods and generic-bound diagnostics remain incomplete; generic implementation methods and mutable methods have runtime contracts | Usability | Trait trybuild and bound-diagnostic matrix |
+| R-002 | Implementation/default-Trait/generic/mutable methods have contracts; complex generic-bound diagnostics remain incomplete | Usability | Extend the bound-diagnostic trybuild matrix |
 | R-003 | Cross-platform link-time registration | Portability | Linux/macOS/Windows CI |
 | R-004 | Request-scope cancellation differences | Resource safety | Cross-framework failure tests |
 | R-005 | Spring terminology overwhelms Rust API style | Maintenance | API review and Rust guidelines |

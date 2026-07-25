@@ -329,6 +329,13 @@ application.operation(vernal_macros::operation!(OrderService::create));
 `operation!(Type::method)` 属于显式 Context 装配，不是 classpath 扫描或全局
 inventory，并让方法身份、标签和 qualifier 只有一个事实来源。
 
+带默认方法体的异步 Trait 方法使用同一织入模型，业务 Trait 本身无需继承
+`AopComponent`；宏只给该方法添加 `Self: AopComponent` 调用边界。应用使用
+`operation!(<Service as Port>::method)` 精确选择 Trait 描述符，避免多个端口出现
+同名方法时产生歧义。抽象 Trait 方法没有最终业务目标，必须在具体 impl 方法上
+使用 `#[intercept]`。Trait 方法显式声明 `component` 时多个实现共享逻辑操作名；
+未声明时默认使用最终实现类型名。
+
 Send 与 Local 拦截器都可以作为普通 IoC 组件管理。应用先注册拦截器定义，再通过
 `advisor_component::<AuditInterceptor, _>(pointcut, order)` 声明切面；Context
 会使用最终应用 Container 构造拦截器并注入其 Tokio、Environment 或业务依赖，
@@ -538,7 +545,8 @@ fail-closed 构建。宏前端运行合同覆盖 `self: Arc<Self>`、借用 `&se
 `&mut self` 方法织入，type/lifetime/const 泛型的 owned 与 borrowed 路径，
 静态标签/qualifier 描述符投影及类型驱动自定义 Scope；compile-fail 矩阵覆盖
 非法组件字段、非法集合 qualifier、非异步方法、裸 `self` 接收器、非法操作元数据
-与错误描述符路径。Trait 默认方法、更完整诊断矩阵和 AOP 性能基准仍待完成。
+与错误描述符路径，并验证 Trait 默认方法、纯 Trait 边界、UFCS 描述符、抽象方法
+拒绝和非 AOP 实现调用拒绝。更完整的泛型边界诊断矩阵和 AOP 性能基准仍待完成。
 Phase 3 内核现有 56 个测试，覆盖依赖顺序启动、逆序关闭、initialize/start
 回滚、非法状态转换、幂等关闭、并发关闭串行化和 Context-local 类型化事件
 隔离、高层构建器十一类内建资源注入、应用 Scope 取消树、任务错误/panic 传播、

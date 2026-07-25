@@ -392,6 +392,15 @@ for transient components. A singleton shared as `Arc<T>` should normally model
 mutation with locks, atomics, or channels instead of bypassing Rust's ownership
 rules.
 
+Async Trait methods with default bodies use the same weaving model. The
+business Trait does not inherit `AopComponent`; the macro adds only a
+`Self: AopComponent` call boundary to that method. Applications can register
+`operation!(<Service as Port>::method)` to disambiguate equal method names
+across ports. An abstract Trait method has no final business target and must be
+intercepted on its concrete impl instead. An explicit `component` gives all
+implementors one logical operation name; otherwise the final implementor type
+is the component identity.
+
 Send and Local interceptors can also be ordinary IoC components. After registering
 an interceptor definition, `advisor_component::<AuditInterceptor, _>` declares
 its pointcut and order. Context resolves it from the final application
@@ -712,8 +721,10 @@ The macro frontend runtime contracts cover context-local interception through
 borrowed type/lifetime/const generics; static tag/qualifier descriptors; and a
 type-driven custom Scope. Its compile-fail matrix covers invalid component
 fields, invalid collection qualifiers, non-async interception, bare value
-receivers, invalid operation metadata, and malformed descriptor paths. Trait
-default methods, expanded macro diagnostics, and AOP benchmarks remain open.
+receivers, invalid operation metadata, and malformed descriptor paths. It also
+verifies Trait default methods, pure Trait boundaries, UFCS descriptors,
+abstract-method rejection, and rejection when a non-AOP implementor invokes
+the method. Expanded generic-bound diagnostics and AOP benchmarks remain open.
 The Phase 3 kernel has fifty-six tests covering dependency-order startup,
 reverse shutdown, initialize/start rollback, invalid transitions, idempotent
 close, concurrent close serialization, and context-local typed event

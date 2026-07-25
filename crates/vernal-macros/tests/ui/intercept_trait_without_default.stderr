@@ -1,0 +1,5 @@
+error: Trait 方法使用 #[intercept] 必须提供默认方法体；抽象方法请在具体 impl 中织入
+ --> tests/ui/intercept_trait_without_default.rs:8:5
+  |
+8 |     async fn execute(&self) -> Result<(), InvocationError>;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
