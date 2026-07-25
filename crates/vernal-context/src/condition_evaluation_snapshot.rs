@@ -18,6 +18,7 @@ pub struct ConditionEvaluationSnapshot {
     lifecycle_count: usize,
     event_listener_count: usize,
     application_runner_count: usize,
+    scheduled_task_count: usize,
 }
 
 impl ConditionEvaluationSnapshot {
@@ -38,6 +39,7 @@ impl ConditionEvaluationSnapshot {
             lifecycle_count: counts.lifecycles(),
             event_listener_count: counts.event_listeners(),
             application_runner_count: counts.application_runners(),
+            scheduled_task_count: counts.scheduled_tasks(),
         }
     }
 
@@ -89,5 +91,11 @@ impl ConditionEvaluationSnapshot {
     #[must_use]
     pub const fn application_runner_count(&self) -> usize {
         self.application_runner_count
+    }
+
+    /// 返回模块声明的 Context 托管周期任务数量。
+    #[must_use]
+    pub const fn scheduled_task_count(&self) -> usize {
+        self.scheduled_task_count
     }
 }

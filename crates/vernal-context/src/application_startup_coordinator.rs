@@ -15,12 +15,12 @@ use crate::{
     application_close_coordinator::ApplicationCloseCoordinator,
     application_context_builder::LifecycleResolver, lifecycle_task_executor::LifecycleTaskExecutor,
     managed_application_runner::ManagedApplicationRunner,
-    managed_event_listener::ManagedEventListener,
+    managed_event_listener::ManagedEventListener, managed_scheduled_task::ManagedScheduledTask,
 };
 
 type OperationResult = Result<(), ContextError>;
 
-/// 在独立 Tokio task 中串行执行 Context 的 refresh、start 与 Runner 阶段。
+/// 在独立 Tokio task 中串行执行 Context 的 refresh、start、Runner 与任务激活。
 ///
 /// 每次公开调用只等待一个一次性结果通道，真正的生命周期阶段由本对象拥有的任务
 /// 执行。调用方丢弃 `refresh()` 或 `start()` Future 时，结果接收端会被丢弃，但
@@ -34,6 +34,7 @@ pub(crate) struct ApplicationStartupCoordinator {
     lifecycle_resolvers: Arc<[(ComponentKey, Arc<LifecycleResolver>)]>,
     event_listeners: Arc<[ManagedEventListener]>,
     application_runners: Arc<[ManagedApplicationRunner]>,
+    scheduled_tasks: Arc<[ManagedScheduledTask]>,
     lifecycle: Arc<ApplicationCloseCoordinator>,
 }
 
@@ -44,6 +45,7 @@ impl ApplicationStartupCoordinator {
         lifecycle_resolvers: Arc<[(ComponentKey, Arc<LifecycleResolver>)]>,
         event_listeners: Vec<ManagedEventListener>,
         application_runners: Vec<ManagedApplicationRunner>,
+        scheduled_tasks: Vec<ManagedScheduledTask>,
         lifecycle: Arc<ApplicationCloseCoordinator>,
     ) -> Arc<Self> {
         Arc::new(Self {
@@ -51,6 +53,7 @@ impl ApplicationStartupCoordinator {
             lifecycle_resolvers,
             event_listeners: Arc::from(event_listeners),
             application_runners: Arc::from(application_runners),
+            scheduled_tasks: Arc::from(scheduled_tasks),
             lifecycle,
         })
     }
@@ -84,8 +87,9 @@ impl ApplicationStartupCoordinator {
     ///
     /// # Errors
     ///
-    /// Runtime 不可用、状态非法、组件启动/Runner 执行失败，或协调任务异常结束时
-    /// 返回结构化 [`ContextError`]。失败总会尝试逆序停止所有已初始化组件。
+    /// Runtime 不可用、状态非法、组件启动/Runner 执行/周期任务激活失败，或协调
+    /// 任务异常结束时返回结构化 [`ContextError`]。失败总会尝试逆序停止所有已
+    /// 初始化组件。
     pub(crate) async fn start(self: &Arc<Self>) -> OperationResult {
         let handle = self.runtime_handle("start")?;
         let (sender, receiver) = oneshot::channel();
@@ -274,7 +278,7 @@ impl ApplicationStartupCoordinator {
         Ok(())
     }
 
-    /// 在唯一操作锁内按依赖顺序启动组件、执行 Runner 并提交 Ready。
+    /// 在唯一操作锁内启动组件、执行 Runner、激活周期任务并提交 Ready。
     async fn finish_start(&self) -> OperationResult {
         let _operation = self.lifecycle.operation().lock().await;
         self.require_state("start", ContextState::Refreshed).await?;
@@ -362,20 +366,73 @@ impl ApplicationStartupCoordinator {
             }
         }
 
+        self.start_scheduled_tasks().await?;
+
         if self.is_cancelled() {
             let error = ContextError::LifecycleCancelled { operation: "start" };
             self.rollback_to_closed().await;
             return Err(error);
         }
         self.lifecycle.set_state(ContextState::Ready).await;
-        // Ready 事件只在全部 start、Runner 与取消检查通过后发布。监听器失败会
-        // 稍后由任务监督器取消应用，不反向改写已经提交的状态转换结果。
+        // Ready 事件只在全部 start、Runner、周期任务激活与取消检查通过后发布。
+        // 后台任务运行期失败会由监督器取消应用，不反向改写已经提交的状态事实。
         let _delivered = self
             .lifecycle
             .resources()
             .events()
             .publish(ApplicationReadyEvent::new())
             .await;
+        Ok(())
+    }
+
+    /// 按依赖图顺序把周期任务提交给 Context-local Tokio 监督器。
+    ///
+    /// 激活顺序确定，但不同任务提交后可以并发运行。这里只承诺监督器已经接受
+    /// 任务；需要首次执行成功才能就绪的工作必须使用 `ApplicationRunner`。
+    async fn start_scheduled_tasks(&self) -> OperationResult {
+        let Some(managed_tasks) = self.lifecycle.resources().managed_tasks().cloned() else {
+            if self.scheduled_tasks.is_empty() {
+                return Ok(());
+            }
+            let error = ContextError::LifecycleCoordinator {
+                operation: "scheduled-task-activation",
+                source: Arc::new(std::io::Error::other(
+                    "scheduled tasks require a managed Tokio application context",
+                )),
+            };
+            self.rollback_to_closed().await;
+            return Err(error);
+        };
+
+        for task in self.scheduled_tasks.iter() {
+            if self.is_cancelled() {
+                let error = ContextError::LifecycleCancelled { operation: "start" };
+                self.rollback_to_closed().await;
+                return Err(error);
+            }
+            let started = Instant::now();
+            let result = task.start(&self.container, Arc::clone(&managed_tasks));
+            let outcome = if result.is_ok() {
+                DiagnosticOutcome::Succeeded
+            } else {
+                DiagnosticOutcome::Failed
+            };
+            self.lifecycle
+                .record_observation(
+                    task.component().to_string(),
+                    DiagnosticPhase::ScheduledTaskActivation,
+                    outcome,
+                    started,
+                )
+                .await;
+            if let Err(error) = result {
+                self.lifecycle
+                    .record_warning("context.scheduled-task.activation-failed")
+                    .await;
+                self.rollback_to_closed().await;
+                return Err(error);
+            }
+        }
         Ok(())
     }
 

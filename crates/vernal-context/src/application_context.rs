@@ -14,7 +14,7 @@ use crate::{
     application_context_builder::LifecycleResolver,
     application_startup_coordinator::ApplicationStartupCoordinator,
     context_resources::ContextResources, managed_application_runner::ManagedApplicationRunner,
-    managed_event_listener::ManagedEventListener,
+    managed_event_listener::ManagedEventListener, managed_scheduled_task::ManagedScheduledTask,
 };
 
 /// 组合 `IoC` 容器与 Tokio 生命周期状态机的应用上下文门面。
@@ -34,6 +34,7 @@ impl ApplicationContext {
         lifecycle_resolvers: Vec<(ComponentKey, Arc<LifecycleResolver>)>,
         event_listeners: Vec<ManagedEventListener>,
         application_runners: Vec<ManagedApplicationRunner>,
+        scheduled_tasks: Vec<ManagedScheduledTask>,
         resources: ContextResources,
     ) -> Self {
         let container = Arc::new(container);
@@ -52,6 +53,7 @@ impl ApplicationContext {
             lifecycle_resolvers,
             event_listeners,
             application_runners,
+            scheduled_tasks,
             close_coordinator,
         );
         Self {
@@ -73,15 +75,15 @@ impl ApplicationContext {
         self.startup_coordinator.refresh().await
     }
 
-    /// 按依赖顺序启动全部生命周期组件、执行一次性 Runner 并进入 Ready。
+    /// 按依赖顺序启动组件、执行 Runner、激活周期任务并进入 Ready。
     ///
     /// 实际 start 链由独立 Tokio task 持有。当前等待者被取消只会丢弃一次性结果
     /// 接收端；启动成功仍会提交 Ready，失败仍会完成逆序回滚。
     ///
     /// # Errors
     ///
-    /// Runtime 不可用、状态非法、任一 start/Runner 失败或协调任务异常时返回
-    /// [`ContextError`]。
+    /// Runtime 不可用、状态非法、任一 start/Runner/周期任务激活失败，或协调任务
+    /// 异常时返回 [`ContextError`]。
     pub async fn start(&self) -> Result<(), ContextError> {
         self.startup_coordinator.start().await
     }

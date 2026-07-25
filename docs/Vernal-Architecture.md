@@ -956,6 +956,7 @@ Hutool-Rust may convert `Profile`/`SettingLoader` output into a
 and ecosystem bridges. Its `configure` method writes only to an isolated
 `ApplicationModuleRegistrar`, which can collect component definitions, Trait
 bindings, lifecycle registrations, managed event listeners, application runners,
+scheduled tasks,
 Send/Local advisors, AOP operations,
 property sources, active/default profiles, and explicit
 `ConditionalComponentModule` values.
@@ -972,6 +973,7 @@ named transaction:
 5. validate and commit definitions plus bindings through the atomic IoC
    `register_bundle`;
 6. only after every preflight succeeds, move lifecycle, event listener, runner,
+   scheduled-task,
    AOP, operation,
    Environment, and conditional contributions into the real application
    builder.
@@ -993,7 +995,7 @@ flowchart LR
     Condition["Conditional identity preflight<br/>application + module batch"]
     Env["Clone Environment<br/>validate sources and profiles"]
     Bundle["IoC register_bundle<br/>definitions and bindings"]
-    Commit["Single application commit<br/>lifecycle · listeners · runners · AOP · operations · environment"]
+    Commit["Single application commit<br/>lifecycle · listeners · runners · scheduled tasks · AOP · operations · environment"]
     Rollback["Return structured error<br/>builder unchanged"]
 
     Bridge --> Stage
@@ -1020,8 +1022,8 @@ container and never depends on Profile or property semantics.
 - `PredicateCondition` adapts a custom, thread-safe closure without exposing
   captured data to diagnostics;
 - `ConditionalComponentModule` atomically groups definitions, Trait bindings,
-  lifecycle registrations, event listener declarations, and application runner
-  declarations under one condition;
+  lifecycle registrations, event listener declarations, application runner
+  declarations, and scheduled-task declarations under one condition;
 - evaluation happens once, in module registration order, after Environment
   freeze and before graph planning;
 - a false condition omits the entire module. An unconditional component that
@@ -1097,7 +1099,7 @@ stateDiagram-v2
     Refreshing --> Refreshed: graph, subscriptions, initialize valid
     Refreshing --> Failed: validation/build failure
     Refreshed --> Starting: start
-    Starting --> Ready: lifecycle started and runners succeeded
+    Starting --> Ready: lifecycle, runners, and task activation succeeded
     Starting --> RollingBack: startup failure
     Ready --> Draining: close requested
     RollingBack --> Closed: reverse cleanup
@@ -1113,6 +1115,7 @@ register → freeze → validate graph and pointcuts
 → construct singletons → resolve/subscribe listeners → initialize
 → commit Refreshed → publish ApplicationRefreshedEvent
 → start lifecycle components → run application runners in dependency order
+→ activate scheduled tasks in dependency order
 → commit Ready → publish ApplicationReadyEvent
 → cancel and drain managed tasks → reverse stop → release scopes
 ```
@@ -1150,7 +1153,7 @@ The Context itself emits two deliberately small lifecycle facts:
   after singleton warm-up, all subscriptions, and lifecycle initialization;
 - `ApplicationReadyEvent` follows the successful `Ready` state commit, after
   every required lifecycle component starts and every application runner
-  succeeds;
+  succeeds, and every scheduled task is accepted by the task supervisor;
 - publication is asynchronous queueing, not a startup completion barrier.
   Independent listeners have no cross-listener completion order, and handler
   failures follow the managed-task cancellation path;
@@ -1169,6 +1172,7 @@ sequenceDiagram
     participant Tasks as "ManagedTaskSupervisor"
     participant Lifecycle as "Lifecycle component"
     participant Runner as "ApplicationRunner"
+    participant Scheduled as "ScheduledTask"
 
     App->>Context: refresh()
     Context->>IoC: warm up Singletons
@@ -1183,6 +1187,10 @@ sequenceDiagram
     Context->>Lifecycle: start()
     loop dependency-plan runner order
         Context->>Runner: run(child cancellation)
+    end
+    loop dependency-plan scheduled-task order
+        Context->>Scheduled: resolve plan and activate
+        Scheduled->>Tasks: spawn fixed-delay / fixed-rate loop
     end
     Context->>Context: commit Ready
     Context->>Bus: publish(ApplicationReadyEvent)
@@ -1248,6 +1256,57 @@ flowchart LR
     Next -->|"success; more runners"| Resolve
     Next -->|"all succeeded"| Ready
     Next -->|"Err / panic / timeout / cancel"| Rollback
+```
+
+### IoC-managed scheduled tasks
+
+`ScheduledTask` represents in-process periodic work for the lifetime of an
+application. It closes the ownership gap in tx_di plugins that spawn nested
+Tokio tasks, lose child handles, swallow loop failures, and distribute shutdown
+policy, without turning Vernal into a job platform:
+
+- the implementation is an ordinary IoC Singleton and may inject framework
+  resources or consumer services;
+- `TaskSchedule` provides validated non-zero fixed-delay and fixed-rate plans
+  with an optional initial delay. Cron, time zones, persistence, distributed
+  election, compensation, and job scripting stay outside Vernal;
+- fixed delay waits after completion; fixed rate follows one time line and
+  uses Tokio `MissedTickBehavior::Skip` instead of burst catch-up;
+- one task executes serially without re-entry, while different task components
+  may run concurrently after deterministic dependency-plan activation;
+- direct, qualified, application-module, and conditional-module declarations
+  share Definition, Singleton, duplicate, and dependency-order validation;
+- Context activates tasks after all runners succeed and before committing
+  `Ready`. Activation proves supervision, not a successful first tick;
+- execution errors, panic, or unexpected cancellation are retained by
+  `ManagedTaskSupervisor` and cancel the application; normal close reuses
+  `TaskShutdownPolicy` graceful wait and bounded abort;
+- `ScheduledTaskFailure` redacts default output while preserving the explicit
+  `Error::source` chain.
+
+Work required for readiness remains an `ApplicationRunner`. Sa-Token-Rust
+session cleanup, Ddd4r Outbox/projection polling, and Hutool-Rust cache
+maintenance may use this contract, while their algorithms, transactions,
+retries, and job data remain consumer-owned.
+
+```mermaid
+flowchart LR
+    Runner["All runners succeeded"]
+    Plan["Frozen IoC dependency plan"]
+    Resolve["Resolve Singleton ScheduledTask"]
+    Schedule{"TaskSchedule"}
+    Delay["FixedDelay<br/>wait after completion"]
+    Rate["FixedRate<br/>skip missed ticks"]
+    Supervisor["ManagedTaskSupervisor<br/>handles · cancel · failure"]
+    Ready["Commit Ready"]
+    Shutdown["cancel · graceful wait · bounded abort"]
+
+    Runner --> Plan --> Resolve --> Schedule
+    Schedule --> Delay --> Supervisor
+    Schedule --> Rate --> Supervisor
+    Supervisor --> Ready
+    Supervisor -->|"runtime failure"| Shutdown
+    Ready -->|"application close"| Shutdown
 ```
 
 ### Application lifecycle ownership
@@ -1712,13 +1771,17 @@ non-Send mutable targets, and non-Send/Sync outputs, plus a passing associated
 output case. Tokio benchmarks are also implemented; macro API stability,
 cross-machine thresholds, and release guarantees remain open.
 
-The Phase 3 kernel has seventy-three contract tests for dependency-order
+The Phase 3 kernel has eighty-one contract tests for dependency-order
 startup, reverse shutdown, initialize/start rollback, invalid transitions,
 idempotent close, concurrent close serialization, and context-local typed
 event isolation, IoC-managed listener ownership/failure, and truthful
 Refreshed/Ready facts after state commit, plus dependency-ordered application
 runners, direct/qualified/module/conditional assembly, short-circuit, timeout,
-panic isolation, redaction, and rollback, plus runtime-unavailable diagnostics, same-instance injection
+panic isolation, redaction, and rollback, plus validated fixed-delay/fixed-rate
+schedules, non-overlapping execution, missed-tick skipping, dependency-plan
+activation diagnostics, supervised failure/panic cancellation,
+module/condition/qualifier assembly, and shutdown, plus
+runtime-unavailable diagnostics, same-instance injection
 of the eleven built-in resources, application-owned Scope cancellation,
 task failure/panic propagation, cancellation-safe shared task shutdown,
 timeout abort, task-before-component stop ordering, cancelled close-waiter
@@ -1780,7 +1843,8 @@ No phase is complete merely because a crate exists or `cargo check` is green.
 - [x] Typed configuration objects bind through an explicit field schema,
   become ordinary Context-local IoC singletons, and keep values out of errors.
 - [x] Conditional modules evaluate once against the frozen Environment and
-  atomically include definitions, Trait bindings, and lifecycle registrations.
+  atomically include definitions, Trait bindings, lifecycle, listeners,
+  runners, and scheduled-task registrations.
 - [ ] Graph, interception, and lifecycle include success/failure/rollback tests.
 - [ ] No pointer-address chain map, normal-flow panic, or hidden cross-context state.
 - [ ] Web adapters pass one conformance suite while preserving native semantics.

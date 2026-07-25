@@ -907,7 +907,7 @@ Hutool-Rust 可以把 `Profile/SettingLoader` 的结果转换成
 
 `ApplicationModule` 是面向应用自有 Starter 与生态 Bridge 的公共装配 SPI。
 模块的 `configure` 只写入隔离的 `ApplicationModuleRegistrar`，可统一暂存组件
-Definition、Trait Binding、生命周期登记、受管事件监听器、应用 Runner、
+Definition、Trait Binding、生命周期登记、受管事件监听器、应用 Runner、周期任务、
 Send/Local Advisor、AOP Operation、
 PropertySource、Active/Default Profile 和显式 `ConditionalComponentModule`。
 
@@ -918,7 +918,7 @@ PropertySource、Active/Default Profile 和显式 `ConditionalComponentModule`�
 3. 在应用已有名称和当前模块批次两个范围内预检全部内嵌条件模块身份；
 4. 把环境贡献应用到克隆的 `ApplicationEnvironmentBuilder` 完成预检；
 5. 通过 IoC 原子 `register_bundle` 校验并提交 Definition 与 Binding；
-6. 全部预检成功后，才把生命周期、事件监听、Runner、AOP、Operation、Environment 和条件贡献一次
+6. 全部预检成功后，才把生命周期、事件监听、Runner、周期任务、AOP、Operation、Environment 和条件贡献一次
    移入真实应用建造器。
 
 配置失败、条件身份非法/重复、PropertySource 重名、Profile 非法或
@@ -935,7 +935,7 @@ flowchart LR
     Condition["条件身份预检<br/>应用 + 当前模块批次"]
     Env["克隆 Environment<br/>校验来源与 Profile"]
     Bundle["IoC register_bundle<br/>Definition + Binding"]
-    Commit["一次提交应用<br/>生命周期 · 监听器 · Runner · AOP · Operation · Environment"]
+    Commit["一次提交应用<br/>生命周期 · 监听器 · Runner · 周期任务 · AOP · Operation · Environment"]
     Rollback["返回结构化错误<br/>建造器保持不变"]
 
     Bridge --> Stage
@@ -960,8 +960,8 @@ flowchart LR
   match-if-missing，并比较占位符展开后的值；
 - `PredicateCondition` 把线程安全闭包适配成自定义条件，但诊断不会序列化闭包
   捕获的数据；
-- `ConditionalComponentModule` 把 Definition、Trait Binding、生命周期登记、事件监听与
-  应用 Runner 声明
+- `ConditionalComponentModule` 把 Definition、Trait Binding、生命周期登记、事件监听、
+  应用 Runner 与周期任务声明
   绑定为一个原子装配单元；
 - Environment 冻结后按模块注册顺序求值一次，依赖图规划前只提交命中模块；
 - 未命中模块整体排除；若无条件组件仍依赖其中对象，GraphPlanner 继续返回
@@ -980,7 +980,7 @@ flowchart LR
     Environment["冻结的 ApplicationEnvironment"]
     Condition["ComponentCondition<br/>Profile · Property · Predicate"]
     Decision{"是否命中？"}
-    Commit["原子提交模块<br/>Definition + Binding + Lifecycle + Listener + Runner"]
+    Commit["原子提交模块<br/>Definition + Binding + Lifecycle + Listener + Runner + ScheduledTask"]
     Omit["整体排除模块"]
     Graph["RegistryBuilder<br/>依赖图校验"]
     Snapshot["ConditionEvaluationSnapshot<br/>不含属性键和值"]
@@ -1025,6 +1025,7 @@ register
   → publish ApplicationRefreshedEvent
   → start in dependency order
   → run ApplicationRunner in dependency order
+  → activate ScheduledTask in dependency order
   → commit Ready
   → publish ApplicationReadyEvent
   → cancel and drain managed tasks
@@ -1059,8 +1060,8 @@ Context 自身只发布两个刻意保持最小的生命周期事实：
 
 - 全部 Singleton 预热、监听订阅和 Lifecycle 初始化成功，并先提交
   `Refreshed` 状态后，发布 `ApplicationRefreshedEvent`；
-- 全部必要 Lifecycle 组件启动且全部应用 Runner 成功，并先提交 `Ready` 状态后，发布
-  `ApplicationReadyEvent`；
+- 全部必要 Lifecycle 组件启动、应用 Runner 成功且周期任务被监督器接受，并先提交
+  `Ready` 状态后，发布 `ApplicationReadyEvent`；
 - 发布是异步入队，不是启动完成屏障。不同监听器没有跨监听器完成顺序，处理失败
   继续沿受管任务取消路径收口；
 - refresh/start 失败不会发布对应事实；
@@ -1076,6 +1077,7 @@ sequenceDiagram
     participant Tasks as "ManagedTaskSupervisor"
     participant Lifecycle as "Lifecycle 组件"
     participant Runner as "ApplicationRunner"
+    participant Scheduled as "ScheduledTask"
 
     App->>Context: refresh()
     Context->>IoC: 预热 Singleton
@@ -1090,6 +1092,10 @@ sequenceDiagram
     Context->>Lifecycle: start()
     loop Runner 依赖计划顺序
         Context->>Runner: run(子取消令牌)
+    end
+    loop 周期任务依赖计划顺序
+        Context->>Scheduled: 解析计划并提交监督器
+        Scheduled->>Tasks: spawn(固定延迟 / 固定频率)
     end
     Context->>Context: 提交 Ready
     Context->>Bus: publish(ApplicationReadyEvent)
@@ -1147,7 +1153,51 @@ flowchart LR
     Next -->|"Err / panic / 超时 / 取消"| Rollback
 ```
 
-### 10.9 Context 生命周期所有权
+### 10.9 IoC 托管周期任务
+
+`ScheduledTask` 表达应用存活期间持续执行的进程内周期工作。它补足 tx_di 插件中
+自行 `tokio::spawn` 后容易丢失子任务句柄、吞掉错误和分散停机策略的问题，但不会
+把作业平台或通用工具集合并入 Context：
+
+- 实现类必须是普通 IoC Singleton，可注入框架资源和消费方服务；
+- `TaskSchedule` 只提供经过非零间隔校验的固定延迟与固定频率计划，并支持初始
+  延迟；Cron、时区、持久化、分布式选主和补偿执行不属于 Vernal；
+- 固定延迟以上一次完成时刻为基准；固定频率沿时间轴触发，执行过慢时使用 Tokio
+  `MissedTickBehavior::Skip` 跳过错过时刻，不突发补跑；
+- 同一任务串行且不重入，不同任务在按依赖计划确定激活顺序后可并发运行；
+- 直接、限定符、应用模块与条件模块四条装配路径共享 Definition、Singleton、
+  重复声明和依赖排序校验；
+- Context 在全部 Runner 成功后、提交 `Ready` 前把任务交给
+  `ManagedTaskSupervisor`。激活只证明任务已被接受，不证明首次执行成功；
+- 单次返回错误、panic 或异常取消会由监督器保存首个失败并取消应用；正常关闭
+  复用 `TaskShutdownPolicy` 的优雅等待和有界 abort；
+- 错误通过 `ScheduledTaskFailure` 默认脱敏，显式 `Error::source` 保留根因。
+
+需要首次执行成功才能就绪的工作必须使用 `ApplicationRunner`。Sa-Token-Rust
+会话清理、Ddd4r Outbox/投影轮询和 Hutool-Rust 缓存维护可以使用本合同，但清理
+算法、事务、重试和作业数据仍由消费方拥有。
+
+```mermaid
+flowchart LR
+    Runner["全部 Runner 成功"]
+    Plan["冻结的 IoC 依赖计划"]
+    Resolve["解析 Singleton ScheduledTask"]
+    Schedule{"TaskSchedule"}
+    Delay["FixedDelay<br/>完成后等待"]
+    Rate["FixedRate<br/>错过时刻 Skip"]
+    Supervisor["ManagedTaskSupervisor<br/>句柄 · 取消 · 失败"]
+    Ready["提交 Ready"]
+    Shutdown["取消 · 优雅等待 · 有界 abort"]
+
+    Runner --> Plan --> Resolve --> Schedule
+    Schedule --> Delay --> Supervisor
+    Schedule --> Rate --> Supervisor
+    Supervisor --> Ready
+    Supervisor -->|"运行期失败"| Shutdown
+    Ready -->|"应用关闭"| Shutdown
+```
+
+### 10.10 Context 生命周期所有权
 
 `ApplicationContext` 是公开门面，不让某个临时调用者 Future 直接拥有生命周期。
 `ApplicationStartupCoordinator` 在独立 Tokio task 中执行 refresh/initialize/
@@ -1223,7 +1273,7 @@ flowchart LR
     Close --> Drain["排空任务并逆序 stop"]
 ```
 
-### 10.10 受管 Tokio 任务
+### 10.11 受管 Tokio 任务
 
 `ManagedTaskSupervisor` 是 Context 对长期 Worker、消息消费、配置监听和
 Hutool-Rust Cron 驱动任务的所有权边界。它不实现这些业务或工具能力，只管理其
@@ -1558,11 +1608,13 @@ Local-AOP 测试覆盖非 `Send` 返回值、顺序、短路、取消、计划�
 正向用例证明宏可投影复杂类型。Tokio 性能基准亦已落地；剩余的是宏 API 稳定性、
 跨机器性能阈值和发布承诺。
 
-Phase 3 内核另有 73 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
+Phase 3 内核另有 81 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
 回滚、非法转换、幂等关闭、并发关闭串行化、Context-local 类型化事件隔离，
 IoC 托管监听器所有权/失败，以及状态提交后如实发布 Refreshed/Ready 事实；
 还覆盖应用 Runner 的依赖顺序、直接/限定符/模块/条件装配、错误短路、超时、
-panic 隔离、脱敏与回滚，以及高层构建器的 Runtime 缺失诊断、十一类内建组件
+panic 隔离、脱敏与回滚，并覆盖固定延迟/固定频率计划校验、单任务非重入、
+错过时刻跳过、依赖顺序激活诊断、受管失败/panic 取消、模块/条件/限定符装配和
+统一关闭，以及高层构建器的 Runtime 缺失诊断、十一类内建组件
 同实例注入、应用 Scope 取消树、
 任务错误/panic 传播、取消安全共享停机、超时 abort、任务先于组件 stop 的顺序、
 关闭等待者取消后继续完成组件释放、refresh/start 等待者取消后继续失败回滚、
@@ -1617,7 +1669,7 @@ fail-closed 与条件错误脱敏，并覆盖显式 ApplicationModule 安装、�
 - [x] 类型安全配置对象通过显式字段 Schema 绑定，成为普通 Context-local IoC
   Singleton，并保证错误不包含属性值；
 - [x] 条件模块只对冻结 Environment 求值一次，并原子包含 Definition、Trait
-  Binding 与生命周期登记；
+  Binding、生命周期、监听器、Runner 与周期任务登记；
 - [ ] 组件图、拦截链和生命周期都有成功、失败与回滚测试；
 - [ ] 无指针地址全局链、无正常控制流 panic、无隐式跨 Context 状态；
 - [ ] Web Adapter 通过统一合同套件，并保留各框架原生语义；

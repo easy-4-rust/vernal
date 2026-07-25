@@ -6,14 +6,15 @@ use vernal_ioc::{ComponentDefinition, Qualifier, TraitBinding};
 
 use crate::{
     ApplicationEnvironment, ApplicationEventListener, ApplicationRunner, ComponentCondition,
-    ConditionError, ConditionEvaluationSnapshot, ConfigurationProperties, Lifecycle,
+    ConditionError, ConditionEvaluationSnapshot, ConfigurationProperties, Lifecycle, ScheduledTask,
     application_runner_registrar::ApplicationRunnerRegistrar,
     condition_contribution_counts::ConditionContributionCounts,
     conditional_component_module_parts::ConditionalComponentModuleParts,
     event_listener_registrar::EventListenerRegistrar, lifecycle_registrar::LifecycleRegistrar,
+    scheduled_task_registrar::ScheduledTaskRegistrar,
 };
 
-/// 把同一装配条件下的组件定义、Trait Binding、生命周期、监听器与 Runner
+/// 把同一装配条件下的组件定义、Trait Binding、生命周期、监听器、Runner 与任务
 /// 登记组成原子模块。
 ///
 /// 模块只有在条件命中时才整体提交到 `RegistryBuilder`。这避免组件定义被排除、
@@ -27,6 +28,7 @@ pub struct ConditionalComponentModule {
     lifecycle_registrars: Vec<Box<LifecycleRegistrar>>,
     event_listener_registrars: Vec<Box<EventListenerRegistrar>>,
     application_runner_registrars: Vec<Box<ApplicationRunnerRegistrar>>,
+    scheduled_task_registrars: Vec<Box<ScheduledTaskRegistrar>>,
 }
 
 impl ConditionalComponentModule {
@@ -50,6 +52,7 @@ impl ConditionalComponentModule {
             lifecycle_registrars: Vec::new(),
             event_listener_registrars: Vec::new(),
             application_runner_registrars: Vec::new(),
+            scheduled_task_registrars: Vec::new(),
         }
     }
 
@@ -167,6 +170,31 @@ impl ConditionalComponentModule {
         self
     }
 
+    /// 声明模块内一个无限定符 Singleton 周期任务。
+    ///
+    /// 条件未命中时，任务声明与组件定义一起排除，不会创建后台 Tokio 任务。
+    pub fn scheduled_task<T>(&mut self) -> &mut Self
+    where
+        T: ScheduledTask,
+    {
+        self.scheduled_task_registrars.push(Box::new(|builder| {
+            builder.scheduled_task::<T>();
+        }));
+        self
+    }
+
+    /// 声明模块内一个带精确限定符的 Singleton 周期任务。
+    pub fn scheduled_task_qualified<T>(&mut self, qualifier: Qualifier) -> &mut Self
+    where
+        T: ScheduledTask,
+    {
+        self.scheduled_task_registrars
+            .push(Box::new(move |builder| {
+                builder.scheduled_task_qualified::<T>(qualifier);
+            }));
+        self
+    }
+
     /// 返回条件模块静态名称。
     #[must_use]
     pub const fn name(&self) -> &'static str {
@@ -205,6 +233,7 @@ impl ConditionalComponentModule {
             && self.lifecycle_registrars.is_empty()
             && self.event_listener_registrars.is_empty()
             && self.application_runner_registrars.is_empty()
+            && self.scheduled_task_registrars.is_empty()
         {
             return Err(ConditionError::EmptyModule { name: self.name });
         }
@@ -236,11 +265,12 @@ impl ConditionalComponentModule {
                 self.lifecycle_registrars.len(),
                 self.event_listener_registrars.len(),
                 self.application_runner_registrars.len(),
+                self.scheduled_task_registrars.len(),
             ),
         )
     }
 
-    /// 消费模块并返回可原子提交的五类注册项。
+    /// 消费模块并返回可原子提交的六类注册项。
     pub(crate) fn into_parts(self) -> ConditionalComponentModuleParts {
         ConditionalComponentModuleParts {
             definitions: self.definitions,
@@ -248,6 +278,7 @@ impl ConditionalComponentModule {
             lifecycle_registrars: self.lifecycle_registrars,
             event_listener_registrars: self.event_listener_registrars,
             application_runner_registrars: self.application_runner_registrars,
+            scheduled_task_registrars: self.scheduled_task_registrars,
         }
     }
 }
@@ -275,6 +306,10 @@ impl fmt::Debug for ConditionalComponentModule {
             .field(
                 "application_runner_count",
                 &self.application_runner_registrars.len(),
+            )
+            .field(
+                "scheduled_task_count",
+                &self.scheduled_task_registrars.len(),
             )
             .finish()
     }

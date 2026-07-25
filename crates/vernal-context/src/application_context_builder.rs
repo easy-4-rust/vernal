@@ -9,8 +9,9 @@ use vernal_ioc::{ComponentKey, Container, Qualifier, Registry, ResolveError};
 
 use crate::{
     ApplicationContext, ApplicationEventListener, ApplicationRunner, ContextError, Lifecycle,
-    context_resources::ContextResources, managed_application_runner::ManagedApplicationRunner,
-    managed_event_listener::ManagedEventListener,
+    ScheduledTask, context_resources::ContextResources,
+    managed_application_runner::ManagedApplicationRunner,
+    managed_event_listener::ManagedEventListener, managed_scheduled_task::ManagedScheduledTask,
 };
 
 pub(crate) type LifecycleResolver =
@@ -25,6 +26,7 @@ pub struct ApplicationContextBuilder {
     lifecycle_resolvers: Vec<(ComponentKey, Arc<LifecycleResolver>)>,
     event_listeners: Vec<ManagedEventListener>,
     application_runners: Vec<ManagedApplicationRunner>,
+    scheduled_tasks: Vec<ManagedScheduledTask>,
     resources: ContextResources,
 }
 
@@ -37,6 +39,7 @@ impl ApplicationContextBuilder {
             lifecycle_resolvers: Vec::new(),
             event_listeners: Vec::new(),
             application_runners: Vec::new(),
+            scheduled_tasks: Vec::new(),
             resources: ContextResources::standalone(),
         }
     }
@@ -52,6 +55,7 @@ impl ApplicationContextBuilder {
             lifecycle_resolvers: Vec::new(),
             event_listeners: Vec::new(),
             application_runners: Vec::new(),
+            scheduled_tasks: Vec::new(),
             resources,
         }
     }
@@ -128,12 +132,31 @@ impl ApplicationContextBuilder {
         self
     }
 
-    /// 校验生命周期、监听器和 Runner 绑定并创建 Context。
+    /// 登记一个由无限定符 Singleton 组件实现的 Context 托管周期任务。
+    pub(crate) fn scheduled_task<T>(&mut self) -> &mut Self
+    where
+        T: ScheduledTask,
+    {
+        self.scheduled_tasks.push(ManagedScheduledTask::new::<T>());
+        self
+    }
+
+    /// 登记一个由带限定符 Singleton 组件实现的 Context 托管周期任务。
+    pub(crate) fn scheduled_task_qualified<T>(&mut self, qualifier: Qualifier) -> &mut Self
+    where
+        T: ScheduledTask,
+    {
+        self.scheduled_tasks
+            .push(ManagedScheduledTask::qualified::<T>(qualifier));
+        self
+    }
+
+    /// 校验生命周期、监听器、Runner 和周期任务绑定并创建 Context。
     ///
     /// # Errors
     ///
-    /// 声明类型没有对应 `IoC` 定义、监听器/Runner 作用域不合法，或声明重复时
-    /// 返回对应的结构化 [`ContextError`]。
+    /// 声明类型没有对应 `IoC` 定义、监听器/Runner/周期任务作用域不合法，或声明
+    /// 重复时返回对应的结构化 [`ContextError`]。
     pub fn build(mut self) -> Result<ApplicationContext, ContextError> {
         let positions: HashMap<ComponentKey, usize> = self
             .container
@@ -194,6 +217,25 @@ impl ApplicationContextBuilder {
                 });
             }
         }
+        let mut scheduled_task_declarations = HashSet::new();
+        for task in &self.scheduled_tasks {
+            if !positions.contains_key(task.component()) {
+                return Err(ContextError::ScheduledTaskDefinitionNotFound {
+                    component: task.component().clone(),
+                });
+            }
+            if !scheduled_task_declarations.insert(task.component().clone()) {
+                return Err(ContextError::DuplicateScheduledTask {
+                    component: task.component().clone(),
+                });
+            }
+            if let Some(scope) = task.invalid_scope(&self.container) {
+                return Err(ContextError::ScheduledTaskScope {
+                    component: task.component().clone(),
+                    scope,
+                });
+            }
+        }
 
         self.lifecycle_resolvers
             .sort_by_key(|(key, _)| positions[key]);
@@ -201,11 +243,14 @@ impl ApplicationContextBuilder {
             .sort_by_key(|listener| positions[listener.component()]);
         self.application_runners
             .sort_by_key(|runner| positions[runner.component()]);
+        self.scheduled_tasks
+            .sort_by_key(|task| positions[task.component()]);
         Ok(ApplicationContext::new(
             self.container,
             self.lifecycle_resolvers,
             self.event_listeners,
             self.application_runners,
+            self.scheduled_tasks,
             self.resources,
         ))
     }

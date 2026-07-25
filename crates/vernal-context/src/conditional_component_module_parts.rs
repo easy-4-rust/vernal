@@ -5,6 +5,7 @@ use vernal_ioc::{ComponentDefinition, TraitBinding};
 use crate::{
     application_runner_registrar::ApplicationRunnerRegistrar,
     event_listener_registrar::EventListenerRegistrar, lifecycle_registrar::LifecycleRegistrar,
+    scheduled_task_registrar::ScheduledTaskRegistrar,
 };
 
 /// 保存一个条件模块等待按判断结果整体提交或排除的全部贡献。
@@ -16,4 +17,5 @@ pub(crate) struct ConditionalComponentModuleParts {
     pub(crate) lifecycle_registrars: Vec<Box<LifecycleRegistrar>>,
     pub(crate) event_listener_registrars: Vec<Box<EventListenerRegistrar>>,
     pub(crate) application_runner_registrars: Vec<Box<ApplicationRunnerRegistrar>>,
+    pub(crate) scheduled_task_registrars: Vec<Box<ScheduledTaskRegistrar>>,
 }

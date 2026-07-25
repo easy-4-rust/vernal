@@ -105,7 +105,7 @@ Vernal 遵守四条不可退化的规则：
 | `vernal-core` | 实验性 | Tokio-first 框架的公共合同 |
 | `vernal-ioc` | Phase 1/诊断内核已实现 | 定义、作用域、解析、依赖图和只读快照 |
 | `vernal-aop` | Phase 2 内核已实现 | Send/Local Around/Next、不可变操作元数据、可组合切点代数、不可变计划和取消 |
-| `vernal-context` | Phase 3/诊断内核已实现 | 应用环境、类型安全配置对象、条件装配、生命周期、回滚、事件和脱敏启动报告 |
+| `vernal-context` | Phase 3/诊断内核已实现 | 应用环境、类型安全配置、条件装配、生命周期、事件、Runner、周期任务和脱敏报告 |
 | `vernal-macros` | Phase 2/3 宏已实现 | 组件/配置元数据、Operation 声明与 Context-local 异步方法织入 |
 | `vernal-web` | Phase 4 合同已实现 | 框架中立的 Context、请求 Scope、Handler 和错误合同 |
 | `vernal-web-testkit` | Phase 4 绑定/生命周期合同已实现 | 十个 Adapter 共享 Context/Scope/组件绑定及成功、错误、Drop 清理断言 |
@@ -403,8 +403,8 @@ broadcast 订阅，随后才调用任何 Lifecycle `initialize()`，因此初始
 
 Context 会在状态成功提交后，通过同一 EventBus 发布两个框架事实：全部 Singleton
 预热、监听订阅和 Lifecycle 初始化完成并提交 `Refreshed` 后发布
-`ApplicationRefreshedEvent`；全部必要组件启动且全部一次性 Runner 成功并提交
-`Ready` 后发布
+`ApplicationRefreshedEvent`；全部必要组件启动、一次性 Runner 成功且周期任务被
+Context 任务监督器接受并提交 `Ready` 后发布
 `ApplicationReadyEvent`。发布只负责把不可变事实放入队列，不是启动屏障，也不
 保证不同监听器的完成顺序。监听器失败因此通过受管任务取消和关闭错误链异步暴露；
 refresh/start 失败则不会发布对应事实。Vernal 刻意不提供语义虚假的 Closed
@@ -418,6 +418,15 @@ Runner 接收应用取消树的子令牌，并复用生命周期 start/abort 预
 超时或应用取消会阻止后续 Runner 并触发完整逆序回滚。长期 Worker 必须提交给
 `ManagedTaskSupervisor`，不能在 Runner 内 detach。直接、限定符、应用模块与
 条件模块四条注册路径共享同一校验和排序语义。
+
+长期周期工作可以由 IoC Singleton 实现 `ScheduledTask`。`TaskSchedule` 提供经过
+非零间隔校验的固定延迟与固定频率计划，并支持初始延迟；同一任务永不重叠执行，
+固定频率任务会跳过错过的时刻而不是突发补跑，不同任务组件则可以并发。Vernal 在
+Runner 之后、`Ready` 之前按依赖计划顺序激活任务，再把句柄、取消、panic、错误、
+优雅等待和有界 abort 全部交给现有 `ManagedTaskSupervisor`。激活只表示监督已经
+建立，不表示首次执行成功；影响就绪的工作仍应使用 `ApplicationRunner`。该底座
+可承载 Sa-Token-Rust 会话清理、Ddd4r Outbox/投影轮询和 Hutool-Rust 缓存维护，
+但作业持久化、Cron、脚本执行和领域重试策略不会进入 Vernal。
 
 高层建造器还会注册 Context-local `ApplicationEnvironment`：
 应用显式添加 `PropertySource` 并声明高低优先级和 Profile，组件可以读取
@@ -480,10 +489,11 @@ Spring Boot 式隐式自动配置。`refresh()` 与
 | 受管 Tokio 任务 | Context 持有任务句柄、失败取消、优雅等待、有界 abort 与共享停机结果 | Phase 3 内核 |
 | 应用环境 | 显式 PropertySource 优先级、Profile、占位符、类型化读取与脱敏快照 | Phase 3 内核 |
 | 类型安全配置对象 | 基于前缀派生绑定必填/可选/默认/嵌套字段、错误脱敏与原生 IoC 注入 | Phase 3 内核 |
-| 显式应用模块 | 为消费方 Bridge 原子装配 Definition/Binding/生命周期/监听器/Runner/AOP/Operation/Environment/条件模块 | Phase 3 内核 |
-| 条件组件装配 | 构建期 Profile/Property/自定义条件，组件定义、Binding、生命周期、监听器与 Runner 原子进退 | Phase 3 内核 |
+| 显式应用模块 | 为消费方 Bridge 原子装配 Definition/Binding/生命周期/监听器/Runner/周期任务/AOP/Operation/Environment/条件模块 | Phase 3 内核 |
+| 条件组件装配 | 构建期 Profile/Property/自定义条件，组件定义、Binding、生命周期、监听器、Runner 与周期任务原子进退 | Phase 3 内核 |
 | 事件 | Context 内类型化发布、Refreshed/Ready 事实及 IoC 托管的 fail-fast 监听器 | Phase 3 内核 |
 | 应用 Runner | Ready 前按依赖顺序执行一次性启动工作，支持取消、超时、panic 隔离与回滚 | Phase 3 内核 |
+| 周期任务 | 固定延迟/频率计划、依赖顺序激活、单任务非重入、失败取消与受管关闭 | Phase 3 内核 |
 | 异步集成 | Tokio 原生取消、deadline 与类型化调用上下文 | Phase 2 内核 |
 | Web 上下文 | 请求 Context、请求 Scope、Handler 调用和错误映射 | Phase 4 合同 |
 | HTTP | 请求/响应、Body Frame/Trailer、显式限量收集、取消和背压 | Phase 4 合同 |
@@ -603,11 +613,13 @@ fail-closed 构建。宏前端运行合同覆盖 `self: Arc<Self>`、借用 `&se
 拦截器的 Criterion 0.7 Tokio 基准；本机首轮中位估计分别为 2.55 ns、336 ns、
 476 ns 和 727 ns。该结果只用于绝对成本与链长度趋势分析，不承诺跨硬件 SLA，
 也不作“零开销”宣传。宏 API 稳定性与稳定硬件回归阈值仍待完成。
-Phase 3 内核现有 73 个测试，覆盖依赖顺序启动、逆序关闭、initialize/start
+Phase 3 内核现有 81 个测试，覆盖依赖顺序启动、逆序关闭、initialize/start
 回滚、非法状态转换、幂等关闭、并发关闭串行化和 Context-local 类型化事件
 隔离、IoC 托管监听器所有权/失败，以及状态提交后如实发布 Refreshed/Ready
 事实，并覆盖应用 Runner 的依赖顺序、模块/条件/限定符装配、错误短路、
-超时/panic 隔离、脱敏和回滚；还覆盖高层构建器十一类内建资源注入、应用 Scope
+超时/panic 隔离、脱敏和回滚，并覆盖固定延迟/固定频率计划校验、周期执行非重入、
+错过时刻跳过、依赖计划激活诊断、受管失败/panic 取消、模块/条件/限定符装配与
+关闭；还覆盖高层构建器十一类内建资源注入、应用 Scope
 取消树、任务错误/panic 传播、
 取消安全的共享任务停机、超时 abort、任务先于组件 stop 的顺序、关闭等待者取消
 后的继续释放、refresh/start 等待者取消后的继续回滚、start 前应用取消、任务

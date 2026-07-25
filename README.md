@@ -116,7 +116,7 @@ Detailed decisions, flows, failure semantics, and acceptance criteria are in:
 | `vernal-core` | Experimental | Shared contracts for the Tokio-first framework |
 | `vernal-ioc` | Phase 1/diagnostics kernel implemented | Definitions, scopes, resolution, graph validation, read-only snapshots |
 | `vernal-aop` | Phase 2 kernel implemented | Send/Local Around/Next, immutable operation metadata, composable pointcut algebra, immutable plans, cancellation |
-| `vernal-context` | Phase 3/diagnostics kernel implemented | Managed bootstrap, application environment, typed configuration objects, conditional assembly, lifecycle, events, redacted startup reports |
+| `vernal-context` | Phase 3/diagnostics kernel implemented | Managed bootstrap, environment, typed configuration, conditional assembly, lifecycle, events, runners, scheduled tasks, redacted reports |
 | `vernal-macros` | Phase 2/3 macros implemented | Component/configuration metadata, operation declarations, and context-local async method weaving |
 | `vernal-web` | Phase 4 contract implemented | Framework-neutral context, request scope, handler, and error contracts |
 | `vernal-web-testkit` | Phase 4 binding/lifecycle contracts implemented | Shared Context/scope/component binding and success/error/drop cleanup assertions for all ten adapters |
@@ -549,8 +549,9 @@ custom-scoped instances.
 After a successful state commit, the Context publishes two framework-owned
 facts through the same bus: `ApplicationRefreshedEvent` after all singleton
 warm-up, listener subscriptions, and lifecycle initialization complete, then
-`ApplicationReadyEvent` after every required component starts and every
-one-shot application runner succeeds. Publication
+`ApplicationReadyEvent` after every required component starts, every one-shot
+application runner succeeds, and every scheduled task is accepted by the
+Context task supervisor. Publication
 only queues an immutable fact; it is not a startup barrier and does not impose
 completion order across listeners. A listener failure is therefore reported
 asynchronously through managed-task cancellation and the shutdown error chain.
@@ -570,6 +571,19 @@ runners and triggers full reverse rollback. Long-lived workers remain
 `ManagedTaskSupervisor` tasks; detaching them from a runner is outside the
 contract. Direct, qualified, application-module, and conditional-module
 registrations share the same validation and ordering semantics.
+
+Long-lived periodic work can be expressed as an IoC Singleton implementing
+`ScheduledTask`. `TaskSchedule` supports validated fixed-delay and fixed-rate
+plans with an optional initial delay. One task never overlaps itself; fixed-rate
+execution skips missed ticks instead of creating a catch-up burst, while
+different task components may run concurrently. Vernal activates tasks in
+dependency-plan order after runners and before `Ready`, then delegates every
+handle, cancellation, panic, error, graceful wait, and bounded abort to the
+existing `ManagedTaskSupervisor`. Activation means supervision has started,
+not that the first tick succeeded—work required for readiness belongs in an
+`ApplicationRunner`. This foundation fits Sa-Token-Rust session cleanup,
+Ddd4r Outbox/projection polling, and Hutool-Rust cache maintenance without
+pulling job persistence, Cron, scripting, or domain retry policy into Vernal.
 
 The high-level builder also registers a Context-local
 `ApplicationEnvironment`: applications add ordered `PropertySource` objects
@@ -645,10 +659,11 @@ or a no-yield loop inside an async task.
 | Managed Tokio tasks | Context-owned task handles, failure-driven cancellation, graceful wait, bounded abort, shared shutdown result | Phase 3 kernel |
 | Application environment | Explicit PropertySource precedence, profiles, placeholders, typed lookup, and redacted snapshots | Phase 3 kernel |
 | Type-safe configuration objects | Prefix-based derive binding, required/optional/default/nested fields, redacted errors, and native IoC injection | Phase 3 kernel |
-| Explicit application modules | Atomic Definition/Binding/lifecycle/listener/runner/AOP/operation/environment/conditional assembly for consumer-owned bridges | Phase 3 kernel |
-| Conditional component assembly | Build-time Profile/Property/custom conditions with atomic definition, binding, lifecycle, listener, and runner inclusion | Phase 3 kernel |
+| Explicit application modules | Atomic Definition/Binding/lifecycle/listener/runner/scheduled-task/AOP/operation/environment/conditional assembly for consumer-owned bridges | Phase 3 kernel |
+| Conditional component assembly | Build-time Profile/Property/custom conditions with atomic definition, binding, lifecycle, listener, runner, and scheduled-task inclusion | Phase 3 kernel |
 | Events | Context-local typed publication, Refreshed/Ready facts, and IoC-managed fail-fast listeners | Phase 3 kernel |
 | Application runners | Dependency-ordered one-shot startup work before Ready, with cancellation, timeout, panic isolation, and rollback | Phase 3 kernel |
+| Scheduled tasks | Validated fixed-delay/fixed-rate work, dependency-ordered activation, non-overlap, fail-fast cancellation, and supervised shutdown | Phase 3 kernel |
 | Async integration | Tokio-native cancellation, deadlines, and typed invocation context | Phase 2 kernel |
 | Web context | Request context, request scope, handler invocation, error mapping | Phase 4 contract |
 | HTTP | Request/response, body frames/trailers, explicit bounded collection, cancellation, backpressure | Phase 4 contract |
@@ -796,13 +811,17 @@ are 2.55 ns, 336 ns, 476 ns, and 727 ns respectively. These values describe
 absolute overhead and chain-length scaling only; they are not a cross-hardware
 SLA or a zero-cost claim. Macro API stability and stable-hardware regression
 thresholds remain open.
-The Phase 3 kernel has seventy-three tests covering dependency-order startup,
+The Phase 3 kernel has eighty-one tests covering dependency-order startup,
 reverse shutdown, initialize/start rollback, invalid transitions, idempotent
 close, concurrent close serialization, and context-local typed event
 isolation, IoC-managed listener ownership/failure, and truthful
 Refreshed/Ready publication after state commit, plus dependency-ordered
 application runners, module/condition/qualifier assembly, error short-circuit,
-timeout/panic isolation, redaction, and rollback, plus managed injection of eleven framework resources,
+timeout/panic isolation, redaction, and rollback, plus validated
+fixed-delay/fixed-rate schedules, non-overlapping periodic execution,
+missed-tick skipping, dependency-plan activation diagnostics, supervised
+failure/panic cancellation, module/condition/qualifier assembly, and shutdown,
+plus managed injection of eleven framework resources,
 application-owned Scope cancellation, task failure/panic propagation,
 cancellation-safe shared task shutdown, timeout abort, task-before-component
 stop ordering, cancelled close-waiter recovery, failure-driven

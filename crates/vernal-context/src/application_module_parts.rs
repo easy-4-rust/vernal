@@ -9,6 +9,7 @@ use crate::{
     event_listener_registrar::EventListenerRegistrar, lifecycle_registrar::LifecycleRegistrar,
     local_advisor_registration::LocalAdvisorRegistration,
     module_environment_contribution::ModuleEnvironmentContribution,
+    scheduled_task_registrar::ScheduledTaskRegistrar,
 };
 
 /// 保存已经完成模块配置、等待统一预检和提交的全部贡献。
@@ -21,6 +22,7 @@ pub(crate) struct ApplicationModuleParts {
     pub(crate) lifecycle_registrars: Vec<Box<LifecycleRegistrar>>,
     pub(crate) event_listener_registrars: Vec<Box<EventListenerRegistrar>>,
     pub(crate) application_runner_registrars: Vec<Box<ApplicationRunnerRegistrar>>,
+    pub(crate) scheduled_task_registrars: Vec<Box<ScheduledTaskRegistrar>>,
     pub(crate) advisor_registrations: Vec<AdvisorRegistration>,
     pub(crate) local_advisor_registrations: Vec<LocalAdvisorRegistration>,
     pub(crate) operations: Vec<Operation>,
@@ -36,6 +38,7 @@ impl ApplicationModuleParts {
             && self.lifecycle_registrars.is_empty()
             && self.event_listener_registrars.is_empty()
             && self.application_runner_registrars.is_empty()
+            && self.scheduled_task_registrars.is_empty()
             && self.advisor_registrations.is_empty()
             && self.local_advisor_registrations.is_empty()
             && self.operations.is_empty()

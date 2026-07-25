@@ -7,20 +7,22 @@ use vernal_ioc::{Component, ComponentDefinition, Qualifier, TraitBinding};
 
 use crate::{
     ApplicationEventListener, ApplicationRunner, ConditionalComponentModule,
-    ConfigurationProperties, Lifecycle, PropertySource, advisor_registration::AdvisorRegistration,
-    application_module_parts::ApplicationModuleParts,
+    ConfigurationProperties, Lifecycle, PropertySource, ScheduledTask,
+    advisor_registration::AdvisorRegistration, application_module_parts::ApplicationModuleParts,
     application_runner_registrar::ApplicationRunnerRegistrar,
     event_listener_registrar::EventListenerRegistrar, lifecycle_registrar::LifecycleRegistrar,
     local_advisor_registration::LocalAdvisorRegistration, managed_advisor::ManagedAdvisor,
     managed_local_advisor::ManagedLocalAdvisor,
     module_environment_contribution::ModuleEnvironmentContribution,
+    scheduled_task_registrar::ScheduledTaskRegistrar,
 };
 
 /// 在应用建造器之外暂存一个模块的全部装配贡献。
 ///
 /// 所有方法只修改当前 Registrar，不触碰真实 `VernalApplicationBuilder`。只有
 /// [`crate::VernalApplicationBuilder::register_module`] 完成模块配置、环境预检和
-/// `IoC` bundle 校验后，组件、监听器、Runner 及其他贡献才按原声明顺序一次提交。
+/// `IoC` bundle 校验后，组件、监听器、Runner、周期任务及其他贡献才按原声明顺序
+/// 一次提交。
 #[derive(Default)]
 pub struct ApplicationModuleRegistrar {
     definitions: Vec<ComponentDefinition>,
@@ -28,6 +30,7 @@ pub struct ApplicationModuleRegistrar {
     lifecycle_registrars: Vec<Box<LifecycleRegistrar>>,
     event_listener_registrars: Vec<Box<EventListenerRegistrar>>,
     application_runner_registrars: Vec<Box<ApplicationRunnerRegistrar>>,
+    scheduled_task_registrars: Vec<Box<ScheduledTaskRegistrar>>,
     advisor_registrations: Vec<AdvisorRegistration>,
     local_advisor_registrations: Vec<LocalAdvisorRegistration>,
     operations: Vec<Operation>,
@@ -173,6 +176,37 @@ impl ApplicationModuleRegistrar {
         R: Component + ApplicationRunner,
     {
         self.component::<R>().application_runner::<R>()
+    }
+
+    /// 声明一个由无限定符 Singleton 组件实现的 Context 托管周期任务。
+    pub fn scheduled_task<T>(&mut self) -> &mut Self
+    where
+        T: ScheduledTask,
+    {
+        self.scheduled_task_registrars.push(Box::new(|builder| {
+            builder.scheduled_task::<T>();
+        }));
+        self
+    }
+
+    /// 声明一个由带精确限定符 Singleton 组件实现的周期任务。
+    pub fn scheduled_task_qualified<T>(&mut self, qualifier: Qualifier) -> &mut Self
+    where
+        T: ScheduledTask,
+    {
+        self.scheduled_task_registrars
+            .push(Box::new(move |builder| {
+                builder.scheduled_task_qualified::<T>(qualifier);
+            }));
+        self
+    }
+
+    /// 同时暂存派生任务组件定义及其周期执行声明。
+    pub fn register_scheduled_task<T>(&mut self) -> &mut Self
+    where
+        T: Component + ScheduledTask,
+    {
+        self.component::<T>().scheduled_task::<T>()
     }
 
     /// 暂存一个已经构造完成的线程安全 Advisor。
@@ -342,6 +376,7 @@ impl ApplicationModuleRegistrar {
             lifecycle_registrars: self.lifecycle_registrars,
             event_listener_registrars: self.event_listener_registrars,
             application_runner_registrars: self.application_runner_registrars,
+            scheduled_task_registrars: self.scheduled_task_registrars,
             advisor_registrations: self.advisor_registrations,
             local_advisor_registrations: self.local_advisor_registrations,
             operations: self.operations,

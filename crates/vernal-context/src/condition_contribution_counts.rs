@@ -1,6 +1,6 @@
 //! 条件模块贡献数量值对象。
 
-/// 聚合条件模块四类非组件贡献的脱敏数量。
+/// 聚合条件模块五类非组件贡献的脱敏数量。
 ///
 /// 使用命名字段代替位置数组，避免新增贡献种类时把诊断计数写错槽位。该对象只在
 /// 构建期快照创建过程中传递，不进入公开 API 或运行期状态。
@@ -10,6 +10,7 @@ pub(crate) struct ConditionContributionCounts {
     lifecycles: usize,
     event_listeners: usize,
     application_runners: usize,
+    scheduled_tasks: usize,
 }
 
 impl ConditionContributionCounts {
@@ -19,12 +20,14 @@ impl ConditionContributionCounts {
         lifecycles: usize,
         event_listeners: usize,
         application_runners: usize,
+        scheduled_tasks: usize,
     ) -> Self {
         Self {
             trait_bindings,
             lifecycles,
             event_listeners,
             application_runners,
+            scheduled_tasks,
         }
     }
 
@@ -46,5 +49,10 @@ impl ConditionContributionCounts {
     /// 返回应用 Runner 声明数量。
     pub(crate) const fn application_runners(self) -> usize {
         self.application_runners
+    }
+
+    /// 返回周期任务声明数量。
+    pub(crate) const fn scheduled_tasks(self) -> usize {
+        self.scheduled_tasks
     }
 }

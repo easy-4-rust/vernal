@@ -19,6 +19,8 @@ pub enum DiagnosticPhase {
     Start,
     /// 执行一次性应用 Runner。
     ApplicationRunner,
+    /// 解析并向 Tokio 任务监督器提交周期任务。
+    ScheduledTaskActivation,
     /// 正常关闭或失败回滚时执行组件停止钩子。
     Stop,
 }
@@ -33,6 +35,7 @@ impl DiagnosticPhase {
             Self::Initialize => "initialize",
             Self::Start => "start",
             Self::ApplicationRunner => "application_runner",
+            Self::ScheduledTaskActivation => "scheduled_task_activation",
             Self::Stop => "stop",
         }
     }

@@ -40,6 +40,23 @@ pub enum ContextError {
         /// 重复声明的 Runner 组件身份。
         component: ComponentKey,
     },
+    /// 注册为周期任务的组件不在 `IoC` 构建计划中。
+    ScheduledTaskDefinitionNotFound {
+        /// 缺失的周期任务组件标识。
+        component: ComponentKey,
+    },
+    /// 周期任务使用了无法表达应用级后台任务身份的作用域。
+    ScheduledTaskScope {
+        /// 作用域不合法的任务组件身份。
+        component: ComponentKey,
+        /// 稳定、无业务数据的作用域名称。
+        scope: &'static str,
+    },
+    /// 同一周期任务组件被重复声明。
+    DuplicateScheduledTask {
+        /// 重复声明的任务组件身份。
+        component: ComponentKey,
+    },
     /// 注册为应用事件监听器的组件不在 `IoC` 构建计划中。
     EventListenerDefinitionNotFound {
         /// 缺失的监听器组件标识。
@@ -87,6 +104,13 @@ pub enum ContextError {
     /// 应用 Runner 组件无法从最终 Container 解析。
     ApplicationRunnerResolution {
         /// 正在解析的 Runner 组件标识。
+        component: ComponentKey,
+        /// `IoC` 原始解析错误。
+        source: Box<ResolveError>,
+    },
+    /// 周期任务组件无法从最终 Container 解析。
+    ScheduledTaskResolution {
+        /// 正在解析的任务组件标识。
         component: ComponentKey,
         /// `IoC` 原始解析错误。
         source: Box<ResolveError>,
@@ -154,6 +178,12 @@ impl fmt::Display for ContextError {
         if let Some(result) = self.fmt_application_runner(formatter) {
             return result;
         }
+        if let Some(result) = self.fmt_scheduled_task(formatter) {
+            return result;
+        }
+        if let Some(result) = self.fmt_event_listener(formatter) {
+            return result;
+        }
         match self {
             Self::InvalidState { operation, state } => {
                 write!(
@@ -175,24 +205,15 @@ impl fmt::Display for ContextError {
             | Self::ApplicationRunnerTimeout { .. } => {
                 formatter.write_str("application runner error")
             }
-            Self::EventListenerDefinitionNotFound { component, event } => write!(
-                formatter,
-                "application event listener component is not registered in IoC: \
-                 {component} for {event}"
-            ),
-            Self::EventListenerScope {
-                component,
-                event,
-                scope,
-            } => write!(
-                formatter,
-                "application event listener component {component} for {event} must be \
-                singleton, not {scope}"
-            ),
-            Self::DuplicateEventListener { component, event } => write!(
-                formatter,
-                "application event listener {component} is registered more than once for {event}"
-            ),
+            Self::ScheduledTaskDefinitionNotFound { .. }
+            | Self::ScheduledTaskScope { .. }
+            | Self::DuplicateScheduledTask { .. }
+            | Self::ScheduledTaskResolution { .. } => formatter.write_str("scheduled task error"),
+            Self::EventListenerDefinitionNotFound { .. }
+            | Self::EventListenerScope { .. }
+            | Self::DuplicateEventListener { .. } => {
+                formatter.write_str("application event listener error")
+            }
             Self::ContainerWarmUp { source } => {
                 write!(formatter, "failed to warm up IoC container: {source}")
             }
@@ -286,6 +307,54 @@ impl ContextError {
             _ => None,
         }
     }
+
+    /// 格式化周期任务声明和解析错误；其他错误交给主 Display 分支。
+    fn fmt_scheduled_task(&self, formatter: &mut fmt::Formatter<'_>) -> Option<fmt::Result> {
+        match self {
+            Self::ScheduledTaskDefinitionNotFound { component } => Some(write!(
+                formatter,
+                "scheduled task component is not registered in IoC: {component}"
+            )),
+            Self::ScheduledTaskScope { component, scope } => Some(write!(
+                formatter,
+                "scheduled task component {component} must be singleton, not {scope}"
+            )),
+            Self::DuplicateScheduledTask { component } => Some(write!(
+                formatter,
+                "scheduled task component is registered more than once: {component}"
+            )),
+            Self::ScheduledTaskResolution { component, .. } => Some(write!(
+                formatter,
+                "failed to resolve scheduled task {component}"
+            )),
+            _ => None,
+        }
+    }
+
+    /// 格式化事件监听器声明错误；其他错误交给主 Display 分支。
+    fn fmt_event_listener(&self, formatter: &mut fmt::Formatter<'_>) -> Option<fmt::Result> {
+        match self {
+            Self::EventListenerDefinitionNotFound { component, event } => Some(write!(
+                formatter,
+                "application event listener component is not registered in IoC: \
+                 {component} for {event}"
+            )),
+            Self::EventListenerScope {
+                component,
+                event,
+                scope,
+            } => Some(write!(
+                formatter,
+                "application event listener component {component} for {event} must be \
+                 singleton, not {scope}"
+            )),
+            Self::DuplicateEventListener { component, event } => Some(write!(
+                formatter,
+                "application event listener {component} is registered more than once for {event}"
+            )),
+            _ => None,
+        }
+    }
 }
 
 impl Error for ContextError {
@@ -294,7 +363,8 @@ impl Error for ContextError {
             Self::ContainerWarmUp { source }
             | Self::ComponentResolution { source, .. }
             | Self::EventListenerResolution { source, .. }
-            | Self::ApplicationRunnerResolution { source, .. } => Some(source.as_ref()),
+            | Self::ApplicationRunnerResolution { source, .. }
+            | Self::ScheduledTaskResolution { source, .. } => Some(source.as_ref()),
             Self::Lifecycle { source, .. }
             | Self::LifecycleCoordinator { source, .. }
             | Self::ShutdownSignal { source } => Some(source.as_ref()),
