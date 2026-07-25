@@ -488,8 +488,8 @@ or a no-yield loop inside an async task.
 “Phase 1” and “Phase 2 kernel” mean callable implementation and contract tests
 exist, but the API is still experimental. The first Component and AOP method
 macros are implemented with compile-fail coverage; broader method signatures,
-unused-definition runtime tracking, adapter auto-discovery, and benchmarks
-remain open. No label is a compatibility or performance claim.
+adapter auto-discovery, and benchmarks remain open. No label is a compatibility
+or performance claim.
 
 ## 7. Ecosystem role
 
@@ -569,20 +569,21 @@ under design. There is no crates.io installation command or stable API yet.
 
 Phase 5 is in progress: Sa-Token-Rust owns a tested and remotely integrated
 `sa-token-vernal` authentication and operation-authorization AOP bridge,
-and Hutool-Rust locally owns a tested `hutool-vernal` HTTP component bridge;
-both pin verified Vernal Git revisions. The Hutool-Rust checkout is currently
-under a separate history-rewrite/refactor stream, so its clean remote
-integration is still pending. Ddd4r now locally owns `ddd4r-vernal`; its real
-Tokio test, Clippy gate, and documentation build pass in an isolated dependency
-graph. The full Ddd4r workspace gate remains blocked by its pre-existing,
-currently unavailable `rbatis-r2dbc` Git revision and is not reported as
-passing.
+including Environment binding to Sa-Token's native builder. Hutool-Rust owns a
+tested and remotely integrated `hutool-vernal` bridge for HTTP components and
+Hutool Setting PropertySource snapshots; both pin verified Vernal Git
+revisions. Ddd4r now locally owns `ddd4r-vernal`; its real Tokio test, Clippy
+gate, and documentation build pass in an isolated dependency graph. The full
+Ddd4r workspace gate remains blocked by its pre-existing, currently unavailable
+`rbatis-r2dbc` Git revision and is not reported as passing.
 
-Phase 1/1.1/1.2 now has 33 IoC contract tests for 1,000-node deterministic
+Phase 1/1.1/1.2 now has 36 IoC contract tests for 1,000-node deterministic
 planning, structured graph diagnostics, concurrent singleton construction,
 container isolation, transient resolution, native objects, named/primary/all
 Trait bindings, Trait graph cycles, hidden-dependency rejection, atomic
-definition-plus-binding module registration, and stable Registry serialization.
+definition-plus-binding module registration, stable Registry serialization,
+and per-Container successful-resolution tracking with deterministic unused
+definition snapshots.
 The nine custom-Scope contracts additionally cover per-Scope concurrent
 construction, sibling isolation, parent/child lifetime direction, Container
 ownership, cancellation, reverse cleanup with failure continuation, and close
@@ -602,7 +603,7 @@ compile-fail cases for invalid component
 fields, invalid collection qualifiers, non-async interception, and borrowed
 receivers. Broader signature support, expanded
 macro diagnostics, and AOP benchmarks remain open.
-The Phase 3 kernel has forty-three tests covering dependency-order startup,
+The Phase 3 kernel has forty-four tests covering dependency-order startup,
 reverse shutdown, initialize/start rollback, invalid transitions, idempotent
 close, concurrent close serialization, and context-local typed event
 isolation, plus managed injection of eleven framework resources,

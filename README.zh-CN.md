@@ -327,8 +327,8 @@ Spring Boot 式隐式自动配置。`refresh()` 与
 | 诊断 | 可序列化 Registry/Context 快照与脱敏运行期清理告警 | Phase 3/4 诊断内核 |
 
 “Phase 1”和“Phase 2 内核”表示已有可调用实现与合同测试，但 API 仍处于实验
-阶段。任何标签都不代表稳定兼容或达到性能指标；未使用 Definition 的可靠运行时
-追踪和 Adapter 自动探测仍待后续实现。
+阶段。任何标签都不代表稳定兼容或达到性能指标；Adapter 自动探测和性能基准仍待
+后续实现。
 
 ## 7. 生态定位
 
@@ -398,16 +398,17 @@ crates.io 安装命令，也没有稳定 API 承诺。
 | Phase 5 | Hutool-Rust、Sa-Token-Rust 和 Ddd4r 桥接 | 由消费方拥有的集成示例 |
 | Phase 6 | Preview 发布 | MSRV、SemVer、安全、docs.rs 和打包门禁 |
 
-Phase 5 正在进行：Sa-Token-Rust 已远端集成 `sa-token-vernal` 认证与操作授权
-AOP Bridge；Hutool-Rust
-本地持有经过测试的 `hutool-vernal`；Ddd4r 本地已实现 `ddd4r-vernal`，其真实
-Tokio 测试、Clippy 和文档构建已在独立依赖图通过。Ddd4r 全 Workspace 门禁仍被
-既有、当前不可获取的 `rbatis-r2dbc` Git Revision 阻断，不能据此宣称全仓通过。
+Phase 5 正在进行：Sa-Token-Rust 已远端集成 `sa-token-vernal` 认证、操作授权
+AOP 与 Environment 配置绑定；Hutool-Rust 已远端集成 `hutool-vernal` HTTP
+组件和 Setting PropertySource；Ddd4r 本地已实现 `ddd4r-vernal`，其真实 Tokio
+测试、Clippy 和文档构建已在独立依赖图通过。Ddd4r 全 Workspace 门禁仍被既有、
+当前不可获取的 `rbatis-r2dbc` Git Revision 阻断，不能据此宣称全仓通过。
 
-Phase 1/1.1/1.2 已通过 33 个 IoC 合同测试，覆盖 1,000 节点确定性规划、结构化图
+Phase 1/1.1/1.2 已通过 36 个 IoC 合同测试，覆盖 1,000 节点确定性规划、结构化图
 诊断、并发 Singleton、双 Container 隔离、Transient、原生对象、Trait 命名/
 Primary/全部实现、Trait 图环、跨定义/绑定原子模块注册，以及稳定 Registry
-序列化快照。9 项自定义 Scope 合同进一步覆盖同 Scope 并发一次构造、兄弟
+序列化快照，并覆盖每 Container 隔离的成功解析追踪、确定性未使用定义快照和失败
+Scope 解析不误报。9 项自定义 Scope 合同进一步覆盖同 Scope 并发一次构造、兄弟
 隔离、父子生命周期方向、Container 所有权、取消传播、失败后继续逆序清理，以及
 关闭等待已开始工厂、等待者取消安全、有界等待后后台完成、钩子间 panic 隔离。
 Phase 2 AOP 内核现有 9 个 Send 合同测试，覆盖顺序进入/逆序退出、短路、成功结果
@@ -416,7 +417,7 @@ Phase 2 AOP 内核现有 9 个 Send 合同测试，覆盖顺序进入/逆序退�
 非 `Send` 返回值、顺序、短路、取消、计划目录和借用型本地目标。性能基准仍未
 完成。宏前端另有 5 个运行时合同测试（包含类型驱动自定义 Scope）和 4 个
 compile-fail 用例。
-Phase 3 内核现有 43 个测试，覆盖依赖顺序启动、逆序关闭、initialize/start
+Phase 3 内核现有 44 个测试，覆盖依赖顺序启动、逆序关闭、initialize/start
 回滚、非法状态转换、幂等关闭、并发关闭串行化和 Context-local 类型化事件
 隔离、高层构建器十一类内建资源注入、应用 Scope 取消树、任务错误/panic 传播、
 取消安全的共享任务停机、超时 abort、任务先于组件 stop 的顺序、关闭等待者取消

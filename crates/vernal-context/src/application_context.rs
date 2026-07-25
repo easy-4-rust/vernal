@@ -272,7 +272,8 @@ impl ApplicationContext {
     /// 返回值是拥有自身数据的快照；后续 start/close 操作只更新 Context 内部
     /// 报告，不会修改调用方已经取得的对象。
     pub async fn startup_report(&self) -> StartupReport {
-        self.lifecycle().startup_report().await
+        let unused_definitions = self.container().unused_definitions();
+        self.lifecycle().startup_report(unused_definitions).await
     }
 
     /// 记录一条不携带运行时数据的 Context-local 脱敏告警代码。

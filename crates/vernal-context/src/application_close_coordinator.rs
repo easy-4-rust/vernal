@@ -93,8 +93,13 @@ impl ApplicationCloseCoordinator {
     }
 
     /// 返回调用时刻拥有自身数据的诊断报告快照。
-    pub(crate) async fn startup_report(&self) -> StartupReport {
-        self.diagnostics.lock().await.clone()
+    ///
+    /// `unused_definitions` 来自 Container 的同步解析追踪快照；这里只把它与同一
+    /// 时刻的生命周期诊断值组合，不在协调器中保存第二份组件使用状态。
+    pub(crate) async fn startup_report(&self, unused_definitions: Vec<String>) -> StartupReport {
+        let mut report = self.diagnostics.lock().await.clone();
+        report.set_unused_definitions(unused_definitions);
+        report
     }
 
     /// 记录一个低基数静态运行期告警代码。

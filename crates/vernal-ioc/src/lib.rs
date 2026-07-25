@@ -17,6 +17,7 @@ mod qualifier;
 mod registry_builder;
 mod registry_snapshot;
 mod registry_summary;
+mod resolution_tracker;
 mod resolve_error;
 mod resolver;
 mod scope_close_failure;

@@ -46,6 +46,11 @@ impl StartupReport {
         local_invocation_plans: &LocalInvocationPlanCatalog,
         diagnostics: &DiagnosticConfiguration,
     ) -> Self {
+        let unused_definitions = registry
+            .components()
+            .iter()
+            .map(|component| component.key().to_owned())
+            .collect();
         Self {
             framework_version: vernal_core::FRAMEWORK_VERSION.to_owned(),
             minimum_rust_version: vernal_core::MINIMUM_RUST_VERSION.to_owned(),
@@ -63,9 +68,9 @@ impl StartupReport {
             condition_evaluations: diagnostics.condition_evaluations().to_vec(),
             observations: Vec::new(),
             warnings: diagnostics.warnings().to_vec(),
-            // 仅凭“没有入边”不能判断组件未使用；在引入准确的解析追踪前保持空集，
-            // 避免把合法入口服务误报为死定义。
-            unused_definitions: Vec::new(),
+            // Context 刚创建时尚未解析任何定义；后续快照会用 Container 的真实成功
+            // 解析记录替换该初值，而不是根据依赖图入边进行推断。
+            unused_definitions,
         }
     }
 
@@ -171,13 +176,19 @@ impl StartupReport {
         &self.warnings
     }
 
-    /// 返回经过可靠解析追踪确认的未使用定义。
+    /// 返回经过当前 Container 成功解析追踪确认的未使用定义。
     ///
-    /// 当前内核尚未启用解析追踪，因此该集合保持为空，不使用“没有入边”等不可靠
-    /// 启发式规则制造误报。
+    /// 结果按依赖优先构建顺序排列。Context refresh 会解析全部 Singleton；尚未发生
+    /// 真实解析的 Transient 和 Custom Scope 定义继续出现在此处。该集合不使用
+    /// “没有入边”等不可靠启发式规则。
     #[must_use]
     pub fn unused_definitions(&self) -> &[String] {
         &self.unused_definitions
+    }
+
+    /// 用调用时刻的 Container 解析快照替换未使用定义集合。
+    pub(crate) fn set_unused_definitions(&mut self, definitions: Vec<String>) {
+        self.unused_definitions = definitions;
     }
 
     /// 更新 Context 状态；只由 Context 状态机调用。

@@ -12,6 +12,7 @@ use vernal_core::SharedError;
 use crate::{
     ComponentDefinition, ComponentKey, Dependency, Qualifier, Registry, ResolveError, Resolver,
     Scope, ScopeContext, ScopeKey, TraitBinding, component_definition::ErasedComponent,
+    resolution_tracker::ResolutionTracker,
 };
 
 type SingletonCell = OnceLock<Result<ErasedComponent, ResolveError>>;
@@ -23,6 +24,7 @@ type SingletonCell = OnceLock<Result<ErasedComponent, ResolveError>>;
 pub struct Container {
     registry: Registry,
     singletons: Mutex<HashMap<ComponentKey, Arc<SingletonCell>>>,
+    resolutions: ResolutionTracker,
     owner: Arc<()>,
 }
 
@@ -33,6 +35,7 @@ impl Container {
         Self {
             registry,
             singletons: Mutex::new(HashMap::new()),
+            resolutions: ResolutionTracker::new(),
             owner: Arc::new(()),
         }
     }
@@ -247,6 +250,27 @@ impl Container {
         &self.registry
     }
 
+    /// 返回尚未在当前 Container 中成功解析过的组件定义。
+    ///
+    /// 结果严格按 Registry 已验证的依赖优先构建顺序排列。应用上下文的
+    /// [`Self::warm_up`] 会成功解析全部 Singleton，因此它们不再属于未使用定义；
+    /// 尚未被请求的 Transient 和 Custom Scope 定义会一直保留，直到某次真实解析
+    /// 成功。失败的候选选择、构造或 Scope 解析不会把定义错误标记为已使用。
+    ///
+    /// 该诊断是每 Container 隔离的历史快照，不使用进程级计数器，也不会把
+    /// “依赖图没有入边”误判成未使用。
+    #[must_use]
+    pub fn unused_definitions(&self) -> Vec<String> {
+        let resolved = self.resolutions.snapshot();
+        self.registry
+            .ordered_indices()
+            .iter()
+            .map(|index| &self.registry.definitions()[*index])
+            .filter(|definition| !resolved.contains(definition.key()))
+            .map(|definition| definition.key().to_string())
+            .collect()
+    }
+
     /// 完成候选选择、构造和类型恢复。
     pub(crate) fn resolve_typed<T>(
         &self,
@@ -426,7 +450,7 @@ impl Container {
             return Err(ResolveError::CircularRuntime { path });
         }
 
-        match definition.scope() {
+        let result = match definition.scope() {
             Scope::Transient => self.construct(definition, stack, scope),
             Scope::Singleton => {
                 let cell = {
@@ -458,7 +482,14 @@ impl Container {
                     self.construct(definition, stack, Some(active_scope))
                 })
             }
+        };
+
+        // 只在完整作用域解析成功后写入追踪器：Singleton 缓存的构造错误、未激活
+        // Custom Scope 和 Transient 工厂失败都保持“未使用”，诊断不会掩盖失败。
+        if result.is_ok() {
+            self.resolutions.record(definition.key());
         }
+        result
     }
 
     /// 创建受限解析器并调用组件工厂。

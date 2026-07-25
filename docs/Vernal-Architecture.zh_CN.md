@@ -1116,11 +1116,12 @@ Phase 1 最低验收：
 4. `cargo tree` 证明 `vernal-ioc` 不包含具体 Web 或 ORM 框架；允许按需使用 Tokio；
 5. 所有失败通过 `Result` 返回，不依赖 panic。
 
-截至 2026-07-25，上述五项已有本地证据：33 个 IoC 合同测试覆盖 1,000 节点图、
+截至 2026-07-25，上述五项已有本地证据：36 个 IoC 合同测试覆盖 1,000 节点图、
 缺失/歧义/循环路径、两个并行 Container 的 Singleton 隔离、Transient、
 qualifier、隐藏依赖拒绝、原生值注册、Tokio Handle 真实 task，以及 Trait
 命名/Primary/全部实现、空集合、目标缺失、Trait 图环、命名冲突、批量原子性，
-以及不含工厂与实例地址的确定性 Registry 序列化快照。
+不含工厂与实例地址的确定性 Registry 序列化快照，并覆盖每 Container 成功解析
+追踪、确定性未使用定义快照，以及失败 Scope 解析不被误记为使用。
 其中 9 项验证类型化自定义 Scope 的并发一次构造、兄弟隔离、安全父子可见性、
 Container 所有权、取消传播、失败后继续逆序清理、关闭等待已开始工厂、等待者
 取消安全、超时后后台完成，以及关闭钩子 panic 隔离。
@@ -1138,7 +1139,7 @@ Singleton Component 注入、Transient 构造、Trait Object 注入和 Context-l
 非异步方法和借用接收器。Phase 2 已具备可调用
 闭环，但更广泛的方法签名、诊断矩阵、性能基准和稳定性承诺仍未完成。
 
-Phase 3 内核另有 43 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
+Phase 3 内核另有 44 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
 回滚、非法转换、幂等关闭、并发关闭串行化、Context-local 类型化事件隔离，
 高层构建器的 Runtime 缺失诊断、十一类内建组件同实例注入、应用 Scope 取消树、
 任务错误/panic 传播、取消安全共享停机、超时 abort、任务先于组件 stop 的顺序、
@@ -1148,6 +1149,7 @@ start 前应用取消、任务失败驱动 `run_until_cancelled()` 进入 `Close
 类型化 OS 信号发布、应用取消优先结束信号等待，PropertySource 优先级、
 Profile、类型转换、嵌套占位符、循环/来源失败，以及成功/失败启动报告的只读
 快照、Serde 序列化、环境属性值隔离与业务错误正文脱敏，并覆盖
+由真实 Container 解析记录驱动的动态未使用定义快照，以及
 Profile/Property/自定义条件选择、条件 Definition/Lifecycle 原子进退、依赖图
 fail-closed 与条件错误脱敏。
 

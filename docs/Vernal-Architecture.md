@@ -1166,13 +1166,15 @@ Phase 1 minimum acceptance:
    Tokio is allowed when needed.
 5. Normal failures use `Result`, not panic.
 
-As of 2026-07-25, all five items have local evidence: 33 IoC contract tests
+As of 2026-07-25, all five items have local evidence: 36 IoC contract tests
 cover a 1,000-node graph, missing/ambiguous/cycle paths, singleton isolation
 across two concurrent containers, transient creation, qualifiers, hidden
 dependency rejection, native-value registration, a real task spawned through
 an injected Tokio handle, named/primary/all Trait bindings, empty sets,
 missing targets, Trait cycles, naming conflicts, batch atomicity, and
-deterministic Registry serialization without factories or instance addresses.
+deterministic Registry serialization without factories or instance addresses,
+plus per-Container successful-resolution tracking and deterministic unused
+definition snapshots that do not count failed Scope resolution as usage.
 Nine of those tests cover typed custom scopes: concurrent once-only
 construction, sibling isolation, safe parent/child visibility, Container
 ownership, cancellation, reverse cleanup with failure continuation, and close
@@ -1199,7 +1201,7 @@ receivers. Phase 2 now has a callable loop, while broader
 signatures, diagnostic coverage, benchmarks, and stability guarantees remain
 open.
 
-The Phase 3 kernel has forty-three contract tests for dependency-order
+The Phase 3 kernel has forty-four contract tests for dependency-order
 startup, reverse shutdown, initialize/start rollback, invalid transitions,
 idempotent close, concurrent close serialization, and context-local typed
 event isolation, plus runtime-unavailable diagnostics, same-instance injection
@@ -1213,6 +1215,7 @@ publication, application cancellation winning the signal race, stop-hook
 panic isolation, PropertySource precedence, profiles, typed conversion, nested
 placeholders, cycle/source failures, and owned/redacted serialization of
 successful and failed startup reports without environment keys or values,
+live unused-definition snapshots backed by actual Container resolution,
 plus Profile/Property/custom condition selection, atomic definition/lifecycle
 inclusion, fail-closed graph validation, and redacted condition failures.
 

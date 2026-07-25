@@ -148,3 +148,56 @@ async fn failed_lifecycle_report_never_serializes_business_error_text() {
     assert!(!json.contains("postgres://"));
     assert!(!json.contains("initialize failed"));
 }
+
+#[tokio::test]
+async fn report_tracks_transient_usage_without_graph_entry_heuristics() {
+    let mut builder = VernalApplicationBuilder::new(tokio::runtime::Handle::current());
+    builder
+        .register(ComponentDefinition::transient(|_| 42_u64))
+        .expect("transient definition");
+    let context = builder.build().expect("valid application");
+
+    // Context 创建后所有定义都尚未解析；这里只断言业务 Transient 存在，不耦合
+    // 内建 Tokio、Environment、事件和策略组件的具体数量。
+    let created = context.startup_report().await;
+    assert!(
+        created
+            .unused_definitions()
+            .iter()
+            .any(|definition| definition.ends_with("u64"))
+    );
+
+    context.refresh().await.expect("refresh");
+    let refreshed = context.startup_report().await;
+    assert_eq!(
+        refreshed
+            .unused_definitions()
+            .iter()
+            .filter(|definition| definition.ends_with("u64"))
+            .count(),
+        1,
+        "refresh only eagerly resolves singleton definitions"
+    );
+
+    assert_eq!(
+        *context
+            .container()
+            .resolve::<u64>()
+            .expect("transient resolution"),
+        42
+    );
+    let used = context.startup_report().await;
+    assert!(
+        used.unused_definitions().is_empty(),
+        "all built-in singletons were warmed and the business transient was resolved"
+    );
+
+    // 已取得的快照拥有自己的值，不会被后续解析反向修改。
+    assert!(
+        refreshed
+            .unused_definitions()
+            .iter()
+            .any(|definition| definition.ends_with("u64"))
+    );
+    context.close().await.expect("close");
+}
