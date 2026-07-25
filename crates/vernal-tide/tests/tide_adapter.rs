@@ -144,7 +144,7 @@ async fn missing_middleware_returns_safe_internal_server_error() {
 }
 
 #[tokio::test]
-async fn dropping_response_body_closes_request_scope() {
+async fn partial_response_consumption_then_disconnect_closes_request_scope() {
     let context = ready_context().await;
     let probe = Arc::new(ScopeCloseProbe::new());
     let handler_probe = Arc::clone(&probe);
@@ -159,12 +159,21 @@ async fn dropping_response_body_closes_request_scope() {
         }
     });
 
-    let response: Response = application
+    let mut response: Response = application
         .respond(request("/drop"))
         .await
         .expect("Tide response");
+    let mut body = response.take_body();
+    let mut first_byte = [0_u8; 1];
+    assert_eq!(
+        body.read(&mut first_byte)
+            .await
+            .expect("Tide response must emit one byte"),
+        1
+    );
+    assert_eq!(&first_byte, b"s");
     probe.assert_open();
-    drop(response);
+    drop(body);
 
     probe.assert_closed_within(Duration::from_secs(1)).await;
 }

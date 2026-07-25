@@ -129,7 +129,7 @@ async fn missing_vernal_middleware_returns_safe_rejection() {
 }
 
 #[tokio::test]
-async fn dropping_response_body_closes_request_scope() {
+async fn partial_response_consumption_then_disconnect_closes_request_scope() {
     let context = ready_context().await;
     let probe = Arc::new(ScopeCloseProbe::new());
     let handler_probe = Arc::clone(&probe);
@@ -148,8 +148,14 @@ async fn dropping_response_body_closes_request_scope() {
         .call(Request::default())
         .await
         .expect("endpoint response");
+    let mut stream = Box::pin(response.into_body().into_bytes_stream());
+    let data = poll_fn(|context| Pin::as_mut(&mut stream).poll_next(context))
+        .await
+        .expect("Poem response must emit one data chunk")
+        .expect("Poem data chunk must succeed");
+    assert_eq!(data, "stream is not consumed");
     probe.assert_open();
-    drop(response);
+    drop(stream);
 
     probe.assert_closed_within(Duration::from_secs(1)).await;
 }

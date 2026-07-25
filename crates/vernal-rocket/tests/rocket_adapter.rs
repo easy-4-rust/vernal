@@ -221,7 +221,7 @@ async fn missing_fairing_rejects_request_without_leaking_internal_error() {
 }
 
 #[rocket::async_test]
-async fn dropping_rocket_response_body_closes_request_scope() {
+async fn partial_response_consumption_then_disconnect_closes_request_scope() {
     let probe = Arc::new(ScopeCloseProbe::new());
     let context = ready_context(Arc::clone(&probe)).await;
     let rocket = rocket::build()
@@ -229,8 +229,17 @@ async fn dropping_rocket_response_body_closes_request_scope() {
         .mount("/", routes![hello]);
     let client = Client::tracked(rocket).await.expect("Rocket client");
 
-    let response = client.get("/hello").dispatch().await;
+    let mut response = client.get("/hello").dispatch().await;
     assert_eq!(response.status(), Status::Ok);
+    let mut first_byte = [0_u8; 1];
+    assert_eq!(
+        response
+            .read(&mut first_byte)
+            .await
+            .expect("Rocket response must emit one byte"),
+        1
+    );
+    assert_eq!(&first_byte, b"v");
     probe.assert_open();
     drop(response);
 

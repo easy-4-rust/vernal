@@ -110,7 +110,7 @@ async fn middleware_exposes_context_component_and_scope_until_body_finishes() {
 }
 
 #[actix_web::test]
-async fn dropping_response_body_closes_request_scope() {
+async fn partial_response_consumption_then_disconnect_closes_request_scope() {
     let context = ready_context().await;
     let probe = Arc::new(ScopeCloseProbe::new());
     let handler_probe = Arc::clone(&probe);
@@ -131,8 +131,14 @@ async fn dropping_response_body_closes_request_scope() {
 
     let request = test::TestRequest::get().uri("/drop").to_request();
     let response = test::call_service(&application, request).await;
+    let mut body = Box::pin(response.into_body());
+    let data = poll_fn(|context| Pin::as_mut(&mut body).poll_next(context))
+        .await
+        .expect("Actix response must emit one data chunk")
+        .expect("Actix data chunk must succeed");
+    assert_eq!(data, "stream is not consumed");
     probe.assert_open();
-    drop(response);
+    drop(body);
 
     probe.assert_closed_within(Duration::from_secs(1)).await;
 }

@@ -146,7 +146,7 @@ async fn missing_middleware_returns_safe_internal_server_error() {
 }
 
 #[tokio::test]
-async fn dropping_response_body_closes_request_scope() {
+async fn partial_response_consumption_then_disconnect_closes_request_scope() {
     let context = ready_context().await;
     let probe = Arc::new(ScopeCloseProbe::new());
     let handler_probe = Arc::clone(&probe);
@@ -162,8 +162,17 @@ async fn dropping_response_body_closes_request_scope() {
         })
         .await;
     let (_state, response) = expect_response(result);
+    let mut body = response.into_body();
+    let data = body
+        .frame()
+        .await
+        .expect("Gotham response must emit one data frame")
+        .expect("Gotham data frame must succeed")
+        .into_data()
+        .expect("first Gotham frame must contain data");
+    assert_eq!(data, "stream is not consumed");
     probe.assert_open();
-    drop(response);
+    drop(body);
 
     probe.assert_closed_within(Duration::from_secs(1)).await;
 }

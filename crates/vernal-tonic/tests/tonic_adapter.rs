@@ -186,7 +186,7 @@ async fn tower_layers_preserve_context_and_scope_through_tonic_interceptor() {
 }
 
 #[tokio::test]
-async fn dropping_tonic_response_body_closes_request_scope() {
+async fn partial_response_consumption_then_disconnect_closes_request_scope() {
     let context = ready_context().await;
     let probe = Arc::new(ScopeCloseProbe::new());
     let service_probe = Arc::clone(&probe);
@@ -215,8 +215,17 @@ async fn dropping_tonic_response_body_closes_request_scope() {
         )
         .await
         .expect("service response");
+    let mut body = response.into_body();
+    let data = body
+        .frame()
+        .await
+        .expect("Tonic response must emit one data frame")
+        .expect("Tonic data frame must succeed")
+        .into_data()
+        .expect("first Tonic frame must contain data");
+    assert_eq!(data, "stream is not consumed");
     probe.assert_open();
-    drop(response);
+    drop(body);
 
     probe.assert_closed_within(Duration::from_secs(1)).await;
 }

@@ -166,6 +166,43 @@ async fn response_body_completion_closes_scope_after_last_frame() {
 }
 
 #[tokio::test]
+async fn partial_response_consumption_then_disconnect_closes_request_scope() {
+    let probe = Arc::new(ScopeCloseProbe::new());
+    let service_probe = Arc::clone(&probe);
+    let service = service_fn(move |request: Request<()>| {
+        let service_probe = Arc::clone(&service_probe);
+        async move {
+            let scope = request
+                .extensions()
+                .get::<Arc<WebRequestScope>>()
+                .expect("request scope")
+                .clone();
+            service_probe.observe(&scope);
+            Ok::<_, Infallible>(Response::new(HttpBody::full("stream is not consumed")))
+        }
+    });
+
+    let response = RequestScopeLayer::new(ready_context().await)
+        .layer(service)
+        .oneshot(Request::new(()))
+        .await
+        .expect("scoped response");
+    let mut body = response.into_body();
+    let data = body
+        .frame()
+        .await
+        .expect("Tower response must emit one data frame")
+        .expect("Tower data frame must succeed")
+        .into_data()
+        .expect("first Tower frame must contain data");
+    assert_eq!(data, "stream is not consumed");
+    probe.assert_open();
+    drop(body);
+
+    probe.assert_closed_within(Duration::from_secs(1)).await;
+}
+
+#[tokio::test]
 async fn response_body_reports_explicit_scope_close_failure() {
     let service = service_fn(|request: Request<()>| async move {
         let scope = request

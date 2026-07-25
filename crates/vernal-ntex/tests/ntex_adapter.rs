@@ -127,7 +127,7 @@ async fn missing_middleware_returns_safe_internal_server_error() {
 }
 
 #[ntex::test]
-async fn dropping_response_body_closes_request_scope() {
+async fn partial_response_consumption_then_disconnect_closes_request_scope() {
     let context = ready_context().await;
     let probe = Arc::new(ScopeCloseProbe::new());
     let handler_probe = Arc::clone(&probe);
@@ -147,9 +147,15 @@ async fn dropping_response_body_closes_request_scope() {
         .await;
 
     let request = test::TestRequest::get().uri("/drop").to_request();
-    let response = test::call_service(&application, request).await;
+    let mut response = test::call_service(&application, request).await;
+    let mut body = response.take_body();
+    let data = poll_fn(|context| body.poll_next_chunk(context))
+        .await
+        .expect("Ntex response must emit one data chunk")
+        .expect("Ntex data chunk must succeed");
+    assert_eq!(data, "stream is not consumed");
     probe.assert_open();
-    drop(response);
+    drop(body);
 
     probe.assert_closed_within(Duration::from_secs(1)).await;
 }

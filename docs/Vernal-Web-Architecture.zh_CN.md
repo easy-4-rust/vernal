@@ -433,9 +433,11 @@ Body/Stream/Reader 包装器证明：错误路径会等待 Scope 关闭，再恢
 `ScopeCleanupTimeoutFixture` 提供真实应用绑定 Scope、有界清理策略和可控阻塞
 钩子；十个 Adapter 现已证明原生响应面会在预算内返回结构化超时，只记录
 `web.request-scope.cleanup-failed`，保留唯一后台协调器，并在钩子释放后恰好
-一次进入 `Closed`。客户端断连和下表其余矩阵仍按阶段继续补齐。Axum 取消合同
-还证明：后台关闭结果无法回传响应且被 Adapter 忽略时，所属 Context 仍会收到
-脱敏告警：
+一次进入 `Closed`。每个 Adapter 还会在不轮询终止边界的前提下消费一个原生
+数据帧、字节块或字节，随后丢弃消费者；该确定性框架边界断连合同证明
+`DropGuard` 取消会唤醒预启动清理任务，并关闭仍处于 Open 的 Scope。真实网络
+Socket 断连 E2E 和下表其余矩阵仍按阶段继续补齐。Axum 取消合同还证明：后台
+关闭结果无法回传响应且被 Adapter 忽略时，所属 Context 仍会收到脱敏告警：
 
 | 合同 | 必须覆盖 |
 |:---|:---|

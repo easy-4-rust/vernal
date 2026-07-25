@@ -491,9 +491,13 @@ failure. `ScopeCleanupTimeoutFixture` supplies a real application-bound scope,
 bounded cleanup policy, and controllable hanging hook. Every adapter now proves
 that its native response surface returns the structured timeout within budget,
 records only `web.request-scope.cleanup-failed`, leaves the single cleanup
-coordinator running, and reaches `Closed` exactly once after release. Client
-disconnect and remaining matrix paths continue incrementally. The Axum
-cancellation contract additionally proves that an
+coordinator running, and reaches `Closed` exactly once after release. Each
+adapter also consumes one native frame, chunk, or byte without polling the
+terminal boundary and then drops that consumer. This deterministic
+framework-boundary disconnect proves that `DropGuard` cancellation wakes the
+pre-started cleanup task and closes the still-open scope. Live-socket disconnect
+E2E and remaining matrix paths continue incrementally. The Axum cancellation
+contract additionally proves that an
 ignored background close error reaches the owning Context as a redacted warning:
 
 | Contract | Required coverage |

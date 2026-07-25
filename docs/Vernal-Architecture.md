@@ -1817,8 +1817,11 @@ error. `ScopeCleanupTimeoutFixture` then drives a real bounded policy and
 controllable hanging close hook through every native response wrapper. Each
 adapter returns the structured timeout, records only the redacted warning,
 continues the single background close, and reaches `Closed` exactly once after
-release. The shared testkit never closes the scope itself; the client-disconnect
-matrix remains open.
+release. All ten adapters additionally consume one native frame, chunk, or byte
+without polling the terminal boundary and then drop the response consumer.
+This deterministic framework-boundary disconnect wakes the pre-started cleanup
+task through `DropGuard` and closes the still-open scope. The shared testkit
+never closes the scope itself; live-socket disconnect E2E remains open.
 
 ## 16. Delivery roadmap
 

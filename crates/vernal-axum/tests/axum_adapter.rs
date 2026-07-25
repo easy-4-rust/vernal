@@ -15,6 +15,7 @@ use axum::{
     http::{Request, Response, StatusCode},
     routing::get,
 };
+use http_body_util::BodyExt;
 use tower::ServiceExt;
 use vernal_aop::{Advisor, Operation};
 use vernal_axum::{
@@ -112,7 +113,7 @@ async fn router_extracts_context_component_and_request_scope() {
 }
 
 #[tokio::test]
-async fn dropping_response_body_closes_scope_and_records_cleanup_failure() {
+async fn partial_response_consumption_then_disconnect_closes_scope_and_records_failure() {
     let context = ready_context().await;
     let probe = Arc::new(ScopeCloseProbe::new());
     let handler_probe = Arc::clone(&probe);
@@ -145,8 +146,17 @@ async fn dropping_response_body_closes_scope_and_records_cleanup_failure() {
         )
         .await
         .expect("router response");
+    let mut body = response.into_body();
+    let data = body
+        .frame()
+        .await
+        .expect("Axum response must emit one data frame")
+        .expect("Axum data frame must succeed")
+        .into_data()
+        .expect("first Axum frame must contain data");
+    assert_eq!(data, "stream is not consumed");
     probe.assert_open();
-    drop(response);
+    drop(body);
 
     probe.assert_closed_within(Duration::from_secs(1)).await;
     assert_eq!(

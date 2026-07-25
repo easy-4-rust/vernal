@@ -647,8 +647,10 @@ Adapter 共同验证正常 Body 完成、策略短路和响应 Body Drop 后由 
 失败源仍不持有 Scope。`ScopeCleanupTimeoutFixture` 还为每个 Adapter 建立采用
 有界策略的真实应用请求 Scope 和可控阻塞钩子，验证原生 Body/Stream/Reader 会
 在预算内返回结构化超时，只记录脱敏告警，并让唯一后台协调器在钩子释放后恰好
-一次进入 `Closed`。客户端断连、Security 集成和其余失败矩阵仍按架构清单继续
-补齐。
+一次进入 `Closed`。十个 Adapter 还会各自消费一个原生数据帧、字节块或字节，
+但不轮询终止边界，随后丢弃响应消费者；这一确定性的框架边界断连合同已证明
+`DropGuard` 取消会唤醒预启动清理任务，并关闭仍处于 Open 的 Scope。真实网络
+Socket 断连 E2E、Security 集成和其余失败矩阵仍按架构清单继续补齐。
 
 ## 10. 贡献与许可证
 

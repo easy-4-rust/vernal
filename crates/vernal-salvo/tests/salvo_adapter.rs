@@ -295,7 +295,7 @@ async fn salvo_body_reports_cleanup_timeout_while_background_close_continues() {
 }
 
 #[tokio::test]
-async fn dropping_salvo_response_body_closes_request_scope() {
+async fn partial_response_consumption_then_disconnect_closes_request_scope() {
     let context = ready_context().await;
     let probe = Arc::new(ScopeCloseProbe::new());
     let handlers: Vec<Arc<dyn Handler>> = vec![
@@ -314,8 +314,17 @@ async fn dropping_salvo_response_body_closes_request_scope() {
     control
         .call_next(&mut request, &mut depot, &mut response)
         .await;
+    let mut body = response.take_body();
+    let data = body
+        .frame()
+        .await
+        .expect("Salvo response must emit one data frame")
+        .expect("Salvo data frame must succeed")
+        .into_data()
+        .expect("first Salvo frame must contain data");
+    assert_eq!(data, "vernal-salvo");
     probe.assert_open();
-    drop(response);
+    drop(body);
 
     probe.assert_closed_within(Duration::from_secs(1)).await;
 }

@@ -859,8 +859,12 @@ transport failure is restored; the shared failure sources never own a scope.
 application-bound scope with a bounded policy and a controllable hanging hook.
 The native Body/Stream/Reader must report the structured timeout within budget,
 record only the redacted warning code, keep the single background coordinator
-running, and reach `Closed` exactly once after the hook is released. Client
-disconnects, security integration, and the remaining failure matrix remain
+running, and reach `Closed` exactly once after the hook is released. Every
+adapter also consumes one native data frame/chunk/byte without polling the
+terminal boundary, then drops the response consumer. These deterministic
+framework-boundary disconnect tests prove that `DropGuard` cancellation wakes
+the pre-started cleanup task and closes the still-open scope. Live-socket
+disconnect E2E, security integration, and the remaining failure matrix remain
 incremental architecture work.
 
 ## 10. Contributing and license

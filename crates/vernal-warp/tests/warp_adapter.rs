@@ -107,7 +107,7 @@ async fn service_exposes_context_component_and_scope_until_body_finishes() {
 }
 
 #[tokio::test]
-async fn dropping_response_body_closes_request_scope() {
+async fn partial_response_consumption_then_disconnect_closes_request_scope() {
     let context = ready_context().await;
     let probe = Arc::new(ScopeCloseProbe::new());
     let handler_probe = Arc::clone(&probe);
@@ -125,8 +125,17 @@ async fn dropping_response_body_closes_request_scope() {
         .expect("request");
 
     let response = service.oneshot(request).await.expect("service response");
+    let mut body = response.into_body();
+    let data = body
+        .frame()
+        .await
+        .expect("Warp response must emit one data frame")
+        .expect("Warp data frame must succeed")
+        .into_data()
+        .expect("first Warp frame must contain data");
+    assert_eq!(data, "stream is not consumed");
     probe.assert_open();
-    drop(response);
+    drop(body);
 
     probe.assert_closed_within(Duration::from_secs(1)).await;
 }
