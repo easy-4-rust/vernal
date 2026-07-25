@@ -388,10 +388,12 @@ flowchart LR
 ```
 
 - **Hutool-Rust** 继续承担通用工具库职责，可以消费 Vernal 能力，但 Vernal
-  不成为 Hutool-Rust 的子模块。消费方 `hutool-vernal` 除了原子安装
-  `HttpConfig` 与 Tokio/Reqwest `HttpClient`，还通过
-  `HutoolSettingPropertySource` 把 Profile/Setting 文档冻结为 Vernal
-  Environment 快照，分组键显式扁平化，冲突按 fail-closed 拒绝。
+  不成为 Hutool-Rust 的子模块。消费方 `hutool-vernal` 已把 `HttpConfig` 与
+  Tokio/Reqwest `HttpClient` 收敛为具名 `ApplicationModule`；
+  `HutoolApplicationModule` 还能把该 HTTP 依赖图、多份不可变 Setting 来源及
+  Active/Default Profile 作为一个事务装配。`HutoolSettingPropertySource` 把
+  Profile/Setting 文档冻结为 Vernal Environment 快照，分组键显式扁平化，
+  冲突按 fail-closed 拒绝。
 - **Sa-Token-Rust** 是唯一保留的安全集成目标，继续拥有认证、Session 和
   授权语义；Vernal 只提供组件生命周期与拦截编排，不重复建设安全内核。由
   Sa-Token-Rust 持有的 `sa-token-vernal` 已实现 `HttpRequestSnapshot` 适配、
@@ -443,10 +445,11 @@ crates.io 安装命令，也没有稳定 API 承诺。
 | Phase 6 | Preview 发布 | MSRV、SemVer、安全、docs.rs 和打包门禁 |
 
 Phase 5 正在进行：Sa-Token-Rust 已远端集成 `sa-token-vernal` 认证、操作授权
-AOP 与 Environment 配置绑定；Hutool-Rust 已远端集成 `hutool-vernal` HTTP
-组件和 Setting PropertySource；Ddd4r 本地已实现 `ddd4r-vernal`，其真实 Tokio
-测试、Clippy 和文档构建已在独立依赖图通过。Ddd4r 全 Workspace 门禁仍被既有、
-当前不可获取的 `rbatis-r2dbc` Git Revision 阻断，不能据此宣称全仓通过。
+AOP 与 Environment 配置绑定；Hutool-Rust 已远端集成 `hutool-vernal`，通过
+具名应用模块原子装配 HTTP 组件、Setting PropertySource 与 Profile；Ddd4r 本地
+已实现 `ddd4r-vernal`，其真实 Tokio 测试、Clippy 和文档构建已在独立依赖图通过。
+Ddd4r 全 Workspace 门禁仍被既有、当前不可获取的 `rbatis-r2dbc` Git Revision
+阻断，不能据此宣称全仓通过。
 
 Phase 1/1.1/1.2 已通过 36 个 IoC 合同测试，覆盖 1,000 节点确定性规划、结构化图
 诊断、并发 Singleton、双 Container 隔离、Transient、原生对象、Trait 命名/

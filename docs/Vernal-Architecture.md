@@ -1091,15 +1091,21 @@ interceptors may use `vernal-aop`, but Hutool-Rust must not own server
 ApplicationContext or become a Vernal kernel dependency.
 
 The local Hutool-Rust checkout now contains a consumer-owned, unpublished
-`hutool-vernal` bridge pinned to a verified Vernal Git revision. It atomically
-registers Hutool `HttpConfig` and the Tokio/Reqwest `HttpClient` as
-container-local singletons, exposes explicit URL/SSRF policy selection, and
-keeps the configuration edge visible to Vernal graph validation. Its runtime
-test proves singleton resolution, duplicate-bundle rejection, and local-target
-rejection before network I/O. `HutoolSettingPropertySource` additionally loads
-a real Hutool Profile/Setting document, freezes it as a Vernal PropertySource,
-maps named groups to dotted keys, and rejects flattened collisions atomically.
-The consumer bridge is committed and pushed in the Hutool-Rust repository.
+`hutool-vernal` bridge. Consumer commit `14ce41a` pins Vernal revision
+`d6b1f04` and atomically registers Hutool `HttpConfig` and the Tokio/Reqwest
+`HttpClient` as a named
+`ApplicationModule` of container-local singletons, exposes explicit URL/SSRF
+policy selection, and keeps the configuration edge visible to Vernal graph
+validation. `HutoolApplicationModule` can compose that HTTP graph, multiple
+immutable Setting sources, and active/default profiles as one consumer-owned
+transaction. `HutoolSettingPropertySource` additionally loads a real Hutool
+Profile/Setting document, freezes it as a Vernal PropertySource, maps named
+groups to dotted keys, and rejects flattened collisions atomically.
+
+Five bridge tests prove singleton resolution, duplicate module rejection,
+local-target rejection before network I/O, full HTTP/Setting/Profile assembly,
+and rollback plus same-name retry after a Definition conflict. The consumer
+bridge is committed and pushed in the Hutool-Rust repository.
 
 ### 12.2 Sa-Token-Rust
 

@@ -533,10 +533,12 @@ flowchart LR
 - **Hutool-Rust** remains a general-purpose utility library. It may consume
   Vernal capabilities, but Vernal does not become a Hutool-Rust module. Its
   consumer-owned `hutool-vernal` bridge now installs `HttpConfig` and the
-  Tokio/Reqwest `HttpClient` as an atomic, context-local component bundle with
-  an application-selected URL policy. `HutoolSettingPropertySource` snapshots
-  Hutool Profile/Setting documents into Vernal Environment with explicit
-  grouped-key flattening and fail-closed collision handling.
+  Tokio/Reqwest `HttpClient` as a named `ApplicationModule` with an
+  application-selected URL policy. `HutoolApplicationModule` can compose that
+  HTTP graph, multiple immutable Setting sources, and active/default profiles
+  as one transaction. `HutoolSettingPropertySource` snapshots Hutool
+  Profile/Setting documents into Vernal Environment with explicit grouped-key
+  flattening and fail-closed collision handling.
 - **Sa-Token-Rust** is the single retained security integration target and
   remains the authority for authentication, sessions, and
   authorization. Vernal supplies component lifecycle and interception, not a
@@ -596,8 +598,9 @@ under design. There is no crates.io installation command or stable API yet.
 Phase 5 is in progress: Sa-Token-Rust owns a tested and remotely integrated
 `sa-token-vernal` authentication and operation-authorization AOP bridge,
 including Environment binding to Sa-Token's native builder. Hutool-Rust owns a
-tested and remotely integrated `hutool-vernal` bridge for HTTP components and
-Hutool Setting PropertySource snapshots; both pin verified Vernal Git
+tested and remotely integrated `hutool-vernal` bridge whose named application
+module atomically composes HTTP components, Hutool Setting PropertySource
+snapshots, and profiles; both consumer bridges pin verified Vernal Git
 revisions. Ddd4r now locally owns `ddd4r-vernal`; its real Tokio test, Clippy
 gate, and documentation build pass in an isolated dependency graph. The full
 Ddd4r workspace gate remains blocked by its pre-existing, currently unavailable

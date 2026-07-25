@@ -1030,12 +1030,17 @@ Hutool-Rust 继续承担通用工具库职责。其基于 Reqwest 的 HTTP Clien
 成为 Vernal 内核依赖。
 
 本地 Hutool-Rust checkout 现已提供消费方持有、暂不发布的 `hutool-vernal`，
-并固定到已验证的 Vernal Git Revision。它把 Hutool `HttpConfig` 与基于
-Tokio/Reqwest 的 `HttpClient` 原子注册为 Container-local Singleton，显式选择
-URL/SSRF 策略，并让配置依赖进入 Vernal 图校验。运行时测试已证明 Singleton
-解析、重复组件包拒绝以及在网络 I/O 前拒绝本地目标。
+消费方提交 `14ce41a` 固定到 Vernal Revision `d6b1f04`。它把 Hutool
+`HttpConfig` 与基于 Tokio/Reqwest 的 `HttpClient` 注册为具名
+`ApplicationModule` 中的
+Container-local Singleton，显式选择 URL/SSRF 策略，并让配置依赖进入 Vernal
+图校验。`HutoolApplicationModule` 还能把该 HTTP 图、多份不可变 Setting 来源和
+Active/Default Profile 组织成一个消费方事务。
 `HutoolSettingPropertySource` 还会真实加载 Hutool Profile/Setting 文档，将其
 冻结成 Vernal PropertySource，把命名分组转换为点分键，并原子拒绝扁平化冲突。
+现有 5 个 Bridge 测试证明 Singleton 解析、重复模块拒绝、网络 I/O 前拒绝本地
+目标、HTTP/Setting/Profile 全能力装配，以及 Definition 冲突后的完整回滚与同名
+重试。
 该消费方 Bridge 已提交并推送到 Hutool-Rust 仓库。
 
 ### 12.2 Sa-Token-Rust
