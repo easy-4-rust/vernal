@@ -2,6 +2,7 @@
 #![doc = "Vernal 的编译期组件与切面元数据生成入口。"]
 
 mod component_derive;
+mod component_options;
 mod component_scope_option;
 mod configuration_default_option;
 mod configuration_properties_derive;
@@ -26,6 +27,8 @@ use syn::{DeriveInput, TypePath, parse_macro_input};
 /// `ComponentProvider<T>` 延迟解析具体类型，`TraitProvider<dyn Trait>` 延迟解析
 /// 唯一、Primary 或命名 Trait Binding；
 /// `#[component(optional)]` 允许对应 Provider 没有候选定义或绑定。
+/// `#[component(discover = "group")]` 只向可选 `vernal-discovery` 前端提交
+/// 静态定义入口；应用仍须显式选择分组并安装到自己的 Registry。
 #[proc_macro_derive(Component, attributes(component))]
 pub fn derive_component(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);

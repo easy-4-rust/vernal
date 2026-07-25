@@ -1,0 +1,21 @@
+[package]
+name = "vernal-discovery"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Optional link-time component discovery frontend for Vernal IoC."
+publish = false
+
+[dependencies]
+linkme.workspace = true
+vernal-ioc = { path = "../vernal-ioc" }
+
+[dev-dependencies]
+tokio.workspace = true
+trybuild = "1.0.116"
+vernal-context = { path = "../vernal-context" }
+vernal-macros = { path = "../vernal-macros" }
+
+[lints]
+workspace = true

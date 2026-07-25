@@ -3,17 +3,15 @@
 use proc_macro_crate::{FoundCrate, crate_name};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use syn::{
-    Attribute, Data, DeriveInput, Field, Fields, GenericArgument, LitStr, PathArguments, Type,
-};
+use syn::{Data, DeriveInput, Field, Fields, GenericArgument, LitStr, PathArguments, Type};
 
-use crate::component_scope_option::ComponentScopeOption;
+use crate::{component_options::ComponentOptions, component_scope_option::ComponentScopeOption};
 
 /// 解析组件结构并生成 `vernal_ioc::Component` 实现。
 pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
     reject_generics(input)?;
     let ioc = ioc_crate_path()?;
-    let (scope, aop_enabled) = parse_component_options(&input.attrs)?;
+    let (scope, aop_enabled, discovery_group) = ComponentOptions::parse(&input.attrs)?.into_parts();
     let component_name = &input.ident;
     let fields = component_fields(&input.data)?;
     let mut initializers = Vec::with_capacity(fields.len());
@@ -24,6 +22,8 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
     } else {
         TokenStream::new()
     };
+    let discovery_registration =
+        generate_discovery_registration(component_name, discovery_group.as_ref(), &ioc)?;
 
     // 每个未标记 default 的字段都必须是 Arc<T>，宏同时生成构造表达式和显式
     // 依赖元数据，保证 Resolver 的运行期访问与启动期依赖图完全一致。
@@ -72,6 +72,7 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
         }
 
         #aop_implementation
+        #discovery_registration
     })
 }
 
@@ -488,6 +489,21 @@ fn aop_crate_path() -> syn::Result<TokenStream> {
     }
 }
 
+/// 解析消费方显式依赖的可选链接期发现 crate 路径。
+fn discovery_crate_path() -> syn::Result<TokenStream> {
+    match crate_name("vernal-discovery") {
+        Ok(FoundCrate::Itself) => Ok(quote! { crate }),
+        Ok(FoundCrate::Name(name)) => {
+            let crate_name = syn::Ident::new(&name, proc_macro2::Span::call_site());
+            Ok(quote! { ::#crate_name })
+        }
+        Err(_) => Err(syn::Error::new(
+            proc_macro2::Span::call_site(),
+            "#[component(discover = \"...\")] 需要直接依赖 vernal-discovery",
+        )),
+    }
+}
+
 /// 当前首批宏不展开泛型组件，避免隐式生成不完整的 `'static` 与线程安全边界。
 fn reject_generics(input: &DeriveInput) -> syn::Result<()> {
     if input.generics.params.is_empty() {
@@ -498,47 +514,6 @@ fn reject_generics(input: &DeriveInput) -> syn::Result<()> {
             "Vernal Component 暂不支持泛型结构体，请先定义具体组件类型",
         ))
     }
-}
-
-/// 读取组件作用域和 AOP 接线选项；默认作用域为 singleton。
-fn parse_component_options(attributes: &[Attribute]) -> syn::Result<(ComponentScopeOption, bool)> {
-    let mut scope = ComponentScopeOption::Singleton;
-    let mut aop_enabled = false;
-    for attribute in attributes
-        .iter()
-        .filter(|attribute| attribute.path().is_ident("component"))
-    {
-        attribute.parse_nested_meta(|metadata| {
-            if metadata.path.is_ident("aop") {
-                aop_enabled = true;
-                return Ok(());
-            }
-            if !metadata.path.is_ident("scope") {
-                return Err(metadata.error("结构体 component 属性只支持 scope 或 aop"));
-            }
-            let value = metadata.value()?;
-            if value.peek(LitStr) {
-                let value = value.parse::<LitStr>()?;
-                return match value.value().as_str() {
-                    "singleton" => {
-                        scope = ComponentScopeOption::Singleton;
-                        Ok(())
-                    }
-                    "transient" => {
-                        scope = ComponentScopeOption::Transient;
-                        Ok(())
-                    }
-                    _ => Err(syn::Error::new_spanned(
-                        value,
-                        "字符串 scope 只支持 \"singleton\" 或 \"transient\"；自定义作用域请直接填写标记类型",
-                    )),
-                };
-            }
-            scope = ComponentScopeOption::Custom(Box::new(value.parse::<Type>()?));
-            Ok(())
-        })?;
-    }
-    Ok((scope, aop_enabled))
 }
 
 /// 为启用 AOP 的组件生成 Context-local 资源访问实现。
@@ -599,6 +574,37 @@ fn generate_aop_implementation(
                 self.#cancellation_field.as_ref().clone()
             }
         }
+    })
+}
+
+/// 为显式声明发现分组的组件生成只读链接期定义入口。
+///
+/// 静态名称包含模块路径和类型名；分布式切片只携带定义工厂，不创建组件实例，也
+/// 不触碰任何全局 Registry。未声明 `discover` 时不引用可选 discovery crate。
+fn generate_discovery_registration(
+    component_name: &syn::Ident,
+    discovery_group: Option<&LitStr>,
+    ioc: &TokenStream,
+) -> syn::Result<TokenStream> {
+    let Some(discovery_group) = discovery_group else {
+        return Ok(TokenStream::new());
+    };
+    let discovery = discovery_crate_path()?;
+    let registration_name =
+        format_ident!("__VERNAL_LINKED_COMPONENT_REGISTRATION_{}", component_name);
+
+    Ok(quote! {
+        #[#discovery::linkme::distributed_slice(
+            #discovery::LINKED_COMPONENT_REGISTRATIONS
+        )]
+        #[linkme(crate = #discovery::linkme)]
+        #[allow(non_upper_case_globals)]
+        static #registration_name: #discovery::LinkedComponentRegistration =
+            #discovery::LinkedComponentRegistration::new(
+                #discovery_group,
+                ::core::concat!(::core::module_path!(), "::", ::core::stringify!(#component_name)),
+                <#component_name as #ioc::Component>::definition,
+            );
     })
 }
 

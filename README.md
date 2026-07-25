@@ -115,6 +115,7 @@ Detailed decisions, flows, failure semantics, and acceptance criteria are in:
 | `vernal` | Experimental facade | Facade, prelude, feature composition |
 | `vernal-core` | Experimental | Shared contracts for the Tokio-first framework |
 | `vernal-ioc` | Phase 1/diagnostics kernel implemented | Definitions, scopes, resolution, graph validation, read-only snapshots |
+| `vernal-discovery` | Optional discovery frontend implemented | Grouped link-time definition metadata, deterministic selection, and atomic explicit Registry installation |
 | `vernal-aop` | Phase 2 kernel implemented | Send/Local Around/Next, immutable operation metadata, composable pointcut algebra, immutable plans, cancellation |
 | `vernal-context` | Phase 3/diagnostics kernel implemented | Managed bootstrap, environment, typed configuration, conditional assembly, lifecycle, events, runners, scheduled tasks, redacted reports |
 | `vernal-macros` | Phase 2/3 macros implemented | Component/configuration metadata, operation declarations, and context-local async method weaving |
@@ -289,6 +290,29 @@ documented trait/provider collection forms, and becomes a declared dependency.
 `#[component(scope = "transient")]` changes the generated scope. Applications
 still call `RegistryBuilder::register`, so registration provenance stays
 explicit.
+
+Applications that deliberately prefer link-time discovery may opt into the
+separate `vernal-discovery` crate:
+
+```rust
+use vernal_discovery::LinkedComponentCatalog;
+
+#[derive(vernal_macros::Component)]
+#[component(discover = "orders")]
+struct DiscoveredOrderService {
+    repository: Arc<OrderRepository>,
+}
+
+let catalog = LinkedComponentCatalog::discover(["orders"])?;
+catalog.install(&mut registry)?;
+```
+
+The derive only submits a static definition factory. The application still
+selects named groups and installs one atomic batch into its own Registry.
+Unknown groups, duplicate stable registrations, or component-key conflicts
+fail before partial installation. Linker order is normalized by stable name,
+and no instance, Scope, or Container is global. Consumer bridges such as
+Sa-Token-Rust continue to prefer explicit `ApplicationModule` transactions.
 
 Trait objects join the same graph through explicit, type-checked bindings:
 
@@ -653,6 +677,7 @@ or a no-yield loop inside an async task.
 | Dependency graph | Deterministic build order and structured missing/ambiguous/cycle diagnostics | Phase 1 |
 | Trait binding | Named/primary/multiple implementations without string lookup | Phase 1.1 kernel |
 | Type-safe optional dependencies and providers | Eager `Option<Arc<T>>` injection plus graph-constrained concrete/trait transient, optional, qualified, and explicit-scope deferred resolution | Phase 1.3 kernel |
+| Optional component discovery | Explicitly selected link-time groups, deterministic metadata, atomic Registry installation, and per-Container instances | Phase 1.4 frontend |
 | Interceptor chain | Ordered Around/Next composition with short circuit and result/error transformation | Phase 2 kernel |
 | Pointcuts | Operation matching compiled into immutable invocation plans | Phase 2 kernel |
 | Application context | Tokio-owned refresh/start/close, OS signal shutdown, bounded lifecycle hooks, deterministic rollback, context-local typed events | Phase 3 kernel |
@@ -675,7 +700,8 @@ or a no-yield loop inside an async task.
 “Phase 1” and “Phase 2 kernel” mean callable implementation and contract tests
 exist, but the API is still experimental. The first Component and AOP method
 macros are implemented with compile-fail coverage; broader method signatures,
-adapter auto-discovery, and stable-hardware regression thresholds remain open.
+Web adapter auto-discovery, and stable-hardware regression thresholds remain
+open.
 No label is a compatibility or cross-machine performance claim.
 
 ## 7. Ecosystem role

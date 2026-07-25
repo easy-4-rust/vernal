@@ -104,6 +104,7 @@ Vernal 遵守四条不可退化的规则：
 | `vernal` | 实验性 Facade | Facade、prelude 与 feature 组合 |
 | `vernal-core` | 实验性 | Tokio-first 框架的公共合同 |
 | `vernal-ioc` | Phase 1/诊断内核已实现 | 定义、作用域、解析、依赖图和只读快照 |
+| `vernal-discovery` | 可选发现前端已实现 | 分组链接期定义元数据、确定性选择与显式 Registry 原子安装 |
 | `vernal-aop` | Phase 2 内核已实现 | Send/Local Around/Next、不可变操作元数据、可组合切点代数、不可变计划和取消 |
 | `vernal-context` | Phase 3/诊断内核已实现 | 应用环境、类型安全配置、条件装配、生命周期、事件、Runner、周期任务和脱敏报告 |
 | `vernal-macros` | Phase 2/3 宏已实现 | 组件/配置元数据、Operation 声明与 Context-local 异步方法织入 |
@@ -241,6 +242,40 @@ Singleton 状态属于具体 Container，而不是进程级全局 Store。
 任何满足 `Send + Sync + 'static` 的 Rust 值都可以成为组件，包括
 `reqwest::Client`、数据库连接池、Tower Service、框架 State、Tokio 同步原语和
 业务对象。具体框架依赖由注册它们的应用或集成 crate 持有。
+
+组件派生宏默认仍只生成显式 Definition，不会自动修改全局状态：
+
+```rust
+use std::sync::Arc;
+use vernal_ioc::Component;
+
+#[derive(vernal_macros::Component)]
+struct OrderService {
+    repository: Arc<OrderRepository>,
+}
+
+let definition = OrderService::definition();
+```
+
+确实需要链接期发现的应用可以显式选择独立的 `vernal-discovery`：
+
+```rust
+use vernal_discovery::LinkedComponentCatalog;
+
+#[derive(vernal_macros::Component)]
+#[component(discover = "orders")]
+struct DiscoveredOrderService {
+    repository: Arc<OrderRepository>,
+}
+
+let catalog = LinkedComponentCatalog::discover(["orders"])?;
+catalog.install(&mut registry)?;
+```
+
+宏只提交静态 Definition 工厂；应用仍须选择具名分组，并把完整批次原子安装到
+自己的 Registry。未知分组、重复稳定注册名或组件身份冲突会在部分写入前失败；
+链接器顺序会按稳定名称归一化，组件实例、Scope 和 Container 都不会成为全局
+状态。Sa-Token-Rust 等消费方 Bridge 仍优先使用显式 `ApplicationModule` 事务。
 
 Trait Object 通过显式、类型安全的绑定进入同一依赖图：
 
@@ -483,6 +518,7 @@ Spring Boot 式隐式自动配置。`refresh()` 与
 | 依赖图 | 确定性顺序及缺失、歧义、循环结构化诊断 | Phase 1 |
 | Trait 绑定 | 不依赖字符串查找的命名、Primary 和多实现绑定 | Phase 1.1 内核 |
 | 类型安全可选依赖与 Provider | `Option<Arc<T>>` 立即注入，以及具体类型/Trait 绑定的 Transient/optional/qualifier/显式 Scope 延迟解析 | Phase 1.3 内核 |
+| 可选组件发现 | 显式选择链接期分组、确定性元数据、Registry 原子安装与每 Container 独立实例 | Phase 1.4 前端 |
 | 拦截器链 | 有序 Around/Next、IoC 管理拦截器、短路及结果/错误改写 | Phase 2/3 内核 |
 | 切点 | 操作匹配并编译成不可变调用计划 | Phase 2 内核 |
 | ApplicationContext | Tokio 持有 refresh/start/close、系统信号关闭、有界生命周期钩子、确定性回滚和 Context-local 类型化事件 | Phase 3 内核 |
@@ -503,8 +539,8 @@ Spring Boot 式隐式自动配置。`refresh()` 与
 | 诊断 | 可序列化 Registry/Context 快照与脱敏运行期清理告警 | Phase 3/4 诊断内核 |
 
 “Phase 1”和“Phase 2 内核”表示已有可调用实现与合同测试，但 API 仍处于实验
-阶段。任何标签都不代表稳定兼容或达到跨机器性能指标；Adapter 自动探测和稳定
-硬件回归阈值仍待后续实现。
+阶段。任何标签都不代表稳定兼容或达到跨机器性能指标；Web Adapter 自动探测和
+稳定硬件回归阈值仍待后续实现。
 
 ## 7. 生态定位
 

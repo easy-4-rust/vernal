@@ -1,0 +1,5 @@
+error: 结构体 component 属性只能声明一个 discover 分组
+ --> tests/ui/discovery_duplicate_group.rs:2:31
+  |
+2 | #[component(discover = "app", discover = "other")]
+  |                               ^^^^^^^^

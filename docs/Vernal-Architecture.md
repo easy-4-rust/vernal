@@ -85,8 +85,13 @@
 - `[Confirmed]` `vernal-macros` provides `#[derive(Component)]` for explicit
   `Arc<T>`, `Arc<dyn Trait>`, `Vec<Arc<dyn Trait>>`, and `Option<Arc<T>>`
   constructor injection, Singleton/Transient scope, default fields, and field
-  qualifiers, with runtime and compile-fail tests. It uses neither linkme nor
-  global auto-registration.
+  qualifiers, with runtime and compile-fail tests. The default path uses
+  neither linkme nor global auto-registration.
+- `[Confirmed]` the separate `vernal-discovery` frontend lets opted-in
+  `#[component(discover = "group")]` types submit definition factories to a
+  read-only linkme slice. Applications explicitly select groups and atomically
+  install deterministic batches into their own Registry; six runtime contracts
+  and two compile-fail cases cover isolation, rollback, and diagnostics.
 - `[Confirmed]` `ComponentProvider<T>` and `TraitProvider<dyn Trait>` provide
   graph-constrained deferred resolution for concrete types and trait bindings,
   including per-call transient construction, required/optional targets,
@@ -212,7 +217,10 @@ flowchart TB
     Facade --> Context["vernal-context"]
     Facade --> IoC["vernal-ioc"]
     Facade --> AOP["vernal-aop"]
+    App --> Discovery["vernal-discovery<br/>optional groups"]
+    Discovery --> IoC
     Macros["vernal-macros"] -. generates metadata .-> IoC
+    Macros -. opted-in discovery metadata .-> Discovery
     Macros -. generates wrappers .-> AOP
     Web["Tower / Hyper / ten HTTP-RPC targets"] --> Adapters["vernal-* adapters"]
     Adapters --> Context
@@ -248,7 +256,7 @@ already integrates Vernal.
 | tx-di mechanism | Vernal decision | Target crate |
 |:---|:---|:---|
 | Explicit `Component::Deps` | Retain describable constructor dependencies; redesign the stable contract | `vernal-ioc` |
-| Link-time component metadata | Evaluate as an optional registration frontend | macros / optional adapter |
+| Link-time component metadata | Implemented as explicitly selected groups with deterministic, atomic per-Registry installation | `vernal-discovery` / `vernal-macros` |
 | `TypeId` plus erased store | Keep typed entrypoints and constrain erasure | `vernal-ioc` |
 | Kahn topological ordering | Rebuild as a deterministic, testable planner | `vernal-ioc` |
 | `debug_registry()` log table | Upgrade to serializable read-only snapshots that reuse the frozen plan | `vernal-ioc` / `vernal-context` |
@@ -306,9 +314,11 @@ flowchart TB
     AOP["Kernel<br/>vernal-aop"]
     Core["Contracts<br/>vernal-core"]
     Macros["Compile-time frontend<br/>vernal-macros"]
+    Discovery["Optional frontend<br/>vernal-discovery"]
 
     Consumer --> Adapter
     Consumer --> Facade
+    Consumer --> Discovery
     Adapter --> Context
     Adapter --> IoC
     Adapter --> AOP
@@ -322,6 +332,8 @@ flowchart TB
     AOP --> Core
     Macros -. generated contracts .-> IoC
     Macros -. generated wrappers .-> AOP
+    Macros -. opted-in registration metadata .-> Discovery
+    Discovery --> IoC
 ```
 
 Forbidden directions:
@@ -331,6 +343,7 @@ core ─X→ ioc / aop / context / web
 ioc  ─X→ aop / context / concrete web / ORM
 aop  ─X→ ioc / context / concrete web / ORM
 context ─X→ concrete web framework
+ioc / context ─X→ discovery
 adapter A ─X→ adapter B
 ```
 
@@ -372,6 +385,41 @@ sequenceDiagram
         C-->>A: typed handle
     end
 ```
+
+### 8.2.1 Optional link-time discovery frontend
+
+`vernal-discovery` adopts tx-di's useful link-time metadata collection without
+adopting its global auto-registration:
+
+```mermaid
+flowchart LR
+    Derive["#[derive(Component)]<br/>discover = group"] --> Slice["read-only linkme slice<br/>definition factories only"]
+    App["Application"] --> Select["LinkedComponentCatalog::discover(groups)"]
+    Slice --> Select
+    Select --> Sort["validate groups + stable sort"]
+    Sort --> Batch["fresh ComponentDefinition batch"]
+    Batch --> Registry["explicit RegistryBuilder<br/>atomic register_all"]
+    Registry --> C1["Container A instances"]
+    Registry --> C2["Container B instances"]
+```
+
+The default derive remains explicit and does not reference the discovery
+crate. Opted-in components submit only `group`, a
+`module_path!()::Type` declaration name, and a definition function. The
+application must request every group by name. Empty, invalid, unknown, or
+duplicate declarations fail closed. Selection is sorted by `(group, name)` so
+linker order cannot alter Registry order. Installation reuses
+`RegistryBuilder::register_all`, so an existing or intra-batch component-key
+conflict commits nothing.
+
+The static slice owns no component, Container, Scope, cache, resolver, or
+runtime. One Catalog can materialize fresh definitions for multiple
+applications, whose Singleton identities remain isolated. High-level Context
+assembly stays explicit through
+`VernalApplicationBuilder::register_all(catalog.component_definitions())`.
+Consumer bridges remain explicit `ApplicationModule` transactions because
+their bindings, policies, lifecycle hooks, and external objects are richer than
+a component-only discovery entry.
 
 ### 8.3 Scopes
 
@@ -783,9 +831,10 @@ transient or explicitly uniquely owned values. Singleton state shared through
 `TargetAlreadyInvoked` instead of silently repeating side effects.
 The descriptor frontend statically validates tags and qualifier, while
 `OperationMetadata` validates the generated declaration again as an invariant.
-No global inventory, link-time scanner, or process-wide mutable registration is
-introduced. Pointcuts still compile only after the application explicitly
-accepts the descriptor.
+No global AOP descriptor inventory, AOP link-time scanner, or process-wide
+mutable operation registration is introduced. Pointcuts still compile only
+after the application explicitly accepts the descriptor. The separate,
+component-only discovery frontend does not collect Operations or Advisors.
 
 The macro also writes unavoidable transport capabilities into the final
 method's `where` clause. Owned `self: Arc<Self>` arguments use

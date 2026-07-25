@@ -75,7 +75,11 @@
 - `[已确认]` `vernal-macros` 已提供显式 `Arc<T>`、`Arc<dyn Trait>`、
   `Vec<Arc<dyn Trait>>` 与 `Option<Arc<T>>` 构造注入的
   `#[derive(Component)]`，支持 Singleton/Transient、default 与字段 qualifier，
-  并通过运行时和 compile-fail 合同测试；它不使用 linkme 或全局自动注册。
+  并通过运行时和 compile-fail 合同测试；默认路径不使用 linkme 或全局自动注册。
+- `[已确认]` 独立的 `vernal-discovery` 前端允许显式选择
+  `#[component(discover = "group")]` 的类型向只读 linkme Slice 提交 Definition
+  工厂。应用显式选择分组，并向自己的 Registry 原子安装确定性批次；6 个运行时
+  合同与 2 个 compile-fail 用例覆盖隔离、回滚和诊断。
 - `[已确认]` `ComponentProvider<T>` 与 `TraitProvider<dyn Trait>` 已分别提供
   具体类型和 Trait 绑定的延迟解析，支持 Transient 按次构造、
   required/optional、qualifier 与显式 Scope；Provider 共享原 Container 的
@@ -185,7 +189,10 @@ flowchart TB
     Facade --> Context["vernal-context"]
     Facade --> IoC["vernal-ioc"]
     Facade --> AOP["vernal-aop"]
+    App --> Discovery["vernal-discovery<br/>可选分组"]
+    Discovery --> IoC
     Macros["vernal-macros"] -. generates metadata .-> IoC
+    Macros -. opted-in discovery metadata .-> Discovery
     Macros -. generates invocation wrappers .-> AOP
     Web["Tower / Hyper / 十种 HTTP-RPC 目标"] --> Adapters["vernal-* adapters"]
     Adapters --> Context
@@ -220,7 +227,7 @@ flowchart TB
 | tx-di 机制 | Vernal 决策 | 目标 crate |
 |:---|:---|:---|
 | `Component::Deps` 显式依赖 | 保留“构造依赖可描述”思想，重新定义稳定合同 | `vernal-ioc` |
-| 链接期组件元数据 | 作为可选注册后端评估，不写死到内核 | `vernal-macros` / 可选 adapter |
+| 链接期组件元数据 | 已实现为显式选择分组、确定性排序并按 Registry 原子安装的可选前端 | `vernal-discovery` / `vernal-macros` |
 | `TypeId` + 类型擦除 Store | 保留类型安全入口，限制擦除边界 | `vernal-ioc` |
 | Kahn 拓扑排序与循环诊断 | 重写为确定性、可测试的 Graph Planner | `vernal-ioc` |
 | `debug_registry()` 日志表格 | 升级为复用冻结计划、可 Serde 序列化的只读快照 | `vernal-ioc` / `vernal-context` |
@@ -278,9 +285,11 @@ flowchart TB
     AOP["Kernel<br/>vernal-aop"]
     Core["Contracts<br/>vernal-core"]
     Macros["Compile-time front end<br/>vernal-macros"]
+    Discovery["Optional front end<br/>vernal-discovery"]
 
     Consumer --> Adapter
     Consumer --> Facade
+    Consumer --> Discovery
     Adapter --> Context
     Adapter --> IoC
     Adapter --> AOP
@@ -294,6 +303,8 @@ flowchart TB
     AOP --> Core
     Macros -. generated contracts .-> IoC
     Macros -. generated wrappers .-> AOP
+    Macros -. opted-in registration metadata .-> Discovery
+    Discovery --> IoC
 ```
 
 禁止的依赖方向：
@@ -303,6 +314,7 @@ core ─X→ ioc / aop / context / web
 ioc  ─X→ aop / context / concrete web / ORM
 aop  ─X→ ioc / context / concrete web / ORM
 context ─X→ concrete web framework
+ioc / context ─X→ discovery
 adapter A ─X→ adapter B
 ```
 
@@ -344,6 +356,37 @@ sequenceDiagram
         C-->>A: typed handle
     end
 ```
+
+### 8.2.1 可选链接期组件发现前端
+
+`vernal-discovery` 吸收 tx-di 链接期元数据收集的有效部分，但不继承其全局自动
+注册：
+
+```mermaid
+flowchart LR
+    Derive["#[derive(Component)]<br/>discover = group"] --> Slice["只读 linkme Slice<br/>仅 Definition 工厂"]
+    App["应用"] --> Select["LinkedComponentCatalog::discover(groups)"]
+    Slice --> Select
+    Select --> Sort["校验分组 + 稳定排序"]
+    Sort --> Batch["全新 ComponentDefinition 批次"]
+    Batch --> Registry["显式 RegistryBuilder<br/>register_all 原子提交"]
+    Registry --> C1["Container A 实例"]
+    Registry --> C2["Container B 实例"]
+```
+
+默认 Component 派生仍是显式模式，不引用 discovery crate。只有声明
+`#[component(discover = "group")]` 的类型才提交分组、由
+`module_path!()::Type` 构成的稳定声明名和 Definition 函数。应用必须按名称选择
+每个分组；空、非法、未知分组或重复声明全部 fail-closed。目录按
+`(group, name)` 排序，链接器顺序不会改变 Registry 顺序；安装复用
+`RegistryBuilder::register_all`，已有身份或批次内身份冲突时不提交任何前缀。
+
+静态 Slice 不持有组件、Container、Scope、缓存、Resolver 或 Runtime。同一个
+Catalog 可为多个应用生成全新 Definition，各 Container 的 Singleton 身份仍然
+隔离。高层 Context 通过
+`VernalApplicationBuilder::register_all(catalog.component_definitions())` 显式
+装配。消费方 Bridge 继续使用 `ApplicationModule` 事务，因为 Binding、Policy、
+生命周期钩子和外部对象不是一个纯组件发现项可以完整表达的。
 
 ### 8.3 作用域
 
@@ -709,8 +752,9 @@ owned 接收器路径安全产生 `'static` Future；两种引用路径把接收
 `Next` 按合同只能推进一次；若自定义拦截器重复调用，宏生成的目标会返回
 `TargetAlreadyInvoked`，避免悄悄重复执行业务副作用。
 描述符前端在编译期校验标签和 qualifier，`OperationMetadata` 在生成声明时再次
-执行不变量校验。该方案不引入全局 inventory、链接期扫描或进程级可变注册；
-只有应用显式接纳描述符后，Pointcut 才会在计划编译阶段匹配它。
+执行不变量校验。该 AOP 方案不引入全局描述符 inventory、AOP 链接期扫描或
+进程级可变 Operation 注册；只有应用显式接纳描述符后，Pointcut 才会在计划
+编译阶段匹配它。独立的纯组件 discovery 前端不收集 Operation 或 Advisor。
 
 宏还会把不可避免的传输能力写入最终方法的 `where` 子句：`self: Arc<Self>` 的
 owned 参数使用 `OwnedInvocationArgument`；借用方法中的按值参数和 `&mut T`
