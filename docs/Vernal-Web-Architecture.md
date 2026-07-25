@@ -439,6 +439,16 @@ permission backend failures to an internal 500 without exposing the source.
 Sa-Token-Rust `PathAuthConfig` remains the sole source of path login policy,
 and Vernal never depends on Sa-Token-Rust.
 
+Vernal verifies its half of this bridge through a framework-neutral
+`SecurityContractInterceptor`, not by importing the security implementation.
+The contract proves principal projection and redacted 401/403 short-circuits
+on both Send and Local AOP. Axum and Actix Web carry the authenticated
+principal into native success handlers. All nine HTTP adapters translate an
+authenticated denial to native HTTP 403; Tonic uses gRPC
+`PermissionDenied(7)`. These are in-process framework-boundary tests. They do
+not claim a live socket or a current cross-repository build of the downstream
+bridge.
+
 ## 10. Hutool-Rust and Ddd4r
 
 - **Hutool-Rust:** HTTP clients, serializers, caches, and other tools can be
@@ -496,7 +506,8 @@ adapter also consumes one native frame, chunk, or byte without polling the
 terminal boundary and then drops that consumer. This deterministic
 framework-boundary disconnect proves that `DropGuard` cancellation wakes the
 pre-started cleanup task and closes the still-open scope. Live-socket disconnect
-E2E and remaining matrix paths continue incrementally. The Axum cancellation
+E2E, downstream bridge-pin refresh, and remaining matrix paths continue
+incrementally. The Axum cancellation
 contract additionally proves that an
 ignored background close error reaches the owning Context as a redacted warning:
 

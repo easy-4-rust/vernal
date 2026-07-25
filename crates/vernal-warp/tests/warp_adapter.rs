@@ -22,7 +22,7 @@ use vernal_warp::{
 use vernal_web::WebRequestScope;
 use vernal_web_testkit::{
     FailingHttpBody, ScopeCleanupTimeoutFixture, ScopeCloseProbe, ScopeRejectingInterceptor,
-    WebAdapterContract,
+    SecurityContractInterceptor, WebAdapterContract,
 };
 use warp::{Filter, Rejection, Reply, http::StatusCode};
 
@@ -323,6 +323,41 @@ async fn strict_aop_maps_policy_failure_without_calling_filter() {
     assert_eq!(body, "Authentication is required");
     assert!(!called.load(Ordering::SeqCst));
     probe.assert_closed_within(Duration::from_secs(1)).await;
+}
+
+#[tokio::test]
+async fn strict_aop_maps_authenticated_forbidden_to_403() {
+    let called = Arc::new(AtomicBool::new(false));
+    let context = ready_aop_context(
+        Operation::new("/protected", "GET"),
+        Some(Advisor::new(
+            |_: &Operation| true,
+            SecurityContractInterceptor::forbidden("operator-7", ["operator"]),
+            -1000,
+        )),
+    )
+    .await;
+    let filter_called = Arc::clone(&called);
+    let route = warp::path("protected").and(warp::get()).map(move || {
+        filter_called.store(true, Ordering::SeqCst);
+        "unreachable"
+    });
+    let service = VernalWarpAopLayer::new(context, "/protected").layer(warp::service(route));
+    let request = warp::http::Request::builder()
+        .uri("/protected")
+        .body(Empty::<Bytes>::new())
+        .expect("request");
+
+    let response = service.oneshot(request).await.expect("forbidden response");
+    assert_eq!(response.status(), StatusCode::FORBIDDEN);
+    let body = response
+        .into_body()
+        .collect()
+        .await
+        .expect("response body")
+        .to_bytes();
+    assert_eq!(body, "Access is forbidden");
+    assert!(!called.load(Ordering::SeqCst));
 }
 
 #[tokio::test]

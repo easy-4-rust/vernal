@@ -13,6 +13,7 @@ futures-core.workspace = true
 futures-lite.workspace = true
 http-body.workspace = true
 tokio.workspace = true
+tokio-util.workspace = true
 vernal-aop = { path = "../vernal-aop" }
 vernal-context = { path = "../vernal-context" }
 vernal-ioc = { path = "../vernal-ioc" }

@@ -714,7 +714,11 @@ flowchart LR
   rules, including Sa-Token global and prefix wildcards, with stable 401/403
   failures before handlers. `VernalSaTokenConfigBinder` maps the immutable
   Environment into Sa-Token's native builder without taking ownership of
-  Storage, Listener, Manager, or Runtime construction.
+  Storage, Listener, Manager, or Runtime construction. Vernal's own generic
+  security conformance fixture now freezes the bridge-facing contract without
+  depending on Sa-Token-Rust: authenticated principals reach handlers on both
+  Send and Local execution planes, anonymous requests fail with 401, and
+  authenticated denials fail with 403.
 - **Ddd4r** uses its consumer-owned `ddd4r-vernal` bridge to register the
   native `Registry` and `DefaultCommandBus`, then enters Ddd4r's own Tokio
   task-local `ContextScope` with an isolated snapshot. Aggregates, events,
@@ -762,6 +766,11 @@ Phase 5 is in progress: Sa-Token-Rust owns a tested and remotely integrated
 `sa-token-vernal` authentication and operation-authorization AOP bridge. Its
 named application module installs the native security graph and both execution
 planes atomically; twelve bridge tests and two Environment-binding tests pass.
+Vernal now independently verifies its side of that boundary: the shared
+testkit covers principal projection and redacted 401/403 short-circuits; all
+nine HTTP adapters map authenticated denial to HTTP 403, while Tonic maps it to
+gRPC `PermissionDenied`; Axum and Actix Web additionally prove principal
+visibility through the Send and Local success paths.
 Hutool-Rust owns a
 tested and remotely integrated `hutool-vernal` bridge whose named application
 module atomically composes HTTP components, Hutool Setting PropertySource
@@ -863,9 +872,11 @@ running, and reach `Closed` exactly once after the hook is released. Every
 adapter also consumes one native data frame/chunk/byte without polling the
 terminal boundary, then drops the response consumer. These deterministic
 framework-boundary disconnect tests prove that `DropGuard` cancellation wakes
-the pre-started cleanup task and closes the still-open scope. Live-socket
-disconnect E2E, security integration, and the remaining failure matrix remain
-incremental architecture work.
+the pre-started cleanup task and closes the still-open scope. Generic security
+integration is now covered at the Vernal boundary; live-socket disconnect E2E,
+refreshing the downstream Sa-Token-Rust bridge pin against the latest Vernal
+revision, and the remaining cross-repository failure matrix remain incremental
+architecture work.
 
 ## 10. Contributing and license
 

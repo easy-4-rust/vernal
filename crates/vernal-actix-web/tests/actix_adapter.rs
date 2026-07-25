@@ -29,7 +29,7 @@ use vernal_ioc::{ComponentDefinition, RegistryBuilder};
 use vernal_web::WebRequestScope;
 use vernal_web_testkit::{
     FailingByteStream, ScopeCleanupTimeoutFixture, ScopeCloseProbe, ScopeRejectingInterceptor,
-    WebAdapterContract,
+    SecurityContractInterceptor, WebAdapterContract,
 };
 
 struct Greeting(&'static str);
@@ -208,7 +208,15 @@ async fn missing_context_returns_safe_internal_server_error() {
 
 #[actix_web::test]
 async fn strict_local_aop_uses_matched_pattern_and_owned_snapshot() {
-    let context = ready_aop_context(Operation::new("/orders/{id}", "GET"), None).await;
+    let context = ready_aop_context(
+        Operation::new("/orders/{id}", "GET"),
+        Some(LocalAdvisor::new(
+            |_: &Operation| true,
+            SecurityContractInterceptor::authenticated("operator-7", ["operator"]),
+            -1000,
+        )),
+    )
+    .await;
     let application = test::init_service(
         App::new().service(
             web::resource("/orders/{id}")
@@ -225,6 +233,9 @@ async fn strict_local_aop_uses_matched_pattern_and_owned_snapshot() {
                         assert_eq!(context.route().path_template(), "/orders/{id}");
                         assert_eq!(snapshot.method().as_str(), "GET");
                         assert_eq!(snapshot.uri().path(), "/orders/42");
+                        let principal = context.principal().await.expect("security principal");
+                        assert_eq!(principal.subject(), "operator-7");
+                        assert!(principal.has_role("operator"));
                         HttpResponse::Ok().body("locally-woven")
                     },
                 )),
@@ -276,6 +287,38 @@ async fn strict_local_aop_maps_policy_failure_without_calling_handler() {
     );
     assert!(!called.load(Ordering::SeqCst));
     probe.assert_closed_within(Duration::from_secs(1)).await;
+}
+
+#[actix_web::test]
+async fn strict_local_aop_maps_authenticated_forbidden_to_403() {
+    let called = Arc::new(AtomicBool::new(false));
+    let context = ready_aop_context(
+        Operation::new("/protected", "GET"),
+        Some(LocalAdvisor::new(
+            |_: &Operation| true,
+            SecurityContractInterceptor::forbidden("operator-7", ["operator"]),
+            -1000,
+        )),
+    )
+    .await;
+    let handler_called = Arc::clone(&called);
+    let application = test::init_service(
+        App::new().service(
+            web::resource("/protected")
+                .wrap(VernalActixMiddleware::strict_aop(Arc::clone(&context)))
+                .route(web::get().to(move || {
+                    handler_called.store(true, Ordering::SeqCst);
+                    async { HttpResponse::Ok().body("unreachable") }
+                })),
+        ),
+    )
+    .await;
+
+    let request = test::TestRequest::get().uri("/protected").to_request();
+    let response = test::call_service(&application, request).await;
+    assert_eq!(response.status(), StatusCode::FORBIDDEN);
+    assert_eq!(test::read_body(response).await, "Access is forbidden");
+    assert!(!called.load(Ordering::SeqCst));
 }
 
 #[actix_web::test]

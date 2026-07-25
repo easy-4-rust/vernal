@@ -27,7 +27,7 @@ use vernal_ioc::{ComponentDefinition, RegistryBuilder};
 use vernal_web::WebRequestScope;
 use vernal_web_testkit::{
     FailingHttpBody, ScopeCleanupTimeoutFixture, ScopeCloseProbe, ScopeRejectingInterceptor,
-    WebAdapterContract,
+    SecurityContractInterceptor, WebAdapterContract,
 };
 
 struct Greeting(&'static str);
@@ -248,7 +248,15 @@ async fn missing_vernal_layer_returns_safe_rejection() {
 
 #[tokio::test]
 async fn strict_aop_router_uses_matched_path_and_propagates_owned_snapshot() {
-    let context = ready_aop_context(Operation::new("/orders/{id}", "GET"), None).await;
+    let context = ready_aop_context(
+        Operation::new("/orders/{id}", "GET"),
+        Some(Advisor::new(
+            |_: &Operation| true,
+            SecurityContractInterceptor::authenticated("operator-7", ["operator"]),
+            -1000,
+        )),
+    )
+    .await;
     let app = Router::new()
         .route(
             "/orders/{id}",
@@ -263,6 +271,9 @@ async fn strict_aop_router_uses_matched_path_and_propagates_owned_snapshot() {
                     assert_eq!(context.route().operation_name(), "GET");
                     assert_eq!(context.route().path_template(), "/orders/{id}");
                     assert_eq!(snapshot.uri().path(), "/orders/42");
+                    let principal = context.principal().await.expect("security principal");
+                    assert_eq!(principal.subject(), "operator-7");
+                    assert!(principal.has_role("operator"));
                     "woven"
                 },
             ),
@@ -329,4 +340,46 @@ async fn strict_aop_router_maps_policy_failure_without_calling_handler() {
     );
     assert!(!called.load(Ordering::SeqCst));
     probe.assert_closed_within(Duration::from_secs(1)).await;
+}
+
+#[tokio::test]
+async fn strict_aop_router_maps_authenticated_forbidden_to_403() {
+    let called = Arc::new(AtomicBool::new(false));
+    let context = ready_aop_context(
+        Operation::new("/protected", "GET"),
+        Some(Advisor::new(
+            |_: &Operation| true,
+            SecurityContractInterceptor::forbidden("operator-7", ["operator"]),
+            -1000,
+        )),
+    )
+    .await;
+    let handler_called = Arc::clone(&called);
+    let app = Router::new()
+        .route(
+            "/protected",
+            get(move || {
+                handler_called.store(true, Ordering::SeqCst);
+                async { "unreachable" }
+            }),
+        )
+        .with_vernal_aop(context);
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/protected")
+                .body(Body::empty())
+                .expect("request"),
+        )
+        .await
+        .expect("forbidden response");
+    assert_eq!(response.status(), StatusCode::FORBIDDEN);
+    assert_eq!(
+        to_bytes(response.into_body(), 128)
+            .await
+            .expect("response body"),
+        "Access is forbidden"
+    );
+    assert!(!called.load(Ordering::SeqCst));
 }

@@ -29,7 +29,7 @@ use vernal_rocket::{
 use vernal_web::WebRequestScope;
 use vernal_web_testkit::{
     FailingTokioReader, ScopeCleanupTimeoutFixture, ScopeCloseProbe, ScopeRejectingInterceptor,
-    WebAdapterContract,
+    SecurityContractInterceptor, WebAdapterContract,
 };
 
 struct Greeting(&'static str);
@@ -330,6 +330,32 @@ async fn strict_aop_maps_policy_failure_without_calling_handler() {
     );
     assert!(!PROTECTED_CALLED.load(Ordering::SeqCst));
     probe.assert_closed_within(Duration::from_secs(1)).await;
+}
+
+#[rocket::async_test]
+async fn strict_aop_maps_authenticated_forbidden_to_403() {
+    PROTECTED_CALLED.store(false, Ordering::SeqCst);
+    let context = ready_aop_context(
+        [Operation::new("/protected", "GET")],
+        Some(Advisor::new(
+            |_: &Operation| true,
+            SecurityContractInterceptor::forbidden("operator-7", ["operator"]),
+            -1000,
+        )),
+    )
+    .await;
+    let rocket = rocket::build()
+        .attach(VernalRocketFairing::new(context))
+        .mount("/", routes![protected].with_vernal_aop());
+    let client = Client::tracked(rocket).await.expect("Rocket client");
+
+    let response = client.get("/protected").dispatch().await;
+    assert_eq!(response.status(), Status::Forbidden);
+    assert_eq!(
+        response.into_string().await.as_deref(),
+        Some("Access is forbidden")
+    );
+    assert!(!PROTECTED_CALLED.load(Ordering::SeqCst));
 }
 
 #[rocket::async_test]

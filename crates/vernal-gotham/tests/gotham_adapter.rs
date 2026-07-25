@@ -34,7 +34,7 @@ use vernal_ioc::{ComponentDefinition, RegistryBuilder};
 use vernal_web::WebRequestScope;
 use vernal_web_testkit::{
     FailingHttpBody, ScopeCleanupTimeoutFixture, ScopeCloseProbe, ScopeRejectingInterceptor,
-    WebAdapterContract,
+    SecurityContractInterceptor, WebAdapterContract,
 };
 
 struct Greeting(&'static str);
@@ -334,6 +334,42 @@ async fn strict_aop_maps_policy_failure_without_calling_handler() {
     );
     assert!(!called.load(Ordering::SeqCst));
     probe.assert_closed_within(Duration::from_secs(1)).await;
+}
+
+#[tokio::test]
+async fn strict_aop_maps_authenticated_forbidden_to_403() {
+    let called = Arc::new(AtomicBool::new(false));
+    let context = ready_aop_context(
+        Operation::new("/protected", "GET"),
+        Some(Advisor::new(
+            |_: &Operation| true,
+            SecurityContractInterceptor::forbidden("operator-7", ["operator"]),
+            -1000,
+        )),
+    )
+    .await;
+    let handler_called = Arc::clone(&called);
+    let middleware = VernalGothamMiddleware::strict_aop(context, "/protected");
+
+    let result = middleware
+        .call(request_state("/protected"), move |state| {
+            handler_called.store(true, Ordering::SeqCst);
+            Box::pin(async move { Ok((state, Response::new("unreachable".into_body()))) })
+        })
+        .await;
+    let (_state, response) = expect_response(result);
+
+    assert_eq!(response.status(), StatusCode::FORBIDDEN);
+    assert_eq!(
+        response
+            .into_body()
+            .collect()
+            .await
+            .expect("response body")
+            .to_bytes(),
+        "Access is forbidden"
+    );
+    assert!(!called.load(Ordering::SeqCst));
 }
 
 #[tokio::test]

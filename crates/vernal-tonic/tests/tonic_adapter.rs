@@ -27,7 +27,7 @@ use vernal_tonic::{
 use vernal_web::{ProblemDetails, ProblemKind, RequestContext, WebRequestScope};
 use vernal_web_testkit::{
     FailingHttpBody, ScopeCleanupTimeoutFixture, ScopeCloseProbe, ScopeRejectingInterceptor,
-    WebAdapterContract,
+    SecurityContractInterceptor, WebAdapterContract,
 };
 
 struct Greeting(&'static str);
@@ -183,6 +183,46 @@ async fn tower_layers_preserve_context_and_scope_through_tonic_interceptor() {
         .to_bytes();
     assert_eq!(body, "grpc");
     probe.assert_closed_within(Duration::from_secs(1)).await;
+}
+
+#[tokio::test]
+async fn tonic_aop_layer_maps_authenticated_forbidden_to_permission_denied() {
+    let called = Arc::new(AtomicBool::new(false));
+    let context = ready_aop_context(
+        Operation::new("greeter.Greeter", "Protected"),
+        Some(Advisor::new(
+            |_: &Operation| true,
+            SecurityContractInterceptor::forbidden("operator-7", ["operator"]),
+            -1000,
+        )),
+    )
+    .await;
+    let handler_called = Arc::clone(&called);
+    let inner = service_fn(move |_request: HttpRequest<HttpBody>| {
+        handler_called.store(true, Ordering::SeqCst);
+        async { Ok::<_, std::convert::Infallible>(Response::new(empty_body())) }
+    });
+    let service = TonicAopLayer::new().layer(inner);
+    let service = RequestScopeLayer::new(Arc::clone(&context)).layer(service);
+    let service = VernalLayer::new(context).layer(service);
+
+    let response = service
+        .oneshot(
+            HttpRequest::builder()
+                .uri("/greeter.Greeter/Protected")
+                .body(HttpBody::empty())
+                .expect("request"),
+        )
+        .await
+        .expect("gRPC permission denied response");
+    assert_eq!(response.status(), http::StatusCode::OK);
+    assert_eq!(response.headers()["grpc-status"], "7");
+    assert!(!called.load(Ordering::SeqCst));
+    response
+        .into_body()
+        .collect()
+        .await
+        .expect("empty gRPC error body");
 }
 
 #[tokio::test]

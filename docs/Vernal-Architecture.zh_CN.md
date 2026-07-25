@@ -1438,6 +1438,13 @@ Sa-Token 原生 `SaTokenConfigBuilder`，覆盖 Builder 已公开的稳定标量
 创建和 Runtime 安装仍由 Sa-Token 显式负责。目标 crate 的 12 个 Bridge 测试
 （包括模块与定义冲突回滚合同）和 2 个配置绑定测试已一起通过。
 
+Vernal 不依赖 Sa-Token-Rust，独立测试该集成合同中属于框架的一侧。
+`SecurityContractInterceptor` 在 Send/Local AOP 上证明认证 Principal 投影、
+匿名 401 与已认证 403 的脱敏失败语义；Axum 和 Actix Web 将 Principal 暴露给
+原生成功 Handler；九个 HTTP Adapter 套件都把已认证拒绝转换为原生 HTTP 403，
+Tonic 使用 gRPC `PermissionDenied(7)`。这些证据属于进程内测试；真实 Socket
+测试，以及用最新 Vernal Revision 重新构建消费方 Bridge，仍是独立跨仓门禁。
+
 ### 12.3 Ddd4r
 
 Ddd4r 仓库现已提供消费方持有、暂不发布的 `ddd4r-vernal` Bridge。它固定到

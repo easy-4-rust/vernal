@@ -387,6 +387,13 @@ Bridge 已实现认证和不可变 Operation 授权。角色精确匹配；权�
 内部 500。路径是否需要登录继续只由 Sa-Token-Rust 的 `PathAuthConfig` 决定。
 Vernal 不反向依赖 Sa-Token-Rust。
 
+Vernal 通过框架中立的 `SecurityContractInterceptor` 验证桥接边界中属于自己的
+一半，而不导入具体安全实现。该合同在 Send/Local AOP 上证明 Principal 投影与
+脱敏 401/403 短路；Axum 和 Actix Web 把认证主体带入框架原生成功 Handler；
+九个 HTTP Adapter 均把已认证拒绝转换为原生 HTTP 403，Tonic 则使用 gRPC
+`PermissionDenied(7)`。这些属于进程内框架边界测试，不代表已经完成真实
+Socket 测试，也不代表已用最新 Vernal 对下游 Bridge 做了跨仓构建。
+
 ## 10. Hutool-Rust 与 Ddd4r
 
 - **Hutool-Rust**：其 HTTP 客户端、序列化、缓存或其他工具可以注册为组件；
@@ -436,7 +443,8 @@ Body/Stream/Reader 包装器证明：错误路径会等待 Scope 关闭，再恢
 一次进入 `Closed`。每个 Adapter 还会在不轮询终止边界的前提下消费一个原生
 数据帧、字节块或字节，随后丢弃消费者；该确定性框架边界断连合同证明
 `DropGuard` 取消会唤醒预启动清理任务，并关闭仍处于 Open 的 Scope。真实网络
-Socket 断连 E2E 和下表其余矩阵仍按阶段继续补齐。Axum 取消合同还证明：后台
+Socket 断连 E2E、下游 Bridge 固定 Revision 刷新和下表其余矩阵仍按阶段继续
+补齐。Axum 取消合同还证明：后台
 关闭结果无法回传响应且被 Adapter 忽略时，所属 Context 仍会收到脱敏告警：
 
 | 合同 | 必须覆盖 |

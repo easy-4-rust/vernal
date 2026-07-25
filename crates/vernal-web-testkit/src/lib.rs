@@ -8,6 +8,7 @@ mod failing_tokio_reader;
 mod scope_cleanup_timeout_fixture;
 mod scope_close_probe;
 mod scope_rejecting_interceptor;
+mod security_contract_interceptor;
 mod web_adapter_contract;
 
 pub use failing_byte_stream::FailingByteStream;
@@ -17,4 +18,5 @@ pub use failing_tokio_reader::FailingTokioReader;
 pub use scope_cleanup_timeout_fixture::ScopeCleanupTimeoutFixture;
 pub use scope_close_probe::ScopeCloseProbe;
 pub use scope_rejecting_interceptor::ScopeRejectingInterceptor;
+pub use security_contract_interceptor::SecurityContractInterceptor;
 pub use web_adapter_contract::WebAdapterContract;

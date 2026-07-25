@@ -536,7 +536,10 @@ flowchart LR
   Handler 前认证并执行角色/权限 all/any 规则，以及 Sa-Token 全局/前缀通配符
   语义，以稳定 401/403 短路。
   `VernalSaTokenConfigBinder` 还会把不可变 Environment 映射到 Sa-Token 原生
-  Builder，但不接管 Storage、Listener、Manager 或 Runtime 构造。
+  Builder，但不接管 Storage、Listener、Manager 或 Runtime 构造。Vernal 自身
+  现已用不依赖 Sa-Token-Rust 的通用 Security 一致性 Fixture 冻结桥接合同：
+  认证主体可从 Send/Local 两个执行平面到达 Handler，匿名请求稳定返回 401，
+  已认证但拒绝访问稳定返回 403。
 - **Ddd4r** 通过消费方持有的 `ddd4r-vernal` 直接注册原生 `Registry` 和
   `DefaultCommandBus`，并以隔离快照进入 Ddd4r 自己的 Tokio task-local
   `ContextScope`；聚合、事件、CQRS、Repository、Outbox 和事务语义仍归 Ddd4r。
@@ -580,7 +583,11 @@ crates.io 安装命令，也没有稳定 API 承诺。
 
 Phase 5 正在进行：Sa-Token-Rust 已远端集成 `sa-token-vernal` 认证、操作授权
 AOP 与 Environment 配置绑定；其具名应用模块会原子安装原生安全组件图和两个
-执行平面，12 个 Bridge 测试与 2 个配置绑定测试通过。Hutool-Rust 已远端集成
+执行平面，12 个 Bridge 测试与 2 个配置绑定测试通过。Vernal 现已独立验证自己
+一侧的合同：共享 Testkit 覆盖 Principal 投影和脱敏 401/403 短路；九个 HTTP
+Adapter 均把已认证拒绝映射为 HTTP 403，Tonic 映射为 gRPC
+`PermissionDenied`；Axum 与 Actix Web 还分别证明 Send/Local 成功路径可读取
+Principal。Hutool-Rust 已远端集成
 `hutool-vernal`，通过
 具名应用模块原子装配 HTTP 组件、Setting PropertySource 与 Profile；Ddd4r 本地
 已实现 `ddd4r-vernal`，其真实 Tokio 测试、Clippy 和文档构建已在独立依赖图通过。
@@ -650,7 +657,9 @@ Adapter 共同验证正常 Body 完成、策略短路和响应 Body Drop 后由 
 一次进入 `Closed`。十个 Adapter 还会各自消费一个原生数据帧、字节块或字节，
 但不轮询终止边界，随后丢弃响应消费者；这一确定性的框架边界断连合同已证明
 `DropGuard` 取消会唤醒预启动清理任务，并关闭仍处于 Open 的 Scope。真实网络
-Socket 断连 E2E、Security 集成和其余失败矩阵仍按架构清单继续补齐。
+Socket 断连 E2E、让下游 Sa-Token-Rust Bridge 的固定 Revision 跟进最新
+Vernal，以及跨仓其余失败矩阵仍按架构清单继续补齐；Vernal 边界的通用
+Security 集成现已覆盖。
 
 ## 10. 贡献与许可证
 

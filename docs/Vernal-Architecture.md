@@ -1585,6 +1585,17 @@ installation remain explicit Sa-Token concerns. Twelve bridge tests, including
 module and definition rollback contracts, and two configuration binding tests
 pass together in the target crate.
 
+Vernal independently tests its side of this integration contract without a
+dependency on Sa-Token-Rust. `SecurityContractInterceptor` proves authenticated
+principal projection and redacted anonymous 401/authenticated 403 failures
+through both Send and Local AOP. Axum and Actix Web expose that principal to
+their native success handlers. The nine HTTP adapter suites translate
+authenticated denial into native HTTP 403, with Tonic using gRPC
+`PermissionDenied(7)`.
+This evidence is process-local; a live-socket test and rebuilding the
+consumer-owned bridge against the latest Vernal revision remain separate
+cross-repository gates.
+
 ### 12.3 Ddd4r
 
 Ddd4r now owns an unpublished, consumer-side `ddd4r-vernal` bridge pinned to a
