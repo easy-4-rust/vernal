@@ -11,8 +11,8 @@ use vernal_core::SharedError;
 
 use crate::{
     ComponentDefinition, ComponentKey, Dependency, Qualifier, Registry, ResolveError, Resolver,
-    Scope, ScopeContext, ScopeKey, TraitBinding, component_definition::ErasedComponent,
-    resolution_tracker::ResolutionTracker,
+    Scope, ScopeContext, ScopeKey, TraitBinding, TransientTracker,
+    component_definition::ErasedComponent, resolution_tracker::ResolutionTracker,
 };
 
 type SingletonCell = OnceLock<Result<ErasedComponent, ResolveError>>;
@@ -21,10 +21,16 @@ type SingletonCell = OnceLock<Result<ErasedComponent, ResolveError>>;
 ///
 /// 注册表可以共享，而单例缓存始终属于容器实例。Vernal 不使用进程级组件表，
 /// 因此多个应用上下文、租户容器和并行测试不会互相覆盖实例。
+///
+/// ## Transient 实例追踪
+///
+/// Container 自动追踪所有 Transient 实例的弱引用。上层（如 vernal-context）
+/// 在关闭时可通过 `transient_tracker()` 获取仍存活的实例并执行清理。
 pub struct Container {
     registry: Registry,
     singletons: Arc<Mutex<HashMap<ComponentKey, Arc<SingletonCell>>>>,
     resolutions: Arc<ResolutionTracker>,
+    transient_tracker: Arc<TransientTracker>,
     owner: Arc<()>,
 }
 
@@ -36,6 +42,7 @@ impl Container {
             registry,
             singletons: Arc::new(Mutex::new(HashMap::new())),
             resolutions: Arc::new(ResolutionTracker::new()),
+            transient_tracker: Arc::new(TransientTracker::new()),
             owner: Arc::new(()),
         }
     }
@@ -49,6 +56,7 @@ impl Container {
             registry: self.registry.clone(),
             singletons: Arc::clone(&self.singletons),
             resolutions: Arc::clone(&self.resolutions),
+            transient_tracker: Arc::clone(&self.transient_tracker),
             owner: Arc::clone(&self.owner),
         }
     }
@@ -78,6 +86,15 @@ impl Container {
         S: 'static,
     {
         ScopeContext::root(Arc::clone(&self.owner), ScopeKey::of::<S>(), cancellation)
+    }
+
+    /// 返回 Transient 实例追踪器。
+    ///
+    /// 上层（如 vernal-context）在关闭时可通过此追踪器获取仍存活的 Transient 实例
+    /// 并执行清理逻辑。对标 tx_di 的 `Store.prototype_instances`。
+    #[must_use]
+    pub fn transient_tracker(&self) -> &TransientTracker {
+        &self.transient_tracker
     }
 
     /// 解析唯一注册的 `T` 类型组件。
@@ -505,7 +522,15 @@ impl Container {
         }
 
         let result = match definition.scope() {
-            Scope::Transient => self.construct(definition, stack, scope),
+            Scope::Transient => {
+                let instance = self.construct(definition, stack, scope);
+                // 追踪 Transient 实例的弱引用，供上层在关闭时通知存活实例
+                if let Ok(ref arc) = instance {
+                    self.transient_tracker
+                        .track(definition.key().type_id, arc);
+                }
+                instance
+            }
             Scope::Singleton => {
                 let cell = {
                     let mut singletons = self
