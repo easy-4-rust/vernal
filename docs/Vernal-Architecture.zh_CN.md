@@ -599,11 +599,17 @@ Vernal 不使用 `self as *const Self as usize` 作为长期身份。目标方�
    业务值实现 `Clone`；
 5. 两条路径都返回 `Result<T, InvocationError>`；计划缺失、重复推进目标、取消和
    返回类型不匹配均返回结构化错误，不使用 panic。
+6. `#[intercept(tags = [...], qualifier = "...")]` 生成一个类型关联的隐藏
+   Operation 描述符；`operation!(Type::method)` 在应用或模块装配时显式取得它，
+   不重复声明身份和元数据。
 
 owned 接收器路径安全产生 `'static` Future；`&self` 路径把接收器、引用参数和
 业务 Future 一起约束在当前方法 `.await`，既不伪造 `'static`，也不克隆服务对象。
 `Next` 按合同只能推进一次；若自定义拦截器重复调用，宏生成的目标会返回
 `TargetAlreadyInvoked`，避免悄悄重复执行业务副作用。
+描述符前端在编译期校验标签和 qualifier，`OperationMetadata` 在生成声明时再次
+执行不变量校验。该方案不引入全局 inventory、链接期扫描或进程级可变注册；
+只有应用显式接纳描述符后，Pointcut 才会在计划编译阶段匹配它。
 
 ```mermaid
 sequenceDiagram
@@ -1255,8 +1261,9 @@ Local-AOP 测试覆盖非 `Send` 返回值、顺序、短路、取消、计划�
 测试，覆盖校验与去重、身份/声明分离、标签与 qualifier 切点、Send/Local 计划
 投影，以及冲突声明的 fail-closed 构建。宏前端另有 5 个运行时测试，覆盖
 Singleton Component 注入、Transient 构造、Trait Object 注入、Arc-owned 与
-共享借用接收器的 Context-local 方法织入及类型驱动自定义 Scope，并有 4 个
-compile-fail 用例覆盖非法组件字段、非法集合 qualifier、非异步方法和可变接收器。
+共享借用接收器的 Context-local 方法织入、静态标签/qualifier 描述符投影及
+类型驱动自定义 Scope，并有 6 个 compile-fail 用例覆盖非法组件字段、非法集合
+qualifier、非异步方法、可变接收器、非法操作元数据和错误描述符路径。
 Phase 2 已具备可调用闭环，但 Trait/泛型方法、诊断矩阵、性能基准和稳定性承诺
 仍未完成。
 

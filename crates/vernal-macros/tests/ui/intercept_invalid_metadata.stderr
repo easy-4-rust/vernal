@@ -1,0 +1,5 @@
+error: intercept 标签不能为空，也不能包含空白或控制字符
+ --> tests/ui/intercept_invalid_metadata.rs:4:40
+  |
+4 |     #[vernal_macros::intercept(tags = ["needs review"])]
+  |                                        ^^^^^^^^^^^^^^

@@ -1,0 +1,5 @@
+error: operation! 需要 Type::method 路径，当前路径缺少方法名
+ --> tests/ui/operation_invalid_path.rs:4:39
+  |
+4 |     let _ = vernal_macros::operation!(MissingMethodPath);
+  |                                       ^^^^^^^^^^^^^^^^^

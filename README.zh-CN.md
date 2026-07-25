@@ -106,7 +106,7 @@ Vernal 遵守四条不可退化的规则：
 | `vernal-ioc` | Phase 1/诊断内核已实现 | 定义、作用域、解析、依赖图和只读快照 |
 | `vernal-aop` | Phase 2 内核已实现 | Send/Local Around/Next、不可变操作元数据、可组合切点代数、不可变计划和取消 |
 | `vernal-context` | Phase 3/诊断内核已实现 | 应用环境、条件装配、生命周期、回滚、事件和脱敏启动报告 |
-| `vernal-macros` | Phase 2 宏已实现 | 显式注入元数据与 Context-local 异步方法织入 |
+| `vernal-macros` | Phase 2 宏已实现 | 显式注入元数据、Operation 声明与 Context-local 异步方法织入 |
 | `vernal-web` | Phase 4 合同已实现 | 框架中立的 Context、请求 Scope、Handler 和错误合同 |
 | `vernal-web-testkit` | Phase 4 绑定/生命周期合同已实现 | 十个 Adapter 共享 Context/Scope/组件绑定及成功、错误、Drop 清理断言 |
 | `vernal-http` | Phase 4 合同已实现 | HTTP 请求、响应、Body、流、取消和背压合同 |
@@ -275,16 +275,28 @@ struct OrderService {
 }
 
 impl OrderService {
-    #[vernal_macros::intercept(component = "OrderService")]
+    #[vernal_macros::intercept(
+        component = "OrderService",
+        tags = ["secured", "transactional"],
+        qualifier = "command"
+    )]
     async fn create(&self, order_id: &u64) -> Result<u64, InvocationError> {
         Ok(*order_id)
     }
 }
 ```
 
+应用装配直接登记方法宏生成的精确声明，不重复书写操作身份或元数据：
+
+```rust
+application.operation(vernal_macros::operation!(OrderService::create));
+```
+
 `&self` 路径允许 owned 或引用参数，并通过 `invoke_borrowed` 把业务 Future 严格
 限制在当前 `.await`；`self: Arc<Self>` 路径要求 owned 参数并生成 `'static`
 目标。两者都不使用反射、全局查找、unsafe 生命周期扩展或隐式克隆接收器。
+`operation!(Type::method)` 属于显式 Context 装配，不是 classpath 扫描或全局
+inventory，并让方法身份、标签和 qualifier 只有一个事实来源。
 
 Send 与 Local 拦截器都可以作为普通 IoC 组件管理。应用先注册拦截器定义，再通过
 `advisor_component::<AuditInterceptor, _>(pointcut, order)` 声明切面；Context
@@ -470,9 +482,11 @@ Phase 2 AOP 内核现有 11 个 Send 合同测试，覆盖顺序进入/逆序退
 闭包互操作与逻辑短路求值；另有 6 个操作元数据合同测试，覆盖标签校验与去重、
 qualifier、身份/声明分离、元数据切点、Send/Local 计划投影，以及冲突声明的
 fail-closed 构建。宏前端另有 5 个运行时合同测试，覆盖
-`self: Arc<Self>` 与借用 `&self` 方法织入及类型驱动自定义 Scope，并有 4 个
+`self: Arc<Self>` 与借用 `&self` 方法织入、静态标签/qualifier 描述符投影及
+类型驱动自定义 Scope，并有 6 个
 compile-fail 用例覆盖非法组件字段、
-非法集合 qualifier、非异步方法与可变接收器。Trait 方法、泛型方法、更完整诊断
+非法集合 qualifier、非异步方法、可变接收器、非法操作元数据与错误描述符路径。
+Trait 方法、泛型方法、更完整诊断
 矩阵和 AOP 性能基准仍待完成。
 Phase 3 内核现有 56 个测试，覆盖依赖顺序启动、逆序关闭、initialize/start
 回滚、非法状态转换、幂等关闭、并发关闭串行化和 Context-local 类型化事件

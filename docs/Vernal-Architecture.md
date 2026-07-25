@@ -643,12 +643,21 @@ The first weaving frontend exposes two explicit Rust ownership contracts:
 5. Both paths return `Result<T, InvocationError>`. Missing plans, repeated
    target advancement, cancellation, and return-type
    mismatches are structured errors rather than panics.
+6. `#[intercept(tags = [...], qualifier = "...")]` emits one hidden,
+   type-associated Operation descriptor. `operation!(Type::method)` retrieves
+   that descriptor for explicit application/module assembly, so identity and
+   metadata are not repeated.
 
 The owned receiver path produces a safe `'static` future. The `&self` path
 binds its receiver, reference arguments, and business future to the current
 method `.await`; it neither fabricates `'static` nor clones the service.
 `Next` remains a one-shot continuation, so repeated advancement returns
 `TargetAlreadyInvoked` instead of silently repeating side effects.
+The descriptor frontend statically validates tags and qualifier, while
+`OperationMetadata` validates the generated declaration again as an invariant.
+No global inventory, link-time scanner, or process-wide mutable registration is
+introduced. Pointcuts still compile only after the application explicitly
+accepts the descriptor.
 
 ```mermaid
 sequenceDiagram
@@ -1348,10 +1357,12 @@ conflicts. The macro
 frontend additionally has five runtime tests for singleton Component
 injection, transient construction, Trait Object injection, and context-local
 intercepted invocation through both Arc-owned and shared-reference receivers,
-plus a type-driven custom Scope declaration and four
+including static tag/qualifier descriptor projection, plus a type-driven custom
+Scope declaration and six
 compile-fail cases for invalid component
-fields, invalid collection qualifiers, non-async methods, and mutable
-receivers. Phase 2 now has a callable loop, while trait/generic methods,
+fields, invalid collection qualifiers, non-async methods, mutable receivers,
+invalid operation metadata, and malformed descriptor paths. Phase 2 now has a
+callable loop, while trait/generic methods,
 diagnostic coverage, benchmarks, and stability guarantees remain open.
 
 The Phase 3 kernel has fifty-six contract tests for dependency-order

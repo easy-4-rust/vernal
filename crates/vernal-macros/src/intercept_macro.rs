@@ -2,14 +2,15 @@
 
 use proc_macro_crate::{FoundCrate, crate_name};
 use proc_macro2::{Span, TokenStream};
-use quote::quote;
+use quote::{format_ident, quote};
 use syn::{
     Block, FnArg, GenericArgument, Ident, ImplItemFn, LitStr, Pat, PatIdent, PathArguments,
-    ReturnType, Type, parse::Parser, visit_mut::VisitMut,
+    ReturnType, Type, visit_mut::VisitMut,
 };
 
 use crate::{
-    intercept_receiver::InterceptReceiver, self_reference_rewriter::SelfReferenceRewriter,
+    intercept_options::InterceptOptions, intercept_receiver::InterceptReceiver,
+    self_reference_rewriter::SelfReferenceRewriter,
 };
 
 /// 汇集一次方法展开所需的已校验语法片段。
@@ -30,17 +31,27 @@ struct InterceptCodegen<'a> {
 
 /// 解析拦截选项、校验方法签名并生成异步 AOP 调用包装。
 pub(crate) fn expand(attributes: TokenStream, mut method: ImplItemFn) -> syn::Result<TokenStream> {
-    let (component, method_name) = parse_options(attributes)?;
+    let options = InterceptOptions::parse(attributes)?;
     let receiver = validate_method(&method)?;
     let (return_type, _) = result_types(&method.sig.output)?;
     let aop = aop_crate_path()?;
     let function_name = &method.sig.ident;
-    let method_name = method_name
+    let method_name = options
+        .method()
+        .cloned()
         .unwrap_or_else(|| LitStr::new(&function_name.to_string(), function_name.span()));
-    let component = component.map_or_else(
+    let component = options.component().map_or_else(
         || quote! { ::core::any::type_name::<Self>() },
         |component| quote! { #component },
     );
+    let descriptor_name = format_ident!(
+        "__vernal_operation_{}",
+        function_name,
+        span = function_name.span()
+    );
+    let visibility = &method.vis;
+    let tags = options.tags();
+    let qualifier = options.qualifier();
 
     let mut argument_patterns = Vec::new();
     let mut argument_idents = Vec::new();
@@ -77,7 +88,35 @@ pub(crate) fn expand(attributes: TokenStream, mut method: ImplItemFn) -> syn::Re
     }
     .render()?;
 
-    Ok(quote! { #method })
+    // 描述符与业务方法处于同一个 impl，能够使用 `Self` 计算默认组件名。应用模块
+    // 通过 `operation!(Type::method)` 显式调用它，避免全局扫描和元数据重复声明。
+    let qualifier_statement = qualifier.map(|qualifier| {
+        quote! {
+            __vernal_operation = __vernal_operation
+                .with_qualifier(#qualifier)
+                .expect("vernal-macros 已在编译期校验 intercept qualifier");
+        }
+    });
+    let descriptor = quote! {
+        #[doc(hidden)]
+        #[doc = "返回宏在编译期校验过的 AOP Operation 声明。"]
+        #[allow(dead_code)]
+        #visibility fn #descriptor_name() -> #aop::Operation {
+            let mut __vernal_operation = #aop::Operation::new(#component, #method_name);
+            #(
+                __vernal_operation = __vernal_operation
+                    .with_tag(#tags)
+                    .expect("vernal-macros 已在编译期校验 intercept tag");
+            )*
+            #qualifier_statement
+            __vernal_operation
+        }
+    };
+
+    Ok(quote! {
+        #method
+        #descriptor
+    })
 }
 
 impl InterceptCodegen<'_> {
@@ -259,25 +298,6 @@ impl InterceptCodegen<'_> {
             }
         }})
     }
-}
-
-/// 解析可选的逻辑组件名和方法名。
-fn parse_options(attributes: TokenStream) -> syn::Result<(Option<LitStr>, Option<LitStr>)> {
-    let mut component = None;
-    let mut method = None;
-    let parser = syn::meta::parser(|metadata| {
-        if metadata.path.is_ident("component") {
-            component = Some(metadata.value()?.parse()?);
-            return Ok(());
-        }
-        if metadata.path.is_ident("method") {
-            method = Some(metadata.value()?.parse()?);
-            return Ok(());
-        }
-        Err(metadata.error("intercept 属性只支持 component 或 method"))
-    });
-    parser.parse2(attributes)?;
-    Ok((component, method))
 }
 
 /// 校验方法并返回其安全异步目标所有权模型。

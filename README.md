@@ -117,7 +117,7 @@ Detailed decisions, flows, failure semantics, and acceptance criteria are in:
 | `vernal-ioc` | Phase 1/diagnostics kernel implemented | Definitions, scopes, resolution, graph validation, read-only snapshots |
 | `vernal-aop` | Phase 2 kernel implemented | Send/Local Around/Next, immutable operation metadata, composable pointcut algebra, immutable plans, cancellation |
 | `vernal-context` | Phase 3/diagnostics kernel implemented | Managed bootstrap, application environment, conditional assembly, lifecycle, events, redacted startup reports |
-| `vernal-macros` | Phase 2 macros implemented | Explicit `Arc<T>` injection metadata and context-local async method weaving |
+| `vernal-macros` | Phase 2 macros implemented | Explicit `Arc<T>` injection metadata, operation declarations, and context-local async method weaving |
 | `vernal-web` | Phase 4 contract implemented | Framework-neutral context, request scope, handler, and error contracts |
 | `vernal-web-testkit` | Phase 4 binding/lifecycle contracts implemented | Shared Context/scope/component binding and success/error/drop cleanup assertions for all ten adapters |
 | `vernal-http` | Phase 4 contract implemented | HTTP request, response, body, streaming, cancellation, and backpressure |
@@ -326,7 +326,11 @@ struct OrderService {
 }
 
 impl OrderService {
-    #[vernal_macros::intercept(component = "OrderService")]
+    #[vernal_macros::intercept(
+        component = "OrderService",
+        tags = ["secured", "transactional"],
+        qualifier = "command"
+    )]
     async fn create(
         &self,
         order_id: &u64,
@@ -336,12 +340,21 @@ impl OrderService {
 }
 ```
 
+Application assembly registers the exact declaration generated from the method,
+without repeating its identity or metadata:
+
+```rust
+application.operation(vernal_macros::operation!(OrderService::create));
+```
+
 The method macro accepts `async fn` with either `self: Arc<Self>` and owned
 arguments, or ordinary `&self` with owned or borrowed arguments. The Arc path
 creates a `'static` target; the shared-reference path uses
 `invoke_borrowed` and cannot escape the current `.await`. Both return
 `Result<T, InvocationError>` without reflection, process-global lookup, unsafe
-lifetime extension, or hidden receiver cloning.
+lifetime extension, or hidden receiver cloning. `operation!(Type::method)` is
+explicit Context assembly—not classpath scanning or a global inventory—and is
+the single source of truth for method identity, tags, and qualifier.
 
 Send and Local interceptors can also be ordinary IoC components. After registering
 an interceptor definition, `advisor_component::<AuditInterceptor, _>` declares
@@ -636,10 +649,11 @@ pointcuts, Send/Local plan projection, and fail-closed declaration conflicts.
 The macro frontend has five runtime tests covering singleton Component
 injection, transient construction, Trait Object injection, and context-local
 intercepted invocation through both `self: Arc<Self>` and borrowed `&self`,
-plus a type-driven custom Scope declaration and four
+plus a type-driven custom Scope declaration and six
 compile-fail cases for invalid component
-fields, invalid collection qualifiers, non-async interception, and mutable
-receivers. Trait methods, generic methods, expanded
+fields, invalid collection qualifiers, non-async interception, mutable
+receivers, invalid operation metadata, and malformed descriptor paths. Trait
+methods, generic methods, expanded
 macro diagnostics, and AOP benchmarks remain open.
 The Phase 3 kernel has fifty-six tests covering dependency-order startup,
 reverse shutdown, initialize/start rollback, invalid transitions, idempotent

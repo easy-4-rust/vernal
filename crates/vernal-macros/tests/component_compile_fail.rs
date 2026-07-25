@@ -7,4 +7,6 @@ fn invalid_component_fields_have_actionable_diagnostics() {
     tests.compile_fail("tests/ui/component_all_trait_qualifier.rs");
     tests.compile_fail("tests/ui/intercept_non_async.rs");
     tests.compile_fail("tests/ui/intercept_mutable_receiver.rs");
+    tests.compile_fail("tests/ui/intercept_invalid_metadata.rs");
+    tests.compile_fail("tests/ui/operation_invalid_path.rs");
 }
