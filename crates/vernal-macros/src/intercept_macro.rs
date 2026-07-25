@@ -124,7 +124,9 @@ impl InterceptCodegen<'_> {
     fn render(&self) -> syn::Result<Block> {
         match self.receiver {
             InterceptReceiver::OwnedArc => self.render_owned(),
-            InterceptReceiver::SharedReference => self.render_borrowed(),
+            InterceptReceiver::SharedReference | InterceptReceiver::MutableReference => {
+                self.render_borrowed()
+            }
         }
     }
 
@@ -221,7 +223,7 @@ impl InterceptCodegen<'_> {
         }})
     }
 
-    /// 渲染 `&self` 方法的借用型目标调用与返回类型恢复。
+    /// 渲染 `&self` 或 `&mut self` 方法的借用型目标调用与返回类型恢复。
     ///
     /// 业务 Future 在进入拦截器链前创建，并由
     /// `BorrowedInvocationFutureTarget` 持有。目标、接收器和引用参数都不会逃出
@@ -258,8 +260,8 @@ impl InterceptCodegen<'_> {
                 .with_cancellation(__vernal_cancellation)
                 .shared();
 
-            // `&self` 与可能存在的引用参数只进入当前调用期 Future，不会被擦除为
-            // `'static`。拦截器短路时该 Future 未被轮询，并在方法返回前安全释放。
+            // 引用接收器与可能存在的引用参数只进入当前调用期 Future，不会被擦除
+            // 为 `'static`。拦截器短路时该 Future 未被轮询，并在方法返回前安全释放。
             let __vernal_target_self = self;
             let __vernal_target_future: #aop::InvocationFuture<'_> =
                 ::std::boxed::Box::pin(async move {
@@ -308,14 +310,10 @@ fn validate_method(method: &ImplItemFn) -> syn::Result<InterceptReceiver> {
             "#[intercept] 只支持 async fn",
         ));
     }
-    if method.sig.constness.is_some()
-        || method.sig.unsafety.is_some()
-        || method.sig.abi.is_some()
-        || !method.sig.generics.params.is_empty()
-    {
+    if method.sig.constness.is_some() || method.sig.unsafety.is_some() || method.sig.abi.is_some() {
         return Err(syn::Error::new_spanned(
             &method.sig,
-            "#[intercept] 暂不支持 const、unsafe、extern 或泛型方法",
+            "#[intercept] 不支持 const、unsafe 或 extern 方法",
         ));
     }
     let receiver = InterceptReceiver::parse(method)?;

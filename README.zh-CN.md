@@ -317,9 +317,15 @@ impl OrderService {
 application.operation(vernal_macros::operation!(OrderService::create));
 ```
 
-`&self` 路径允许 owned 或引用参数，并通过 `invoke_borrowed` 把业务 Future 严格
-限制在当前 `.await`；`self: Arc<Self>` 路径要求 owned 参数并生成 `'static`
-目标。两者都不使用反射、全局查找、unsafe 生命周期扩展或隐式克隆接收器。
+`&self` 与 `&mut self` 路径允许 owned 或引用参数，并通过 `invoke_borrowed`
+把业务 Future 严格限制在当前 `.await`；`self: Arc<Self>` 路径要求 owned 参数
+并生成 `'static` 目标。type、lifetime 与 const 泛型方法沿用同一 Operation
+身份；每次单态化调用仍按实际返回类型完成安全恢复。三种接收器都不使用反射、
+全局查找、unsafe 生命周期扩展或隐式克隆。
+
+`&mut self` 要求调用方能够取得独占引用，因此最适合唯一持有的 Transient 组件；
+被 Container 缓存并以 `Arc<T>` 共享的 Singleton 通常应使用锁、原子类型或 Channel
+表达内部可变性，而不是绕过 Rust 的共享所有权。
 `operation!(Type::method)` 属于显式 Context 装配，不是 classpath 扫描或全局
 inventory，并让方法身份、标签和 qualifier 只有一个事实来源。
 
@@ -528,13 +534,11 @@ Phase 2 AOP 内核现有 11 个 Send 合同测试，覆盖顺序进入/逆序退
 切点代数合同测试，覆盖精确 Operation、组件、方法切点，AND/OR/NOT 组合、
 闭包互操作与逻辑短路求值；另有 6 个操作元数据合同测试，覆盖标签校验与去重、
 qualifier、身份/声明分离、元数据切点、Send/Local 计划投影，以及冲突声明的
-fail-closed 构建。宏前端另有 5 个运行时合同测试，覆盖
-`self: Arc<Self>` 与借用 `&self` 方法织入、静态标签/qualifier 描述符投影及
-类型驱动自定义 Scope，并有 6 个
-compile-fail 用例覆盖非法组件字段、
-非法集合 qualifier、非异步方法、可变接收器、非法操作元数据与错误描述符路径。
-Trait 方法、泛型方法、更完整诊断
-矩阵和 AOP 性能基准仍待完成。
+fail-closed 构建。宏前端运行合同覆盖 `self: Arc<Self>`、借用 `&self` 与独占
+`&mut self` 方法织入，type/lifetime/const 泛型的 owned 与 borrowed 路径，
+静态标签/qualifier 描述符投影及类型驱动自定义 Scope；compile-fail 矩阵覆盖
+非法组件字段、非法集合 qualifier、非异步方法、裸 `self` 接收器、非法操作元数据
+与错误描述符路径。Trait 默认方法、更完整诊断矩阵和 AOP 性能基准仍待完成。
 Phase 3 内核现有 56 个测试，覆盖依赖顺序启动、逆序关闭、initialize/start
 回滚、非法状态转换、幂等关闭、并发关闭串行化和 Context-local 类型化事件
 隔离、高层构建器十一类内建资源注入、应用 Scope 取消树、任务错误/panic 传播、

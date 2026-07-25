@@ -1,0 +1,5 @@
+error: #[intercept] 的接收器必须写成 self: Arc<Self>、&self 或 &mut self
+  --> tests/ui/intercept_value_receiver.rs:10:22
+   |
+10 |     async fn execute(self) -> Result<(), InvocationError> {
+   |                      ^^^^

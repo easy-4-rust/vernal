@@ -2,16 +2,19 @@
 
 use syn::{FnArg, GenericArgument, ImplItemFn, PathArguments, Type};
 
-/// 描述 `#[intercept]` 支持的两种异步方法所有权模型。
+/// 描述 `#[intercept]` 支持的三种异步方法所有权模型。
 ///
 /// `OwnedArc` 可以生成 `'static` 目标，适合后台任务或需要移动组件所有权的调用；
-/// `SharedReference` 把业务 Future 约束在当前 `.await`，更符合普通 Rust 服务方法。
+/// 两种引用接收器都把业务 Future 约束在当前 `.await`，其中可变引用允许状态型
+/// Transient 组件在完整 Around 链内安全修改自身。
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum InterceptReceiver {
     /// 显式消费一个 `Arc<Self>` 克隆。
     OwnedArc,
     /// 在当前异步调用期间共享借用组件。
     SharedReference,
+    /// 在当前异步调用期间独占借用组件。
+    MutableReference,
 }
 
 impl InterceptReceiver {
@@ -20,33 +23,32 @@ impl InterceptReceiver {
         let Some(FnArg::Receiver(receiver)) = method.sig.inputs.first() else {
             return Err(syn::Error::new_spanned(
                 &method.sig.inputs,
-                "#[intercept] 必须用于具有 self: Arc<Self> 或 &self 接收器的方法",
+                "#[intercept] 必须用于具有 self: Arc<Self>、&self 或 &mut self 接收器的方法",
             ));
         };
         if receiver.reference.is_some() {
-            if receiver.mutability.is_none() {
-                return Ok(Self::SharedReference);
-            }
-            return Err(syn::Error::new_spanned(
-                receiver,
-                "#[intercept] 暂不支持 &mut self；请使用 &self 或 self: Arc<Self>",
-            ));
+            return if receiver.mutability.is_some() {
+                Ok(Self::MutableReference)
+            } else {
+                Ok(Self::SharedReference)
+            };
         }
         if is_arc_self(&receiver.ty) {
             return Ok(Self::OwnedArc);
         }
         Err(syn::Error::new_spanned(
             receiver,
-            "#[intercept] 的接收器必须写成 self: Arc<Self> 或 &self",
+            "#[intercept] 的接收器必须写成 self: Arc<Self>、&self 或 &mut self",
         ))
     }
 
     /// 返回该接收器是否允许参数继续借用调用方数据。
     ///
-    /// 借用接收器生成的目标不会逃出当前方法 Future，因此引用参数与 `&self` 可以
-    /// 共享同一调用生命周期；owned `Arc<Self>` 路径仍保持完整 `'static` 合同。
+    /// 借用接收器生成的目标不会逃出当前方法 Future，因此引用参数与共享/独占
+    /// receiver 可以处于同一调用生命周期；owned `Arc<Self>` 路径仍保持完整
+    /// `'static` 合同。
     pub(crate) const fn allows_borrowed_arguments(self) -> bool {
-        matches!(self, Self::SharedReference)
+        matches!(self, Self::SharedReference | Self::MutableReference)
     }
 }
 

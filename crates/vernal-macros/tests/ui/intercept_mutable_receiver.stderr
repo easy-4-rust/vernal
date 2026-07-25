@@ -1,5 +1,0 @@
-error: #[intercept] 暂不支持 &mut self；请使用 &self 或 self: Arc<Self>
-  --> tests/ui/intercept_mutable_receiver.rs:10:22
-   |
-10 |     async fn execute(&mut self) -> Result<(), InvocationError> {
-   |                      ^^^^^^^^^

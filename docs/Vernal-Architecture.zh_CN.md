@@ -87,11 +87,14 @@
 - `[已确认]` tx-di 原文参考已从正式 `src/` 移到各 crate 的只读
   `upstream/tx-di/` 证据目录；生产源码不再同时摆放未编译的 Store/App/全局注册表。
 - `[已确认]` `#[component(aop)]` 与 `#[intercept]` 已把 Context-local
-  `InvocationPlanCatalog`、取消令牌和 Arc-owned/共享借用异步组件方法连接起来；
-  无全局实例 Map 或 unsafe 生命周期扩展，计划缺失、取消和返回类型不匹配均通过
-  结构化错误返回。
-- `[设计目标]` Trait/泛型/可变方法签名、剩余消费方生态桥接、性能基准与后续生产门禁
-  仍需实现和验收。
+  `InvocationPlanCatalog`、取消令牌和 Arc-owned/共享借用/独占借用异步组件方法
+  连接起来；无全局实例 Map 或 unsafe 生命周期扩展，计划缺失、取消和返回类型
+  不匹配均通过结构化错误返回。
+- `[已确认]` 方法宏已支持 `self: Arc<Self>`、`&self`、`&mut self` 以及
+  type/lifetime/const 泛型异步实现方法；所有路径继续使用同一 Context-local
+  Operation 与类型擦除边界，不引入 unsafe 生命周期扩展。
+- `[设计目标]` Trait 默认方法、剩余消费方生态桥接、性能基准与后续生产门禁仍需
+  实现和验收。
 
 ## 2. 品牌寓意与架构主张
 
@@ -639,13 +642,14 @@ Vernal 不使用 `self as *const Self as usize` 作为长期身份。目标方�
 
 ### 9.8 方法宏安全合同
 
-第一版方法织入提供两套明确的 Rust 所有权合同：
+方法织入提供三种接收器、两套目标所有权合同：
 
 1. 组件使用 `#[component(aop)]`，并显式持有
    `Arc<InvocationPlanCatalog>` 与 `Arc<CancellationToken>`；
-2. 被拦截方法必须是 `async fn`，接收器可以是 `self: Arc<Self>` 或普通 `&self`；
-3. Arc 路径要求 owned 参数并生成 `'static` `InvocationTarget`；共享借用路径允许
-   owned 或引用参数，并使用 `invoke_borrowed`；
+2. 被拦截方法必须是 `async fn`，接收器可以是 `self: Arc<Self>`、`&self` 或
+   `&mut self`；
+3. Arc 路径要求 owned 参数并生成 `'static` `InvocationTarget`；共享/独占借用
+   路径允许 owned 或引用参数，并使用 `invoke_borrowed`；
 4. Arc 路径通过一次性 `Mutex<Option<Tuple>>` 转交参数；借用路径使用
    `BorrowedInvocationFutureTarget` 保存唯一 `InvocationFuture<'a>`，两者都不要求
    业务值实现 `Clone`；
@@ -654,9 +658,15 @@ Vernal 不使用 `self as *const Self as usize` 作为长期身份。目标方�
 6. `#[intercept(tags = [...], qualifier = "...")]` 生成一个类型关联的隐藏
    Operation 描述符；`operation!(Type::method)` 在应用或模块装配时显式取得它，
    不重复声明身份和元数据。
+7. type、lifetime 与 const 泛型参数保留在原方法签名中；所有单态化调用共享该
+   方法的 Operation 身份，业务 Future 仍必须满足 `Send`，成功返回值仍必须满足
+   `Any + Send + Sync + 'static`。
 
-owned 接收器路径安全产生 `'static` Future；`&self` 路径把接收器、引用参数和
+owned 接收器路径安全产生 `'static` Future；两种引用路径把接收器、引用参数和
 业务 Future 一起约束在当前方法 `.await`，既不伪造 `'static`，也不克隆服务对象。
+`&mut self` 只有在调用方持有唯一引用时才可用，因此适合 Transient 或应用显式
+唯一持有的对象；Singleton 的 `Arc<T>` 共享状态应使用锁、原子类型或 Channel
+表达内部可变性。
 `Next` 按合同只能推进一次；若自定义拦截器重复调用，宏生成的目标会返回
 `TargetAlreadyInvoked`，避免悄悄重复执行业务副作用。
 描述符前端在编译期校验标签和 qualifier，`OperationMetadata` 在生成声明时再次
@@ -672,7 +682,7 @@ sequenceDiagram
     participant Plan as InvocationPlan
     participant Target as 原业务方法
 
-    Caller->>Macro: Service.method(&self, owned/borrowed args)
+    Caller->>Macro: Service.method(Arc / & / &mut self, args)
     Macro->>Component: 读取计划目录和取消令牌
     Macro->>Catalog: 按 Operation 查找计划
     Catalog-->>Macro: Arc<InvocationPlan>
@@ -1339,13 +1349,12 @@ Local-AOP 测试覆盖非 `Send` 返回值、顺序、短路、取消、计划�
 目标；另有 4 个切点代数合同测试，覆盖精确 Operation、组件和方法匹配，
 类型安全 AND/OR/NOT 组合、闭包互操作与分支短路求值；另有 6 个操作元数据合同
 测试，覆盖校验与去重、身份/声明分离、标签与 qualifier 切点、Send/Local 计划
-投影，以及冲突声明的 fail-closed 构建。宏前端另有 5 个运行时测试，覆盖
-Singleton Component 注入、Transient 构造、Trait Object 注入、Arc-owned 与
-共享借用接收器的 Context-local 方法织入、静态标签/qualifier 描述符投影及
-类型驱动自定义 Scope，并有 6 个 compile-fail 用例覆盖非法组件字段、非法集合
-qualifier、非异步方法、可变接收器、非法操作元数据和错误描述符路径。
-Phase 2 已具备可调用闭环，但 Trait/泛型方法、诊断矩阵、性能基准和稳定性承诺
-仍未完成。
+投影，以及冲突声明的 fail-closed 构建。宏前端运行合同覆盖
+`self: Arc<Self>`、借用 `&self`、独占 `&mut self`，type/lifetime/const 泛型
+在 owned 与 borrowed 目标中的单态化调用，静态标签/qualifier 描述符投影及
+类型驱动自定义 Scope；compile-fail 矩阵覆盖非法组件字段、非法集合 qualifier、
+非异步方法、裸 `self` 接收器、非法操作元数据和错误描述符路径。Phase 2 已具备
+可调用闭环，但 Trait 默认方法、诊断矩阵、性能基准和稳定性承诺仍未完成。
 
 Phase 3 内核另有 56 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
 回滚、非法转换、幂等关闭、并发关闭串行化、Context-local 类型化事件隔离，
@@ -1387,7 +1396,7 @@ fail-closed 与条件错误脱敏，并覆盖显式 ApplicationModule 安装、�
 | ID | 风险 / 待确认 | 影响 | 验证计划 |
 |:---|:---|:---|:---|
 | R-001 | 对象安全异步 Around 的分配成本 | AOP 性能 | 对已实现的 boxed-future 路径做 benchmark |
-| R-002 | proc-macro 对 Trait、泛型与可变方法的覆盖 | 可用性 | trybuild 矩阵 |
+| R-002 | Trait 默认方法与泛型边界诊断仍不完整；泛型实现方法和可变方法已有运行合同 | 可用性 | Trait trybuild 与边界诊断矩阵 |
 | R-003 | 编译期自动注册的跨平台链接行为 | 可移植性 | Linux/macOS/Windows CI |
 | R-004 | Request Scope 在不同 Web 框架中的取消/释放差异 | 资源安全 | 跨框架异常链测试 |
 | R-005 | 过度追求 Spring 命名导致非 Rust API | 长期维护 | API review 与 Rust API Guidelines |

@@ -46,12 +46,15 @@ pub fn derive_configuration_properties(input: TokenStream) -> TokenStream {
         .into()
 }
 
-/// 将 `self: Arc<Self>` 或 `&self` 异步方法接入组件持有的不可变 AOP 调用计划。
+/// 将 `self: Arc<Self>`、`&self` 或 `&mut self` 异步方法接入组件持有的不可变
+/// AOP 调用计划。
 ///
 /// 方法必须返回 `Result<T, InvocationError>`。`self: Arc<Self>` 路径要求参数
-/// 拥有所有权并生成 `'static` 目标；`&self` 路径允许引用参数，并把业务 Future
-/// 严格约束在当前方法调用。`component` 与 `method` 定义稳定身份，`tags` 与
-/// `qualifier` 定义静态声明元数据；应用通过 [`operation`] 显式取得并注册同一份
+/// 拥有所有权并生成 `'static` 目标；引用路径允许引用参数，并把共享或独占业务
+/// Future 严格约束在当前方法调用。泛型参数继续服从 `InvocationFuture` 的
+/// `Send` 以及返回值 `Any + Send + Sync + 'static` 边界，不产生第二套动态调用
+/// 模型。`component` 与 `method` 定义稳定身份，`tags` 与 `qualifier` 定义静态
+/// 声明元数据；应用通过 [`operation`] 显式取得并注册同一份
 /// [`vernal_aop::Operation`](https://docs.rs/vernal-aop/latest/vernal_aop/struct.Operation.html)。
 #[proc_macro_attribute]
 pub fn intercept(attributes: TokenStream, item: TokenStream) -> TokenStream {

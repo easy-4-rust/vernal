@@ -376,14 +376,21 @@ without repeating its identity or metadata:
 application.operation(vernal_macros::operation!(OrderService::create));
 ```
 
-The method macro accepts `async fn` with either `self: Arc<Self>` and owned
-arguments, or ordinary `&self` with owned or borrowed arguments. The Arc path
-creates a `'static` target; the shared-reference path uses
-`invoke_borrowed` and cannot escape the current `.await`. Both return
-`Result<T, InvocationError>` without reflection, process-global lookup, unsafe
-lifetime extension, or hidden receiver cloning. `operation!(Type::method)` is
-explicit Context assembly—not classpath scanning or a global inventory—and is
-the single source of truth for method identity, tags, and qualifier.
+The method macro accepts `async fn` with `self: Arc<Self>`, `&self`, or
+`&mut self`. The Arc path requires owned arguments and creates a `'static`
+target; reference paths accept owned or borrowed arguments, use
+`invoke_borrowed`, and cannot escape the current `.await`. Type, lifetime, and
+const generic methods keep one stable Operation identity while each
+monomorphized call safely restores its actual return type. No path uses
+reflection, process-global lookup, unsafe lifetime extension, or hidden
+receiver cloning. `operation!(Type::method)` is explicit Context assembly—not
+classpath scanning or a global inventory—and is the single source of truth for
+method identity, tags, and qualifier.
+
+An `&mut self` method requires unique ownership and is therefore most natural
+for transient components. A singleton shared as `Arc<T>` should normally model
+mutation with locks, atomics, or channels instead of bypassing Rust's ownership
+rules.
 
 Send and Local interceptors can also be ordinary IoC components. After registering
 an interceptor definition, `advisor_component::<AuditInterceptor, _>` declares
@@ -700,15 +707,13 @@ pointcuts; AND/OR/NOT composition; closure interoperability; and logical
 short-circuit evaluation. Six operation-metadata contracts cover validated and
 deduplicated tags, qualifiers, identity/declaration separation, metadata
 pointcuts, Send/Local plan projection, and fail-closed declaration conflicts.
-The macro frontend has five runtime tests covering singleton Component
-injection, transient construction, Trait Object injection, and context-local
-intercepted invocation through both `self: Arc<Self>` and borrowed `&self`,
-plus a type-driven custom Scope declaration and six
-compile-fail cases for invalid component
-fields, invalid collection qualifiers, non-async interception, mutable
+The macro frontend runtime contracts cover context-local interception through
+`self: Arc<Self>`, borrowed `&self`, and exclusive `&mut self`; owned and
+borrowed type/lifetime/const generics; static tag/qualifier descriptors; and a
+type-driven custom Scope. Its compile-fail matrix covers invalid component
+fields, invalid collection qualifiers, non-async interception, bare value
 receivers, invalid operation metadata, and malformed descriptor paths. Trait
-methods, generic methods, expanded
-macro diagnostics, and AOP benchmarks remain open.
+default methods, expanded macro diagnostics, and AOP benchmarks remain open.
 The Phase 3 kernel has fifty-six tests covering dependency-order startup,
 reverse shutdown, initialize/start rollback, invalid transitions, idempotent
 close, concurrent close serialization, and context-local typed event

@@ -102,11 +102,15 @@
   uncompiled parallel Store/App/global-registry implementations in production
   `src/`.
 - `[Confirmed]` `#[component(aop)]` and `#[intercept]` connect context-local
-  invocation plans, cancellation, and async component methods through both
-  Arc-owned and shared-reference receivers. Missing plans, cancellation, and
-  return-type mismatches remain structured errors, without a global instance
-  map or unsafe lifetime extension.
-- `[Target]` Broader method signatures, remaining consumer ecosystem bridges,
+  invocation plans, cancellation, and async component methods through
+  Arc-owned, shared-reference, and exclusive-reference receivers. Missing
+  plans, cancellation, and return-type mismatches remain structured errors,
+  without a global instance map or unsafe lifetime extension.
+- `[Confirmed]` the method macro supports `self: Arc<Self>`, `&self`,
+  `&mut self`, and type/lifetime/const generic async implementation methods.
+  Every path keeps the same context-local Operation and type-erasure boundary
+  without unsafe lifetime extension.
+- `[Target]` Trait default methods, remaining consumer ecosystem bridges,
   benchmarks, and later production gates remain.
 
 ## 2. Brand meaning and architecture thesis
@@ -692,14 +696,15 @@ Ownership and cleanup therefore follow the actual wrapper/context lifecycle.
 
 ### 9.7 Method macro safety contract
 
-The first weaving frontend exposes two explicit Rust ownership contracts:
+The weaving frontend exposes three receivers across two target-ownership
+contracts:
 
 1. `#[component(aop)]` requires explicit `Arc<InvocationPlanCatalog>` and
    `Arc<CancellationToken>` fields.
-2. An intercepted method is `async fn` with either `self: Arc<Self>` or
-   shared `&self`.
+2. An intercepted method is `async fn` with `self: Arc<Self>`, shared `&self`,
+   or exclusive `&mut self`.
 3. The Arc path requires owned arguments and produces a `'static`
-   `InvocationTarget`; the shared-reference path accepts owned or borrowed
+   `InvocationTarget`; either reference path accepts owned or borrowed
    arguments and uses `invoke_borrowed`.
 4. The Arc path transfers arguments through a one-shot
    `Mutex<Option<Tuple>>`; the borrowed path stores one
@@ -712,10 +717,17 @@ The first weaving frontend exposes two explicit Rust ownership contracts:
    type-associated Operation descriptor. `operation!(Type::method)` retrieves
    that descriptor for explicit application/module assembly, so identity and
    metadata are not repeated.
+7. Type, lifetime, and const generic parameters remain on the original method.
+   All monomorphizations share that method's Operation identity; the business
+   future still satisfies `Send`, and successful values still satisfy
+   `Any + Send + Sync + 'static`.
 
-The owned receiver path produces a safe `'static` future. The `&self` path
-binds its receiver, reference arguments, and business future to the current
-method `.await`; it neither fabricates `'static` nor clones the service.
+The owned receiver path produces a safe `'static` future. Both reference paths
+bind their receiver, reference arguments, and business future to the current
+method `.await`; neither fabricates `'static` nor clones the service.
+`&mut self` requires a unique reference and is therefore intended for
+transient or explicitly uniquely owned values. Singleton state shared through
+`Arc<T>` should model mutation with locks, atomics, or channels.
 `Next` remains a one-shot continuation, so repeated advancement returns
 `TargetAlreadyInvoked` instead of silently repeating side effects.
 The descriptor frontend statically validates tags and qualifier, while
@@ -733,7 +745,7 @@ sequenceDiagram
     participant Plan as "InvocationPlan"
     participant Target as "Business method"
 
-    Caller->>Macro: Service.method(&self, owned or borrowed arguments)
+    Caller->>Macro: Service.method(Arc / & / &mut self, arguments)
     Macro->>Component: read catalog and cancellation
     Macro->>Catalog: find plan by Operation
     Catalog-->>Macro: Arc<InvocationPlan>
@@ -1453,17 +1465,14 @@ component, and method matching; typed AND/OR/NOT composition; closure
 interoperability; and branch short-circuiting. Six operation-metadata contracts
 cover validation and deduplication, identity/declaration separation, tag and
 qualifier pointcuts, Send/Local plan projection, and fail-closed declaration
-conflicts. The macro
-frontend additionally has five runtime tests for singleton Component
-injection, transient construction, Trait Object injection, and context-local
-intercepted invocation through both Arc-owned and shared-reference receivers,
-including static tag/qualifier descriptor projection, plus a type-driven custom
-Scope declaration and six
-compile-fail cases for invalid component
-fields, invalid collection qualifiers, non-async methods, mutable receivers,
-invalid operation metadata, and malformed descriptor paths. Phase 2 now has a
-callable loop, while trait/generic methods,
-diagnostic coverage, benchmarks, and stability guarantees remain open.
+conflicts. The macro frontend runtime contracts cover Arc-owned, shared
+`&self`, and exclusive `&mut self` invocation; type/lifetime/const generics
+through owned and borrowed targets; static tag/qualifier descriptor projection;
+and a type-driven custom Scope. Its compile-fail matrix covers invalid
+component fields, invalid collection qualifiers, non-async methods, bare value
+receivers, invalid operation metadata, and malformed descriptor paths. Phase 2
+has a callable loop, while Trait default methods, diagnostic coverage,
+benchmarks, and stability guarantees remain open.
 
 The Phase 3 kernel has fifty-six contract tests for dependency-order
 startup, reverse shutdown, initialize/start rollback, invalid transitions,
@@ -1514,7 +1523,7 @@ No phase is complete merely because a crate exists or `cargo check` is green.
 | ID | Risk / open decision | Impact | Validation |
 |:---|:---|:---|:---|
 | R-001 | Object-safe async Around allocation cost | AOP performance | Benchmark the implemented boxed-future path |
-| R-002 | Macro support for trait, generic, and mutable methods | Usability | trybuild matrix |
+| R-002 | Trait default methods and generic-bound diagnostics remain incomplete; generic implementation methods and mutable methods have runtime contracts | Usability | Trait trybuild and bound-diagnostic matrix |
 | R-003 | Cross-platform link-time registration | Portability | Linux/macOS/Windows CI |
 | R-004 | Request-scope cancellation differences | Resource safety | Cross-framework failure tests |
 | R-005 | Spring terminology overwhelms Rust API style | Maintenance | API review and Rust guidelines |
