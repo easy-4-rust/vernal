@@ -5,7 +5,7 @@ use std::{
     sync::Arc,
 };
 
-use tokio::runtime::Handle;
+use tokio::{runtime::Handle, sync::oneshot};
 use tokio_util::sync::CancellationToken;
 use vernal_aop::{
     Advisor, Interceptor, InvocationPlanBuilder, InvocationPlanCatalog, LocalAdvisor,
@@ -17,12 +17,13 @@ use vernal_ioc::{
 
 use crate::{
     ApplicationBuildError, ApplicationContext, ApplicationContextBuilder,
-    ApplicationEnvironmentBuilder, ApplicationEventListener, ApplicationModule,
-    ApplicationModuleError, ApplicationModuleRegistrar, ApplicationRunner, ConditionError,
-    ConditionEvaluationSnapshot, ConditionalComponentModule, ConfigurationProperties,
-    DiagnosticState, EventBus, Lifecycle, LifecycleExecutionPolicy, ManagedTaskSupervisor,
-    ScheduledTask, SubsystemStatus, SystemShutdownSignalListener, TaskShutdownPolicy,
-    advisor_registration::AdvisorRegistration, application_module_parts::ApplicationModuleParts,
+    ApplicationEnvironmentBuilder, ApplicationEventListener, ApplicationLaunchError,
+    ApplicationModule, ApplicationModuleError, ApplicationModuleRegistrar, ApplicationRunner,
+    ConditionError, ConditionEvaluationSnapshot, ConditionalComponentModule,
+    ConfigurationProperties, DiagnosticState, EventBus, Lifecycle, LifecycleExecutionPolicy,
+    ManagedTaskSupervisor, ScheduledTask, SubsystemStatus, SystemShutdownSignalListener,
+    TaskShutdownPolicy, advisor_registration::AdvisorRegistration,
+    application_module_parts::ApplicationModuleParts,
     application_runner_registrar::ApplicationRunnerRegistrar,
     conditional_component_module_parts::ConditionalComponentModuleParts,
     context_resources::ContextResources, diagnostic_configuration::DiagnosticConfiguration,
@@ -923,5 +924,87 @@ impl VernalApplicationBuilder {
             registrar(&mut context);
         }
         context.build().map_err(Into::into)
+    }
+
+    /// 构建应用并以取消安全的方式完成 refresh 与 start。
+    ///
+    /// 完整启动链由独立 Tokio 任务持有；调用方取消当前等待 Future 只会丢弃结果
+    /// 接收端，不会把 initialize/start 停在半途。协调任务完成后若发现结果无人接收，
+    /// 会立即取消并幂等关闭已经启动的 Context，避免遗留无人持有的 Ready 应用。
+    ///
+    /// 成功返回的 [`Arc<ApplicationContext>`] 已进入 [`crate::ContextState::Ready`]，
+    /// 可以直接交给 Web/RPC Adapter 或其他宿主共享。该方法不等待操作系统信号；
+    /// 服务主函数仍应显式调用
+    /// [`ApplicationContext::run_until_shutdown_signal`] 或自行驱动关闭。
+    ///
+    /// # Errors
+    ///
+    /// 构建、refresh、start 或 Tokio 协调任务失败时返回
+    /// [`ApplicationLaunchError`]。Context 已创建后的错误携带清理完成后的脱敏
+    /// [`crate::StartupReport`]，并保留首个启动错误与可选补充清理错误。
+    pub async fn launch(self) -> Result<Arc<ApplicationContext>, ApplicationLaunchError> {
+        let runtime = Arc::clone(&self.runtime);
+        let context = Arc::new(self.build().map_err(ApplicationLaunchError::build)?);
+        let (sender, receiver) = oneshot::channel();
+
+        // 第一层任务独占 build 之后的完整启动阶段。用户生命周期钩子的 panic 已由
+        // Context 隔离；这里保留 JoinError 防线，确保框架自身异常也进入结构化清理。
+        let operation_context = Arc::clone(&context);
+        let operation = runtime.spawn(async move { Self::finish_launch(operation_context).await });
+
+        // 轻量观察任务负责把 JoinError 变成公开错误，并处理“调用方已经取消等待”
+        // 的交接失败。观察任务与操作任务都持有 Context，不依赖外层 Future 存活。
+        let observer_context = Arc::clone(&context);
+        runtime.spawn(async move {
+            let result = match operation.await {
+                Ok(result) => result,
+                Err(source) => {
+                    observer_context.cancellation_token().cancel();
+                    let cleanup = observer_context.close().await.err();
+                    let report = observer_context.startup_report().await;
+                    Err(ApplicationLaunchError::coordinator(source, cleanup, report))
+                }
+            };
+
+            // oneshot 发送失败表示 launch 等待者已被取消。失败结果已经完成清理；
+            // 成功结果则必须在这里主动关闭，不能让 Ready Context 成为孤儿应用。
+            if let Err(Ok(context)) = sender.send(result) {
+                context.cancellation_token().cancel();
+                let _cleanup_result = context.close().await;
+            }
+        });
+
+        // 正常情况下结果只由观察任务发送。若观察任务本身异常结束，外层仍持有
+        // Context，可完成最后一次取消与关闭并返回可诊断的协调错误。
+        match receiver.await {
+            Ok(result) => result,
+            Err(source) => {
+                context.cancellation_token().cancel();
+                let cleanup = context.close().await.err();
+                let report = context.startup_report().await;
+                Err(ApplicationLaunchError::coordinator(source, cleanup, report))
+            }
+        }
+    }
+
+    /// 在启动协调任务内顺序完成 refresh 与 start，并在任一阶段失败后关闭 Context。
+    async fn finish_launch(
+        context: Arc<ApplicationContext>,
+    ) -> Result<Arc<ApplicationContext>, ApplicationLaunchError> {
+        if let Err(source) = context.refresh().await {
+            let cleanup = context.close().await.err();
+            let report = context.startup_report().await;
+            return Err(ApplicationLaunchError::lifecycle(
+                "refresh", source, cleanup, report,
+            ));
+        }
+        if let Err(source) = context.start().await {
+            let cleanup = context.close().await.err();
+            let report = context.startup_report().await;
+            return Err(ApplicationLaunchError::lifecycle(
+                "start", source, cleanup, report,
+            ));
+        }
+        Ok(context)
     }
 }
