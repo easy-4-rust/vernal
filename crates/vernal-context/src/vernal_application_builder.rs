@@ -676,7 +676,7 @@ impl VernalApplicationBuilder {
         // Pointcut 仍只在应用构建阶段匹配。封存成功后目录没有修改入口，业务方法
         // 与 Web Adapter 的热路径只执行 Operation 查找和预排序拦截器链。
         let compiled_invocation_plans =
-            invocation_plan_builder.build_catalog(operations.iter().cloned());
+            invocation_plan_builder.build_catalog(operations.iter().cloned())?;
         invocation_plans.initialize_from(&compiled_invocation_plans)?;
 
         let mut local_invocation_plan_builder = LocalInvocationPlanBuilder::new();
@@ -701,7 +701,7 @@ impl VernalApplicationBuilder {
             }
         }
         let compiled_local_invocation_plans =
-            local_invocation_plan_builder.build_catalog(operations);
+            local_invocation_plan_builder.build_catalog(operations)?;
         local_invocation_plans.initialize_from(&compiled_local_invocation_plans)?;
 
         let resources = ContextResources {

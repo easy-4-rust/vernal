@@ -101,7 +101,9 @@ async fn local_plan_catalog_coalesces_operations_and_rejects_mismatch() {
     let declared = Operation::new("ActixCatalogEndpoint", "GET");
     let actual = Operation::new("ActixCatalogEndpoint", "POST");
     let builder = LocalInvocationPlanBuilder::new();
-    let catalog = builder.build_catalog([declared.clone(), declared.clone()]);
+    let catalog = builder
+        .build_catalog([declared.clone(), declared.clone()])
+        .expect("identical local operation declarations should coalesce");
     assert_eq!(catalog.len(), 1);
 
     let target: Rc<LocalInvocationTarget> =
@@ -128,7 +130,9 @@ fn deferred_local_catalog_is_visible_to_existing_clones_after_one_initialization
     let injected_clone = deferred.clone();
     assert!(injected_clone.is_empty());
 
-    let compiled = LocalInvocationPlanBuilder::new().build_catalog([operation.clone()]);
+    let compiled = LocalInvocationPlanBuilder::new()
+        .build_catalog([operation.clone()])
+        .expect("local operation declaration should compile");
     deferred
         .initialize_from(&compiled)
         .expect("first local initialization");

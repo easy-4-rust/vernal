@@ -2,7 +2,10 @@
 
 use std::collections::HashMap;
 
-use crate::{LocalAdvisor, LocalInvocationPlan, LocalInvocationPlanCatalog, Operation};
+use crate::{
+    LocalAdvisor, LocalInvocationPlan, LocalInvocationPlanCatalog, Operation,
+    OperationMetadataConflictError, operation_declaration_set::OperationDeclarationSet,
+};
 
 /// 收集本地顾问并为具体操作生成不可变 Local-AOP 计划。
 #[derive(Default)]
@@ -39,19 +42,27 @@ impl LocalInvocationPlanBuilder {
     }
 
     /// 为一组操作批量编译不可变本地调用计划目录。
-    #[must_use]
+    ///
+    /// 完全相同的重复声明会去重；同一稳定身份出现不同标签或限定符时拒绝整个
+    /// 目录，Send 与 Local 执行平面因而共享相同的元数据确定性。
+    ///
+    /// # Errors
+    ///
+    /// 同一组件与方法出现冲突声明元数据时返回
+    /// [`OperationMetadataConflictError`]。
     pub fn build_catalog(
         &self,
         operations: impl IntoIterator<Item = Operation>,
-    ) -> LocalInvocationPlanCatalog {
-        let plans = operations
-            .into_iter()
+    ) -> Result<LocalInvocationPlanCatalog, OperationMetadataConflictError> {
+        let declarations = OperationDeclarationSet::collect(operations)?;
+        let plans = declarations
+            .into_operations()
             .map(|operation| {
                 let plan = self.build(operation.clone());
                 (operation, plan)
             })
             .collect::<HashMap<_, _>>();
-        LocalInvocationPlanCatalog::new(plans)
+        Ok(LocalInvocationPlanCatalog::new(plans))
     }
 
     /// 返回已注册本地顾问数量。

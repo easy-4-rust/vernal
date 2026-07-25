@@ -33,10 +33,16 @@ mod method_pointcut;
 mod next;
 mod not_pointcut;
 mod operation;
+mod operation_declaration_set;
+mod operation_metadata;
+mod operation_metadata_conflict_error;
+mod operation_metadata_error;
 mod operation_pointcut;
 mod or_pointcut;
 mod pointcut;
 mod pointcut_ext;
+mod qualifier_pointcut;
+mod tag_pointcut;
 mod target_ref;
 
 pub use advised::Advised;
@@ -74,10 +80,15 @@ pub use method_pointcut::MethodPointcut;
 pub use next::Next;
 pub use not_pointcut::NotPointcut;
 pub use operation::Operation;
+pub use operation_metadata::OperationMetadata;
+pub use operation_metadata_conflict_error::OperationMetadataConflictError;
+pub use operation_metadata_error::OperationMetadataError;
 pub use operation_pointcut::OperationPointcut;
 pub use or_pointcut::OrPointcut;
 pub use pointcut::Pointcut;
 pub use pointcut_ext::PointcutExt;
+pub use qualifier_pointcut::QualifierPointcut;
+pub use tag_pointcut::TagPointcut;
 /// AOP 组件和宏共用的 Tokio 协作取消令牌。
 pub use tokio_util::sync::CancellationToken;
 

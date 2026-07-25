@@ -76,6 +76,9 @@ impl InvocationPlan {
             });
         }
 
+        // 运行期 Adapter 只需提供稳定身份；进入链前改用计划中经过冲突校验的声明
+        // Operation，同时共享原 Invocation 的 ID、Context、取消令牌和 deadline。
+        let invocation = invocation.for_declared_operation(self.operation.clone());
         let cancellation = invocation.cancellation().clone();
         let deadline = invocation.deadline();
         let execution = Next::new(&self.interceptors, target).run(invocation);

@@ -74,6 +74,9 @@ impl LocalInvocationPlan {
             });
         }
 
+        // Local 执行平面与 Send 平面使用同一声明投影语义，避免 Actix/Ntex 目标看到
+        // 与其他 Adapter 不同的标签或限定符。
+        let invocation = invocation.for_declared_operation(self.operation.clone());
         let cancellation = invocation.cancellation().clone();
         let deadline = invocation.deadline();
         let execution = LocalNext::new(&self.interceptors, target).run(invocation);

@@ -14,7 +14,7 @@ use crate::{InvocationContext, InvocationId, Operation};
 pub struct Invocation {
     id: InvocationId,
     operation: Operation,
-    context: InvocationContext,
+    context: Arc<InvocationContext>,
     cancellation: CancellationToken,
     deadline: Option<Instant>,
 }
@@ -26,7 +26,7 @@ impl Invocation {
         Self {
             id: InvocationId::next(),
             operation,
-            context: InvocationContext::new(),
+            context: Arc::new(InvocationContext::new()),
             cancellation: CancellationToken::new(),
             deadline: None,
         }
@@ -66,8 +66,8 @@ impl Invocation {
 
     /// 返回强类型扩展上下文。
     #[must_use]
-    pub const fn context(&self) -> &InvocationContext {
-        &self.context
+    pub fn context(&self) -> &InvocationContext {
+        self.context.as_ref()
     }
 
     /// 返回取消令牌。
@@ -80,5 +80,20 @@ impl Invocation {
     #[must_use]
     pub const fn deadline(&self) -> Option<Instant> {
         self.deadline
+    }
+
+    /// 使用计划中的权威声明操作创建同一次调用的运行视图。
+    ///
+    /// 新对象保留 Invocation ID、强类型 Context、取消令牌和 deadline，只替换
+    /// Operation 的声明元数据。运行期 Adapter 因而只需提供稳定身份，拦截器和
+    /// 目标仍能读取应用启动阶段验证过的标签与限定符。
+    pub(crate) fn for_declared_operation(&self, operation: Operation) -> Arc<Self> {
+        Arc::new(Self {
+            id: self.id,
+            operation,
+            context: Arc::clone(&self.context),
+            cancellation: self.cancellation.clone(),
+            deadline: self.deadline,
+        })
     }
 }

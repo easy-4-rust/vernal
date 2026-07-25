@@ -485,18 +485,30 @@ semantics.
 
 ### 9.2 Invocation contract
 
-Target metadata includes method identity, declaring type, tags/qualifier,
-read-only context extensions, deadline, cancellation, and nesting depth.
-Argument values are not captured by default. Explicit capture must support
-field-level redaction. Business errors retain their source rather than becoming
-strings.
+`Operation` deliberately separates stable runtime identity from immutable
+declaration metadata. Identity is only `component + method`, allowing a Web,
+RPC, macro, or direct caller to locate the same precompiled plan without
+rebuilding metadata on every request. `OperationMetadata` carries validated,
+sorted, and deduplicated tags plus an optional qualifier. Duplicate
+declarations with the same identity and metadata coalesce; the same identity
+with different metadata fails application construction with
+`OperationMetadataConflictError`.
+
+After lookup, the plan projects its authoritative declared `Operation` onto
+the invocation while retaining the invocation ID, typed context extensions,
+deadline, and cancellation token. Interceptors and the target therefore see
+the same immutable declaration metadata on both Send and Local execution
+planes. Argument values are not captured by default. Explicit capture must
+support field-level redaction. Business errors retain their source rather than
+becoming strings.
 
 Reusable pointcuts are values rather than strings interpreted on every call.
 `AnyPointcut`, `OperationPointcut`, `ComponentPointcut`, and
-`MethodPointcut` provide explicit dimensions. `PointcutExt` composes any
-built-in, custom, or closure pointcut with typed AND/OR/NOT objects. Composition
-short-circuits during plan compilation; the resulting runtime plan contains no
-pointcut branch.
+`MethodPointcut` provide identity dimensions; `TagPointcut` and
+`QualifierPointcut` match declaration metadata. `PointcutExt` composes any
+built-in, custom, or closure pointcut with typed AND/OR/NOT objects.
+Composition short-circuits during plan compilation; the resulting runtime plan
+contains no pointcut branch or tag lookup.
 
 ### 9.3 Around flow
 
@@ -1329,7 +1341,10 @@ cover non-`Send` values,
 ordering, short circuit, cancellation, plan catalogs, and borrowed local
 targets. Four pointcut-algebra contracts additionally cover exact operation,
 component, and method matching; typed AND/OR/NOT composition; closure
-interoperability; and branch short-circuiting. The macro
+interoperability; and branch short-circuiting. Six operation-metadata contracts
+cover validation and deduplication, identity/declaration separation, tag and
+qualifier pointcuts, Send/Local plan projection, and fail-closed declaration
+conflicts. The macro
 frontend additionally has five runtime tests for singleton Component
 injection, transient construction, Trait Object injection, and context-local
 intercepted invocation through both Arc-owned and shared-reference receivers,
@@ -1339,7 +1354,7 @@ fields, invalid collection qualifiers, non-async methods, and mutable
 receivers. Phase 2 now has a callable loop, while trait/generic methods,
 diagnostic coverage, benchmarks, and stability guarantees remain open.
 
-The Phase 3 kernel has fifty-five contract tests for dependency-order
+The Phase 3 kernel has fifty-six contract tests for dependency-order
 startup, reverse shutdown, initialize/start rollback, invalid transitions,
 idempotent close, concurrent close serialization, and context-local typed
 event isolation, plus runtime-unavailable diagnostics, same-instance injection

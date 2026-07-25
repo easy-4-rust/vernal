@@ -104,7 +104,7 @@ Vernal 遵守四条不可退化的规则：
 | `vernal` | 实验性 Facade | Facade、prelude 与 feature 组合 |
 | `vernal-core` | 实验性 | Tokio-first 框架的公共合同 |
 | `vernal-ioc` | Phase 1/诊断内核已实现 | 定义、作用域、解析、依赖图和只读快照 |
-| `vernal-aop` | Phase 2 内核已实现 | Send/Local Around/Next、可组合切点代数、不可变计划和取消 |
+| `vernal-aop` | Phase 2 内核已实现 | Send/Local Around/Next、不可变操作元数据、可组合切点代数、不可变计划和取消 |
 | `vernal-context` | Phase 3/诊断内核已实现 | 应用环境、条件装配、生命周期、回滚、事件和脱敏启动报告 |
 | `vernal-macros` | Phase 2 宏已实现 | 显式注入元数据与 Context-local 异步方法织入 |
 | `vernal-web` | Phase 4 合同已实现 | 框架中立的 Context、请求 Scope、Handler 和错误合同 |
@@ -467,12 +467,14 @@ Phase 2 AOP 内核现有 11 个 Send 合同测试，覆盖顺序进入/逆序退
 并发共享计划、借用型非静态目标、计划目录合并与一次封存；另有 6 个 Local-AOP 测试覆盖
 非 `Send` 返回值、顺序、短路、取消、计划目录和借用型本地目标；另有 4 个
 切点代数合同测试，覆盖精确 Operation、组件、方法切点，AND/OR/NOT 组合、
-闭包互操作与逻辑短路求值。宏前端另有 5 个运行时合同测试，覆盖
+闭包互操作与逻辑短路求值；另有 6 个操作元数据合同测试，覆盖标签校验与去重、
+qualifier、身份/声明分离、元数据切点、Send/Local 计划投影，以及冲突声明的
+fail-closed 构建。宏前端另有 5 个运行时合同测试，覆盖
 `self: Arc<Self>` 与借用 `&self` 方法织入及类型驱动自定义 Scope，并有 4 个
 compile-fail 用例覆盖非法组件字段、
 非法集合 qualifier、非异步方法与可变接收器。Trait 方法、泛型方法、更完整诊断
 矩阵和 AOP 性能基准仍待完成。
-Phase 3 内核现有 55 个测试，覆盖依赖顺序启动、逆序关闭、initialize/start
+Phase 3 内核现有 56 个测试，覆盖依赖顺序启动、逆序关闭、initialize/start
 回滚、非法状态转换、幂等关闭、并发关闭串行化和 Context-local 类型化事件
 隔离、高层构建器十一类内建资源注入、应用 Scope 取消树、任务错误/panic 传播、
 取消安全的共享任务停机、超时 abort、任务先于组件 stop 的顺序、关闭等待者取消

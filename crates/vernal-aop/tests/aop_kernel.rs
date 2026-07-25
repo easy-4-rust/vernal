@@ -176,7 +176,9 @@ fn catalog_precompiles_matching_advisors_and_coalesces_duplicate_operations() {
     ));
     let operation = Operation::new("CatalogService", "execute");
 
-    let catalog = builder.build_catalog([operation.clone(), operation.clone()]);
+    let catalog = builder
+        .build_catalog([operation.clone(), operation.clone()])
+        .expect("identical operation declarations should coalesce");
 
     assert_eq!(catalog.len(), 1);
     assert_eq!(
@@ -333,7 +335,9 @@ fn deferred_catalog_is_visible_to_existing_clones_after_exactly_one_initializati
     let injected_clone = deferred.clone();
     assert!(injected_clone.is_empty());
 
-    let compiled = InvocationPlanBuilder::new().build_catalog([operation.clone()]);
+    let compiled = InvocationPlanBuilder::new()
+        .build_catalog([operation.clone()])
+        .expect("operation declaration should compile");
     deferred
         .initialize_from(&compiled)
         .expect("first initialization");

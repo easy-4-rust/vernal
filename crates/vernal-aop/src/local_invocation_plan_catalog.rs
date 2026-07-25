@@ -12,7 +12,7 @@ use crate::{InvocationPlanCatalogInitializationError, LocalInvocationPlan, Opera
 /// 目录和计划本身可以进入 `ApplicationContext` 原生组件图；只有调用时创建的
 /// Future、目标、返回值与错误不跨线程移动。高层 Context 可以先把待封存目录
 /// 注册进图，再由最终 Container 解析 `LocalInterceptor` 组件，封存后运行期仍是
-/// 无锁只读对象。
+/// 无锁只读对象。目录键只使用稳定操作身份；声明元数据冲突在构建阶段 fail-closed。
 #[derive(Clone)]
 pub struct LocalInvocationPlanCatalog {
     plans: Arc<OnceLock<Arc<HashMap<Operation, LocalInvocationPlan>>>>,

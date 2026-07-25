@@ -450,20 +450,26 @@ AOP 同时服务两类用户：
 
 ### 9.2 Invocation 合同
 
-`Invocation` 的目标元数据包括：
+`Operation` 明确分离“稳定运行时身份”和“不可变声明元数据”。身份只由
+`component + method` 构成，因此 Web、RPC、宏或直接调用方无需在每个请求上重建
+元数据，也能命中同一份预编译计划。`OperationMetadata` 保存经过校验、排序和
+去重的标签，以及一个可选 qualifier。同一身份与同一元数据的重复声明会合并；
+同一身份出现不同元数据时，应用构建通过
+`OperationMetadataConflictError` fail-closed。
 
-- 稳定的方法标识和声明类型；
-- 可选标签、qualifier、业务 operation；
-- 只读 Context 扩展，如 trace、principal、tenant；
-- 参数值默认不采集；显式启用时必须支持字段级脱敏；
-- 调用 deadline、取消信号和嵌套深度；
-- 业务错误作为原始 source 保留，不压缩成字符串。
+计划命中后，会把计划中权威的声明 `Operation` 投影到本次 `Invocation`，同时
+保留调用 ID、类型化 Context 扩展、deadline 和取消令牌。因此 Send 与 Local
+两个执行平面的拦截器及目标都能观察到同一份不可变声明元数据。参数值默认不
+采集；显式启用时必须支持字段级脱敏；业务错误作为原始 source 保留，不压缩成
+字符串。
 
 可复用切点必须是值对象，而不是每次调用时重新解释的字符串。
 `AnyPointcut`、`OperationPointcut`、`ComponentPointcut` 与
-`MethodPointcut` 分别表达全匹配、精确操作、组件和方法维度；
+`MethodPointcut` 分别表达全匹配、精确操作、组件和方法身份维度；
+`TagPointcut` 与 `QualifierPointcut` 匹配声明元数据；
 `PointcutExt` 可以把内建对象、自定义对象或闭包组合为类型安全的 AND/OR/NOT
-表达式。组合在计划编译期短路求值，生成的运行时计划不再携带切点分支。
+表达式。组合在计划编译期短路求值，生成的运行时计划不再携带切点分支，也不在
+每次调用时查找标签。
 
 ### 9.3 Around 主链
 
@@ -1245,14 +1251,16 @@ Phase 2 AOP 内核另有 11 个 Send 合同测试，覆盖顺序进入/逆序退
 复用、借用型非静态目标、重复 Operation 合并的计划目录编译与一次封存；另有 6 个
 Local-AOP 测试覆盖非 `Send` 返回值、顺序、短路、取消、计划目录和借用型本地
 目标；另有 4 个切点代数合同测试，覆盖精确 Operation、组件和方法匹配，
-类型安全 AND/OR/NOT 组合、闭包互操作与分支短路求值。宏前端另有 5 个运行时测试，覆盖
+类型安全 AND/OR/NOT 组合、闭包互操作与分支短路求值；另有 6 个操作元数据合同
+测试，覆盖校验与去重、身份/声明分离、标签与 qualifier 切点、Send/Local 计划
+投影，以及冲突声明的 fail-closed 构建。宏前端另有 5 个运行时测试，覆盖
 Singleton Component 注入、Transient 构造、Trait Object 注入、Arc-owned 与
 共享借用接收器的 Context-local 方法织入及类型驱动自定义 Scope，并有 4 个
 compile-fail 用例覆盖非法组件字段、非法集合 qualifier、非异步方法和可变接收器。
 Phase 2 已具备可调用闭环，但 Trait/泛型方法、诊断矩阵、性能基准和稳定性承诺
 仍未完成。
 
-Phase 3 内核另有 55 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
+Phase 3 内核另有 56 个合同测试，覆盖依赖顺序启动、逆序关闭、initialize/start
 回滚、非法转换、幂等关闭、并发关闭串行化、Context-local 类型化事件隔离，
 高层构建器的 Runtime 缺失诊断、十一类内建组件同实例注入、应用 Scope 取消树、
 任务错误/panic 传播、取消安全共享停机、超时 abort、任务先于组件 stop 的顺序、

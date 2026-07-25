@@ -3,7 +3,7 @@
 use std::{error::Error, fmt};
 
 use tokio::runtime::TryCurrentError;
-use vernal_aop::InvocationPlanCatalogInitializationError;
+use vernal_aop::{InvocationPlanCatalogInitializationError, OperationMetadataConflictError};
 use vernal_ioc::{ComponentKey, DefinitionError, GraphError, ResolveError};
 
 use crate::{ConditionError, ContextError};
@@ -59,6 +59,11 @@ pub enum ApplicationBuildError {
         /// 稳定、无业务数据的作用域名称。
         scope: &'static str,
     },
+    /// 同一稳定操作身份出现冲突的标签或限定符声明。
+    OperationMetadata {
+        /// AOP 计划编译返回的元数据冲突。
+        source: OperationMetadataConflictError,
+    },
     /// AOP 调用计划目录违反一次封存合同。
     AopCatalogInitialization {
         /// 目录返回的一次封存错误。
@@ -111,6 +116,12 @@ impl fmt::Display for ApplicationBuildError {
                     "application advisor component {component} must be singleton, not {scope}"
                 )
             }
+            Self::OperationMetadata { source } => {
+                write!(
+                    formatter,
+                    "application operation metadata is inconsistent: {source}"
+                )
+            }
             Self::AopCatalogInitialization { source } => {
                 write!(
                     formatter,
@@ -132,6 +143,7 @@ impl Error for ApplicationBuildError {
             Self::AdvisorResolution { source, .. }
             | Self::LocalAdvisorResolution { source, .. } => Some(source.as_ref()),
             Self::AdvisorScope { .. } => None,
+            Self::OperationMetadata { source } => Some(source),
             Self::AopCatalogInitialization { source } => Some(source),
         }
     }
@@ -164,5 +176,11 @@ impl From<ConditionError> for ApplicationBuildError {
 impl From<InvocationPlanCatalogInitializationError> for ApplicationBuildError {
     fn from(source: InvocationPlanCatalogInitializationError) -> Self {
         Self::AopCatalogInitialization { source }
+    }
+}
+
+impl From<OperationMetadataConflictError> for ApplicationBuildError {
+    fn from(source: OperationMetadataConflictError) -> Self {
+        Self::OperationMetadata { source }
     }
 }

@@ -2,7 +2,10 @@
 
 use std::collections::HashMap;
 
-use crate::{Advisor, InvocationPlan, InvocationPlanCatalog, Operation};
+use crate::{
+    Advisor, InvocationPlan, InvocationPlanCatalog, Operation, OperationMetadataConflictError,
+    operation_declaration_set::OperationDeclarationSet,
+};
 
 /// 收集顾问并为具体操作生成不可变调用计划。
 ///
@@ -43,21 +46,26 @@ impl InvocationPlanBuilder {
 
     /// 为一组组件操作批量编译不可变调用计划目录。
     ///
-    /// 同一个操作重复出现时只保留一个等价计划，避免注册扫描或宏展开产生的
-    /// 重复元数据扩大运行时目录。
-    #[must_use]
+    /// 完全相同的重复声明只保留一个计划；同一稳定身份出现不同标签或限定符时
+    /// fail-closed，避免 `HashMap` 覆盖顺序决定最终切点集合。
+    ///
+    /// # Errors
+    ///
+    /// 同一组件与方法出现冲突声明元数据时返回
+    /// [`OperationMetadataConflictError`]。
     pub fn build_catalog(
         &self,
         operations: impl IntoIterator<Item = Operation>,
-    ) -> InvocationPlanCatalog {
-        let plans = operations
-            .into_iter()
+    ) -> Result<InvocationPlanCatalog, OperationMetadataConflictError> {
+        let declarations = OperationDeclarationSet::collect(operations)?;
+        let plans = declarations
+            .into_operations()
             .map(|operation| {
                 let plan = self.build(operation.clone());
                 (operation, plan)
             })
             .collect::<HashMap<_, _>>();
-        InvocationPlanCatalog::new(plans)
+        Ok(InvocationPlanCatalog::new(plans))
     }
 
     /// 返回已注册顾问数量。

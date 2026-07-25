@@ -115,7 +115,7 @@ Detailed decisions, flows, failure semantics, and acceptance criteria are in:
 | `vernal` | Experimental facade | Facade, prelude, feature composition |
 | `vernal-core` | Experimental | Shared contracts for the Tokio-first framework |
 | `vernal-ioc` | Phase 1/diagnostics kernel implemented | Definitions, scopes, resolution, graph validation, read-only snapshots |
-| `vernal-aop` | Phase 2 kernel implemented | Send/Local Around/Next, composable pointcut algebra, immutable plans, cancellation |
+| `vernal-aop` | Phase 2 kernel implemented | Send/Local Around/Next, immutable operation metadata, composable pointcut algebra, immutable plans, cancellation |
 | `vernal-context` | Phase 3/diagnostics kernel implemented | Managed bootstrap, application environment, conditional assembly, lifecycle, events, redacted startup reports |
 | `vernal-macros` | Phase 2 macros implemented | Explicit `Arc<T>` injection metadata and context-local async method weaving |
 | `vernal-web` | Phase 4 contract implemented | Framework-neutral context, request scope, handler, and error contracts |
@@ -630,7 +630,9 @@ plan-catalog compilation and one-time catalog sealing. Six Local-AOP tests cover
 ordering, short circuit, cancellation, plan catalogs, and borrowed local
 targets. Four additional contracts cover exact operation, component, and method
 pointcuts; AND/OR/NOT composition; closure interoperability; and logical
-short-circuit evaluation.
+short-circuit evaluation. Six operation-metadata contracts cover validated and
+deduplicated tags, qualifiers, identity/declaration separation, metadata
+pointcuts, Send/Local plan projection, and fail-closed declaration conflicts.
 The macro frontend has five runtime tests covering singleton Component
 injection, transient construction, Trait Object injection, and context-local
 intercepted invocation through both `self: Arc<Self>` and borrowed `&self`,
@@ -639,7 +641,7 @@ compile-fail cases for invalid component
 fields, invalid collection qualifiers, non-async interception, and mutable
 receivers. Trait methods, generic methods, expanded
 macro diagnostics, and AOP benchmarks remain open.
-The Phase 3 kernel has fifty-five tests covering dependency-order startup,
+The Phase 3 kernel has fifty-six tests covering dependency-order startup,
 reverse shutdown, initialize/start rollback, invalid transitions, idempotent
 close, concurrent close serialization, and context-local typed event
 isolation, plus managed injection of eleven framework resources,

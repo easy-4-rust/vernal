@@ -14,8 +14,9 @@ use crate::{InvocationPlan, InvocationPlanCatalogInitializationError, Operation}
 /// 解析由组件实现的拦截器并一次性封存。封存后没有修改 API，运行期仍只执行无锁
 /// 读取，不使用进程级全局表或实例指针映射。
 ///
-/// 相同 [`Operation`] 的重复声明会被合并为一个计划，因为它们基于同一组 Advisor
-/// 编译，结果完全等价。
+/// 相同身份且元数据一致的 [`Operation`] 重复声明会被合并为一个计划；元数据冲突
+/// 由计划建造器在目录创建前拒绝。运行期查询只使用稳定身份，不要求 Adapter 重建
+/// 标签与限定符。
 #[derive(Clone)]
 pub struct InvocationPlanCatalog {
     plans: Arc<OnceLock<Arc<HashMap<Operation, InvocationPlan>>>>,
