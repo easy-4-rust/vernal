@@ -1,6 +1,8 @@
 //! Actix Web App Data、Middleware、Extractor 与 Scope 生命周期测试。
 
 use std::{
+    future::poll_fn,
+    pin::Pin,
     sync::{
         Arc,
         atomic::{AtomicBool, Ordering},
@@ -8,17 +10,26 @@ use std::{
     time::Duration,
 };
 
-use actix_web::{App, HttpResponse, error::ErrorNotFound, http::StatusCode, test, web};
+use actix_web::{
+    App, HttpResponse,
+    body::{BodyStream, MessageBody},
+    error::ErrorNotFound,
+    http::StatusCode,
+    test, web,
+};
+use tokio_util::sync::CancellationToken;
 use vernal_actix_web::{
-    VernalActixComponent, VernalActixContext, VernalActixMiddleware, VernalActixRequestContext,
-    VernalActixRequestScope,
+    ActixBodyError, ActixScopedBody, VernalActixComponent, VernalActixContext,
+    VernalActixMiddleware, VernalActixRequestContext, VernalActixRequestScope,
 };
 use vernal_aop::{LocalAdvisor, Operation};
 use vernal_context::{ApplicationContextBuilder, VernalApplicationBuilder};
 use vernal_http::HttpRequestSnapshot;
 use vernal_ioc::{ComponentDefinition, RegistryBuilder};
 use vernal_web::WebRequestScope;
-use vernal_web_testkit::{ScopeCloseProbe, ScopeRejectingInterceptor, WebAdapterContract};
+use vernal_web_testkit::{
+    FailingByteStream, ScopeCloseProbe, ScopeRejectingInterceptor, WebAdapterContract,
+};
 
 struct Greeting(&'static str);
 
@@ -123,6 +134,29 @@ async fn dropping_response_body_closes_request_scope() {
     drop(response);
 
     probe.assert_closed_within(Duration::from_secs(1)).await;
+}
+
+#[actix_web::test]
+async fn actix_body_error_closes_scope_before_restoring_upstream_error() {
+    let scope = Arc::new(WebRequestScope::new(CancellationToken::new()));
+    let body = BodyStream::new(FailingByteStream::new());
+    let mut scoped = Box::pin(ActixScopedBody::new(
+        body,
+        Arc::clone(&scope),
+        CancellationToken::new(),
+    ));
+    WebAdapterContract::assert_scope_open(&scope);
+
+    let error = poll_fn(|context| Pin::as_mut(&mut scoped).poll_next(context))
+        .await
+        .expect("Actix body must report one upstream error")
+        .expect_err("synthetic stream must fail");
+    assert!(matches!(
+        error,
+        ActixBodyError::Upstream(ref source)
+            if source.to_string() == FailingByteStream::error_message()
+    ));
+    WebAdapterContract::assert_scope_closed(&scope);
 }
 
 #[actix_web::test]

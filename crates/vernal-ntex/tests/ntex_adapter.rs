@@ -1,6 +1,8 @@
 //! Ntex Middleware、Extractor、IoC 与请求作用域生命周期测试。
 
 use std::{
+    future::poll_fn,
+    io,
     sync::{
         Arc,
         atomic::{AtomicBool, Ordering},
@@ -8,20 +10,27 @@ use std::{
     time::Duration,
 };
 
+use futures_util::stream;
 use ntex::{
-    http::StatusCode,
+    http::{
+        StatusCode,
+        body::{Body, BodyStream, MessageBody, ResponseBody},
+    },
     web::{self, App, DefaultError, Error, HttpResponse, error::ErrorNotFound, test},
 };
+use tokio_util::sync::CancellationToken;
 use vernal_aop::{LocalAdvisor, Operation};
 use vernal_context::{ApplicationContextBuilder, VernalApplicationBuilder};
 use vernal_http::HttpRequestSnapshot;
 use vernal_ioc::{ComponentDefinition, RegistryBuilder};
 use vernal_ntex::{
-    VernalNtexComponent, VernalNtexContext, VernalNtexMiddleware, VernalNtexRequestContext,
-    VernalNtexRequestScope,
+    NtexScopedBody, VernalNtexComponent, VernalNtexContext, VernalNtexMiddleware,
+    VernalNtexRequestContext, VernalNtexRequestScope,
 };
 use vernal_web::WebRequestScope;
-use vernal_web_testkit::{ScopeCloseProbe, ScopeRejectingInterceptor, WebAdapterContract};
+use vernal_web_testkit::{
+    FailingByteStream, ScopeCloseProbe, ScopeRejectingInterceptor, WebAdapterContract,
+};
 
 struct Greeting(&'static str);
 
@@ -142,6 +151,24 @@ async fn dropping_response_body_closes_request_scope() {
     drop(response);
 
     probe.assert_closed_within(Duration::from_secs(1)).await;
+}
+
+#[ntex::test]
+async fn ntex_body_error_closes_scope_before_restoring_upstream_error() {
+    let scope = Arc::new(WebRequestScope::new(CancellationToken::new()));
+    let upstream = stream::iter([Err::<ntex::util::Bytes, _>(io::Error::other(
+        FailingByteStream::error_message(),
+    ))]);
+    let body = ResponseBody::Other(Body::from_message(BodyStream::new(upstream)));
+    let mut scoped = NtexScopedBody::new(body, Arc::clone(&scope), CancellationToken::new());
+    WebAdapterContract::assert_scope_open(&scope);
+
+    let error = poll_fn(|context| scoped.poll_next_chunk(context))
+        .await
+        .expect("Ntex body must report one upstream error")
+        .expect_err("synthetic stream must fail");
+    assert_eq!(error.to_string(), FailingByteStream::error_message());
+    WebAdapterContract::assert_scope_closed(&scope);
 }
 
 #[ntex::test]

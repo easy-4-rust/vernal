@@ -1,6 +1,8 @@
 //! Poem Middleware、Endpoint、Extractor、IoC 与请求作用域集成测试。
 
 use std::{
+    future::poll_fn,
+    pin::Pin,
     sync::{
         Arc,
         atomic::{AtomicBool, Ordering},
@@ -8,22 +10,26 @@ use std::{
     time::Duration,
 };
 
+use futures_core::Stream;
 use poem::{
     Endpoint, EndpointExt, FromRequest, Request, Route,
     endpoint::make,
     error::NotFoundError,
     http::{Method, StatusCode, Uri},
 };
+use tokio_util::sync::CancellationToken;
 use vernal_aop::{Advisor, Operation};
 use vernal_context::{ApplicationContextBuilder, VernalApplicationBuilder};
 use vernal_http::HttpRequestSnapshot;
 use vernal_ioc::{ComponentDefinition, RegistryBuilder};
 use vernal_poem::{
-    VernalPoemComponent, VernalPoemContext, VernalPoemMiddleware, VernalPoemRequestContext,
-    VernalPoemRequestScope,
+    PoemScopedStream, VernalPoemComponent, VernalPoemContext, VernalPoemMiddleware,
+    VernalPoemRequestContext, VernalPoemRequestScope,
 };
 use vernal_web::WebRequestScope;
-use vernal_web_testkit::{ScopeCloseProbe, ScopeRejectingInterceptor, WebAdapterContract};
+use vernal_web_testkit::{
+    FailingByteStream, ScopeCloseProbe, ScopeRejectingInterceptor, WebAdapterContract,
+};
 
 struct Greeting(&'static str);
 
@@ -145,6 +151,24 @@ async fn dropping_response_body_closes_request_scope() {
     drop(response);
 
     probe.assert_closed_within(Duration::from_secs(1)).await;
+}
+
+#[tokio::test]
+async fn poem_stream_error_closes_scope_before_restoring_upstream_error() {
+    let scope = Arc::new(WebRequestScope::new(CancellationToken::new()));
+    let mut stream = Box::pin(PoemScopedStream::new(
+        FailingByteStream::new(),
+        Arc::clone(&scope),
+        CancellationToken::new(),
+    ));
+    WebAdapterContract::assert_scope_open(&scope);
+
+    let error = poll_fn(|context| Pin::as_mut(&mut stream).poll_next(context))
+        .await
+        .expect("Poem stream must report one upstream error")
+        .expect_err("synthetic stream must fail");
+    assert_eq!(error.to_string(), FailingByteStream::error_message());
+    WebAdapterContract::assert_scope_closed(&scope);
 }
 
 #[tokio::test]

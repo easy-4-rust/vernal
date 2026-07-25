@@ -426,9 +426,12 @@ Guardrails：
 二次解析并比较 `Arc` 身份。`ScopeCloseProbe` 只观察而不关闭 Adapter 的真实
 Scope；配合 `ScopeRejectingInterceptor`，十个 Adapter 已共同证明正常 Body
 完成、策略短路与响应 Body Drop 三条路径都会清理 Scope。这既能发现绕过请求
-Scope 的实现，也能阻止 testkit 替被测 Adapter 完成清理。流式错误、断连、
-释放超时和下表其余矩阵仍按阶段继续补齐。Axum 取消合同还证明：后台关闭结果
-无法回传响应且被 Adapter 忽略时，所属 Context 仍会收到脱敏告警：
+Scope 的实现，也能阻止 testkit 替被测 Adapter 完成清理。
+`FailingHttpBody`、`FailingByteStream`、`FailingTokioReader` 和
+`FailingFuturesReader` 只制造确定性上游错误；十个 Adapter 分别通过自身原生
+Body/Stream/Reader 包装器证明：错误路径会等待 Scope 关闭，再恢复原始传输失败。
+客户端断连、释放超时和下表其余矩阵仍按阶段继续补齐。Axum 取消合同还证明：
+后台关闭结果无法回传响应且被 Adapter 忽略时，所属 Context 仍会收到脱敏告警：
 
 | 合同 | 必须覆盖 |
 |:---|:---|

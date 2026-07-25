@@ -13,18 +13,23 @@ use rocket::{
     http::Status,
     local::asynchronous::Client,
     request::{FromRequest, Outcome as RequestOutcome},
+    response::Response as RocketResponse,
     routes,
+    tokio::io::AsyncReadExt,
 };
+use tokio_util::sync::CancellationToken;
 use vernal_aop::{Advisor, Operation};
 use vernal_context::{ApplicationContextBuilder, VernalApplicationBuilder};
 use vernal_http::HttpRequestSnapshot;
 use vernal_ioc::{ComponentDefinition, RegistryBuilder};
 use vernal_rocket::{
-    VernalRocketComponent, VernalRocketContext, VernalRocketFairing, VernalRocketRequestContext,
-    VernalRocketRequestScope, VernalRocketRoutesExt,
+    RocketScopedReader, VernalRocketComponent, VernalRocketContext, VernalRocketFairing,
+    VernalRocketRequestContext, VernalRocketRequestScope, VernalRocketRoutesExt,
 };
 use vernal_web::WebRequestScope;
-use vernal_web_testkit::{ScopeCloseProbe, ScopeRejectingInterceptor, WebAdapterContract};
+use vernal_web_testkit::{
+    FailingTokioReader, ScopeCloseProbe, ScopeRejectingInterceptor, WebAdapterContract,
+};
 
 struct Greeting(&'static str);
 
@@ -229,6 +234,24 @@ async fn dropping_rocket_response_body_closes_request_scope() {
     drop(response);
 
     probe.assert_closed_within(Duration::from_secs(1)).await;
+}
+
+#[tokio::test]
+async fn rocket_reader_error_closes_scope_before_restoring_upstream_error() {
+    let scope = Arc::new(WebRequestScope::new(CancellationToken::new()));
+    let mut response = RocketResponse::build()
+        .streamed_body(FailingTokioReader::new())
+        .finalize();
+    let body = std::mem::take(response.body_mut());
+    let mut reader = RocketScopedReader::new(body, Arc::clone(&scope), CancellationToken::new());
+    WebAdapterContract::assert_scope_open(&scope);
+
+    let error = reader
+        .read_to_end(&mut Vec::new())
+        .await
+        .expect_err("synthetic Rocket reader must fail");
+    assert_eq!(error.to_string(), FailingTokioReader::error_message());
+    WebAdapterContract::assert_scope_closed(&scope);
 }
 
 #[rocket::async_test]

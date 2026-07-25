@@ -11,6 +11,7 @@ use vernal_http::HttpBody;
 use vernal_ioc::{ComponentDefinition, RegistryBuilder};
 use vernal_tower::{RequestScopeLayer, TowerBodyError, TowerError, VernalLayer};
 use vernal_web::{ScopeState, WebRequestScope};
+use vernal_web_testkit::{FailingHttpBody, ScopeCloseProbe};
 
 async fn ready_context() -> Arc<vernal_context::ApplicationContext> {
     let registry = RegistryBuilder::new().build().expect("empty registry");
@@ -185,6 +186,42 @@ async fn response_body_reports_explicit_scope_close_failure() {
         .expect("scoped response");
     let result = response.into_body().collect().await;
     assert!(matches!(result, Err(TowerBodyError::Scope(_))));
+}
+
+#[tokio::test]
+async fn upstream_body_error_closes_scope_before_restoring_transport_failure() {
+    let probe = Arc::new(ScopeCloseProbe::new());
+    let service_probe = Arc::clone(&probe);
+    let service = service_fn(move |request: Request<()>| {
+        let service_probe = Arc::clone(&service_probe);
+        async move {
+            let scope = request
+                .extensions()
+                .get::<Arc<WebRequestScope>>()
+                .expect("request scope")
+                .clone();
+            service_probe.observe(&scope);
+            Ok::<_, Infallible>(Response::new(FailingHttpBody::new()))
+        }
+    });
+
+    let response = RequestScopeLayer::new(ready_context().await)
+        .layer(service)
+        .oneshot(Request::new(()))
+        .await
+        .expect("scoped response");
+    probe.assert_open();
+    let error = response
+        .into_body()
+        .collect()
+        .await
+        .expect_err("upstream body failure must remain observable");
+    assert!(matches!(
+        error,
+        TowerBodyError::Upstream(ref source)
+            if source.to_string() == FailingHttpBody::error_message()
+    ));
+    probe.assert_closed_within(Duration::from_secs(1)).await;
 }
 
 #[tokio::test]

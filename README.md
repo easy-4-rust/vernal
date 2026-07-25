@@ -851,9 +851,12 @@ scope ownership/key/open state/cancellation, and component `Arc` identity after
 same-scope re-resolution. `ScopeCloseProbe` and
 `ScopeRejectingInterceptor` additionally verify that every adapter closes the
 real scope after normal body completion, policy short-circuit, and response
-body drop without letting the testkit perform cleanup. Streaming errors,
-disconnects, cleanup timeouts, security integration, and the full failure
-matrix remain incremental architecture work.
+body drop without letting the testkit perform cleanup. All ten adapters now
+also trigger native `http-body`, byte-stream, Tokio `AsyncRead`, or Futures IO
+`AsyncRead` failures and prove that scope closure completes before the original
+transport failure is restored; the shared failure sources never own a scope.
+Client disconnects, cleanup timeouts, security integration, and the remaining
+failure matrix remain incremental architecture work.
 
 ## 10. Contributing and license
 

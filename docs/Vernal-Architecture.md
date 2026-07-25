@@ -1808,6 +1808,14 @@ failed atomic preflight, plus nested conditional modules that read the same
 staged Environment and roll back the outer module on invalid or duplicate
 condition identities.
 
+All ten Phase 4 adapters now share request-binding, normal-body-completion,
+policy-short-circuit, response-body-drop, and upstream-stream-error evidence.
+The failure tests retain each framework's native standard `http-body`, byte
+`Stream`, Tokio `AsyncRead`, Futures IO `AsyncRead`, or Ntex byte representation
+and prove that native wrappers close the scope before restoring the transport
+error. The shared testkit only emits failures and observes state; client
+disconnect and cleanup-timeout matrices remain open.
+
 ## 16. Delivery roadmap
 
 | Phase | Deliverable | Exit evidence |

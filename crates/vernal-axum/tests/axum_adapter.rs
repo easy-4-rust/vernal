@@ -12,7 +12,7 @@ use std::{
 use axum::{
     Router,
     body::{Body, to_bytes},
-    http::{Request, StatusCode},
+    http::{Request, Response, StatusCode},
     routing::get,
 };
 use tower::ServiceExt;
@@ -24,7 +24,9 @@ use vernal_context::{ApplicationContextBuilder, VernalApplicationBuilder};
 use vernal_http::HttpRequestSnapshot;
 use vernal_ioc::{ComponentDefinition, RegistryBuilder};
 use vernal_web::WebRequestScope;
-use vernal_web_testkit::{ScopeCloseProbe, ScopeRejectingInterceptor, WebAdapterContract};
+use vernal_web_testkit::{
+    FailingHttpBody, ScopeCloseProbe, ScopeRejectingInterceptor, WebAdapterContract,
+};
 
 struct Greeting(&'static str);
 
@@ -150,6 +152,41 @@ async fn dropping_response_body_closes_scope_and_records_cleanup_failure() {
         context.startup_report().await.warnings(),
         ["web.request-scope.cleanup-failed"]
     );
+}
+
+#[tokio::test]
+async fn axum_body_error_closes_scope_before_restoring_upstream_error() {
+    let context = ready_context().await;
+    let probe = Arc::new(ScopeCloseProbe::new());
+    let handler_probe = Arc::clone(&probe);
+    let app = Router::new()
+        .route(
+            "/failure",
+            get(move |VernalRequestScope(scope): VernalRequestScope| {
+                let handler_probe = Arc::clone(&handler_probe);
+                async move {
+                    handler_probe.observe(&scope);
+                    Response::new(Body::new(FailingHttpBody::new()))
+                }
+            }),
+        )
+        .with_vernal(context);
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/failure")
+                .body(Body::empty())
+                .expect("request"),
+        )
+        .await
+        .expect("router response");
+    probe.assert_open();
+    let error = to_bytes(response.into_body(), 64)
+        .await
+        .expect_err("synthetic Axum body must fail");
+    assert!(error.to_string().contains(FailingHttpBody::error_message()));
+    probe.assert_closed_within(Duration::from_secs(1)).await;
 }
 
 #[tokio::test]

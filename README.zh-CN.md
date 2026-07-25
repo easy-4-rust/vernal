@@ -641,8 +641,11 @@ Adapter 的组件提取器均在当前请求 Scope 内解析 Singleton、Transie
 验证原生 Context、Scope 所有权、Scope 身份、Open/取消状态及二次解析的
 组件 `Arc` 身份。`ScopeCloseProbe` 与 `ScopeRejectingInterceptor` 还让十个
 Adapter 共同验证正常 Body 完成、策略短路和响应 Body Drop 后由 Adapter 自身
-关闭真实 Scope，testkit 不参与清理。流式错误、断连、释放超时、Security 集成
-和完整失败矩阵仍按架构清单继续补齐。
+关闭真实 Scope，testkit 不参与清理。十个 Adapter 现在还分别以原生
+`http-body`、字节 `Stream`、Tokio `AsyncRead` 或 Futures IO `AsyncRead`
+触发上游流错误，验证 Adapter 会先异步关闭 Scope，再恢复原始传输失败；共享
+失败源仍不持有 Scope。客户端断连、释放超时、Security 集成和其余失败矩阵仍按
+架构清单继续补齐。
 
 ## 10. 贡献与许可证
 

@@ -18,6 +18,7 @@ vernal-ioc = { path = "../vernal-ioc" }
 vernal-web = { path = "../vernal-web" }
 
 [dev-dependencies]
+futures-util.workspace = true
 vernal-web-testkit = { path = "../vernal-web-testkit" }
 
 [lints]

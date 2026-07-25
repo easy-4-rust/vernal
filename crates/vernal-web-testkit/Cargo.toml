@@ -8,6 +8,10 @@ description = "Shared conformance assertions for Vernal Web adapters."
 publish = false
 
 [dependencies]
+bytes.workspace = true
+futures-core.workspace = true
+futures-lite.workspace = true
+http-body.workspace = true
 tokio.workspace = true
 vernal-aop = { path = "../vernal-aop" }
 vernal-context = { path = "../vernal-context" }

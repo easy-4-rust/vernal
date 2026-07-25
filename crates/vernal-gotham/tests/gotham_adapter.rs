@@ -25,13 +25,16 @@ use http::{HeaderMap, Request, Response, StatusCode};
 use http_body::Frame;
 use http_body_util::{BodyExt, Empty, StreamBody};
 use native_response_interceptor::NativeResponseInterceptor;
+use tokio_util::sync::CancellationToken;
 use vernal_aop::{Advisor, Operation};
 use vernal_context::{ApplicationContextBuilder, VernalApplicationBuilder};
-use vernal_gotham::{VernalGothamMiddleware, VernalGothamStateExt};
+use vernal_gotham::{GothamScopedBody, VernalGothamMiddleware, VernalGothamStateExt};
 use vernal_http::HttpRequestSnapshot;
 use vernal_ioc::{ComponentDefinition, RegistryBuilder};
 use vernal_web::WebRequestScope;
-use vernal_web_testkit::{ScopeCloseProbe, ScopeRejectingInterceptor, WebAdapterContract};
+use vernal_web_testkit::{
+    FailingHttpBody, ScopeCloseProbe, ScopeRejectingInterceptor, WebAdapterContract,
+};
 
 struct Greeting(&'static str);
 
@@ -203,6 +206,24 @@ async fn gotham_body_preserves_data_trailers_and_backpressure() {
         .expect("trailer payload");
     assert_eq!(trailers["x-vernal-trailer"], "kept");
     assert!(body.frame().await.is_none());
+}
+
+#[tokio::test]
+async fn gotham_body_error_closes_scope_before_restoring_upstream_error() {
+    let scope = Arc::new(WebRequestScope::new(CancellationToken::new()));
+    let scoped = GothamScopedBody::new(
+        FailingHttpBody::new(),
+        Arc::clone(&scope),
+        CancellationToken::new(),
+    );
+    WebAdapterContract::assert_scope_open(&scope);
+
+    let error = scoped
+        .collect()
+        .await
+        .expect_err("synthetic Gotham body must fail");
+    assert_eq!(error.to_string(), FailingHttpBody::error_message());
+    WebAdapterContract::assert_scope_closed(&scope);
 }
 
 #[tokio::test]

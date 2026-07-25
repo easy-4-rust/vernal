@@ -1634,6 +1634,12 @@ fail-closed 与条件错误脱敏，并覆盖显式 ApplicationModule 安装、�
 重复拒绝及预检失败后的同名重试，并验证内嵌条件模块读取同一暂存 Environment，
 条件身份非法或重复时整个外层模块回滚。
 
+Phase 4 的十个 Adapter 现已共同覆盖请求绑定、正常 Body 完成、策略短路、
+响应 Body Drop 和上游流错误。流错误测试按框架事实分别使用标准 `http-body`、
+字节 `Stream`、Tokio `AsyncRead`、Futures IO `AsyncRead` 或 Ntex 自有字节类型，
+并验证原生包装器在恢复原始传输错误前完成 Scope 关闭。共享 testkit 只制造错误
+和观察状态，不替 Adapter 清理资源；客户端断连与清理超时矩阵仍待后续补齐。
+
 ## 16. 实施路线
 
 | 阶段 | 交付 | 退出条件 |

@@ -25,7 +25,9 @@ use vernal_tonic::{
     VernalLayer,
 };
 use vernal_web::{ProblemDetails, ProblemKind, RequestContext, WebRequestScope};
-use vernal_web_testkit::{ScopeCloseProbe, ScopeRejectingInterceptor, WebAdapterContract};
+use vernal_web_testkit::{
+    FailingHttpBody, ScopeCloseProbe, ScopeRejectingInterceptor, WebAdapterContract,
+};
 
 struct Greeting(&'static str);
 
@@ -215,6 +217,48 @@ async fn dropping_tonic_response_body_closes_request_scope() {
     probe.assert_open();
     drop(response);
 
+    probe.assert_closed_within(Duration::from_secs(1)).await;
+}
+
+#[tokio::test]
+async fn tonic_layer_body_error_closes_scope_before_restoring_upstream_error() {
+    let context = ready_context().await;
+    let probe = Arc::new(ScopeCloseProbe::new());
+    let service_probe = Arc::clone(&probe);
+    let inner = service_fn(move |request: HttpRequest<HttpBody>| {
+        let service_probe = Arc::clone(&service_probe);
+        async move {
+            let scope = request
+                .extensions()
+                .get::<Arc<WebRequestScope>>()
+                .expect("request scope")
+                .clone();
+            service_probe.observe(&scope);
+            Ok::<_, std::convert::Infallible>(Response::new(FailingHttpBody::new()))
+        }
+    });
+    let service = RequestScopeLayer::new(context).layer(inner);
+
+    let response = service
+        .oneshot(
+            HttpRequest::builder()
+                .uri("/greeter.Greeter/StreamFailure")
+                .body(HttpBody::empty())
+                .expect("request"),
+        )
+        .await
+        .expect("service response");
+    probe.assert_open();
+    let error = response
+        .into_body()
+        .collect()
+        .await
+        .expect_err("synthetic Tonic body must fail");
+    assert!(matches!(
+        error,
+        vernal_tower::TowerBodyError::Upstream(ref source)
+            if source.to_string() == FailingHttpBody::error_message()
+    ));
     probe.assert_closed_within(Duration::from_secs(1)).await;
 }
 

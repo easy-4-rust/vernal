@@ -19,12 +19,16 @@ use salvo::{
     routing::Router,
 };
 use strict_probe_handler::StrictProbeHandler;
+use tokio_util::sync::CancellationToken;
 use vernal_aop::{Advisor, Operation};
 use vernal_context::{ApplicationContextBuilder, VernalApplicationBuilder};
 use vernal_ioc::{ComponentDefinition, RegistryBuilder};
+use vernal_salvo::SalvoScopedBody;
 use vernal_salvo::{VernalSalvoDepotExt, VernalSalvoHoop};
 use vernal_web::WebRequestScope;
-use vernal_web_testkit::{ScopeCloseProbe, ScopeRejectingInterceptor, WebAdapterContract};
+use vernal_web_testkit::{
+    FailingByteStream, ScopeCloseProbe, ScopeRejectingInterceptor, WebAdapterContract,
+};
 
 struct Greeting(&'static str);
 
@@ -248,6 +252,21 @@ async fn salvo_body_preserves_data_trailers_and_backpressure() {
     assert_eq!(trailers["x-vernal-scope"], "closed");
     assert!(body.frame().await.is_none());
     probe.assert_closed_within(Duration::from_secs(1)).await;
+}
+
+#[tokio::test]
+async fn salvo_stream_error_closes_scope_before_restoring_upstream_error() {
+    let scope = Arc::new(WebRequestScope::new(CancellationToken::new()));
+    let body = ResBody::stream(FailingByteStream::new());
+    let scoped = SalvoScopedBody::new(body, Arc::clone(&scope), CancellationToken::new());
+    WebAdapterContract::assert_scope_open(&scope);
+
+    let error = scoped
+        .collect()
+        .await
+        .expect_err("synthetic Salvo stream must fail");
+    assert_eq!(error.to_string(), FailingByteStream::error_message());
+    WebAdapterContract::assert_scope_closed(&scope);
 }
 
 #[tokio::test]

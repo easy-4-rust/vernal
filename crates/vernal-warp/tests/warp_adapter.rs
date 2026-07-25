@@ -10,7 +10,7 @@ use std::{
 
 use bytes::Bytes;
 use http_body_util::{BodyExt, Empty};
-use tower::{Layer, ServiceExt};
+use tower::{Layer, ServiceExt, service_fn};
 use vernal_aop::{Advisor, Operation};
 use vernal_context::{ApplicationContextBuilder, VernalApplicationBuilder};
 use vernal_http::HttpRequestSnapshot;
@@ -20,7 +20,9 @@ use vernal_warp::{
     VernalWarpRequestContext, VernalWarpRequestScope, WarpRejection,
 };
 use vernal_web::WebRequestScope;
-use vernal_web_testkit::{ScopeCloseProbe, ScopeRejectingInterceptor, WebAdapterContract};
+use vernal_web_testkit::{
+    FailingHttpBody, ScopeCloseProbe, ScopeRejectingInterceptor, WebAdapterContract,
+};
 use warp::{Filter, Rejection, Reply, http::StatusCode};
 
 struct Greeting(&'static str);
@@ -125,6 +127,44 @@ async fn dropping_response_body_closes_request_scope() {
     probe.assert_open();
     drop(response);
 
+    probe.assert_closed_within(Duration::from_secs(1)).await;
+}
+
+#[tokio::test]
+async fn warp_layer_body_error_closes_scope_before_restoring_upstream_error() {
+    let context = ready_context().await;
+    let probe = Arc::new(ScopeCloseProbe::new());
+    let service_probe = Arc::clone(&probe);
+    let inner = service_fn(move |request: warp::http::Request<Empty<Bytes>>| {
+        let service_probe = Arc::clone(&service_probe);
+        async move {
+            let scope = request
+                .extensions()
+                .get::<Arc<WebRequestScope>>()
+                .expect("request scope")
+                .clone();
+            service_probe.observe(&scope);
+            Ok::<_, std::convert::Infallible>(warp::http::Response::new(FailingHttpBody::new()))
+        }
+    });
+    let service = VernalWarpLayer::new(context).layer(inner);
+    let request = warp::http::Request::builder()
+        .uri("/failure")
+        .body(Empty::<Bytes>::new())
+        .expect("request");
+
+    let response = service.oneshot(request).await.expect("service response");
+    probe.assert_open();
+    let error = response
+        .into_body()
+        .collect()
+        .await
+        .expect_err("synthetic Warp body must fail");
+    assert!(matches!(
+        error,
+        vernal_tower::TowerBodyError::Upstream(ref source)
+            if source.to_string() == FailingHttpBody::error_message()
+    ));
     probe.assert_closed_within(Duration::from_secs(1)).await;
 }
 

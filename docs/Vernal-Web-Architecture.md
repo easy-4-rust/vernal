@@ -482,10 +482,14 @@ shared request-binding contract makes all ten adapters pass their native
 `Arc` identity. `ScopeCloseProbe` observes, but never closes, the real adapter
 scope. Together with `ScopeRejectingInterceptor`, it proves normal body
 completion, policy short-circuit, and response-body drop cleanup on all ten
-adapters. This catches both scope bypass and test-assisted cleanup. Streaming
-error/disconnect/timeout paths and the remaining matrix continue incrementally.
-The Axum cancellation contract additionally proves that an ignored background
-close error reaches the owning Context as a redacted warning:
+adapters. This catches both scope bypass and test-assisted cleanup.
+`FailingHttpBody`, `FailingByteStream`, `FailingTokioReader`, and
+`FailingFuturesReader` only emit deterministic upstream failures. All ten
+adapters use their native body, stream, or reader wrapper to prove that the
+error path waits for scope closure before restoring the original transport
+failure. Client-disconnect, cleanup-timeout, and remaining matrix paths continue
+incrementally. The Axum cancellation contract additionally proves that an
+ignored background close error reaches the owning Context as a redacted warning:
 
 | Contract | Required coverage |
 |:---|:---|
