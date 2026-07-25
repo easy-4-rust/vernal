@@ -14,11 +14,19 @@ type ErasedFactory =
 ///
 /// 定义在注册阶段使用建造式 API 完成组装，进入 [`crate::Registry`] 后不再
 /// 修改。组件工厂接收受限的 [`Resolver`]，只能访问这里显式声明的依赖。
+///
+/// ## 初始化排序
+///
+/// 同一拓扑深度的组件按 `init_order` 升序排列（越小越早）。默认值
+/// `i32::MAX` 表示最晚初始化。对标 tx_di 的 `init_sort` 模式。
 pub struct ComponentDefinition {
     key: ComponentKey,
     dependencies: Vec<Dependency>,
     scope: Scope,
     factory: Arc<ErasedFactory>,
+    /// 同层初始化排序值。同一拓扑深度的组件按此值升序排列。
+    /// 默认 i32::MAX（最晚初始化）。
+    init_order: i32,
 }
 
 impl ComponentDefinition {
@@ -52,6 +60,7 @@ impl ComponentDefinition {
             dependencies: Vec::new(),
             scope: Scope::Singleton,
             factory: Arc::new(move |_| Ok(Arc::clone(&value) as ErasedComponent)),
+            init_order: i32::MAX,
         }
     }
 
@@ -127,6 +136,7 @@ impl ComponentDefinition {
             factory: Arc::new(move |resolver| {
                 factory(resolver).map(|value| Arc::new(value) as ErasedComponent)
             }),
+            init_order: i32::MAX,
         }
     }
 
@@ -135,6 +145,25 @@ impl ComponentDefinition {
     pub fn qualified(mut self, qualifier: Qualifier) -> Self {
         self.key = self.key.with_qualifier(qualifier);
         self
+    }
+
+    /// 设置同层初始化排序值。
+    ///
+    /// 同一拓扑深度的组件按此值升序排列（越小越早）。
+    /// 默认值为 `i32::MAX`（最晚初始化）。
+    ///
+    /// # 参数
+    /// - `order`：排序值，负数表示更早初始化
+    #[must_use]
+    pub fn with_init_order(mut self, order: i32) -> Self {
+        self.init_order = order;
+        self
+    }
+
+    /// 返回同层初始化排序值。
+    #[must_use]
+    pub fn init_order(&self) -> i32 {
+        self.init_order
     }
 
     /// 声明一项无限定符依赖。
