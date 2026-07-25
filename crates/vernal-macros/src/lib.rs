@@ -22,7 +22,8 @@ use syn::{DeriveInput, Path, parse_macro_input};
 /// `Arc<dyn Trait>` 使用唯一/Primary Trait Binding，字段级
 /// `#[component(qualifier = "name")]` 使用命名绑定，
 /// `Vec<Arc<dyn Trait>>` 注入全部实现。`ComponentProvider<T>` 延迟解析具体类型，
-/// `#[component(optional)]` 允许对应 Provider 没有候选定义。
+/// `TraitProvider<dyn Trait>` 延迟解析唯一、Primary 或命名 Trait Binding；
+/// `#[component(optional)]` 允许对应 Provider 没有候选定义或绑定。
 #[proc_macro_derive(Component, attributes(component))]
 pub fn derive_component(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);

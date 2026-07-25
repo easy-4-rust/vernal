@@ -87,11 +87,11 @@
   Singleton/Transient scope, default fields, and field qualifiers, with
   runtime and compile-fail tests. It uses neither linkme nor global
   auto-registration.
-- `[Confirmed]` `ComponentProvider<T>` provides graph-constrained deferred
-  resolution for concrete types, including per-call transient construction,
-  required/optional targets, qualifiers, and explicit scopes. It shares the
-  originating Container's caches without arbitrary type lookup or a global
-  Service Locator.
+- `[Confirmed]` `ComponentProvider<T>` and `TraitProvider<dyn Trait>` provide
+  graph-constrained deferred resolution for concrete types and trait bindings,
+  including per-call transient construction, required/optional targets,
+  qualifiers, and explicit scopes. They share the originating Container's
+  caches without arbitrary type lookup or a global Service Locator.
 - `[Confirmed]` `#[derive(ConfigurationProperties)]` binds required, optional,
   defaulted, renamed, and nested fields from a Context-local Environment and
   registers the result through the normal IoC graph.
@@ -417,19 +417,26 @@ of the underlying cleanup.
 
 ### 8.4 Type-safe deferred providers
 
-`ComponentProvider<T>` is a restricted Rust-native deferred dependency, not a
-public alias for `Container` and not a Service Locator that can query arbitrary
-types. A definition declares `depends_on_provider::<T>()` or its
-optional/qualified variant; the derive macro emits the same Resolver call and
-dependency metadata for a `ComponentProvider<T>` field.
+Vernal has two single-purpose Rust-native providers:
+
+- `ComponentProvider<T>` defers a concrete component;
+- `TraitProvider<dyn Trait>` defers a trait-port projection through
+  `TraitBinding`.
+
+Neither is a public alias for `Container` or a Service Locator that can query
+arbitrary types. A component definition explicitly declares the matching
+concrete/trait provider dependency and optional/qualified variant. The derive
+macro emits the same Resolver call and dependency metadata from the field type.
 
 ```mermaid
 flowchart LR
-    Consumer["Singleton consumer"] -->|"injected at construction"| Provider["ComponentProvider&lt;T&gt;<br/>fixed type + qualifier + optional"]
-    Graph["Registry graph"] -->|"validate existence and uniqueness"| Provider
-    Provider -. "get()" .-> Transient["Transient T<br/>new instance per call"]
-    Provider -. "get_in(scope)" .-> Scoped["Scoped T<br/>current scope cache"]
-    Provider -. "origin Container" .-> Singleton["Singleton T<br/>same instance"]
+    Consumer["Component consumer"] -->|"injected at construction"| Concrete["ComponentProvider&lt;T&gt;"]
+    Consumer -->|"injected at construction"| Trait["TraitProvider&lt;dyn Port&gt;"]
+    Graph["Registry graph"] -->|"concrete candidate"| Concrete
+    Graph -->|"TraitBinding<br/>unique / Primary / qualifier"| Trait
+    Concrete -. "get / get_in" .-> Target["Original target component"]
+    Trait -. "project then get / get_in" .-> Target
+    Target --> Cache["Origin Container<br/>Transient / Singleton / Scope caches"]
 ```
 
 The contract is intentionally narrower than Spring's `ObjectProvider`:
@@ -448,14 +455,20 @@ The contract is intentionally narrower than Spring's `ObjectProvider`:
 - calling a provider before its consumer factory returns produces
   `ProviderUsedDuringConstruction` instead of re-entering the same singleton
   `OnceLock`;
-- the current version supports concrete `T`; trait objects continue to use
-  explicit `Arc<dyn Trait>` bindings until provider projection semantics are
-  designed separately.
+- `TraitProvider` reuses direct `Arc<dyn Trait>` selection for a unique,
+  primary, or qualified binding; optional permits no matching binding but does
+  not suppress ambiguity;
+- the providers are separate because stable Rust cannot safely specialize one
+  generic implementation for both concrete `Any` downcasts and unsized trait
+  projection; separate public types make resolution semantics explicit;
+- eager `Vec<Arc<dyn Trait>>` injection remains responsible for obtaining all
+  trait implementations rather than hiding a dynamic query behind a provider.
 
 This retains useful on-demand component access while rejecting tx-di-style
 broad stores and global registries. Runtime contracts cover transients,
 optional and ambiguous targets, qualifiers, scopes, cross-container rejection,
-construction-time re-entry rejection, deferred cycles, and macro generation.
+construction-time re-entry rejection, deferred cycles, trait primary/qualifier
+projection, and macro generation.
 
 ### 8.5 Tokio and framework-native components
 

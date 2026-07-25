@@ -76,10 +76,10 @@
   `Vec<Arc<dyn Trait>>` 构造注入的 `#[derive(Component)]`，支持
   Singleton/Transient、default 与字段 qualifier，并通过运行时和 compile-fail
   合同测试；它不使用 linkme 或全局自动注册。
-- `[已确认]` `ComponentProvider<T>` 已提供受依赖图约束的具体类型延迟解析，
-  支持 Transient 按次构造、required/optional、qualifier 与显式 Scope；Provider
-  共享原 Container 的 Singleton/Scope 缓存，不开放任意类型查询，也不建立全局
-  Service Locator。
+- `[已确认]` `ComponentProvider<T>` 与 `TraitProvider<dyn Trait>` 已分别提供
+  具体类型和 Trait 绑定的延迟解析，支持 Transient 按次构造、
+  required/optional、qualifier 与显式 Scope；Provider 共享原 Container 的
+  Singleton/Scope 缓存，不开放任意类型查询，也不建立全局 Service Locator。
 - `[已确认]` `#[derive(ConfigurationProperties)]` 已从 Context-local
   Environment 绑定必填、可选、默认、改名与嵌套字段，并通过标准 IoC 图注册结果；
   `ApplicationContext::refresh()` 预热时快速失败，运行测试与 compile-fail 测试
@@ -385,18 +385,24 @@ Scope 生命周期合同是显式的：
 
 ### 8.4 类型安全延迟 Provider
 
-`ComponentProvider<T>` 是 Rust 原生的受限延迟依赖，不是 `Container` 的公开别名，
-也不是可以查询任意类型的 Service Locator。组件定义必须显式声明
-`depends_on_provider::<T>()` 或 optional/qualified 变体；派生宏会根据
-`ComponentProvider<T>` 字段生成完全相同的 Resolver 调用与依赖元数据。
+Vernal 使用两个职责单一的 Rust 原生 Provider：
+
+- `ComponentProvider<T>` 延迟解析具体组件；
+- `TraitProvider<dyn Trait>` 通过 `TraitBinding` 延迟投影 Trait 端口。
+
+它们都不是 `Container` 的公开别名，也不是可以查询任意类型的 Service Locator。
+组件定义必须显式声明对应的 concrete/trait provider 依赖及 optional/qualified
+变体；派生宏会根据字段类型生成完全相同的 Resolver 调用与依赖元数据。
 
 ```mermaid
 flowchart LR
-    Consumer["Singleton 消费方"] -->|"构造时注入"| Provider["ComponentProvider&lt;T&gt;<br/>固定类型 + qualifier + optional"]
-    Graph["Registry 依赖图"] -->|"校验存在性与唯一性"| Provider
-    Provider -. "调用 get()" .-> Transient["Transient T<br/>每次新实例"]
-    Provider -. "调用 get_in(scope)" .-> Scoped["Scoped T<br/>复用当前 Scope 缓存"]
-    Provider -. "共享原 Container" .-> Singleton["Singleton T<br/>复用同一实例"]
+    Consumer["组件消费方"] -->|"构造时注入"| Concrete["ComponentProvider&lt;T&gt;"]
+    Consumer -->|"构造时注入"| Trait["TraitProvider&lt;dyn Port&gt;"]
+    Graph["Registry 依赖图"] -->|"具体类型候选"| Concrete
+    Graph -->|"TraitBinding<br/>唯一 / Primary / qualifier"| Trait
+    Concrete -. "get / get_in" .-> Target["原始目标组件"]
+    Trait -. "投影后 get / get_in" .-> Target
+    Target --> Cache["原 Container<br/>Transient / Singleton / Scope 缓存"]
 ```
 
 其约束刻意比 Spring `ObjectProvider` 更窄：
@@ -410,12 +416,16 @@ flowchart LR
   Container 的 Scope 会被拒绝；
 - 消费方工厂尚未返回时调用 Provider 会得到
   `ProviderUsedDuringConstruction`，避免重入同一个 Singleton `OnceLock`；
-- 当前只支持具体 `T`；Trait Object 继续使用显式 `Arc<dyn Trait>` 绑定，以免在
-  第一版 Provider 中混入多实现投影与生命周期歧义。
+- `TraitProvider` 复用直接 `Arc<dyn Trait>` 注入的唯一候选、Primary 与 qualifier
+  规则，optional 只允许没有匹配绑定，不隐藏多绑定歧义；
+- 两种 Provider 分离，是因为稳定 Rust 无法对“具体类型向 `Any` 下转”和
+  “unsized Trait 投影”安全特化同一个泛型实现；拆分让公开类型直接表达解析语义；
+- 获取全部 Trait 实现仍由 `Vec<Arc<dyn Trait>>` 急切注入负责，不把“全部实现”
+  隐藏成 Provider 的动态查询能力。
 
 这吸收了按需获取组件的实用能力，同时拒绝 tx-di 广域 Store/全局注册表模式。
 运行合同已覆盖 Transient、optional、歧义、qualifier、Scope、跨 Container 拒绝、
-构造期重入拒绝、延迟环和宏生成。
+构造期重入拒绝、延迟环、Trait Primary/qualifier 投影和宏生成。
 
 ### 8.5 Tokio 与框架原生组件
 

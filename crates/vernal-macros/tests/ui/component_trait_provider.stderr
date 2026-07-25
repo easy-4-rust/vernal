@@ -1,4 +1,4 @@
-error: ComponentProvider 当前只支持具体类型；Trait Object 请继续使用 Arc<dyn Trait>
+error: ComponentProvider 只支持具体类型；延迟 Trait Object 请使用 TraitProvider<dyn Trait>
  --> tests/ui/component_trait_provider.rs:7:5
   |
 7 |     extension: ComponentProvider<dyn Extension>,

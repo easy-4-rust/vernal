@@ -338,6 +338,24 @@ impl Container {
         self.resolve_binding(binding, stack, scope)
     }
 
+    /// 为可选 Trait Provider 解析单个实现；只把根绑定缺失转换为 `None`。
+    pub(crate) fn resolve_optional_trait_typed<T>(
+        &self,
+        dependency: &Dependency,
+        stack: &[ComponentKey],
+        scope: Option<&ScopeContext>,
+    ) -> Result<Option<Arc<T>>, ResolveError>
+    where
+        T: ?Sized + Send + Sync + 'static,
+    {
+        let binding = match self.select_trait_binding(dependency, stack) {
+            Ok(binding) => binding,
+            Err(ResolveError::NotFound { .. }) => return Ok(None),
+            Err(error) => return Err(error),
+        };
+        self.resolve_binding(binding, stack, scope).map(Some)
+    }
+
     /// 为受限 Resolver 执行 Trait 全实现解析。
     pub(crate) fn resolve_all_traits_typed<T>(
         &self,

@@ -261,7 +261,8 @@ registry.register_bundle(
 第二套 Store；模块定义与绑定通过 `register_bundle` 原子提交。
 
 需要按调用取得 Transient、可选扩展或当前请求 Scope 时，组件可以声明受限
-`ComponentProvider<T>`：
+Provider：具体类型使用 `ComponentProvider<T>`，Trait 端口使用
+`TraitProvider<dyn Trait>`：
 
 ```rust
 #[derive(vernal_macros::Component)]
@@ -269,6 +270,9 @@ struct JobFactory {
     jobs: vernal_ioc::ComponentProvider<Job>,
     #[component(optional)]
     extension: vernal_ioc::ComponentProvider<Extension>,
+    sender: vernal_ioc::TraitProvider<dyn MessageSender>,
+    #[component(qualifier = "email")]
+    email_sender: vernal_ioc::TraitProvider<dyn MessageSender>,
 }
 ```
 
@@ -277,8 +281,9 @@ Provider 的目标类型、qualifier 和 optional 语义都会写入同一依赖
 歧义、构造或 Scope 错误。Provider 不提供任意类型查询；`get()` 按次取得
 Transient，`get_in(&scope)` 显式使用调用方当前 Scope，并复用原 Container 的
 Singleton/Scope 缓存。它是一条经过建图校验、在调用时才构造目标的延迟依赖边，
-不是全局 Service Locator。当前宏只支持具体类型 Provider；Trait Object 继续使用
-显式 `Arc<dyn Trait>` 绑定。
+不是全局 Service Locator。`TraitProvider` 复用 `TraitBinding` 的唯一候选、
+Primary 与 qualifier 选择规则，并返回绑定指向的原始组件实例；需要一次取得全部
+实现时，仍使用急切注入的 `Vec<Arc<dyn Trait>>`。
 
 启用 AOP 的组件显式持有 Context-local 计划目录与取消令牌。方法宏支持普通
 `&self` 借用方法，也保留需要 owned `'static` 目标的 `self: Arc<Self>` 路径：
@@ -406,7 +411,7 @@ Spring Boot 式隐式自动配置。`refresh()` 与
 | 作用域 | Singleton、Transient、类型化自定义 ScopeContext、取消安全清理与 IoC 驱动的 WebRequestScope | Phase 1.2/4 内核 |
 | 依赖图 | 确定性顺序及缺失、歧义、循环结构化诊断 | Phase 1 |
 | Trait 绑定 | 不依赖字符串查找的命名、Primary 和多实现绑定 | Phase 1.1 内核 |
-| 类型安全 Provider | 受依赖图约束的 Transient/optional/qualifier/显式 Scope 延迟解析 | Phase 1.3 内核 |
+| 类型安全 Provider | 具体类型与 Trait 绑定均受依赖图约束，支持 Transient/optional/qualifier/显式 Scope 延迟解析 | Phase 1.3 内核 |
 | 拦截器链 | 有序 Around/Next、IoC 管理拦截器、短路及结果/错误改写 | Phase 2/3 内核 |
 | 切点 | 操作匹配并编译成不可变调用计划 | Phase 2 内核 |
 | ApplicationContext | Tokio 持有 refresh/start/close、系统信号关闭、有界生命周期钩子、确定性回滚和 Context-local 类型化事件 | Phase 3 内核 |

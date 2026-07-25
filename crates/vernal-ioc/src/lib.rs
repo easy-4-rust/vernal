@@ -32,6 +32,7 @@ mod scope_state;
 mod trait_binding;
 mod trait_binding_snapshot;
 mod trait_key;
+mod trait_provider;
 
 pub use build_plan::BuildPlan;
 pub use component_contract::Component;
@@ -59,6 +60,7 @@ pub use scope_state::ScopeState;
 pub use trait_binding::TraitBinding;
 pub use trait_binding_snapshot::TraitBindingSnapshot;
 pub use trait_key::TraitKey;
+pub use trait_provider::TraitProvider;
 
 /// 返回当前 `IoC` 内核的成熟度状态。
 #[must_use]

@@ -2,7 +2,9 @@
 
 use std::sync::Arc;
 
-use vernal_ioc::{Component, ComponentProvider, Qualifier, RegistryBuilder};
+use vernal_ioc::{
+    Component, ComponentProvider, Qualifier, RegistryBuilder, TraitBinding, TraitProvider,
+};
 
 /// 使用一个注入字段和一个默认字段的测试组件。
 #[derive(vernal_macros::Component)]
@@ -105,4 +107,98 @@ fn derive_generates_required_and_optional_provider_metadata() {
             .is_none()
     );
     assert_eq!(service.named.get().expect("blue extension").0, "blue");
+}
+
+/// 派生宏 Trait Provider 使用的可替换端口。
+trait GeneratedPort: Send + Sync {
+    /// 返回实现名称。
+    fn name(&self) -> &'static str;
+}
+
+/// 蓝色端口实现。
+struct GeneratedBluePort;
+
+impl GeneratedPort for GeneratedBluePort {
+    fn name(&self) -> &'static str {
+        "blue"
+    }
+}
+
+/// 红色端口实现。
+struct GeneratedRedPort;
+
+impl GeneratedPort for GeneratedRedPort {
+    fn name(&self) -> &'static str {
+        "red"
+    }
+}
+
+/// 未安装的可选 Trait 扩展点。
+trait GeneratedOptionalPort: Send + Sync {}
+
+/// 验证 `TraitProvider` 的 required、optional 与 qualifier 宏分支。
+#[derive(vernal_macros::Component)]
+struct TraitProviderService {
+    primary: TraitProvider<dyn GeneratedPort>,
+    #[component(optional)]
+    extension: TraitProvider<dyn GeneratedOptionalPort>,
+    #[component(qualifier = "blue")]
+    named: TraitProvider<dyn GeneratedPort>,
+    #[component(optional, qualifier = "missing")]
+    missing_named: TraitProvider<dyn GeneratedPort>,
+}
+
+#[test]
+fn derive_generates_trait_provider_binding_metadata() {
+    let blue = Qualifier::new("blue").expect("valid qualifier");
+    let red = Qualifier::new("red").expect("valid qualifier");
+    let mut registry = RegistryBuilder::new();
+    registry
+        .register(vernal_ioc::ComponentDefinition::transient::<
+            GeneratedBluePort,
+            _,
+        >(|_| GeneratedBluePort))
+        .expect("blue target");
+    registry
+        .register(vernal_ioc::ComponentDefinition::transient::<
+            GeneratedRedPort,
+            _,
+        >(|_| GeneratedRedPort))
+        .expect("red target");
+    registry
+        .bind(
+            TraitBinding::new::<dyn GeneratedPort, GeneratedBluePort, _>(|port| port)
+                .qualified(blue)
+                .primary(),
+        )
+        .expect("blue binding");
+    registry
+        .bind(
+            TraitBinding::new::<dyn GeneratedPort, GeneratedRedPort, _>(|port| port).qualified(red),
+        )
+        .expect("red binding");
+    registry
+        .register(TraitProviderService::definition())
+        .expect("derived trait provider service");
+    let container = registry.build().expect("trait provider graph").container();
+
+    let service = container
+        .resolve::<TraitProviderService>()
+        .expect("trait provider service");
+    assert_eq!(service.primary.get().expect("primary port").name(), "blue");
+    assert_eq!(service.named.get().expect("named port").name(), "blue");
+    assert!(
+        service
+            .extension
+            .get_if_available()
+            .expect("optional trait")
+            .is_none()
+    );
+    assert!(
+        service
+            .missing_named
+            .get_if_available()
+            .expect("optional named trait")
+            .is_none()
+    );
 }

@@ -205,6 +205,45 @@ impl ComponentDefinition {
         self
     }
 
+    /// 声明由 [`crate::TraitProvider`] 延迟解析的唯一或 Primary Trait 实现。
+    #[must_use]
+    pub fn depends_on_trait_provider<T: ?Sized + 'static>(mut self) -> Self {
+        self.dependencies.push(Dependency::trait_provider_of::<T>());
+        self
+    }
+
+    /// 声明允许没有绑定的可选 Trait Provider。
+    #[must_use]
+    pub fn depends_on_optional_trait_provider<T: ?Sized + 'static>(mut self) -> Self {
+        self.dependencies
+            .push(Dependency::optional_trait_provider_of::<T>());
+        self
+    }
+
+    /// 声明由 Trait Provider 延迟解析的精确命名实现。
+    #[must_use]
+    pub fn depends_on_qualified_trait_provider<T: ?Sized + 'static>(
+        mut self,
+        qualifier: Qualifier,
+    ) -> Self {
+        self.dependencies
+            .push(Dependency::trait_provider_qualified::<T>(qualifier));
+        self
+    }
+
+    /// 声明允许没有精确命名绑定的可选 Trait Provider。
+    #[must_use]
+    pub fn depends_on_optional_qualified_trait_provider<T: ?Sized + 'static>(
+        mut self,
+        qualifier: Qualifier,
+    ) -> Self {
+        self.dependencies
+            .push(Dependency::optional_trait_provider_qualified::<T>(
+                qualifier,
+            ));
+        self
+    }
+
     /// 声明指定 Trait Object 的全部实现依赖。
     ///
     /// 没有任何绑定时工厂会得到空集合；存在绑定时所有目标都会进入依赖图。

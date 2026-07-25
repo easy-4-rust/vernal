@@ -1,0 +1,5 @@
+error: TraitProvider 只支持 dyn Trait；具体类型请使用 ComponentProvider<T>
+ --> tests/ui/component_concrete_trait_provider.rs:7:5
+  |
+7 |     extension: TraitProvider<ConcreteExtension>,
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -309,8 +309,9 @@ The Component derive injects the unique or primary implementation into
 instance; `register_bundle` atomically commits definitions and bindings.
 
 Components that need a transient per call, an optional extension, or the
-caller's current request scope can declare a restricted
-`ComponentProvider<T>`:
+caller's current request scope can declare a restricted provider:
+`ComponentProvider<T>` for concrete types and `TraitProvider<dyn Trait>` for
+trait ports:
 
 ```rust
 #[derive(vernal_macros::Component)]
@@ -318,6 +319,9 @@ struct JobFactory {
     jobs: vernal_ioc::ComponentProvider<Job>,
     #[component(optional)]
     extension: vernal_ioc::ComponentProvider<Extension>,
+    sender: vernal_ioc::TraitProvider<dyn MessageSender>,
+    #[component(qualifier = "email")]
+    email_sender: vernal_ioc::TraitProvider<dyn MessageSender>,
 }
 ```
 
@@ -328,8 +332,10 @@ ambiguity, construction, or scope errors. `get()` creates a transient per call,
 while `get_in(&scope)` uses the caller's explicit current scope and shares the
 originating Container's singleton and scope caches. The Provider cannot query
 arbitrary types: it is a build-validated deferred dependency edge, not a global
-Service Locator. The derive currently supports concrete provider targets;
-trait objects continue to use explicit `Arc<dyn Trait>` bindings.
+Service Locator. `TraitProvider` reuses `TraitBinding` selection for a unique,
+primary, or qualified implementation and returns the original bound component.
+Eager `Vec<Arc<dyn Trait>>` injection remains the explicit way to obtain every
+implementation at once.
 
 An AOP-enabled component explicitly receives its context-local plan catalog
 and cancellation token. The method macro then performs ordinary async Rust
@@ -554,7 +560,7 @@ or a no-yield loop inside an async task.
 | Scopes | Singleton, transient, typed custom ScopeContext, cancellation-safe cleanup, and IoC-backed WebRequestScope | Phase 1.2/4 kernel |
 | Dependency graph | Deterministic build order and structured missing/ambiguous/cycle diagnostics | Phase 1 |
 | Trait binding | Named/primary/multiple implementations without string lookup | Phase 1.1 kernel |
-| Type-safe providers | Graph-constrained transient/optional/qualified/explicit-scope deferred resolution | Phase 1.3 kernel |
+| Type-safe providers | Graph-constrained concrete and trait-binding deferred resolution with transient/optional/qualified/explicit-scope access | Phase 1.3 kernel |
 | Interceptor chain | Ordered Around/Next composition with short circuit and result/error transformation | Phase 2 kernel |
 | Pointcuts | Operation matching compiled into immutable invocation plans | Phase 2 kernel |
 | Application context | Tokio-owned refresh/start/close, OS signal shutdown, bounded lifecycle hooks, deterministic rollback, context-local typed events | Phase 3 kernel |

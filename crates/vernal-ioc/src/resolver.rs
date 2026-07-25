@@ -4,7 +4,7 @@ use std::{any::Any, sync::Arc};
 
 use crate::{
     ComponentDefinition, ComponentKey, ComponentProvider, Container, Dependency, Qualifier,
-    ResolveError, ScopeContext,
+    ResolveError, ScopeContext, TraitProvider,
 };
 
 /// 传递给组件工厂的受限依赖解析视图。
@@ -119,6 +119,63 @@ impl<'a> Resolver<'a> {
         ))
     }
 
+    /// 创建延迟解析唯一或 Primary Trait 实现的受限 Provider。
+    ///
+    /// # Errors
+    ///
+    /// 当前组件没有声明对应 Trait Provider 依赖时返回 [`ResolveError`]。
+    pub fn trait_provider<T>(&self) -> Result<TraitProvider<T>, ResolveError>
+    where
+        T: ?Sized + Send + Sync + 'static,
+    {
+        self.create_trait_provider(Dependency::trait_provider_of::<T>())
+    }
+
+    /// 创建延迟解析精确命名 Trait 实现的受限 Provider。
+    ///
+    /// # Errors
+    ///
+    /// 当前组件没有声明相同 qualifier 的 Trait Provider 时返回 [`ResolveError`]。
+    pub fn qualified_trait_provider<T>(
+        &self,
+        qualifier: &Qualifier,
+    ) -> Result<TraitProvider<T>, ResolveError>
+    where
+        T: ?Sized + Send + Sync + 'static,
+    {
+        self.create_trait_provider(Dependency::trait_provider_qualified::<T>(qualifier.clone()))
+    }
+
+    /// 创建允许没有 Trait Binding 的可选 Provider。
+    ///
+    /// # Errors
+    ///
+    /// 当前组件没有声明可选 Trait Provider 时返回 [`ResolveError`]。
+    pub fn optional_trait_provider<T>(&self) -> Result<TraitProvider<T>, ResolveError>
+    where
+        T: ?Sized + Send + Sync + 'static,
+    {
+        self.create_trait_provider(Dependency::optional_trait_provider_of::<T>())
+    }
+
+    /// 创建允许没有精确命名绑定的可选 Trait Provider。
+    ///
+    /// # Errors
+    ///
+    /// 当前组件没有声明相同 qualifier 的可选 Trait Provider 时返回
+    /// [`ResolveError`]。
+    pub fn optional_qualified_trait_provider<T>(
+        &self,
+        qualifier: &Qualifier,
+    ) -> Result<TraitProvider<T>, ResolveError>
+    where
+        T: ?Sized + Send + Sync + 'static,
+    {
+        self.create_trait_provider(Dependency::optional_trait_provider_qualified::<T>(
+            qualifier.clone(),
+        ))
+    }
+
     /// 解析一项已声明的 Trait Object 单值依赖。
     ///
     /// # Errors
@@ -196,6 +253,23 @@ impl<'a> Resolver<'a> {
     {
         self.ensure_declared(&dependency)?;
         Ok(ComponentProvider::new(
+            self.container,
+            self.definition.key().clone(),
+            dependency,
+            Arc::downgrade(self.construction_guard),
+        ))
+    }
+
+    /// 校验 Trait Provider 元数据并创建共享当前 Container 的受限句柄。
+    fn create_trait_provider<T>(
+        &self,
+        dependency: Dependency,
+    ) -> Result<TraitProvider<T>, ResolveError>
+    where
+        T: ?Sized + Send + Sync + 'static,
+    {
+        self.ensure_declared(&dependency)?;
+        Ok(TraitProvider::new(
             self.container,
             self.definition.key().clone(),
             dependency,

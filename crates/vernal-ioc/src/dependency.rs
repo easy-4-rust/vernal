@@ -70,6 +70,50 @@ impl Dependency {
         }
     }
 
+    /// 选择由类型安全 Trait Provider 延迟解析的唯一或 Primary 实现。
+    #[must_use]
+    pub fn trait_provider_of<T: ?Sized + 'static>() -> Self {
+        Self {
+            type_id: TypeId::of::<T>(),
+            type_name: type_name::<T>(),
+            qualifier: None,
+            flags: TRAIT_BINDING_FLAG | DEFERRED_FLAG,
+        }
+    }
+
+    /// 选择由类型安全 Trait Provider 延迟解析的命名实现。
+    #[must_use]
+    pub fn trait_provider_qualified<T: ?Sized + 'static>(qualifier: Qualifier) -> Self {
+        Self {
+            type_id: TypeId::of::<T>(),
+            type_name: type_name::<T>(),
+            qualifier: Some(qualifier),
+            flags: TRAIT_BINDING_FLAG | DEFERRED_FLAG,
+        }
+    }
+
+    /// 声明允许没有 Trait Binding 的可选 Trait Provider。
+    #[must_use]
+    pub fn optional_trait_provider_of<T: ?Sized + 'static>() -> Self {
+        Self {
+            type_id: TypeId::of::<T>(),
+            type_name: type_name::<T>(),
+            qualifier: None,
+            flags: TRAIT_BINDING_FLAG | OPTIONAL_FLAG | DEFERRED_FLAG,
+        }
+    }
+
+    /// 声明允许没有精确命名绑定的可选 Trait Provider。
+    #[must_use]
+    pub fn optional_trait_provider_qualified<T: ?Sized + 'static>(qualifier: Qualifier) -> Self {
+        Self {
+            type_id: TypeId::of::<T>(),
+            type_name: type_name::<T>(),
+            qualifier: Some(qualifier),
+            flags: TRAIT_BINDING_FLAG | OPTIONAL_FLAG | DEFERRED_FLAG,
+        }
+    }
+
     /// 选择指定 Trait Object 的全部实现。
     ///
     /// 全部实现依赖允许零个候选，解析结果为空集合；一旦存在绑定，依赖图会为
@@ -173,11 +217,17 @@ impl fmt::Display for Dependency {
         if self.is_multiple() {
             write!(formatter, "all<{}>", self.type_name)
         } else {
-            let wrapper = match (self.is_deferred(), self.is_optional()) {
-                (true, true) => Some("optional_provider"),
-                (true, false) => Some("provider"),
-                (false, true) => Some("optional"),
-                (false, false) => None,
+            let wrapper = match (
+                self.is_trait_binding(),
+                self.is_deferred(),
+                self.is_optional(),
+            ) {
+                (true, true, true) => Some("optional_trait_provider"),
+                (true, true, false) => Some("trait_provider"),
+                (_, true, true) => Some("optional_provider"),
+                (_, true, false) => Some("provider"),
+                (_, false, true) => Some("optional"),
+                (_, false, false) => None,
             };
             match (wrapper, &self.qualifier) {
                 (Some(wrapper), Some(qualifier)) => {

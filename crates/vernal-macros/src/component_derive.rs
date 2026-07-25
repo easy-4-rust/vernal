@@ -95,6 +95,19 @@ fn generate_field_injection(
         return Ok(());
     }
 
+    if let Some(dependency) = trait_provider_inner(&field.ty)? {
+        return generate_trait_provider_injection(
+            field,
+            field_name,
+            dependency,
+            qualifier,
+            optional,
+            ioc,
+            initializers,
+            dependency_statements,
+            qualifier_declarations,
+        );
+    }
     if let Some(dependency) = component_provider_inner(&field.ty)? {
         return generate_provider_injection(
             field,
@@ -111,10 +124,32 @@ fn generate_field_injection(
     if optional {
         return Err(syn::Error::new_spanned(
             field,
-            "#[component(optional)] 只支持 ComponentProvider<T> 字段",
+            "#[component(optional)] 只支持 ComponentProvider<T> 或 TraitProvider<dyn Trait> 字段",
         ));
     }
 
+    generate_eager_injection(
+        field,
+        field_name,
+        qualifier,
+        ioc,
+        (initializers, dependency_statements, qualifier_declarations),
+    )
+}
+
+/// 为 `Arc<T>`、`Arc<dyn Trait>` 或 Trait 实现集合生成立即依赖注入代码。
+fn generate_eager_injection(
+    field: &Field,
+    field_name: &syn::Ident,
+    qualifier: Option<LitStr>,
+    ioc: &TokenStream,
+    outputs: (
+        &mut Vec<TokenStream>,
+        &mut Vec<TokenStream>,
+        &mut Vec<TokenStream>,
+    ),
+) -> syn::Result<()> {
+    let (initializers, dependency_statements, qualifier_declarations) = outputs;
     if let Some(dependency) = vec_arc_trait_inner(&field.ty)? {
         if qualifier.is_some() {
             return Err(syn::Error::new_spanned(
@@ -197,7 +232,7 @@ fn generate_provider_injection(
     if matches!(dependency, Type::TraitObject(_)) {
         return Err(syn::Error::new_spanned(
             field,
-            "ComponentProvider 当前只支持具体类型；Trait Object 请继续使用 Arc<dyn Trait>",
+            "ComponentProvider 只支持具体类型；延迟 Trait Object 请使用 TraitProvider<dyn Trait>",
         ));
     }
 
@@ -244,6 +279,79 @@ fn generate_provider_injection(
         });
         dependency_statements.push(quote! {
             __definition = __definition.depends_on_qualified_provider::<#dependency>(
+                #definition_qualifier
+            );
+        });
+    }
+    Ok(())
+}
+
+/// 为 `TraitProvider<dyn Trait>` 字段生成 Trait Binding 延迟依赖元数据。
+#[allow(clippy::too_many_arguments)]
+fn generate_trait_provider_injection(
+    field: &Field,
+    field_name: &syn::Ident,
+    dependency: &Type,
+    qualifier: Option<LitStr>,
+    optional: bool,
+    ioc: &TokenStream,
+    initializers: &mut Vec<TokenStream>,
+    dependency_statements: &mut Vec<TokenStream>,
+    qualifier_declarations: &mut Vec<TokenStream>,
+) -> syn::Result<()> {
+    if !matches!(dependency, Type::TraitObject(_)) {
+        return Err(syn::Error::new_spanned(
+            field,
+            "TraitProvider 只支持 dyn Trait；具体类型请使用 ComponentProvider<T>",
+        ));
+    }
+
+    let Some(qualifier) = qualifier else {
+        if optional {
+            initializers.push(quote! {
+                #field_name: __resolver.optional_trait_provider::<#dependency>()?
+            });
+            dependency_statements.push(quote! {
+                __definition = __definition.depends_on_optional_trait_provider::<#dependency>();
+            });
+        } else {
+            initializers.push(quote! {
+                #field_name: __resolver.trait_provider::<#dependency>()?
+            });
+            dependency_statements.push(quote! {
+                __definition = __definition.depends_on_trait_provider::<#dependency>();
+            });
+        }
+        return Ok(());
+    };
+
+    let definition_qualifier = format_ident!("__vernal_{}_definition_qualifier", field_name);
+    let factory_qualifier = format_ident!("__vernal_{}_factory_qualifier", field_name);
+    qualifier_declarations.push(quote! {
+        let #definition_qualifier = #ioc::Qualifier::new(#qualifier)
+            .expect("Vernal Component 宏已在编译期校验 qualifier");
+        let #factory_qualifier = #definition_qualifier.clone();
+    });
+    if optional {
+        initializers.push(quote! {
+            #field_name: __resolver.optional_qualified_trait_provider::<#dependency>(
+                &#factory_qualifier
+            )?
+        });
+        dependency_statements.push(quote! {
+            __definition = __definition
+                .depends_on_optional_qualified_trait_provider::<#dependency>(
+                    #definition_qualifier
+                );
+        });
+    } else {
+        initializers.push(quote! {
+            #field_name: __resolver.qualified_trait_provider::<#dependency>(
+                &#factory_qualifier
+            )?
+        });
+        dependency_statements.push(quote! {
+            __definition = __definition.depends_on_qualified_trait_provider::<#dependency>(
                 #definition_qualifier
             );
         });
@@ -512,6 +620,38 @@ fn component_provider_inner(field_type: &Type) -> syn::Result<Option<&Type>> {
         return Err(syn::Error::new_spanned(
             field_type,
             "ComponentProvider 参数必须是具体 Rust 类型",
+        ));
+    };
+    Ok(Some(dependency))
+}
+
+/// 尝试从 `TraitProvider<dyn Trait>` 字段提取 Trait Object 类型。
+fn trait_provider_inner(field_type: &Type) -> syn::Result<Option<&Type>> {
+    let Type::Path(type_path) = field_type else {
+        return Ok(None);
+    };
+    let Some(segment) = type_path.path.segments.last() else {
+        return Ok(None);
+    };
+    if segment.ident != "TraitProvider" {
+        return Ok(None);
+    }
+    let PathArguments::AngleBracketed(arguments) = &segment.arguments else {
+        return Err(syn::Error::new_spanned(
+            field_type,
+            "TraitProvider 注入字段缺少 dyn Trait 类型参数",
+        ));
+    };
+    if arguments.args.len() != 1 {
+        return Err(syn::Error::new_spanned(
+            field_type,
+            "TraitProvider 注入字段必须且只能包含一个类型参数",
+        ));
+    }
+    let Some(GenericArgument::Type(dependency)) = arguments.args.first() else {
+        return Err(syn::Error::new_spanned(
+            field_type,
+            "TraitProvider 参数必须是 dyn Trait",
         ));
     };
     Ok(Some(dependency))
