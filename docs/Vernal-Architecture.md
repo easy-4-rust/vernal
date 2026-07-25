@@ -990,9 +990,10 @@ registers Hutool `HttpConfig` and the Tokio/Reqwest `HttpClient` as
 container-local singletons, exposes explicit URL/SSRF policy selection, and
 keeps the configuration edge visible to Vernal graph validation. Its runtime
 test proves singleton resolution, duplicate-bundle rejection, and local-target
-rejection before network I/O. Clean remote integration remains pending because
-that checkout is concurrently undergoing a separate one-object-per-file
-history/refactor stream.
+rejection before network I/O. `HutoolSettingPropertySource` additionally loads
+a real Hutool Profile/Setting document, freezes it as a Vernal PropertySource,
+maps named groups to dotted keys, and rejects flattened collisions atomically.
+The consumer bridge is committed and pushed in the Hutool-Rust repository.
 
 ### 12.2 Sa-Token-Rust
 
@@ -1018,6 +1019,13 @@ and Tonic adapters translate these `WebFailure` values into native HTTP/gRPC
 failures. `PathAuthConfig` remains the sole source of path login policy. Its
 existing ten plugin families remain input evidence for the Vernal adapter
 matrix, not code that Vernal silently vendors.
+
+`VernalSaTokenConfigBinder` now maps an immutable `ApplicationEnvironment` to
+Sa-Token's native `SaTokenConfigBuilder`. It supports the builder's stable
+scalar and enum settings, preserves Sa-Token defaults for missing keys, and
+redacts invalid values. Storage, listeners, manager creation, and runtime
+installation remain explicit Sa-Token concerns. The original eleven bridge
+tests and two configuration binding tests pass together in the target crate.
 
 ### 12.3 Ddd4r
 

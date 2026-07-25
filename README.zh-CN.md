@@ -344,7 +344,10 @@ flowchart LR
 ```
 
 - **Hutool-Rust** 继续承担通用工具库职责，可以消费 Vernal 能力，但 Vernal
-  不成为 Hutool-Rust 的子模块。
+  不成为 Hutool-Rust 的子模块。消费方 `hutool-vernal` 除了原子安装
+  `HttpConfig` 与 Tokio/Reqwest `HttpClient`，还通过
+  `HutoolSettingPropertySource` 把 Profile/Setting 文档冻结为 Vernal
+  Environment 快照，分组键显式扁平化，冲突按 fail-closed 拒绝。
 - **Sa-Token-Rust** 是唯一保留的安全集成目标，继续拥有认证、Session 和
   授权语义；Vernal 只提供组件生命周期与拦截编排，不重复建设安全内核。由
   Sa-Token-Rust 持有的 `sa-token-vernal` 已实现 `HttpRequestSnapshot` 适配、
@@ -352,6 +355,8 @@ flowchart LR
   `SaTokenComponents` 将调用方原始 Manager、Bridge 与操作授权策略原子注册，
   Advisor 在 Handler 前认证并执行角色/权限 all/any 规则，以及 Sa-Token
   全局/前缀通配符语义，以稳定 401/403 短路。
+  `VernalSaTokenConfigBinder` 还会把不可变 Environment 映射到 Sa-Token 原生
+  Builder，但不接管 Storage、Listener、Manager 或 Runtime 构造。
 - **Ddd4r** 通过消费方持有的 `ddd4r-vernal` 直接注册原生 `Registry` 和
   `DefaultCommandBus`，并以隔离快照进入 Ddd4r 自己的 Tokio task-local
   `ContextScope`；聚合、事件、CQRS、Repository、Outbox 和事务语义仍归 Ddd4r。

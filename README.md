@@ -508,7 +508,9 @@ flowchart LR
   Vernal capabilities, but Vernal does not become a Hutool-Rust module. Its
   consumer-owned `hutool-vernal` bridge now installs `HttpConfig` and the
   Tokio/Reqwest `HttpClient` as an atomic, context-local component bundle with
-  an application-selected URL policy.
+  an application-selected URL policy. `HutoolSettingPropertySource` snapshots
+  Hutool Profile/Setting documents into Vernal Environment with explicit
+  grouped-key flattening and fail-closed collision handling.
 - **Sa-Token-Rust** is the single retained security integration target and
   remains the authority for authentication, sessions, and
   authorization. Vernal supplies component lifecycle and interception, not a
@@ -519,7 +521,9 @@ flowchart LR
   operation policy into a validated Vernal dependency graph. Its Advisor
   authenticates and enforces operation-scoped all/any role and permission
   rules, including Sa-Token global and prefix wildcards, with stable 401/403
-  failures before handlers.
+  failures before handlers. `VernalSaTokenConfigBinder` maps the immutable
+  Environment into Sa-Token's native builder without taking ownership of
+  Storage, Listener, Manager, or Runtime construction.
 - **Ddd4r** uses its consumer-owned `ddd4r-vernal` bridge to register the
   native `Registry` and `DefaultCommandBus`, then enters Ddd4r's own Tokio
   task-local `ContextScope` with an isolated snapshot. Aggregates, events,

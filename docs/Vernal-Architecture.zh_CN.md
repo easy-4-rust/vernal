@@ -947,8 +947,10 @@ Hutool-Rust 继续承担通用工具库职责。其基于 Reqwest 的 HTTP Clien
 并固定到已验证的 Vernal Git Revision。它把 Hutool `HttpConfig` 与基于
 Tokio/Reqwest 的 `HttpClient` 原子注册为 Container-local Singleton，显式选择
 URL/SSRF 策略，并让配置依赖进入 Vernal 图校验。运行时测试已证明 Singleton
-解析、重复组件包拒绝以及在网络 I/O 前拒绝本地目标。由于该 checkout 同时处于
-另一条“一文件一对象”历史/重构流程中，干净的远端整合仍待完成。
+解析、重复组件包拒绝以及在网络 I/O 前拒绝本地目标。
+`HutoolSettingPropertySource` 还会真实加载 Hutool Profile/Setting 文档，将其
+冻结成 Vernal PropertySource，把命名分组转换为点分键，并原子拒绝扁平化冲突。
+该消费方 Bridge 已提交并推送到 Hutool-Rust 仓库。
 
 ### 12.2 Sa-Token-Rust
 
@@ -969,6 +971,12 @@ Sa-Token-Rust 仓库现已实现消费方持有、暂不发布的 `sa-token-vern
 `WebFailure` 转为原生 HTTP/gRPC 失败响应。路径登录策略仍由
 `PathAuthConfig` 唯一定义。现有十类 Plugin 仍是 Vernal Adapter 矩阵的输入
 证据，不表示 Vernal 会静默复制或内嵌这些源码。
+
+`VernalSaTokenConfigBinder` 现已把不可变 `ApplicationEnvironment` 映射到
+Sa-Token 原生 `SaTokenConfigBuilder`，覆盖 Builder 已公开的稳定标量与枚举设置；
+缺失键继续采用 Sa-Token 默认值，非法值错误保持脱敏。Storage、Listener、Manager
+创建和 Runtime 安装仍由 Sa-Token 显式负责。目标 crate 原有 11 个 Bridge 测试与
+新增 2 个配置绑定测试已一起通过。
 
 ### 12.3 Ddd4r
 
