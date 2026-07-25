@@ -111,8 +111,12 @@
   async Trait methods with default bodies. Every path keeps the same
   context-local Operation and type-erasure boundary without unsafe lifetime
   extension.
+- `[Confirmed]` `vernal-aop` provides a reproducible Tokio invocation-plan
+  benchmark for direct async, empty-plan, one-, and four-interceptor paths.
+  Criterion is pinned to MSRV-compatible 0.7 and plan compilation is excluded
+  from the timed path.
 - `[Target]` remaining consumer ecosystem bridges, generic-bound diagnostics,
-  benchmarks, and later production gates remain.
+  cross-machine performance thresholds, and later production gates remain.
 
 ## 2. Brand meaning and architecture thesis
 
@@ -797,6 +801,41 @@ sequenceDiagram
     Plan-->>Macro: type-erased value
     Macro-->>Caller: recover T or structured error
 ```
+
+### 9.8 Tokio hot-path performance baseline
+
+`crates/vernal-aop/benches/invocation_plan.rs` calls the production
+`InvocationPlan::invoke` path; it does not duplicate or simplify the AOP
+implementation. Pointcut matching, Advisor sorting, and plan compilation happen
+before timing, while the fixture reuses the Invocation and target. Every
+iteration still performs operation validation, declared-operation view
+creation, cancellation `select!`, boxed-future dynamic dispatch, type-erased
+return allocation, and `u64` downcast.
+
+The first local evidence was recorded on 2026-07-25 with an Apple M4 Pro,
+macOS 26.5, the release profile, 50 samples, and a three-second measurement
+window:
+
+| Path | Median estimate | 95% estimate interval | Interpretation |
+|:---|---:|---:|:---|
+| Direct async | 2.55 ns | 2.44–2.66 ns | Minimal compiler baseline on the same Tokio executor |
+| Empty plan | 336 ns | 315–355 ns | Fixed Vernal per-invocation execution cost |
+| One pass-through interceptor | 476 ns | 424–543 ns | Fixed cost plus one Around/Next node |
+| Four pass-through interceptors | 727 ns | 661–814 ns | Fixed cost plus four Around/Next nodes |
+
+Reproduce with:
+
+```bash
+cargo bench -p vernal-aop --bench invocation_plan -- \
+  --sample-size 50 --measurement-time 3 --warm-up-time 1
+```
+
+This closes the absence-of-measurement risk, but it is neither a cross-machine
+SLA nor evidence for a zero-cost claim. The direct async path is only a few
+nanoseconds, so ratios are misleading; report absolute deltas and chain-length
+scaling, and separate framework scheduling from real authentication, logging,
+network, or storage work. Future optimization must preserve cancellation,
+deadline, short circuit, error replacement, and Send/Local semantic contracts.
 
 ## 10. ApplicationContext and lifecycle
 
@@ -1567,12 +1606,12 @@ No phase is complete merely because a crate exists or `cargo check` is green.
 
 | ID | Risk / open decision | Impact | Validation |
 |:---|:---|:---|:---|
-| R-001 | Object-safe async Around allocation cost | AOP performance | Benchmark the implemented boxed-future path |
+| R-001 | Object-safe async Around allocation has a first local baseline but no cross-machine regression threshold | AOP performance | Track CI trends and set an absolute budget on stable hardware |
 | R-002 | Implementation/default-Trait/generic/mutable methods have contracts; complex generic-bound diagnostics remain incomplete | Usability | Extend the bound-diagnostic trybuild matrix |
 | R-003 | Cross-platform link-time registration | Portability | Linux/macOS/Windows CI |
 | R-004 | Request-scope cancellation differences | Resource safety | Cross-framework failure tests |
 | R-005 | Spring terminology overwhelms Rust API style | Maintenance | API review and Rust guidelines |
-| R-006 | Premature zero-cost claims | Trust | Measure static and dynamic paths separately |
+| R-006 | Premature zero-cost claims | Trust | Direct, empty-plan, and dynamic-chain absolute costs are reported; continue prohibiting zero-cost claims |
 
 ## 18. Definition of architecture done
 

@@ -94,8 +94,11 @@
   type/lifetime/const 泛型异步实现方法和带默认体的异步 Trait 方法；所有路径
   继续使用同一 Context-local Operation 与类型擦除边界，不引入 unsafe 生命周期
   扩展。
-- `[设计目标]` 剩余消费方生态桥接、泛型边界诊断矩阵、性能基准与后续生产门禁
-  仍需实现和验收。
+- `[已确认]` `vernal-aop` 已提供可重复执行的 Tokio 调用计划基准，分别测量直接
+  async、空计划、一个和四个透传拦截器；基准依赖固定为兼容 MSRV 1.85 的
+  Criterion 0.7，并明确排除计划编译阶段。
+- `[设计目标]` 剩余消费方生态桥接、泛型边界诊断矩阵、跨机器性能门槛与后续
+  生产门禁仍需实现和验收。
 
 ## 2. 品牌寓意与架构主张
 
@@ -725,6 +728,36 @@ sequenceDiagram
     Plan-->>Macro: 类型擦除结果
     Macro-->>Caller: 恢复 T 或返回结构化错误
 ```
+
+### 9.9 Tokio 热路径性能基线
+
+`crates/vernal-aop/benches/invocation_plan.rs` 直接调用生产
+`InvocationPlan::invoke`，没有复制或简化 AOP 实现。夹具在计时前完成 Pointcut
+匹配、Advisor 排序和计划编译，并复用 `Invocation` 与目标对象；每次迭代仍真实
+执行 Operation 校验、声明运行视图创建、取消 `select!`、Box Future 动态分派、
+类型擦除返回值和 `u64` downcast。
+
+2026-07-25 在 Apple M4 Pro、macOS 26.5、release profile 上以 50 个样本、
+3 秒测量时间得到以下首轮本机证据：
+
+| 场景 | 中位估计 | 95% 估计区间 | 含义 |
+|:---|---:|---:|:---|
+| 直接 async | 2.55 ns | 2.44–2.66 ns | 同一 Tokio executor 的极简编译器基线 |
+| 空计划 | 336 ns | 315–355 ns | Vernal 每次调用的固定执行成本 |
+| 1 个透传拦截器 | 476 ns | 424–543 ns | 固定成本加一个 Around/Next 节点 |
+| 4 个透传拦截器 | 727 ns | 661–814 ns | 固定成本加四个 Around/Next 节点 |
+
+复现命令：
+
+```bash
+cargo bench -p vernal-aop --bench invocation_plan -- \
+  --sample-size 50 --measurement-time 3 --warm-up-time 1
+```
+
+这些数字关闭了“没有测量依据”的风险，但不构成跨硬件 SLA，也不支持“零开销”
+宣传。直接 async 只有数纳秒，倍数会严重放大认知；更有意义的是报告绝对增量、
+链长度趋势，并将真实鉴权、日志、网络或存储成本与框架调度成本分开。后续优化必须
+同时保持取消、deadline、短路、错误替换和 Send/Local 双执行平面的语义合同。
 
 ## 10. ApplicationContext 与生命周期
 
@@ -1430,12 +1463,12 @@ fail-closed 与条件错误脱敏，并覆盖显式 ApplicationModule 安装、�
 
 | ID | 风险 / 待确认 | 影响 | 验证计划 |
 |:---|:---|:---|:---|
-| R-001 | 对象安全异步 Around 的分配成本 | AOP 性能 | 对已实现的 boxed-future 路径做 benchmark |
+| R-001 | 对象安全异步 Around 的分配成本已有首轮本机基线，尚无跨机器回归阈值 | AOP 性能 | CI 收集趋势，在稳定硬件上确定绝对预算 |
 | R-002 | 实现/默认 Trait/泛型/可变方法已有合同，复杂泛型边界诊断仍不完整 | 可用性 | 扩展 bound-diagnostic trybuild 矩阵 |
 | R-003 | 编译期自动注册的跨平台链接行为 | 可移植性 | Linux/macOS/Windows CI |
 | R-004 | Request Scope 在不同 Web 框架中的取消/释放差异 | 资源安全 | 跨框架异常链测试 |
 | R-005 | 过度追求 Spring 命名导致非 Rust API | 长期维护 | API review 与 Rust API Guidelines |
-| R-006 | 过早承诺零开销 | 品牌可信度 | 对静态/动态路径分别测量 |
+| R-006 | 过早承诺零开销 | 品牌可信度 | 已分别报告直接/空计划/动态链绝对成本，持续禁止零开销宣传 |
 
 ## 18. 架构完成定义
 

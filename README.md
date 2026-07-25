@@ -618,8 +618,8 @@ or a no-yield loop inside an async task.
 “Phase 1” and “Phase 2 kernel” mean callable implementation and contract tests
 exist, but the API is still experimental. The first Component and AOP method
 macros are implemented with compile-fail coverage; broader method signatures,
-adapter auto-discovery, and benchmarks remain open. No label is a compatibility
-or performance claim.
+adapter auto-discovery, and stable-hardware regression thresholds remain open.
+No label is a compatibility or cross-machine performance claim.
 
 ## 7. Ecosystem role
 
@@ -745,7 +745,12 @@ fields, invalid collection qualifiers, non-async interception, bare value
 receivers, invalid operation metadata, and malformed descriptor paths. It also
 verifies Trait default methods, pure Trait boundaries, UFCS descriptors,
 abstract-method rejection, and rejection when a non-AOP implementor invokes
-the method. Expanded generic-bound diagnostics and AOP benchmarks remain open.
+the method. A Criterion 0.7 Tokio benchmark now covers direct async, empty
+plans, and one/four pass-through interceptors; the first local median estimates
+are 2.55 ns, 336 ns, 476 ns, and 727 ns respectively. These values describe
+absolute overhead and chain-length scaling only; they are not a cross-hardware
+SLA or a zero-cost claim. Expanded generic-bound diagnostics and
+stable-hardware regression thresholds remain open.
 The Phase 3 kernel has fifty-six tests covering dependency-order startup,
 reverse shutdown, initialize/start rollback, invalid transitions, idempotent
 close, concurrent close serialization, and context-local typed event

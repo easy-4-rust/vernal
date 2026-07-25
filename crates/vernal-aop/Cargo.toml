@@ -12,5 +12,12 @@ tokio.workspace = true
 tokio-util.workspace = true
 vernal-core = { path = "../vernal-core" }
 
+[dev-dependencies]
+criterion.workspace = true
+
+[[bench]]
+name = "invocation_plan"
+harness = false
+
 [lints]
 workspace = true
