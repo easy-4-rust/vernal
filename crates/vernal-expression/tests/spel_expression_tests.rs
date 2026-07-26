@@ -5,12 +5,12 @@
 //!
 //! 参考：`spring-expression/src/test/java/org/springframework/expression/spel/`
 
-use vernal_expression::*;
-use vernal_expression::spel::spel_expression_parser::SpelExpressionParser;
-use vernal_expression::spel::support::standard_evaluation_context::StandardEvaluationContext;
-use vernal_expression::spel::support::simple_evaluation_context::SimpleEvaluationContext;
-use vernal_expression::spel::ast::*;
 use vernal_expression::spel::ast::spel_node::SpelNode;
+use vernal_expression::spel::ast::*;
+use vernal_expression::spel::spel_expression_parser::SpelExpressionParser;
+use vernal_expression::spel::support::simple_evaluation_context::SimpleEvaluationContext;
+use vernal_expression::spel::support::standard_evaluation_context::StandardEvaluationContext;
+use vernal_expression::*;
 
 // ══════════════════════════════════════════════════════════════════════════════
 // 一、字面量测试（对标 Spring LiteralTests）
@@ -50,7 +50,10 @@ fn string_literal() {
     let expr = parser.parse_expression("'hello'").unwrap();
     let context = StandardEvaluationContext::new(TypedValue::null());
     let result = expr.get_value_with_context(&context).unwrap();
-    assert_eq!(*result.value(), ExpressionValue::String("hello".to_string()));
+    assert_eq!(
+        *result.value(),
+        ExpressionValue::String("hello".to_string())
+    );
 }
 
 #[test]
@@ -205,7 +208,10 @@ fn string_concatenation() {
     );
     let context = StandardEvaluationContext::new(TypedValue::null());
     let result = op.get_value(&context).unwrap();
-    assert_eq!(*result.value(), ExpressionValue::String("hello world".to_string()));
+    assert_eq!(
+        *result.value(),
+        ExpressionValue::String("hello world".to_string())
+    );
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -407,9 +413,7 @@ fn logical_or_short_circuit() {
 
 #[test]
 fn logical_not_true() {
-    let op = operator_not::OperatorNot::new(
-        Box::new(boolean_literal::BooleanLiteral::new(true)),
-    );
+    let op = operator_not::OperatorNot::new(Box::new(boolean_literal::BooleanLiteral::new(true)));
     let context = StandardEvaluationContext::new(TypedValue::null());
     let result = op.get_value(&context).unwrap();
     assert_eq!(*result.value(), ExpressionValue::Boolean(false));
@@ -417,9 +421,7 @@ fn logical_not_true() {
 
 #[test]
 fn logical_not_false() {
-    let op = operator_not::OperatorNot::new(
-        Box::new(boolean_literal::BooleanLiteral::new(false)),
-    );
+    let op = operator_not::OperatorNot::new(Box::new(boolean_literal::BooleanLiteral::new(false)));
     let context = StandardEvaluationContext::new(TypedValue::null());
     let result = op.get_value(&context).unwrap();
     assert_eq!(*result.value(), ExpressionValue::Boolean(true));
@@ -461,7 +463,10 @@ fn elvis_operator_with_value() {
     );
     let context = StandardEvaluationContext::new(TypedValue::null());
     let result = op.get_value(&context).unwrap();
-    assert_eq!(*result.value(), ExpressionValue::String("hello".to_string()));
+    assert_eq!(
+        *result.value(),
+        ExpressionValue::String("hello".to_string())
+    );
 }
 
 #[test]
@@ -472,7 +477,10 @@ fn elvis_operator_with_null() {
     );
     let context = StandardEvaluationContext::new(TypedValue::null());
     let result = op.get_value(&context).unwrap();
-    assert_eq!(*result.value(), ExpressionValue::String("default".to_string()));
+    assert_eq!(
+        *result.value(),
+        ExpressionValue::String("default".to_string())
+    );
 }
 
 #[test]
@@ -483,7 +491,10 @@ fn elvis_operator_with_empty_string() {
     );
     let context = StandardEvaluationContext::new(TypedValue::null());
     let result = op.get_value(&context).unwrap();
-    assert_eq!(*result.value(), ExpressionValue::String("default".to_string()));
+    assert_eq!(
+        *result.value(),
+        ExpressionValue::String("default".to_string())
+    );
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -550,7 +561,10 @@ fn inline_map() {
 #[test]
 fn variable_reference() {
     let mut context = StandardEvaluationContext::new(TypedValue::null());
-    context.set_variable_value("x", TypedValue::new(ExpressionValue::Int(42), TypeDescriptor::INT));
+    context.set_variable_value(
+        "x",
+        TypedValue::new(ExpressionValue::Int(42), TypeDescriptor::INT),
+    );
 
     let op = variable_reference::VariableReference::new("x".to_string());
     let result = op.get_value(&context).unwrap();
@@ -583,15 +597,24 @@ fn property_reference_not_found() {
 
 #[test]
 fn standard_evaluation_context_root_object() {
-    let root = TypedValue::new(ExpressionValue::String("root".to_string()), TypeDescriptor::STRING);
+    let root = TypedValue::new(
+        ExpressionValue::String("root".to_string()),
+        TypeDescriptor::STRING,
+    );
     let context = StandardEvaluationContext::new(root.clone());
-    assert_eq!(*context.root_object().value(), ExpressionValue::String("root".to_string()));
+    assert_eq!(
+        *context.root_object().value(),
+        ExpressionValue::String("root".to_string())
+    );
 }
 
 #[test]
 fn standard_evaluation_context_variables() {
     let mut context = StandardEvaluationContext::new(TypedValue::null());
-    context.set_variable_value("key", TypedValue::new(ExpressionValue::Int(100), TypeDescriptor::INT));
+    context.set_variable_value(
+        "key",
+        TypedValue::new(ExpressionValue::Int(100), TypeDescriptor::INT),
+    );
     let value = context.lookup_variable("key").unwrap();
     assert_eq!(*value.value(), ExpressionValue::Int(100));
 }
@@ -628,7 +651,10 @@ fn typed_value_int() {
 
 #[test]
 fn typed_value_string() {
-    let value = TypedValue::new(ExpressionValue::String("hello".to_string()), TypeDescriptor::STRING);
+    let value = TypedValue::new(
+        ExpressionValue::String("hello".to_string()),
+        TypeDescriptor::STRING,
+    );
     assert_eq!(*value.value(), ExpressionValue::String("hello".to_string()));
 }
 
@@ -799,18 +825,25 @@ fn map_accessor_read() {
     let context = StandardEvaluationContext::new(TypedValue::null());
 
     let map_value = TypedValue::new(
-        ExpressionValue::Map(vec![
-            (
-                TypedValue::new(ExpressionValue::String("key".to_string()), TypeDescriptor::STRING),
-                TypedValue::new(ExpressionValue::String("value".to_string()), TypeDescriptor::STRING),
+        ExpressionValue::Map(vec![(
+            TypedValue::new(
+                ExpressionValue::String("key".to_string()),
+                TypeDescriptor::STRING,
             ),
-        ]),
+            TypedValue::new(
+                ExpressionValue::String("value".to_string()),
+                TypeDescriptor::STRING,
+            ),
+        )]),
         TypeDescriptor::OBJECT,
     );
 
     assert!(accessor.can_read(&context, &map_value, "key"));
     let result = accessor.read(&context, &map_value, "key").unwrap();
-    assert_eq!(*result.value(), ExpressionValue::String("value".to_string()));
+    assert_eq!(
+        *result.value(),
+        ExpressionValue::String("value".to_string())
+    );
 }
 
 #[test]
@@ -818,10 +851,7 @@ fn map_accessor_read_missing_key() {
     let accessor = spel::support::map_accessor::MapAccessor;
     let context = StandardEvaluationContext::new(TypedValue::null());
 
-    let map_value = TypedValue::new(
-        ExpressionValue::Map(vec![]),
-        TypeDescriptor::OBJECT,
-    );
+    let map_value = TypedValue::new(ExpressionValue::Map(vec![]), TypeDescriptor::OBJECT);
 
     let result = accessor.read(&context, &map_value, "missing").unwrap();
     assert!(result.is_null());
@@ -835,22 +865,32 @@ fn map_accessor_read_missing_key() {
 fn type_converter_int_to_string() {
     let converter = spel::support::standard_type_converter::StandardTypeConverter;
     let value = TypedValue::new(ExpressionValue::Int(42), TypeDescriptor::INT);
-    let result = converter.convert_value(&value, &TypeDescriptor::STRING).unwrap();
+    let result = converter
+        .convert_value(&value, &TypeDescriptor::STRING)
+        .unwrap();
     assert_eq!(*result.value(), ExpressionValue::String("42".to_string()));
 }
 
 #[test]
 fn type_converter_string_to_int() {
     let converter = spel::support::standard_type_converter::StandardTypeConverter;
-    let value = TypedValue::new(ExpressionValue::String("42".to_string()), TypeDescriptor::STRING);
-    let result = converter.convert_value(&value, &TypeDescriptor::INT).unwrap();
+    let value = TypedValue::new(
+        ExpressionValue::String("42".to_string()),
+        TypeDescriptor::STRING,
+    );
+    let result = converter
+        .convert_value(&value, &TypeDescriptor::INT)
+        .unwrap();
     assert_eq!(*result.value(), ExpressionValue::Int(42));
 }
 
 #[test]
 fn type_converter_invalid_string_to_int() {
     let converter = spel::support::standard_type_converter::StandardTypeConverter;
-    let value = TypedValue::new(ExpressionValue::String("abc".to_string()), TypeDescriptor::STRING);
+    let value = TypedValue::new(
+        ExpressionValue::String("abc".to_string()),
+        TypeDescriptor::STRING,
+    );
     let result = converter.convert_value(&value, &TypeDescriptor::INT);
     assert!(result.is_err());
 }
@@ -963,15 +1003,24 @@ fn spel_parser_configuration_defaults() {
 
 #[test]
 fn spel_message_codes() {
-    assert_eq!(spel::spel_message::SpelMessage::TypeConversionError.code(), 1001);
+    assert_eq!(
+        spel::spel_message::SpelMessage::TypeConversionError.code(),
+        1001
+    );
     assert_eq!(spel::spel_message::SpelMessage::MethodNotFound.code(), 1004);
     assert_eq!(spel::spel_message::SpelMessage::DivisionByZero.code(), 1040);
 }
 
 #[test]
 fn spel_message_default_messages() {
-    assert_eq!(spel::spel_message::SpelMessage::TypeConversionError.default_message(), "类型转换错误");
-    assert_eq!(spel::spel_message::SpelMessage::DivisionByZero.default_message(), "除零错误");
+    assert_eq!(
+        spel::spel_message::SpelMessage::TypeConversionError.default_message(),
+        "类型转换错误"
+    );
+    assert_eq!(
+        spel::spel_message::SpelMessage::DivisionByZero.default_message(),
+        "除零错误"
+    );
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -982,7 +1031,10 @@ fn spel_message_default_messages() {
 fn literal_expression_value() {
     let expr = common::literal_expression::LiteralExpression::new("hello".to_string());
     let result = expr.get_value().unwrap();
-    assert_eq!(*result.value(), ExpressionValue::String("hello".to_string()));
+    assert_eq!(
+        *result.value(),
+        ExpressionValue::String("hello".to_string())
+    );
 }
 
 #[test]

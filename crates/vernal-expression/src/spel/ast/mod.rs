@@ -40,6 +40,15 @@ pub mod op_and;
 pub mod op_or;
 pub mod operator_not;
 
+// ─── 自增自减（2 个） ───
+pub mod op_inc;
+pub mod op_dec;
+
+// ─── 特殊运算符（3 个） ───
+pub mod operator_between;
+pub mod operator_instanceof;
+pub mod operator_matches;
+
 // ─── 表达式节点（17 个） ───
 pub mod assign;
 pub mod bean_reference;
