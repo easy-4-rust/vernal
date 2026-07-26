@@ -2,6 +2,7 @@
 #![doc = "Vernal 的 Tokio-first 应用上下文与生命周期编排。"]
 
 mod advisor_registration;
+mod async_task;
 mod application_build_error;
 mod application_close_coordinator;
 mod application_context;
@@ -79,6 +80,7 @@ mod task_schedule_mode;
 mod task_shutdown_policy;
 mod vernal_application_builder;
 
+pub use async_task::AsyncTask;
 pub use application_build_error::ApplicationBuildError;
 pub use application_context::ApplicationContext;
 pub use application_context_builder::ApplicationContextBuilder;
