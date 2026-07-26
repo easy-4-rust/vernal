@@ -40,7 +40,7 @@ mod trait_provider;
 
 pub use bean_desc_cache::BeanDescCache;
 pub use bean_descriptor::{BeanDescriptor, PropertyDescriptor};
-pub use bean_util::BeanUtil;
+pub use bean_util::{BeanError, BeanUtil};
 pub use build_plan::BuildPlan;
 pub use component_contract::Component;
 pub use component_definition::ComponentDefinition;
