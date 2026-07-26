@@ -6,6 +6,9 @@
 pub mod literal;
 pub mod operator;
 pub mod spel_node;
+pub mod spel_node_impl;
+pub mod type_code;
+pub mod value_ref;
 
 // ─── 字面量（7 个） ───
 pub mod boolean_literal;
@@ -37,17 +40,21 @@ pub mod op_and;
 pub mod op_or;
 pub mod operator_not;
 
-// ─── 表达式节点（14 个） ───
+// ─── 表达式节点（17 个） ───
 pub mod assign;
 pub mod bean_reference;
 pub mod compound_expression;
+pub mod constructor_reference;
 pub mod elvis;
+pub mod function_reference;
 pub mod identifier;
+pub mod indexer;
 pub mod inline_list;
 pub mod inline_map;
 pub mod method_reference;
 pub mod projection;
 pub mod property_or_field_reference;
+pub mod qualified_identifier;
 pub mod selection;
 pub mod ternary;
 pub mod type_reference;
