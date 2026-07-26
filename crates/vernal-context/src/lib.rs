@@ -4,6 +4,7 @@
 mod advisor_registration;
 mod async_task;
 mod application_build_error;
+mod expression_condition;
 mod application_close_coordinator;
 mod application_context;
 mod application_context_builder;
@@ -82,6 +83,7 @@ mod vernal_application_builder;
 
 pub use async_task::AsyncTask;
 pub use application_build_error::ApplicationBuildError;
+pub use expression_condition::ExpressionCondition;
 pub use application_context::ApplicationContext;
 pub use application_context_builder::ApplicationContextBuilder;
 pub use application_environment::ApplicationEnvironment;
