@@ -108,6 +108,33 @@ impl ManagedTaskSupervisor {
         Ok(id)
     }
 
+    /// 派生一个 `AsyncTask` 组件到 Tokio runtime。
+    ///
+    /// 对标 tx_di 的 `App::comp_run`：在 `ApplicationContext::start()` 后
+    /// 自动派生所有实现 `AsyncTask` 的组件。
+    ///
+    /// # 参数
+    /// - `task`：实现 `AsyncTask` 的组件
+    ///
+    /// # Errors
+    ///
+    /// 监督器已经观察到关键任务失败或开始停机时返回
+    /// [`ManagedTaskError::SpawnRejected`]。
+    pub fn spawn_async_task<T: crate::AsyncTask>(
+        self: &Arc<Self>,
+        task: Arc<T>,
+    ) -> Result<ManagedTaskId, ManagedTaskError> {
+        let name = task.name();
+        let token = self.cancellation_token();
+        // 将 LifecycleFuture 转换为 spawn 可接受的类型
+        let adapted = async move {
+            task.run(token).await.map_err(|e| {
+                std::io::Error::new(std::io::ErrorKind::Other, e.to_string())
+            })
+        };
+        self.spawn(name, adapted)
+    }
+
     /// 带超时的任务派生。
     ///
     /// 与 [`Self::spawn`] 相同，但为任务附加单个超时限制。
