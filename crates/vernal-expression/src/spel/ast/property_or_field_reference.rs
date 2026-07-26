@@ -2,10 +2,10 @@
 //!
 //! 对标 Spring 的 `PropertyOrFieldReference`：`name`、`age`
 
-use crate::typed_value::TypedValue;
+use super::spel_node::SpelNode;
 use crate::evaluation_context::EvaluationContext;
 use crate::evaluation_exception::EvaluationException;
-use super::spel_node::SpelNode;
+use crate::typed_value::TypedValue;
 
 /// 属性/字段引用节点。
 ///
@@ -29,15 +29,23 @@ impl PropertyOrFieldReference {
 }
 
 impl SpelNode for PropertyOrFieldReference {
-    fn get_value(&self, context: &dyn EvaluationContext) -> Result<TypedValue, EvaluationException> {
+    fn get_value(
+        &self,
+        context: &dyn EvaluationContext,
+    ) -> Result<TypedValue, EvaluationException> {
         let root = context.root_object().clone();
         for accessor in context.property_accessors() {
             if accessor.can_read(context, &root, &self.name) {
-                return accessor.read(context, &root, &self.name)
+                return accessor
+                    .read(context, &root, &self.name)
                     .map_err(|e| EvaluationException::new(&self.name, None, e.to_string()));
             }
         }
-        Err(EvaluationException::new(&self.name, None, format!("属性 '{}' 未找到", self.name)))
+        Err(EvaluationException::new(
+            &self.name,
+            None,
+            format!("属性 '{}' 未找到", self.name),
+        ))
     }
 
     fn is_writable(&self) -> bool {

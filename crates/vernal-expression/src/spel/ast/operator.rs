@@ -2,10 +2,10 @@
 //!
 //! 对标 Spring 的 `Operator` 抽象类。
 
-use crate::typed_value::{TypedValue, ExpressionValue};
+use super::spel_node::SpelNode;
 use crate::evaluation_context::EvaluationContext;
 use crate::evaluation_exception::EvaluationException;
-use super::spel_node::SpelNode;
+use crate::typed_value::{ExpressionValue, TypedValue};
 
 /// 二元运算符 trait。
 ///
@@ -21,5 +21,9 @@ pub trait BinaryOperator: SpelNode {
     fn operator_name(&self) -> &str;
 
     /// 执行运算。
-    fn operate(&self, left: &TypedValue, right: &TypedValue) -> Result<TypedValue, EvaluationException>;
+    fn operate(
+        &self,
+        left: &TypedValue,
+        right: &TypedValue,
+    ) -> Result<TypedValue, EvaluationException>;
 }

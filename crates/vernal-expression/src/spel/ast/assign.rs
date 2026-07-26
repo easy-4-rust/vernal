@@ -2,10 +2,10 @@
 //!
 //! 对标 Spring 的 `Assign`：`lhs = rhs`
 
-use crate::typed_value::TypedValue;
+use super::spel_node::SpelNode;
 use crate::evaluation_context::EvaluationContext;
 use crate::evaluation_exception::EvaluationException;
-use super::spel_node::SpelNode;
+use crate::typed_value::TypedValue;
 
 /// 赋值表达式节点。
 pub struct Assign {
@@ -21,7 +21,10 @@ impl Assign {
 }
 
 impl SpelNode for Assign {
-    fn get_value(&self, context: &dyn EvaluationContext) -> Result<TypedValue, EvaluationException> {
+    fn get_value(
+        &self,
+        context: &dyn EvaluationContext,
+    ) -> Result<TypedValue, EvaluationException> {
         if !context.is_assignment_enabled() {
             return Err(EvaluationException::new("", None, "赋值操作未启用"));
         }
@@ -35,6 +38,10 @@ impl SpelNode for Assign {
     }
 
     fn to_string_ast(&self) -> String {
-        format!("({} = {})", self.left.to_string_ast(), self.right.to_string_ast())
+        format!(
+            "({} = {})",
+            self.left.to_string_ast(),
+            self.right.to_string_ast()
+        )
     }
 }

@@ -2,10 +2,10 @@
 //!
 //! 对标 Spring 的 `Literal` 抽象类。
 
-use crate::typed_value::TypedValue;
+use super::spel_node::SpelNode;
 use crate::evaluation_context::EvaluationContext;
 use crate::evaluation_exception::EvaluationException;
-use super::spel_node::SpelNode;
+use crate::typed_value::TypedValue;
 
 /// 字面量节点 trait。
 ///

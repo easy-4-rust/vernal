@@ -2,10 +2,10 @@
 //!
 //! 对标 Spring 的 `Elvis`：`A ?: B`
 
-use crate::typed_value::{TypedValue, ExpressionValue};
+use super::spel_node::SpelNode;
 use crate::evaluation_context::EvaluationContext;
 use crate::evaluation_exception::EvaluationException;
-use super::spel_node::SpelNode;
+use crate::typed_value::{ExpressionValue, TypedValue};
 
 /// Elvis 运算符节点。
 ///
@@ -18,12 +18,18 @@ pub struct Elvis {
 impl Elvis {
     #[must_use]
     pub fn new(expression: Box<dyn SpelNode>, default: Box<dyn SpelNode>) -> Self {
-        Self { expression, default }
+        Self {
+            expression,
+            default,
+        }
     }
 }
 
 impl SpelNode for Elvis {
-    fn get_value(&self, context: &dyn EvaluationContext) -> Result<TypedValue, EvaluationException> {
+    fn get_value(
+        &self,
+        context: &dyn EvaluationContext,
+    ) -> Result<TypedValue, EvaluationException> {
         let value = self.expression.get_value(context)?;
         match value.value() {
             ExpressionValue::Null => self.default.get_value(context),
@@ -33,6 +39,10 @@ impl SpelNode for Elvis {
     }
 
     fn to_string_ast(&self) -> String {
-        format!("({} ?: {})", self.expression.to_string_ast(), self.default.to_string_ast())
+        format!(
+            "({} ?: {})",
+            self.expression.to_string_ast(),
+            self.default.to_string_ast()
+        )
     }
 }

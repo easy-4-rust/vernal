@@ -2,10 +2,10 @@
 //!
 //! 对标 Spring 的 `MethodReference`：`method(arg1, arg2)`
 
-use crate::typed_value::TypedValue;
+use super::spel_node::SpelNode;
 use crate::evaluation_context::EvaluationContext;
 use crate::evaluation_exception::EvaluationException;
-use super::spel_node::SpelNode;
+use crate::typed_value::TypedValue;
 
 /// 方法调用节点。
 ///
@@ -20,12 +20,19 @@ pub struct MethodReference {
 impl MethodReference {
     #[must_use]
     pub fn new(name: String, arguments: Vec<Box<dyn SpelNode>>, null_safe: bool) -> Self {
-        Self { name, arguments, null_safe }
+        Self {
+            name,
+            arguments,
+            null_safe,
+        }
     }
 }
 
 impl SpelNode for MethodReference {
-    fn get_value(&self, context: &dyn EvaluationContext) -> Result<TypedValue, EvaluationException> {
+    fn get_value(
+        &self,
+        context: &dyn EvaluationContext,
+    ) -> Result<TypedValue, EvaluationException> {
         // 求值所有参数
         let mut args = Vec::with_capacity(self.arguments.len());
         for arg in &self.arguments {
@@ -37,12 +44,17 @@ impl SpelNode for MethodReference {
         for resolver in context.method_resolvers() {
             let arg_types: Vec<_> = args.iter().map(|a| a.type_descriptor().clone()).collect();
             if let Ok(Some(executor)) = resolver.resolve(context, &root, &self.name, &arg_types) {
-                return executor.execute(context, &root, &args)
+                return executor
+                    .execute(context, &root, &args)
                     .map_err(|e| EvaluationException::new(&self.name, None, e.to_string()));
             }
         }
 
-        Err(EvaluationException::new(&self.name, None, format!("方法 '{}' 未找到", self.name)))
+        Err(EvaluationException::new(
+            &self.name,
+            None,
+            format!("方法 '{}' 未找到", self.name),
+        ))
     }
 
     fn child_count(&self) -> usize {

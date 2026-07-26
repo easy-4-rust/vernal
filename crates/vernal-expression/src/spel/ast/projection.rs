@@ -2,10 +2,10 @@
 //!
 //! 对标 Spring 的 `Projection`：`![expression]`
 
-use crate::typed_value::{TypedValue, ExpressionValue};
+use super::spel_node::SpelNode;
 use crate::evaluation_context::EvaluationContext;
 use crate::evaluation_exception::EvaluationException;
-use super::spel_node::SpelNode;
+use crate::typed_value::{ExpressionValue, TypedValue};
 
 /// 投影运算符节点。
 ///
@@ -22,7 +22,10 @@ impl Projection {
 }
 
 impl SpelNode for Projection {
-    fn get_value(&self, context: &dyn EvaluationContext) -> Result<TypedValue, EvaluationException> {
+    fn get_value(
+        &self,
+        context: &dyn EvaluationContext,
+    ) -> Result<TypedValue, EvaluationException> {
         let source = context.root_object().clone();
         match source.value() {
             ExpressionValue::List(items) => {
@@ -30,7 +33,10 @@ impl SpelNode for Projection {
                 for _item in items {
                     results.push(self.expression.get_value(context)?);
                 }
-                Ok(TypedValue::new(ExpressionValue::List(results), crate::typed_value::TypeDescriptor::OBJECT))
+                Ok(TypedValue::new(
+                    ExpressionValue::List(results),
+                    crate::typed_value::TypeDescriptor::OBJECT,
+                ))
             }
             _ => Err(EvaluationException::new("", None, "投影运算需要列表操作数")),
         }

@@ -2,10 +2,10 @@
 //!
 //! 对标 Spring 的 `InlineList`：`{1, 2, 3}`
 
-use crate::typed_value::{TypedValue, ExpressionValue, TypeDescriptor};
+use super::spel_node::SpelNode;
 use crate::evaluation_context::EvaluationContext;
 use crate::evaluation_exception::EvaluationException;
-use super::spel_node::SpelNode;
+use crate::typed_value::{ExpressionValue, TypeDescriptor, TypedValue};
 
 /// 内联列表节点。
 pub struct InlineList {
@@ -20,12 +20,18 @@ impl InlineList {
 }
 
 impl SpelNode for InlineList {
-    fn get_value(&self, context: &dyn EvaluationContext) -> Result<TypedValue, EvaluationException> {
+    fn get_value(
+        &self,
+        context: &dyn EvaluationContext,
+    ) -> Result<TypedValue, EvaluationException> {
         let mut values = Vec::with_capacity(self.elements.len());
         for element in &self.elements {
             values.push(element.get_value(context)?);
         }
-        Ok(TypedValue::new(ExpressionValue::List(values), TypeDescriptor::OBJECT))
+        Ok(TypedValue::new(
+            ExpressionValue::List(values),
+            TypeDescriptor::OBJECT,
+        ))
     }
 
     fn child_count(&self) -> usize {

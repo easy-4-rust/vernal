@@ -2,16 +2,17 @@
 //!
 //! 对标 Spring 的 `SpelNode` 接口。
 
-use crate::typed_value::TypedValue;
 use crate::evaluation_context::EvaluationContext;
 use crate::evaluation_exception::EvaluationException;
+use crate::typed_value::TypedValue;
 
 /// AST 节点 trait。
 ///
 /// 对标 Spring 的 `org.springframework.expression.spel.SpelNode`。
 pub trait SpelNode: Send + Sync {
     /// 在给定上下文中求值。
-    fn get_value(&self, context: &dyn EvaluationContext) -> Result<TypedValue, EvaluationException>;
+    fn get_value(&self, context: &dyn EvaluationContext)
+    -> Result<TypedValue, EvaluationException>;
 
     /// 获取子节点数量。
     fn child_count(&self) -> usize {

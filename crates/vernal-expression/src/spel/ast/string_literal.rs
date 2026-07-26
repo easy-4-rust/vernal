@@ -2,11 +2,11 @@
 //!
 //! 对标 Spring 的 `StringLiteral`：`'hello'`
 
-use crate::typed_value::{TypedValue, ExpressionValue, TypeDescriptor};
+use super::literal::LiteralNode;
+use super::spel_node::SpelNode;
 use crate::evaluation_context::EvaluationContext;
 use crate::evaluation_exception::EvaluationException;
-use super::spel_node::SpelNode;
-use super::literal::LiteralNode;
+use crate::typed_value::{ExpressionValue, TypeDescriptor, TypedValue};
 
 /// 字符串字面量节点。
 #[derive(Debug, Clone)]
@@ -22,8 +22,14 @@ impl StringLiteral {
 }
 
 impl SpelNode for StringLiteral {
-    fn get_value(&self, _context: &dyn EvaluationContext) -> Result<TypedValue, EvaluationException> {
-        Ok(TypedValue::new(ExpressionValue::String(self.value.clone()), TypeDescriptor::STRING))
+    fn get_value(
+        &self,
+        _context: &dyn EvaluationContext,
+    ) -> Result<TypedValue, EvaluationException> {
+        Ok(TypedValue::new(
+            ExpressionValue::String(self.value.clone()),
+            TypeDescriptor::STRING,
+        ))
     }
 
     fn to_string_ast(&self) -> String {

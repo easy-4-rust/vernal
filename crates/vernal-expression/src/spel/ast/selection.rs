@@ -2,10 +2,10 @@
 //!
 //! 对标 Spring 的 `Selection`：`?[criteria]`、`^[first]`、`$[last]`
 
-use crate::typed_value::{TypedValue, ExpressionValue};
+use super::spel_node::SpelNode;
 use crate::evaluation_context::EvaluationContext;
 use crate::evaluation_exception::EvaluationException;
-use super::spel_node::SpelNode;
+use crate::typed_value::{ExpressionValue, TypedValue};
 
 /// 选择变体。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -32,7 +32,10 @@ impl Selection {
 }
 
 impl SpelNode for Selection {
-    fn get_value(&self, context: &dyn EvaluationContext) -> Result<TypedValue, EvaluationException> {
+    fn get_value(
+        &self,
+        context: &dyn EvaluationContext,
+    ) -> Result<TypedValue, EvaluationException> {
         let source = context.root_object().clone();
         match source.value() {
             ExpressionValue::List(items) => {
@@ -44,9 +47,16 @@ impl SpelNode for Selection {
                     }
                 }
                 match self.variant {
-                    SelectionVariant::All => Ok(TypedValue::new(ExpressionValue::List(results), crate::typed_value::TypeDescriptor::OBJECT)),
-                    SelectionVariant::First => Ok(results.into_iter().next().unwrap_or(TypedValue::null())),
-                    SelectionVariant::Last => Ok(results.into_iter().last().unwrap_or(TypedValue::null())),
+                    SelectionVariant::All => Ok(TypedValue::new(
+                        ExpressionValue::List(results),
+                        crate::typed_value::TypeDescriptor::OBJECT,
+                    )),
+                    SelectionVariant::First => {
+                        Ok(results.into_iter().next().unwrap_or(TypedValue::null()))
+                    }
+                    SelectionVariant::Last => {
+                        Ok(results.into_iter().last().unwrap_or(TypedValue::null()))
+                    }
                 }
             }
             _ => Err(EvaluationException::new("", None, "选择运算需要列表操作数")),

@@ -2,10 +2,10 @@
 //!
 //! 对标 Spring 的 `Ternary`：`condition ? trueValue : falseValue`
 
-use crate::typed_value::{TypedValue, ExpressionValue};
+use super::spel_node::SpelNode;
 use crate::evaluation_context::EvaluationContext;
 use crate::evaluation_exception::EvaluationException;
-use super::spel_node::SpelNode;
+use crate::typed_value::{ExpressionValue, TypedValue};
 
 /// 三元表达式节点。
 pub struct Ternary {
@@ -16,22 +16,42 @@ pub struct Ternary {
 
 impl Ternary {
     #[must_use]
-    pub fn new(condition: Box<dyn SpelNode>, true_value: Box<dyn SpelNode>, false_value: Box<dyn SpelNode>) -> Self {
-        Self { condition, true_value, false_value }
+    pub fn new(
+        condition: Box<dyn SpelNode>,
+        true_value: Box<dyn SpelNode>,
+        false_value: Box<dyn SpelNode>,
+    ) -> Self {
+        Self {
+            condition,
+            true_value,
+            false_value,
+        }
     }
 }
 
 impl SpelNode for Ternary {
-    fn get_value(&self, context: &dyn EvaluationContext) -> Result<TypedValue, EvaluationException> {
+    fn get_value(
+        &self,
+        context: &dyn EvaluationContext,
+    ) -> Result<TypedValue, EvaluationException> {
         let cond = self.condition.get_value(context)?;
         match cond.value() {
             ExpressionValue::Boolean(true) => self.true_value.get_value(context),
             ExpressionValue::Boolean(false) => self.false_value.get_value(context),
-            _ => Err(EvaluationException::new("", None, "三元表达式条件必须是布尔值")),
+            _ => Err(EvaluationException::new(
+                "",
+                None,
+                "三元表达式条件必须是布尔值",
+            )),
         }
     }
 
     fn to_string_ast(&self) -> String {
-        format!("({} ? {} : {})", self.condition.to_string_ast(), self.true_value.to_string_ast(), self.false_value.to_string_ast())
+        format!(
+            "({} ? {} : {})",
+            self.condition.to_string_ast(),
+            self.true_value.to_string_ast(),
+            self.false_value.to_string_ast()
+        )
     }
 }

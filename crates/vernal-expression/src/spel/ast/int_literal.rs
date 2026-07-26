@@ -2,11 +2,11 @@
 //!
 //! 对标 Spring 的 `IntLiteral`：`42`
 
-use crate::typed_value::{TypedValue, ExpressionValue, TypeDescriptor};
+use super::literal::LiteralNode;
+use super::spel_node::SpelNode;
 use crate::evaluation_context::EvaluationContext;
 use crate::evaluation_exception::EvaluationException;
-use super::spel_node::SpelNode;
-use super::literal::LiteralNode;
+use crate::typed_value::{ExpressionValue, TypeDescriptor, TypedValue};
 
 /// 整数字面量节点。
 ///
@@ -34,8 +34,14 @@ impl IntLiteral {
 }
 
 impl SpelNode for IntLiteral {
-    fn get_value(&self, _context: &dyn EvaluationContext) -> Result<TypedValue, EvaluationException> {
-        Ok(TypedValue::new(ExpressionValue::Int(self.value), TypeDescriptor::INT))
+    fn get_value(
+        &self,
+        _context: &dyn EvaluationContext,
+    ) -> Result<TypedValue, EvaluationException> {
+        Ok(TypedValue::new(
+            ExpressionValue::Int(self.value),
+            TypeDescriptor::INT,
+        ))
     }
 
     fn to_string_ast(&self) -> String {

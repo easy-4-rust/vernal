@@ -2,10 +2,10 @@
 //!
 //! 对标 Spring 的 `Identifier`：标识符字符串。
 
-use crate::typed_value::{TypedValue, ExpressionValue, TypeDescriptor};
+use super::spel_node::SpelNode;
 use crate::evaluation_context::EvaluationContext;
 use crate::evaluation_exception::EvaluationException;
-use super::spel_node::SpelNode;
+use crate::typed_value::{ExpressionValue, TypeDescriptor, TypedValue};
 
 /// 标识符节点。
 pub struct Identifier {
@@ -25,8 +25,14 @@ impl Identifier {
 }
 
 impl SpelNode for Identifier {
-    fn get_value(&self, _context: &dyn EvaluationContext) -> Result<TypedValue, EvaluationException> {
-        Ok(TypedValue::new(ExpressionValue::String(self.name.clone()), TypeDescriptor::STRING))
+    fn get_value(
+        &self,
+        _context: &dyn EvaluationContext,
+    ) -> Result<TypedValue, EvaluationException> {
+        Ok(TypedValue::new(
+            ExpressionValue::String(self.name.clone()),
+            TypeDescriptor::STRING,
+        ))
     }
 
     fn to_string_ast(&self) -> String {

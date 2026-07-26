@@ -2,11 +2,11 @@
 //!
 //! 对标 Spring 的 `NullLiteral`：`null`
 
-use crate::typed_value::{TypedValue, ExpressionValue, TypeDescriptor};
+use super::literal::LiteralNode;
+use super::spel_node::SpelNode;
 use crate::evaluation_context::EvaluationContext;
 use crate::evaluation_exception::EvaluationException;
-use super::spel_node::SpelNode;
-use super::literal::LiteralNode;
+use crate::typed_value::{ExpressionValue, TypeDescriptor, TypedValue};
 
 /// 空值字面量节点。
 #[derive(Debug, Clone)]
@@ -26,7 +26,10 @@ impl Default for NullLiteral {
 }
 
 impl SpelNode for NullLiteral {
-    fn get_value(&self, _context: &dyn EvaluationContext) -> Result<TypedValue, EvaluationException> {
+    fn get_value(
+        &self,
+        _context: &dyn EvaluationContext,
+    ) -> Result<TypedValue, EvaluationException> {
         Ok(TypedValue::null())
     }
 

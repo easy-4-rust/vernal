@@ -3,9 +3,9 @@
 //! 包含所有 SpEL AST 节点的实现：字面量、运算符、表达式节点。
 
 // ─── 基础设施 ───
-pub mod spel_node;
 pub mod literal;
 pub mod operator;
+pub mod spel_node;
 
 // ─── 字面量（7 个） ───
 pub mod boolean_literal;

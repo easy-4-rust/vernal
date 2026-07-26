@@ -2,11 +2,11 @@
 //!
 //! 对标 Spring 的 `FloatLiteral`：`3.14f`
 
-use crate::typed_value::{TypedValue, ExpressionValue, TypeDescriptor};
+use super::literal::LiteralNode;
+use super::spel_node::SpelNode;
 use crate::evaluation_context::EvaluationContext;
 use crate::evaluation_exception::EvaluationException;
-use super::spel_node::SpelNode;
-use super::literal::LiteralNode;
+use crate::typed_value::{ExpressionValue, TypeDescriptor, TypedValue};
 
 /// 单精度浮点字面量节点。
 #[derive(Debug, Clone)]
@@ -23,8 +23,14 @@ impl FloatLiteral {
 }
 
 impl SpelNode for FloatLiteral {
-    fn get_value(&self, _context: &dyn EvaluationContext) -> Result<TypedValue, EvaluationException> {
-        Ok(TypedValue::new(ExpressionValue::Float(self.value), TypeDescriptor::FLOAT))
+    fn get_value(
+        &self,
+        _context: &dyn EvaluationContext,
+    ) -> Result<TypedValue, EvaluationException> {
+        Ok(TypedValue::new(
+            ExpressionValue::Float(self.value),
+            TypeDescriptor::FLOAT,
+        ))
     }
 
     fn to_string_ast(&self) -> String {

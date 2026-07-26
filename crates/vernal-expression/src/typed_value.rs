@@ -10,7 +10,7 @@ use std::fmt;
 /// 传递类型安全的值。
 ///
 /// 对标 Spring 的 `org.springframework.expression.TypedValue`。
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct TypedValue {
     /// 值（类型擦除）
     value: ExpressionValue,
@@ -36,6 +36,23 @@ pub enum ExpressionValue {
     /// 映射值
     Map(Vec<(TypedValue, TypedValue)>),
 }
+
+impl PartialEq for ExpressionValue {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Null, Self::Null) => true,
+            (Self::Boolean(a), Self::Boolean(b)) => a == b,
+            (Self::Int(a), Self::Int(b)) => a == b,
+            (Self::Float(a), Self::Float(b)) => (a - b).abs() < f64::EPSILON,
+            (Self::String(a), Self::String(b)) => a == b,
+            (Self::List(a), Self::List(b)) => a == b,
+            (Self::Map(a), Self::Map(b)) => a == b,
+            _ => false,
+        }
+    }
+}
+
+impl Eq for ExpressionValue {}
 
 impl TypedValue {
     /// 空值单例。

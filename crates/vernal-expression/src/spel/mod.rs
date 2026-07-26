@@ -4,3 +4,8 @@
 
 pub mod ast;
 pub mod support;
+
+pub mod spel_evaluation_exception;
+pub mod spel_expression;
+pub mod spel_expression_parser;
+pub mod spel_message;
