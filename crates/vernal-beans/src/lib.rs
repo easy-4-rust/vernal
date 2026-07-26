@@ -1,6 +1,9 @@
 #![forbid(unsafe_code)]
 #![doc = "Vernal 的 Tokio-first 类型驱动控制反转内核。"]
 
+mod bean_desc_cache;
+mod bean_descriptor;
+mod bean_util;
 mod build_plan;
 mod component_contract;
 mod component_definition;
@@ -35,6 +38,9 @@ mod trait_binding_snapshot;
 mod trait_key;
 mod trait_provider;
 
+pub use bean_desc_cache::BeanDescCache;
+pub use bean_descriptor::{BeanDescriptor, PropertyDescriptor};
+pub use bean_util::BeanUtil;
 pub use build_plan::BuildPlan;
 pub use component_contract::Component;
 pub use component_definition::ComponentDefinition;
