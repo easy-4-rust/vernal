@@ -300,6 +300,11 @@ impl From<std::io::Error> for VernalError {
     }
 }
 
+// 注：`From<VernalError> for BoxError` 不需要显式实现，
+// 因为 Rust 标准库已有 blanket impl：
+// `impl<E: Error + Send + Sync + 'static> From<E> for Box<dyn Error + Send + Sync>`
+// VernalError 实现了 Error trait，因此自动获得此转换。
+
 // ─── 跨变体比较（仅比较 domain + code） ───
 
 impl PartialEq for VernalError {
