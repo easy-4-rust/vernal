@@ -2,10 +2,10 @@
 //!
 //! 对标 Spring 的 `ReflectiveIndexAccessor`：通过反射访问数组/列表/Map。
 
-use crate::typed_value::{TypedValue, ExpressionValue};
-use crate::property_accessor::IndexAccessor;
 use crate::access_exception::AccessException;
 use crate::evaluation_context::EvaluationContext;
+use crate::property_accessor::IndexAccessor;
+use crate::typed_value::{ExpressionValue, TypedValue};
 
 /// 反射索引访问器。
 ///
@@ -13,8 +13,16 @@ use crate::evaluation_context::EvaluationContext;
 pub struct ReflectiveIndexAccessor;
 
 impl IndexAccessor for ReflectiveIndexAccessor {
-    fn can_read(&self, _context: &dyn EvaluationContext, target: &TypedValue, _index: &TypedValue) -> bool {
-        matches!(target.value(), ExpressionValue::List(_) | ExpressionValue::Map(_))
+    fn can_read(
+        &self,
+        _context: &dyn EvaluationContext,
+        target: &TypedValue,
+        _index: &TypedValue,
+    ) -> bool {
+        matches!(
+            target.value(),
+            ExpressionValue::List(_) | ExpressionValue::Map(_)
+        )
     }
 
     fn read(
@@ -44,7 +52,12 @@ impl IndexAccessor for ReflectiveIndexAccessor {
         }
     }
 
-    fn can_write(&self, _context: &dyn EvaluationContext, _target: &TypedValue, _index: &TypedValue) -> bool {
+    fn can_write(
+        &self,
+        _context: &dyn EvaluationContext,
+        _target: &TypedValue,
+        _index: &TypedValue,
+    ) -> bool {
         false
     }
 

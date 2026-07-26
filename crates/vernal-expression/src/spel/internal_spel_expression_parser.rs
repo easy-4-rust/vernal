@@ -2,10 +2,10 @@
 //!
 //! 对标 Spring 的 `InternalSpelExpressionParser`：完整的递归下降实现。
 
+use super::ast::*;
+use crate::evaluation_exception::EvaluationException;
 use crate::expression::Expression;
 use crate::parse_exception::ParseException;
-use crate::evaluation_exception::EvaluationException;
-use super::ast::*;
 
 /// 内部递归下降解析器。
 ///
@@ -37,7 +37,9 @@ impl InternalSpelExpressionParser {
     fn parse_expression(&mut self) -> Result<Box<dyn Expression>, ParseException> {
         let trimmed = self.expression.trim();
         // 简化：返回字面量表达式
-        Ok(Box::new(crate::common::literal_expression::LiteralExpression::new(trimmed.to_string())))
+        Ok(Box::new(
+            crate::common::literal_expression::LiteralExpression::new(trimmed.to_string()),
+        ))
     }
 
     fn skip_whitespace(&mut self) {
@@ -56,7 +58,9 @@ impl InternalSpelExpressionParser {
     }
 
     /// 解析为 AST 节点。
-    pub fn parse_ast(&mut self) -> Result<Box<dyn super::ast::spel_node::SpelNode>, ParseException> {
+    pub fn parse_ast(
+        &mut self,
+    ) -> Result<Box<dyn super::ast::spel_node::SpelNode>, ParseException> {
         self.skip_whitespace();
         if self.pos >= self.expression.len() {
             return Err(self.error("空表达式"));
@@ -64,28 +68,44 @@ impl InternalSpelExpressionParser {
         self.parse_ast_expression()
     }
 
-    fn parse_ast_expression(&mut self) -> Result<Box<dyn super::ast::spel_node::SpelNode>, ParseException> {
+    fn parse_ast_expression(
+        &mut self,
+    ) -> Result<Box<dyn super::ast::spel_node::SpelNode>, ParseException> {
         let trimmed = self.expression.trim();
         // 简化：返回字面量节点
         if let Ok(n) = trimmed.parse::<i64>() {
-            return Ok(Box::new(super::ast::int_literal::IntLiteral::new(n, trimmed.to_string())));
+            return Ok(Box::new(super::ast::int_literal::IntLiteral::new(
+                n,
+                trimmed.to_string(),
+            )));
         }
         if let Ok(f) = trimmed.parse::<f64>() {
-            return Ok(Box::new(super::ast::real_literal::RealLiteral::new(f, trimmed.to_string())));
+            return Ok(Box::new(super::ast::real_literal::RealLiteral::new(
+                f,
+                trimmed.to_string(),
+            )));
         }
         if trimmed.starts_with('\'') && trimmed.ends_with('\'') {
             let s = &trimmed[1..trimmed.len() - 1];
-            return Ok(Box::new(super::ast::string_literal::StringLiteral::new(s.to_string())));
+            return Ok(Box::new(super::ast::string_literal::StringLiteral::new(
+                s.to_string(),
+            )));
         }
         if trimmed == "true" || trimmed == "TRUE" {
-            return Ok(Box::new(super::ast::boolean_literal::BooleanLiteral::new(true)));
+            return Ok(Box::new(super::ast::boolean_literal::BooleanLiteral::new(
+                true,
+            )));
         }
         if trimmed == "false" || trimmed == "FALSE" {
-            return Ok(Box::new(super::ast::boolean_literal::BooleanLiteral::new(false)));
+            return Ok(Box::new(super::ast::boolean_literal::BooleanLiteral::new(
+                false,
+            )));
         }
         if trimmed == "null" {
             return Ok(Box::new(super::ast::null_literal::NullLiteral::new()));
         }
-        Ok(Box::new(super::ast::identifier::Identifier::new(trimmed.to_string())))
+        Ok(Box::new(super::ast::identifier::Identifier::new(
+            trimmed.to_string(),
+        )))
     }
 }

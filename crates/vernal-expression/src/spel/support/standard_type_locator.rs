@@ -2,9 +2,9 @@
 //!
 //! 对标 Spring 的 `StandardTypeLocator`：通过 ClassLoader 按名称查找类型。
 
-use std::any::TypeId;
 use crate::evaluation_exception::EvaluationException;
 use crate::type_locator::TypeLocator;
+use std::any::TypeId;
 
 /// 标准类型定位器。
 ///
@@ -17,7 +17,9 @@ impl StandardTypeLocator {
     /// 创建标准类型定位器。
     #[must_use]
     pub fn new() -> Self {
-        Self { imports: vec!["java.lang".to_string()] }
+        Self {
+            imports: vec!["java.lang".to_string()],
+        }
     }
 
     /// 注册包导入前缀。

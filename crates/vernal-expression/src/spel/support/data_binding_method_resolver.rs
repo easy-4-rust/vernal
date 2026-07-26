@@ -2,11 +2,11 @@
 //!
 //! 对标 Spring 的 `DataBindingMethodResolver`：仅解析目标对象上的方法。
 
-use crate::typed_value::{TypedValue, TypeDescriptor};
-use crate::method_resolver::MethodResolver;
 use crate::access_exception::AccessException;
 use crate::evaluation_context::EvaluationContext;
 use crate::method_executor::MethodExecutor;
+use crate::method_resolver::MethodResolver;
+use crate::typed_value::{TypeDescriptor, TypedValue};
 
 /// 数据绑定方法解析器。
 ///

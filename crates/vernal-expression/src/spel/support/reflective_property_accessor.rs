@@ -3,11 +3,11 @@
 //! 对标 Spring 的 `ReflectivePropertyAccessor`：通过反射访问属性。
 //! Rust 中通过 trait 方法模拟反射。
 
-use std::any::Any;
-use crate::typed_value::{TypedValue, ExpressionValue, TypeDescriptor};
-use crate::property_accessor::PropertyAccessor;
 use crate::access_exception::AccessException;
 use crate::evaluation_context::EvaluationContext;
+use crate::property_accessor::PropertyAccessor;
+use crate::typed_value::{ExpressionValue, TypeDescriptor, TypedValue};
+use std::any::Any;
 
 /// 反射属性访问器。
 ///
@@ -33,7 +33,12 @@ impl PropertyAccessor for ReflectivePropertyAccessor {
         Ok(TypedValue::null())
     }
 
-    fn can_write(&self, _context: &dyn EvaluationContext, _target: &TypedValue, _name: &str) -> bool {
+    fn can_write(
+        &self,
+        _context: &dyn EvaluationContext,
+        _target: &TypedValue,
+        _name: &str,
+    ) -> bool {
         false
     }
 

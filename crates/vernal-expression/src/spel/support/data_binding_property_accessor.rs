@@ -2,10 +2,10 @@
 //!
 //! 对标 Spring 的 `DataBindingPropertyAccessor`：仅访问公共属性。
 
-use crate::typed_value::TypedValue;
-use crate::property_accessor::PropertyAccessor;
 use crate::access_exception::AccessException;
 use crate::evaluation_context::EvaluationContext;
+use crate::property_accessor::PropertyAccessor;
+use crate::typed_value::TypedValue;
 
 /// 数据绑定属性访问器。
 ///
@@ -18,15 +18,31 @@ impl PropertyAccessor for DataBindingPropertyAccessor {
         !name.is_empty()
     }
 
-    fn read(&self, _context: &dyn EvaluationContext, _target: &TypedValue, _name: &str) -> Result<TypedValue, AccessException> {
+    fn read(
+        &self,
+        _context: &dyn EvaluationContext,
+        _target: &TypedValue,
+        _name: &str,
+    ) -> Result<TypedValue, AccessException> {
         Ok(TypedValue::null())
     }
 
-    fn can_write(&self, _context: &dyn EvaluationContext, _target: &TypedValue, _name: &str) -> bool {
+    fn can_write(
+        &self,
+        _context: &dyn EvaluationContext,
+        _target: &TypedValue,
+        _name: &str,
+    ) -> bool {
         false
     }
 
-    fn write(&self, _context: &dyn EvaluationContext, _target: &TypedValue, _name: &str, _value: &TypedValue) -> Result<(), AccessException> {
+    fn write(
+        &self,
+        _context: &dyn EvaluationContext,
+        _target: &TypedValue,
+        _name: &str,
+        _value: &TypedValue,
+    ) -> Result<(), AccessException> {
         Err(AccessException::new("数据绑定属性访问器不支持写入"))
     }
 }

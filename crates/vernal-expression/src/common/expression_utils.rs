@@ -2,9 +2,9 @@
 //!
 //! 对标 Spring 的 `ExpressionUtils`：类型转换辅助方法。
 
-use crate::typed_value::{TypedValue, TypeDescriptor};
-use crate::type_converter::TypeConverter;
 use crate::evaluation_exception::EvaluationException;
+use crate::type_converter::TypeConverter;
+use crate::typed_value::{TypeDescriptor, TypedValue};
 
 /// 表达式工具类。
 ///
@@ -26,7 +26,10 @@ impl ExpressionUtils {
     }
 
     /// 转换为整数。
-    pub fn to_int(converter: &dyn TypeConverter, value: &TypedValue) -> Result<i64, EvaluationException> {
+    pub fn to_int(
+        converter: &dyn TypeConverter,
+        value: &TypedValue,
+    ) -> Result<i64, EvaluationException> {
         let int_td = TypeDescriptor::new("int");
         let converted = converter.convert_value(value, &int_td)?;
         match converted.value() {
@@ -36,7 +39,10 @@ impl ExpressionUtils {
     }
 
     /// 转换为布尔值。
-    pub fn to_boolean(converter: &dyn TypeConverter, value: &TypedValue) -> Result<bool, EvaluationException> {
+    pub fn to_boolean(
+        converter: &dyn TypeConverter,
+        value: &TypedValue,
+    ) -> Result<bool, EvaluationException> {
         let bool_td = TypeDescriptor::new("boolean");
         let converted = converter.convert_value(value, &bool_td)?;
         match converted.value() {
@@ -46,7 +52,10 @@ impl ExpressionUtils {
     }
 
     /// 转换为浮点数。
-    pub fn to_double(converter: &dyn TypeConverter, value: &TypedValue) -> Result<f64, EvaluationException> {
+    pub fn to_double(
+        converter: &dyn TypeConverter,
+        value: &TypedValue,
+    ) -> Result<f64, EvaluationException> {
         let float_td = TypeDescriptor::new("float");
         let converted = converter.convert_value(value, &float_td)?;
         match converted.value() {

@@ -22,8 +22,18 @@ pub struct SpelParseException {
 impl SpelParseException {
     /// 创建 SpEL 解析异常。
     #[must_use]
-    pub fn new(expression: String, position: Option<usize>, message_code: SpelMessage, inserts: Vec<String>) -> Self {
-        Self { expression, position, message_code, inserts }
+    pub fn new(
+        expression: String,
+        position: Option<usize>,
+        message_code: SpelMessage,
+        inserts: Vec<String>,
+    ) -> Self {
+        Self {
+            expression,
+            position,
+            message_code,
+            inserts,
+        }
     }
 
     /// 获取错误消息码。
@@ -41,7 +51,12 @@ impl SpelParseException {
 
 impl std::fmt::Display for SpelParseException {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "[{}] {}", self.message_code.code(), self.message_code.default_message())
+        write!(
+            f,
+            "[{}] {}",
+            self.message_code.code(),
+            self.message_code.default_message()
+        )
     }
 }
 

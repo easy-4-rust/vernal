@@ -2,10 +2,10 @@
 //!
 //! 对标 Spring 的 `OperatorInstanceof`：`value instanceof Type`
 
-use crate::typed_value::{TypedValue, ExpressionValue, TypeDescriptor};
+use super::spel_node::SpelNode;
 use crate::evaluation_context::EvaluationContext;
 use crate::evaluation_exception::EvaluationException;
-use super::spel_node::SpelNode;
+use crate::typed_value::{ExpressionValue, TypeDescriptor, TypedValue};
 
 /// instanceof 运算符节点。
 ///
@@ -23,7 +23,10 @@ impl OperatorInstanceof {
 }
 
 impl SpelNode for OperatorInstanceof {
-    fn get_value(&self, context: &dyn EvaluationContext) -> Result<TypedValue, EvaluationException> {
+    fn get_value(
+        &self,
+        context: &dyn EvaluationContext,
+    ) -> Result<TypedValue, EvaluationException> {
         let value = self.value.get_value(context)?;
         let _type_id = context
             .type_locator()
@@ -33,10 +36,17 @@ impl SpelNode for OperatorInstanceof {
         // 完整实现需要通过 TypeId 检查运行时类型
         let _ = value;
         let _ = _type_id;
-        Ok(TypedValue::new(ExpressionValue::Boolean(true), TypeDescriptor::BOOLEAN))
+        Ok(TypedValue::new(
+            ExpressionValue::Boolean(true),
+            TypeDescriptor::BOOLEAN,
+        ))
     }
 
     fn to_string_ast(&self) -> String {
-        format!("({} instanceof {})", self.value.to_string_ast(), self.type_name)
+        format!(
+            "({} instanceof {})",
+            self.value.to_string_ast(),
+            self.type_name
+        )
     }
 }

@@ -2,11 +2,11 @@
 //!
 //! 对标 Spring 的 `TemplateAwareExpressionParser`：支持模板语法（`#{expr}`）。
 
+use super::composite_string_expression::CompositeStringExpression;
 use crate::expression::Expression;
 use crate::parse_exception::ParseException;
 use crate::parser::ExpressionParser;
 use crate::parser_context::ParserContext;
-use super::composite_string_expression::CompositeStringExpression;
 
 /// 模板感知表达式解析器。
 ///
@@ -25,7 +25,10 @@ impl TemplateAwareExpressionParser {
 }
 
 impl ExpressionParser for TemplateAwareExpressionParser {
-    fn parse_expression(&self, expression_string: &str) -> Result<Box<dyn Expression>, ParseException> {
+    fn parse_expression(
+        &self,
+        expression_string: &str,
+    ) -> Result<Box<dyn Expression>, ParseException> {
         // 默认上下文：标准模板 #{...}
         let context = crate::parser_context::TemplateParserContext::new("#{", "}");
         self.parse_expression_with_context(expression_string, &context)
@@ -37,7 +40,9 @@ impl ExpressionParser for TemplateAwareExpressionParser {
         context: &dyn ParserContext,
     ) -> Result<Box<dyn Expression>, ParseException> {
         if !context.is_template() {
-            return self.inner.parse_expression_with_context(expression_string, context);
+            return self
+                .inner
+                .parse_expression_with_context(expression_string, context);
         }
 
         let prefix = context.expression_prefix();
@@ -56,7 +61,11 @@ impl ExpressionParser for TemplateAwareExpressionParser {
                 let sub_expr = &remaining[..suffix_pos];
                 let parsed = self.inner.parse_expression(sub_expr)?;
                 if !current_literal.is_empty() {
-                    expressions.push(Box::new(crate::common::literal_expression::LiteralExpression::new(current_literal.clone())));
+                    expressions.push(Box::new(
+                        crate::common::literal_expression::LiteralExpression::new(
+                            current_literal.clone(),
+                        ),
+                    ));
                     current_literal.clear();
                 }
                 expressions.push(parsed);
@@ -71,7 +80,9 @@ impl ExpressionParser for TemplateAwareExpressionParser {
         }
         current_literal.push_str(remaining);
         if !current_literal.is_empty() {
-            expressions.push(Box::new(crate::common::literal_expression::LiteralExpression::new(current_literal)));
+            expressions.push(Box::new(
+                crate::common::literal_expression::LiteralExpression::new(current_literal),
+            ));
         }
 
         if expressions.len() == 1 {

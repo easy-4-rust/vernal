@@ -2,10 +2,10 @@
 //!
 //! 对标 Spring 的 `CompositeStringExpression`：模板表达式分解为多个子表达式。
 
-use crate::typed_value::{TypedValue, ExpressionValue, TypeDescriptor};
 use crate::evaluation_context::EvaluationContext;
 use crate::evaluation_exception::EvaluationException;
 use crate::expression::Expression;
+use crate::typed_value::{ExpressionValue, TypeDescriptor, TypedValue};
 
 /// 模板组合表达式。
 ///
@@ -20,7 +20,10 @@ impl CompositeStringExpression {
     /// 创建模板组合表达式。
     #[must_use]
     pub fn new(expression_string: String, expressions: Vec<Box<dyn Expression>>) -> Self {
-        Self { expression_string, expressions }
+        Self {
+            expression_string,
+            expressions,
+        }
     }
 
     /// 获取子表达式列表。
@@ -36,10 +39,17 @@ impl Expression for CompositeStringExpression {
     }
 
     fn get_value(&self) -> Result<TypedValue, EvaluationException> {
-        Err(EvaluationException::new(&self.expression_string, None, "模板表达式需要指定上下文"))
+        Err(EvaluationException::new(
+            &self.expression_string,
+            None,
+            "模板表达式需要指定上下文",
+        ))
     }
 
-    fn get_value_with_context(&self, context: &dyn EvaluationContext) -> Result<TypedValue, EvaluationException> {
+    fn get_value_with_context(
+        &self,
+        context: &dyn EvaluationContext,
+    ) -> Result<TypedValue, EvaluationException> {
         let mut result = String::new();
         for expr in &self.expressions {
             let value = expr.get_value_with_context(context)?;
@@ -54,10 +64,17 @@ impl Expression for CompositeStringExpression {
                 }
             }
         }
-        Ok(TypedValue::new(ExpressionValue::String(result), TypeDescriptor::STRING))
+        Ok(TypedValue::new(
+            ExpressionValue::String(result),
+            TypeDescriptor::STRING,
+        ))
     }
 
-    fn get_value_with_root(&self, context: &dyn EvaluationContext, _root: &TypedValue) -> Result<TypedValue, EvaluationException> {
+    fn get_value_with_root(
+        &self,
+        context: &dyn EvaluationContext,
+        _root: &TypedValue,
+    ) -> Result<TypedValue, EvaluationException> {
         self.get_value_with_context(context)
     }
 }
