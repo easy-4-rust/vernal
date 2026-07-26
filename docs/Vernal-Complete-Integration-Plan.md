@@ -472,24 +472,145 @@ hutool-rust/                              # 工具库（独立仓库，不变）
 
 ## 八、依赖方向（严格）
 
-```
-vernal-core ← vernal-beans ← vernal-context ← vernal
-                ↑                ↑
-           vernal-aop            │
-                ↑                │
-                └────────────────┘
+### 8.1 vernal 内部依赖（核心架构）
 
-hutool-rust → hutool-vernal → vernal-context（桥接层，外部依赖）
-                              ↓
-                          （不依赖）
+```
+                         ┌─────────────────────────────────────────────┐
+                         │                  vernal                       │
+                         │              （统一门面）                     │
+                         └────────────────────┬────────────────────────┘
+                                              │
+                       ┌──────────────────────┼──────────────────────┐
+                       │                      │                      │
+                       ▼                      ▼                      ▼
+              ┌──────────────┐      ┌──────────────┐      ┌──────────────┐
+              │vernal-context│      │ vernal-aop   │      │ vernal-macros│
+              │              │      │              │      │  （过程宏）   │
+              └──────┬───────┘      └──────┬───────┘      └──────────────┘
+                     │                     │
+                     │            ┌────────┘
+                     │            │
+                     ▼            ▼
+              ┌──────────────┐  ┌──────────────┐
+              │ vernal-beans │  │ vernal-beans │（同层）
+              │  （IoC 内核） │  │  （IoC 内核） │
+              └──────┬───────┘  └──────────────┘
+                     │
+                     ▼
+              ┌──────────────┐
+              │ vernal-core  │（基础设施：6 个必须工具）
+              └──────────────┘
 ```
 
-### 禁止的依赖方向
-- `vernal-core` **绝不**依赖 hutool-rust
-- `vernal-beans` **绝不**依赖 hutool-rust
-- `vernal-aop` **绝不**依赖 hutool-rust
-- `vernal-context` **绝不**依赖 hutool-rust（仅通过 hutool-vernal 桥接）
-- `vernal-macros` **绝不**依赖 hutool-rust
+**依赖规则**：
+- ✅ `vernal-core` 是最底层，**只**被其他模块依赖
+- ✅ `vernal-beans` 和 `vernal-aop` **平行**依赖 `vernal-core`，互不依赖
+- ✅ `vernal-context` 同时依赖 `vernal-beans` 和 `vernal-aop`，组成完整的应用上下文
+- ✅ `vernal`（门面）依赖所有内核，提供统一 re-export
+
+### 8.2 vernal ↔ hutool-rust 边界（绝对禁止重叠）
+
+```
+                     ┌──────────────────┐
+                     │   hutool-rust     │
+                     │   （工具库）       │
+                     │  ┌──────────────┐ │
+                     │  │ DateUtil     │ │
+                     │  │ StrUtil      │ │ ← 通用工具，与框架无关
+                     │  │ JSONUtil     │ │
+                     │  │ HTTP Client  │ │
+                     │  │ Crypto       │ │
+                     │  │ ... (26 crates)│
+                     │  └──────────────┘ │
+                     └────────┬─────────┘
+                              │ 依赖
+                              ▼
+                     ┌──────────────────┐
+                     │  hutool-vernal    │
+                     │  （桥接层）        │
+                     │  ┌──────────────┐ │
+                     │  │ HutoolCache  │ │ ← 仅做"适配"，不实现
+                     │  │ HutoolDb     │ │    hutool 功能
+                     │  │ HutoolCron   │ │
+                     │  │ ...          │ │
+                     │  └──────────────┘ │
+                     └────────┬─────────┘
+                              │ 通过
+                              │ ApplicationModule
+                              │ 注册到
+                              ▼
+              ┌───────────────────────────────┐
+              │        vernal-context          │
+              │ （只依赖 hutool-vernal 的 trait）│
+              │ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━│
+              │ ✗ 不直接依赖 hutool-rust         │
+              │ ✗ 不在 vernal-core 重新实现工具   │
+              └───────────────────────────────┘
+```
+
+**边界铁律**：
+
+| 规则 | 解释 |
+|------|------|
+| ❌ **vernal-core 绝不依赖 hutool-rust** | vernal-core 是框架底层，不能引入工具库依赖 |
+| ❌ **vernal-beans 绝不依赖 hutool-rust** | IoC 内核必须纯净 |
+| ❌ **vernal-aop 绝不依赖 hutool-rust** | AOP 内核必须纯净 |
+| ❌ **vernal-context 绝不依赖 hutool-rust** | Context 通过 hutool-vernal 桥接 |
+| ❌ **vernal-macros 绝不依赖 hutool-rust** | 过程宏保持纯净 |
+| ✅ **hutool-vernal 可以依赖 hutool-rust** | 桥接层的唯一职责 |
+| ✅ **hutool-rust 不依赖 vernal** | 工具库保持独立 |
+
+### 8.3 完整依赖全景（三层架构）
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  应用代码                                                    │
+│  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐            │
+│  │hutool-http│hutool-cache│hutool-db│hutool-json│            │
+│  └─────────┘ └─────────┘ └─────────┘ └─────────┘            │
+│       │          │          │          │                  │
+│       ▼          ▼          ▼          ▼                  │
+│  ┌──────────────────────────────────────────────────┐       │
+│  │              hutool-vernal 桥接                   │       │
+│  │  HutoolHttpComponents | HutoolCacheModule         │       │
+│  │  HutoolDbModule | HutoolCronModule               │       │
+│  │  HutoolSettingPropertySource | ...               │       │
+│  └──────────────────────────────────────────────────┘       │
+│       │                                                     │
+│       │  ApplicationModule 注册                             │
+│       ▼                                                     │
+│  ┌──────────────────────────────────────────────────┐       │
+│  │              vernal-context                       │       │
+│  │  ApplicationContext / ApplicationModule / ...     │       │
+│  └──────────┬─────────────────────┬─────────────────┘       │
+│             │                     │                         │
+│             ▼                     ▼                         │
+│  ┌─────────────────┐    ┌─────────────────┐                │
+│  │ vernal-beans    │    │  vernal-aop     │                │
+│  │  IoC 内核       │    │  AOP 内核       │                │
+│  └────────┬────────┘    └────────┬────────┘                │
+│           │                      │                         │
+│           └──────────┬───────────┘                         │
+│                      ▼                                     │
+│  ┌──────────────────────────────────────────────────┐       │
+│  │  vernal-core                                      │       │
+│  │  error / ordered / lifecycle_phase / convert     │       │
+│  │  time::StopWatch / id::ObjectId  (仅 6 个工具)   │       │
+│  └──────────────────────────────────────────────────┘       │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 8.4 禁止的依赖方向（速查表）
+
+| 模块 | 禁止依赖 |
+|------|---------|
+| `vernal-core` | hutool-rust、任何内核模块、任何高级模块 |
+| `vernal-beans` | `vernal-aop`、`vernal-context`、hutool-rust |
+| `vernal-aop` | `vernal-beans`、`vernal-context`、hutool-rust |
+| `vernal-context` | 任何具体 Web 框架、hutool-rust |
+| `vernal-macros` | hutool-rust、任何运行时模块 |
+| 任何 adapter | 另一个 adapter |
+| hutool-rust | vernal、hutool-vernal |
 
 ## 九、hutool-vernal 桥接实现（**重点**）
 
