@@ -57,6 +57,52 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
         TokenStream::new()
     };
 
+    // Component trait 方法生成
+    // inner_init：工厂内初始化钩子
+    let inner_init_method = if let Some(ref init_fn) = options.init_hook {
+        let init_ident = syn::Ident::new(&init_fn.value(), init_fn.span());
+        quote! {
+            fn inner_init<'__a>(
+                &mut self,
+                _resolver: &#ioc::Resolver<'__a>,
+            ) -> ::core::result::Result<(), ::std::boxed::Box<dyn ::std::error::Error + ::core::marker::Send + ::core::marker::Sync + 'static>> {
+                self.#init_ident(_resolver)
+            }
+        }
+    } else {
+        TokenStream::new()
+    };
+
+    // init_order：同层初始化排序
+    let init_order_method = if let Some(ref order) = options.init_order {
+        quote! {
+            fn init_order() -> i32 { #order }
+        }
+    } else {
+        TokenStream::new()
+    };
+
+    // has_async_run：后台任务标志
+    let has_async_run_method = if options.async_run_hook.is_some() {
+        quote! {
+            fn has_async_run() -> bool { true }
+        }
+    } else {
+        TokenStream::new()
+    };
+
+    // shutdown：关闭钩子
+    let shutdown_method = if let Some(ref shutdown_fn) = options.shutdown_hook {
+        let shutdown_ident = syn::Ident::new(&shutdown_fn.value(), shutdown_fn.span());
+        quote! {
+            fn shutdown(&self) {
+                self.#shutdown_ident();
+            }
+        }
+    } else {
+        TokenStream::new()
+    };
+
     // 每个未标记 default 的字段都必须是 Arc<T>，宏同时生成构造表达式和显式
     // 依赖元数据，保证 Resolver 的运行期访问与启动期依赖图完全一致。
     for field in &fields {
@@ -93,9 +139,12 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
                                 + ::core::marker::Sync + 'static
                         >
                     > {
-                        ::core::result::Result::Ok(Self {
+                        let mut __instance = Self {
                             #(#initializers),*
-                        })
+                        };
+                        // 工厂内初始化钩子（对标 tx_di 的 inner_init）
+                        __instance.inner_init(__resolver)?;
+                        ::core::result::Result::Ok(__instance)
                     }
                 );
                 #(#dependency_statements)*
@@ -103,6 +152,11 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
                 #init_order_statement
                 __definition
             }
+
+            #inner_init_method
+            #init_order_method
+            #has_async_run_method
+            #shutdown_method
         }
 
         #aop_implementation

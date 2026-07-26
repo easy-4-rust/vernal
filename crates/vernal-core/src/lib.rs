@@ -1,8 +1,13 @@
 #![forbid(unsafe_code)]
 #![doc = "Vernal 各独立内核共享的稳定基础合同。"]
 
+pub mod convert;
 pub mod error;
 mod failure;
+pub mod id;
+pub mod lifecycle_phase;
+pub mod ordered;
+pub mod time;
 
 pub use failure::{BoxError, SharedError};
 
