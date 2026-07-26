@@ -36,3 +36,19 @@ pub mod op_ne;
 pub mod op_and;
 pub mod op_or;
 pub mod operator_not;
+
+// ─── 表达式节点（14 个） ───
+pub mod assign;
+pub mod bean_reference;
+pub mod compound_expression;
+pub mod elvis;
+pub mod identifier;
+pub mod inline_list;
+pub mod inline_map;
+pub mod method_reference;
+pub mod projection;
+pub mod property_or_field_reference;
+pub mod selection;
+pub mod ternary;
+pub mod type_reference;
+pub mod variable_reference;
