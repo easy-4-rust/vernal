@@ -1,0 +1,14 @@
+[package]
+name = "vernal-log"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Vernal 日志门面（对标 spring-jcl）"
+publish = false
+
+[dependencies]
+vernal-core = { path = "../vernal-core" }
+
+[lints]
+workspace = true

@@ -1,0 +1,14 @@
+[package]
+name = "vernal-cache"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Vernal 缓存抽象（对标 spring-cache）"
+publish = false
+
+[dependencies]
+vernal-core = { path = "../vernal-core" }
+
+[lints]
+workspace = true

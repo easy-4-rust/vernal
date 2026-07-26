@@ -1,0 +1,14 @@
+[package]
+name = "vernal-db"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Vernal 数据库抽象（对标 spring-jdbc）"
+publish = false
+
+[dependencies]
+vernal-core = { path = "../vernal-core" }
+
+[lints]
+workspace = true
