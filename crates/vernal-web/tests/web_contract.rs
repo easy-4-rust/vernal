@@ -11,8 +11,8 @@ use std::{
 
 use tokio::sync::{Mutex, Notify};
 use tokio_util::sync::CancellationToken;
-use vernal_context::{ApplicationContextBuilder, ScopeCleanupPolicy, VernalApplicationBuilder};
 use vernal_beans::{ComponentDefinition, RegistryBuilder, ResolveError, ScopeKey};
+use vernal_context::{ApplicationContextBuilder, ScopeCleanupPolicy, VernalApplicationBuilder};
 use vernal_web::{
     HandlerInvocation, ProblemDetails, ProblemKind, RequestContext, RouteMetadata, ScopeError,
     ScopeState, SecurityPrincipal, WebRequestScope,

@@ -15,9 +15,9 @@ use vernal_beans::{Component, RegistryBuilder, ResolveError};
 async fn derive_generates_type_driven_custom_scope_definition() {
     let mut registry = RegistryBuilder::new();
     registry
-        .register(vernal_beans::ComponentDefinition::shared_value(String::from(
-            "grow components",
-        )))
+        .register(vernal_beans::ComponentDefinition::shared_value(
+            String::from("grow components"),
+        ))
         .expect("message definition");
     registry
         .register(ScopedGreeting::definition())

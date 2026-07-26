@@ -9,8 +9,8 @@ use vernal_aop::{
     Advisor, CancellationToken, InvocationError, InvocationPlanCatalog, PointcutExt,
     QualifierPointcut, TagPointcut,
 };
-use vernal_context::VernalApplicationBuilder;
 use vernal_beans::Component;
+use vernal_context::VernalApplicationBuilder;
 
 /// 同时验证 Component 派生接线和异步方法拦截的计算服务。
 #[derive(vernal_macros::Component)]

@@ -1,7 +1,7 @@
 //! 手工重复链接期注册项。
 
-use vernal_discovery::{LINKED_COMPONENT_REGISTRATIONS, LinkedComponentRegistration};
 use vernal_beans::{Component, ComponentDefinition};
+use vernal_discovery::{LINKED_COMPONENT_REGISTRATIONS, LinkedComponentRegistration};
 
 use super::Database;
 

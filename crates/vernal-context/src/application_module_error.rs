@@ -2,8 +2,8 @@
 
 use std::{error::Error, fmt};
 
-use vernal_core::BoxError;
 use vernal_beans::DefinitionError;
+use vernal_core::BoxError;
 
 use crate::{ConditionError, EnvironmentError};
 

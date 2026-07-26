@@ -34,7 +34,6 @@
 ///     }
 /// }
 /// ```
-
 use vernal_core::BoxError;
 
 use super::{SimpleCallResult, SimpleInvocationContext};

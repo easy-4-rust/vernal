@@ -5,9 +5,7 @@
 
 use std::sync::Arc;
 
-use vernal_aop::{
-    Interceptor, Invocation, InvocationError, InvocationFuture, Next,
-};
+use vernal_aop::{Interceptor, Invocation, InvocationError, InvocationFuture, Next};
 
 /// 异步执行配置。
 #[derive(Debug, Clone)]

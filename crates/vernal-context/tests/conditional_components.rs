@@ -10,13 +10,13 @@ use std::{
     },
 };
 
+use vernal_beans::{ComponentDefinition, GraphError, TraitBinding};
 use vernal_context::{
     ApplicationBuildError, ComponentCondition, ConditionError, ConditionalComponentModule,
     Lifecycle, LifecycleFuture, MapPropertySource, PredicateCondition, ProfileCondition,
     PropertyCondition, VernalApplicationBuilder,
 };
 use vernal_core::BoxError;
-use vernal_beans::{ComponentDefinition, GraphError, TraitBinding};
 
 /// 同时用于验证条件定义与条件生命周期登记的一项普通业务组件。
 struct ConditionalService {

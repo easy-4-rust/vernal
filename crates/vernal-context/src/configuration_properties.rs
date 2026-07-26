@@ -2,8 +2,8 @@
 
 use std::any::Any;
 
-use vernal_core::BoxError;
 use vernal_beans::ComponentDefinition;
+use vernal_core::BoxError;
 
 use crate::{ApplicationEnvironment, ConfigurationPropertiesError};
 

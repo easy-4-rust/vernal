@@ -10,9 +10,7 @@
 
 use std::sync::Arc;
 
-use vernal_aop::{
-    Interceptor, Invocation, InvocationError, InvocationFuture, Next,
-};
+use vernal_aop::{Interceptor, Invocation, InvocationError, InvocationFuture, Next};
 use vernal_core::BoxError;
 
 /// 事务传播行为。

@@ -30,23 +30,14 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
     } else {
         TokenStream::new()
     };
-    let discovery_registration = generate_discovery_registration(
-        component_name,
-        &ioc,
-    )?;
+    let discovery_registration = generate_discovery_registration(component_name, &ioc)?;
 
     // 生命周期钩子生成
-    let lifecycle_implementation = generate_lifecycle_implementation(
-        component_name,
-        &options,
-    )?;
+    let lifecycle_implementation = generate_lifecycle_implementation(component_name, &options)?;
 
     // Trait 绑定注册
-    let trait_binding_registration = generate_trait_binding_registration(
-        component_name,
-        options.as_trait.as_ref(),
-        &ioc,
-    )?;
+    let trait_binding_registration =
+        generate_trait_binding_registration(component_name, options.as_trait.as_ref(), &ioc)?;
 
     // 初始化排序：当指定了 init_order 时，生成 with_init_order() 调用
     let init_order_statement = if let Some(ref order) = options.init_order {

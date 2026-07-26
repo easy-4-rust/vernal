@@ -27,10 +27,10 @@ use http_body_util::{BodyExt, Empty, StreamBody};
 use native_response_interceptor::NativeResponseInterceptor;
 use tokio_util::sync::CancellationToken;
 use vernal_aop::{Advisor, Operation};
+use vernal_beans::{ComponentDefinition, RegistryBuilder};
 use vernal_context::{ApplicationContextBuilder, VernalApplicationBuilder};
 use vernal_gotham::{GothamScopedBody, VernalGothamMiddleware, VernalGothamStateExt};
 use vernal_http::HttpRequestSnapshot;
-use vernal_beans::{ComponentDefinition, RegistryBuilder};
 use vernal_web::WebRequestScope;
 use vernal_web_testkit::{
     FailingHttpBody, ScopeCleanupTimeoutFixture, ScopeCloseProbe, ScopeRejectingInterceptor,

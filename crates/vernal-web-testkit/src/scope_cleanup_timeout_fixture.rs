@@ -9,8 +9,8 @@ use std::{
 };
 
 use tokio::{sync::Notify, task::yield_now, time::timeout};
-use vernal_context::{ApplicationContext, ScopeCleanupPolicy, VernalApplicationBuilder};
 use vernal_beans::ScopeState;
+use vernal_context::{ApplicationContext, ScopeCleanupPolicy, VernalApplicationBuilder};
 use vernal_web::WebRequestScope;
 
 use crate::WebAdapterContract;

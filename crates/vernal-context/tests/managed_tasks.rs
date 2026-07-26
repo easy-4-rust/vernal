@@ -14,11 +14,11 @@ use stop_probe_lifecycle::StopProbeLifecycle;
 use task_owning_lifecycle::TaskOwningLifecycle;
 use tokio::{runtime::Handle, sync::Notify};
 use tokio_util::sync::CancellationToken;
+use vernal_beans::{ComponentDefinition, Qualifier};
 use vernal_context::{
     ContextError, ContextState, ManagedTaskError, ManagedTaskSupervisor, TaskShutdownPolicy,
     VernalApplicationBuilder,
 };
-use vernal_beans::{ComponentDefinition, Qualifier};
 
 #[tokio::test]
 async fn task_failure_cancels_application_and_returns_one_shared_result() {

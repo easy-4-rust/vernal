@@ -5,13 +5,13 @@ use std::{sync::Arc, time::Duration};
 use tokio::runtime::Handle;
 use tokio_util::sync::CancellationToken;
 use vernal_aop::{InvocationPlanCatalog, LocalInvocationPlanCatalog, Operation};
+use vernal_beans::ComponentDefinition;
 use vernal_context::{
     ApplicationBuildError, ApplicationEnvironment, EventBus, Lifecycle, LifecycleExecutionPolicy,
     ManagedTaskSupervisor, MapPropertySource, ScopeCleanupPolicy, SystemShutdownSignalListener,
     TaskShutdownPolicy, VernalApplicationBuilder,
 };
 use vernal_core::BoxError;
-use vernal_beans::ComponentDefinition;
 
 /// 模拟同时使用全部 Context 内建资源的业务服务。
 struct RuntimeAwareService {

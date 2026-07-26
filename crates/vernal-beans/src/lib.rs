@@ -32,11 +32,11 @@ mod scope_key;
 mod scope_operation_guard;
 mod scope_runtime_state;
 mod scope_state;
-mod transient_tracker;
 mod trait_binding;
 mod trait_binding_snapshot;
 mod trait_key;
 mod trait_provider;
+mod transient_tracker;
 
 pub use bean_desc_cache::BeanDescCache;
 pub use bean_descriptor::{BeanDescriptor, PropertyDescriptor};
@@ -64,11 +64,11 @@ pub use scope_error::ScopeError;
 pub use scope_future::ScopeFuture;
 pub use scope_key::ScopeKey;
 pub use scope_state::ScopeState;
-pub use transient_tracker::TransientTracker;
 pub use trait_binding::TraitBinding;
 pub use trait_binding_snapshot::TraitBindingSnapshot;
 pub use trait_key::TraitKey;
 pub use trait_provider::TraitProvider;
+pub use transient_tracker::TransientTracker;
 
 /// 返回当前 `IoC` 内核的成熟度状态。
 #[must_use]

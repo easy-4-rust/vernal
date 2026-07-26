@@ -3,11 +3,11 @@
 use std::sync::Arc;
 
 use vernal_aop::Operation;
+use vernal_beans::ComponentDefinition;
 use vernal_context::{
     ApplicationModule, ApplicationModuleRegistrar, MapPropertySource, PropertySource,
 };
 use vernal_core::BoxError;
-use vernal_beans::ComponentDefinition;
 
 use super::{ModuleProbe, ModuleService};
 

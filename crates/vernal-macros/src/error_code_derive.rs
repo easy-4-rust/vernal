@@ -132,13 +132,12 @@ fn parse_variant_attribute(variant: &syn::Variant) -> syn::Result<(LitInt, LitSt
         }
 
         // 解析 #[error(code, "message")]
-        let parser =
-            |content: syn::parse::ParseStream| -> syn::Result<(LitInt, LitStr)> {
-                let code: LitInt = content.parse()?;
-                content.parse::<Comma>()?;
-                let message: LitStr = content.parse()?;
-                Ok((code, message))
-            };
+        let parser = |content: syn::parse::ParseStream| -> syn::Result<(LitInt, LitStr)> {
+            let code: LitInt = content.parse()?;
+            content.parse::<Comma>()?;
+            let message: LitStr = content.parse()?;
+            Ok((code, message))
+        };
 
         let (code, message) = attr.parse_args_with(parser)?;
         return Ok((code, message));

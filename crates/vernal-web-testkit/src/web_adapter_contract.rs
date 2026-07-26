@@ -2,8 +2,8 @@
 
 use std::{any::Any, sync::Arc};
 
-use vernal_context::ApplicationContext;
 use vernal_beans::{ScopeKey, ScopeState};
+use vernal_context::ApplicationContext;
 use vernal_web::WebRequestScope;
 
 /// 对所有 Web/RPC Adapter 执行相同的请求 Context、Scope 与组件绑定断言。

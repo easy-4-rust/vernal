@@ -2,8 +2,8 @@
 
 use std::sync::Arc;
 
-use vernal_context::ApplicationContext;
 use vernal_beans::Container;
+use vernal_context::ApplicationContext;
 
 /// 保持请求作用域所绑定的组件容器在整个响应 Body 生命周期内有效。
 ///

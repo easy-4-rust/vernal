@@ -11,9 +11,9 @@ use vernal_aop::{
     LocalInvocationPlanCatalog, LocalInvocationTarget, LocalInvocationValue, LocalNext, Next,
     Operation,
 };
+use vernal_beans::{Component, ComponentDefinition, ComponentKey};
 use vernal_context::{ApplicationBuildError, ApplicationContext, VernalApplicationBuilder};
 use vernal_core::BoxError;
-use vernal_beans::{Component, ComponentDefinition, ComponentKey};
 
 /// 保存测试调用顺序的线程安全依赖组件。
 #[derive(Default)]

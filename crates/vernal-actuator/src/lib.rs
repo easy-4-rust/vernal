@@ -3,4 +3,4 @@
 
 mod health;
 
-pub use health::{HealthIndicator, Health, HealthStatus};
+pub use health::{Health, HealthIndicator, HealthStatus};

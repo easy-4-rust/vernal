@@ -4,8 +4,8 @@ use std::{future::Future, pin::Pin, sync::Arc};
 
 use tokio::time::{Instant, MissedTickBehavior};
 use tokio_util::sync::CancellationToken;
-use vernal_core::SharedError;
 use vernal_beans::{ComponentKey, Container, Qualifier, ResolveError};
+use vernal_core::SharedError;
 
 use crate::{
     ContextError, ManagedTaskSupervisor, ScheduledTask, ScheduledTaskFailure, TaskSchedule,

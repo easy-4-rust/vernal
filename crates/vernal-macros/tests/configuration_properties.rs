@@ -2,11 +2,11 @@
 
 use std::{error::Error, sync::Arc};
 
+use vernal_beans::ComponentDefinition;
 use vernal_context::{
     ApplicationEnvironment, ConfigurationProperties, ContextError, ContextState, MapPropertySource,
     VernalApplicationBuilder,
 };
-use vernal_beans::ComponentDefinition;
 
 /// 缺少显式线程数时使用的应用默认值。
 const fn default_worker_threads() -> usize {

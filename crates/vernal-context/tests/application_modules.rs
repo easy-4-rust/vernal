@@ -9,11 +9,11 @@ use application_module_support::{
     EnvironmentConflictModule, FailingModule, InvalidModule, ModuleProbe, ModuleService,
 };
 use vernal_aop::{Invocation, InvocationTarget, InvocationValue, Operation};
+use vernal_beans::ComponentDefinition;
 use vernal_context::{
     ApplicationModuleError, ConditionError, ConditionalComponentModule, MapPropertySource,
     PropertyCondition, VernalApplicationBuilder,
 };
-use vernal_beans::ComponentDefinition;
 
 /// 创建一个由当前 Tokio Runtime 驱动的高层应用建造器。
 fn application() -> VernalApplicationBuilder {

@@ -10,10 +10,10 @@ use std::{sync::Arc, time::Duration};
 use timeout_lifecycle::TimeoutLifecycle;
 use timeout_stop_lifecycle::TimeoutStopLifecycle;
 use tokio::sync::Mutex;
+use vernal_beans::{ComponentDefinition, Qualifier};
 use vernal_context::{
     ContextError, ContextState, LifecycleExecutionPolicy, LifecyclePhase, VernalApplicationBuilder,
 };
-use vernal_beans::{ComponentDefinition, Qualifier};
 
 const SHORT_TIMEOUT: Duration = Duration::from_millis(100);
 const SETTLEMENT_TIMEOUT: Duration = Duration::from_secs(1);

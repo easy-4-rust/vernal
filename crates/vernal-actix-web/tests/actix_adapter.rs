@@ -23,9 +23,9 @@ use vernal_actix_web::{
     VernalActixMiddleware, VernalActixRequestContext, VernalActixRequestScope,
 };
 use vernal_aop::{LocalAdvisor, Operation};
+use vernal_beans::{ComponentDefinition, RegistryBuilder};
 use vernal_context::{ApplicationContextBuilder, VernalApplicationBuilder};
 use vernal_http::HttpRequestSnapshot;
-use vernal_beans::{ComponentDefinition, RegistryBuilder};
 use vernal_web::WebRequestScope;
 use vernal_web_testkit::{
     FailingByteStream, ScopeCleanupTimeoutFixture, ScopeCloseProbe, ScopeRejectingInterceptor,

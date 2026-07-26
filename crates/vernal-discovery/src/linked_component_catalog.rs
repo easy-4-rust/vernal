@@ -190,11 +190,7 @@ impl LinkedComponentCatalog {
 
     /// 校验模块路径前缀的合法性。
     fn validate_package(package: &str) -> Result<(), LinkedComponentCatalogError> {
-        if package.is_empty()
-            || package
-                .chars()
-                .any(|c| c.is_whitespace() || c.is_control())
-        {
+        if package.is_empty() || package.chars().any(|c| c.is_whitespace() || c.is_control()) {
             return Err(LinkedComponentCatalogError::InvalidGroup {
                 group: package.into(),
             });

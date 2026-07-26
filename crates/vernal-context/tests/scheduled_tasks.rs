@@ -8,12 +8,12 @@ use scheduled_task_support::{
     FailingScheduledTask, FixedDelayProbeTask, FixedRateProbeTask, PanickingScheduledTask,
     ScheduledTaskApplicationModule, ScheduledTaskProbe,
 };
+use vernal_beans::{ComponentDefinition, Qualifier};
 use vernal_context::{
     ApplicationBuildError, ConditionalComponentModule, ContextError, ContextState,
     DiagnosticOutcome, DiagnosticPhase, ManagedTaskError, ProfileCondition, TaskSchedule,
     TaskScheduleError, TaskScheduleMode, VernalApplicationBuilder,
 };
-use vernal_beans::{ComponentDefinition, Qualifier};
 
 /// 创建绑定当前 Tokio Runtime 的测试应用建造器。
 fn application() -> VernalApplicationBuilder {

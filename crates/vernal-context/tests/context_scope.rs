@@ -7,8 +7,8 @@ mod task_value;
 
 use task_scope::TaskScope;
 use task_value::TaskValue;
-use vernal_context::VernalApplicationBuilder;
 use vernal_beans::{ComponentDefinition, ResolveError, ScopeState};
+use vernal_context::VernalApplicationBuilder;
 
 #[tokio::test]
 async fn application_scope_joins_context_cancellation_tree() {

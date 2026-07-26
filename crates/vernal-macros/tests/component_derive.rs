@@ -18,9 +18,9 @@ struct GreetingService {
 fn derive_generates_factory_and_explicit_dependency_metadata() {
     let mut registry = RegistryBuilder::new();
     registry
-        .register(vernal_beans::ComponentDefinition::shared_value(String::from(
-            "vernal",
-        )))
+        .register(vernal_beans::ComponentDefinition::shared_value(
+            String::from("vernal"),
+        ))
         .expect("String dependency should register");
     registry
         .register(GreetingService::definition())

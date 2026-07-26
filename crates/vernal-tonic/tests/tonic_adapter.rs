@@ -17,9 +17,9 @@ use tonic::{
 };
 use tower::{Layer, ServiceExt, service_fn};
 use vernal_aop::{Advisor, Operation};
+use vernal_beans::{ComponentDefinition, RegistryBuilder};
 use vernal_context::{ApplicationContextBuilder, VernalApplicationBuilder};
 use vernal_http::{HttpBody, HttpRequestSnapshot};
-use vernal_beans::{ComponentDefinition, RegistryBuilder};
 use vernal_tonic::{
     RequestScopeLayer, TonicAopLayer, TonicContextInterceptor, TonicRequestExt, TonicStatusMapper,
     VernalLayer,

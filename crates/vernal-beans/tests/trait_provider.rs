@@ -5,11 +5,11 @@ use std::sync::{
     atomic::{AtomicBool, AtomicUsize, Ordering},
 };
 
-use vernal_core::BoxError;
 use vernal_beans::{
     ComponentDefinition, GraphError, Qualifier, RegistryBuilder, ResolveError, TraitBinding,
     TraitProvider,
 };
+use vernal_core::BoxError;
 
 /// 可由多个组件实现的消息端口。
 trait MessagePort: Send + Sync {

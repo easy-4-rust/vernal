@@ -57,14 +57,20 @@ impl BeanDescCache {
 
         // 快速路径：读锁检查
         {
-            let cache = self.cache.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+            let cache = self
+                .cache
+                .read()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             if let Some(desc) = cache.get(&type_id) {
                 return Arc::clone(desc);
             }
         }
 
         // 慢速路径：写锁插入
-        let mut cache = self.cache.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut cache = self
+            .cache
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         // 双重检查
         if let Some(desc) = cache.get(&type_id) {
             return Arc::clone(desc);
@@ -76,21 +82,30 @@ impl BeanDescCache {
 
     /// 清空缓存。
     pub fn clear(&self) {
-        let mut cache = self.cache.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut cache = self
+            .cache
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         cache.clear();
     }
 
     /// 缓存条目数量。
     #[must_use]
     pub fn len(&self) -> usize {
-        let cache = self.cache.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let cache = self
+            .cache
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         cache.len()
     }
 
     /// 缓存是否为空。
     #[must_use]
     pub fn is_empty(&self) -> bool {
-        let cache = self.cache.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let cache = self
+            .cache
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         cache.is_empty()
     }
 }

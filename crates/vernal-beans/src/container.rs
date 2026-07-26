@@ -526,8 +526,7 @@ impl Container {
                 let instance = self.construct(definition, stack, scope);
                 // 追踪 Transient 实例的弱引用，供上层在关闭时通知存活实例
                 if let Ok(ref arc) = instance {
-                    self.transient_tracker
-                        .track(definition.key().type_id, arc);
+                    self.transient_tracker.track(definition.key().type_id, arc);
                 }
                 instance
             }

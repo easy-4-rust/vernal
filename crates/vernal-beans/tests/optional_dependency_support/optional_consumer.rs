@@ -2,8 +2,8 @@
 
 use std::sync::Arc;
 
-use vernal_core::BoxError;
 use vernal_beans::{ComponentDefinition, Qualifier};
+use vernal_core::BoxError;
 
 use super::{OptionalPort, OptionalService};
 

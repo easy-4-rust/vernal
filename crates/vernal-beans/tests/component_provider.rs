@@ -5,10 +5,10 @@ use std::sync::{
     atomic::{AtomicUsize, Ordering},
 };
 
-use vernal_core::BoxError;
 use vernal_beans::{
     ComponentDefinition, ComponentProvider, GraphError, Qualifier, RegistryBuilder, ResolveError,
 };
+use vernal_core::BoxError;
 
 /// 每次构造都携带不同序号的瞬时对象。
 struct Sequence(usize);

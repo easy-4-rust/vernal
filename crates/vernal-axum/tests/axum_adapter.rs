@@ -21,9 +21,9 @@ use vernal_aop::{Advisor, Operation};
 use vernal_axum::{
     VernalComponent, VernalContext, VernalRequestContext, VernalRequestScope, VernalRouterExt,
 };
+use vernal_beans::{ComponentDefinition, RegistryBuilder};
 use vernal_context::{ApplicationContextBuilder, VernalApplicationBuilder};
 use vernal_http::HttpRequestSnapshot;
-use vernal_beans::{ComponentDefinition, RegistryBuilder};
 use vernal_web::WebRequestScope;
 use vernal_web_testkit::{
     FailingHttpBody, ScopeCleanupTimeoutFixture, ScopeCloseProbe, ScopeRejectingInterceptor,

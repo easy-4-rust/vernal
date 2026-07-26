@@ -9,12 +9,12 @@ use application_runner_support::{
     RunnerApplicationModule, SecondRunner, StartedLifecycle, StartupProbe,
 };
 use tokio::sync::broadcast;
+use vernal_beans::{ComponentDefinition, Qualifier};
 use vernal_context::{
     ApplicationBuildError, ApplicationReadyEvent, ConditionalComponentModule, ContextError,
     ContextState, DiagnosticOutcome, DiagnosticPhase, LifecycleExecutionPolicy, ProfileCondition,
     VernalApplicationBuilder,
 };
-use vernal_beans::{ComponentDefinition, Qualifier};
 
 /// 创建绑定当前 Tokio Runtime 的测试应用建造器。
 fn application() -> VernalApplicationBuilder {

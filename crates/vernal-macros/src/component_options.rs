@@ -180,9 +180,7 @@ impl ComponentOptions {
         }
 
         // 校验：config 模式下不能同时指定 scope = transient
-        if options.config_mode
-            && matches!(options.scope, ComponentScopeOption::Transient)
-        {
+        if options.config_mode && matches!(options.scope, ComponentScopeOption::Transient) {
             return Err(syn::Error::new(
                 proc_macro2::Span::call_site(),
                 "config 组件必须是 Singleton 作用域",

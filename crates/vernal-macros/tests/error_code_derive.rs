@@ -38,18 +38,12 @@ fn code_is_correct() {
 fn message_is_correct() {
     assert_eq!(IoCErrorCode::NotFound.message(), "组件未找到");
     assert_eq!(IoCErrorCode::Ambiguous.message(), "依赖歧义：找到多个候选");
-    assert_eq!(
-        IoCErrorCode::CircularDependency.message(),
-        "检测到循环依赖"
-    );
+    assert_eq!(IoCErrorCode::CircularDependency.message(), "检测到循环依赖");
 }
 
 #[test]
 fn display_format() {
-    assert_eq!(
-        format!("{}", IoCErrorCode::NotFound),
-        "[ioc:-1] 组件未找到"
-    );
+    assert_eq!(format!("{}", IoCErrorCode::NotFound), "[ioc:-1] 组件未找到");
 }
 
 #[test]
@@ -86,9 +80,7 @@ pub enum ContextErrorCode {
 
     /// 带命名字段的变体
     #[error(-2, "生命周期失败")]
-    LifecycleFailed {
-        phase: &'static str,
-    },
+    LifecycleFailed { phase: &'static str },
 
     /// 单元变体
     #[error(-3, "事件总线已关闭")]

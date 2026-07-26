@@ -3,16 +3,16 @@
 
 /// `AOP` 内核命名空间。
 pub use vernal_aop as aop;
+/// `Beans` 内核命名空间（对标 Spring Beans）。
+pub use vernal_beans as beans;
+/// `IoC` 内核命名空间（兼容别名）。
+pub use vernal_beans as ioc;
 /// 应用上下文命名空间。
 pub use vernal_context as context;
 /// 框架共享合同命名空间。
 pub use vernal_core as core;
 /// 统一错误体系命名空间。
 pub use vernal_core::error;
-/// `Beans` 内核命名空间（对标 Spring Beans）。
-pub use vernal_beans as beans;
-/// `IoC` 内核命名空间（兼容别名）。
-pub use vernal_beans as ioc;
 /// 过程宏命名空间。
 pub use vernal_macros as macros;
 

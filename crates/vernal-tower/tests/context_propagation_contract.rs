@@ -6,9 +6,9 @@ use http::{Method, Request, Response, Version};
 use tokio::sync::{Mutex, Notify};
 use tokio_util::sync::CancellationToken;
 use tower::{Layer, ServiceExt, service_fn};
+use vernal_beans::Registry;
 use vernal_context::ApplicationContextBuilder;
 use vernal_http::{HttpBody, HttpRequestSnapshot};
-use vernal_beans::Registry;
 use vernal_tower::{ContextPropagationError, ContextPropagationLayer, RequestScopeLayer};
 use vernal_web::{RequestContext, RouteMetadata, WebRequestScope};
 

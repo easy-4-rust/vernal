@@ -128,9 +128,9 @@ impl ManagedTaskSupervisor {
         let token = self.cancellation_token();
         // 将 LifecycleFuture 转换为 spawn 可接受的类型
         let adapted = async move {
-            task.run(token).await.map_err(|e| {
-                std::io::Error::new(std::io::ErrorKind::Other, e.to_string())
-            })
+            task.run(token)
+                .await
+                .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))
         };
         self.spawn(name, adapted)
     }

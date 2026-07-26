@@ -2,9 +2,9 @@
 
 use std::sync::Arc;
 
+use vernal_beans::ComponentDefinition;
 use vernal_context::{ApplicationModule, ApplicationModuleRegistrar};
 use vernal_core::BoxError;
-use vernal_beans::ComponentDefinition;
 
 use super::FirstRunner;
 

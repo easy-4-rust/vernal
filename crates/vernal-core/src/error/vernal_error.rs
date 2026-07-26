@@ -96,11 +96,7 @@ impl VernalError {
     /// - `code`：子系统内的错误码
     /// - `message`：人类可读的静态描述
     #[must_use]
-    pub const fn business(
-        domain: &'static str,
-        code: i32,
-        message: &'static str,
-    ) -> Self {
+    pub const fn business(domain: &'static str, code: i32, message: &'static str) -> Self {
         Self::Business {
             domain,
             code,

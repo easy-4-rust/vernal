@@ -2,8 +2,8 @@
 
 use std::{sync::Arc, time::Duration};
 
-use vernal_context::ApplicationContextBuilder;
 use vernal_beans::{ComponentDefinition, RegistryBuilder};
+use vernal_context::ApplicationContextBuilder;
 use vernal_web::WebRequestScope;
 use vernal_web_testkit::{ScopeCloseProbe, WebAdapterContract};
 

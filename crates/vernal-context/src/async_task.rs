@@ -37,7 +37,6 @@
 ///     }
 /// }
 /// ```
-
 use std::any::type_name;
 
 use tokio_util::sync::CancellationToken;

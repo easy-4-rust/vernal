@@ -9,11 +9,11 @@ use std::{
     thread,
 };
 
-use vernal_core::BoxError;
 use vernal_beans::{
     ComponentDefinition, DefinitionError, GraphError, Qualifier, Registry, RegistryBuilder,
     ResolveError,
 };
+use vernal_core::BoxError;
 
 #[derive(Debug)]
 struct Settings {

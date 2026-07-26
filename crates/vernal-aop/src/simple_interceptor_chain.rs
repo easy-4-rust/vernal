@@ -78,11 +78,7 @@ impl SimpleInterceptorChain {
     ///
     /// 最外层拦截器最先进入 `around`，在其中调用内层，形成嵌套结构。
     /// 与 tx_di 的 `around_all` 语义一致。
-    pub fn around_all<F>(
-        &self,
-        context: &SimpleInvocationContext,
-        body: F,
-    ) -> SimpleCallResult
+    pub fn around_all<F>(&self, context: &SimpleInvocationContext, body: F) -> SimpleCallResult
     where
         F: FnOnce() -> SimpleCallResult + Send + 'static,
     {

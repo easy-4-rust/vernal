@@ -7,7 +7,10 @@ use super::{definition::TransactionDefinition, status::TransactionStatus};
 /// 对标 Spring 的 `PlatformTransactionManager`。
 pub trait PlatformTransactionManager: Send + Sync {
     /// 获取事务。
-    fn get_transaction(&self, definition: &TransactionDefinition) -> Result<TransactionStatus, TransactionError>;
+    fn get_transaction(
+        &self,
+        definition: &TransactionDefinition,
+    ) -> Result<TransactionStatus, TransactionError>;
 
     /// 提交事务。
     fn commit(&self, status: TransactionStatus) -> Result<(), TransactionError>;

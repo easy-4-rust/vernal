@@ -15,12 +15,12 @@
 //! - 切面不直接依赖具体实现（事务/缓存等由 `vernal-tx`/`vernal-cache` 提供）
 //! - 切面只负责 AOP 拦截逻辑，不负责底层实现
 
-mod transactional_aspect;
-mod cacheable_aspect;
 mod async_aspect;
+mod cacheable_aspect;
 mod scheduled_aspect;
+mod transactional_aspect;
 
-pub use transactional_aspect::TransactionalAspect;
-pub use cacheable_aspect::CacheableAspect;
 pub use async_aspect::AsyncAspect;
+pub use cacheable_aspect::CacheableAspect;
 pub use scheduled_aspect::ScheduledAspect;
+pub use transactional_aspect::TransactionalAspect;

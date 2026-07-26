@@ -11,12 +11,12 @@ use tokio::{
     task::yield_now,
     time::{Duration, timeout},
 };
+use vernal_beans::{ComponentDefinition, RegistryBuilder};
 use vernal_context::{
     ApplicationContextBuilder, ContextError, ContextState, Lifecycle, LifecycleFuture,
     LifecyclePhase,
 };
 use vernal_core::BoxError;
-use vernal_beans::{ComponentDefinition, RegistryBuilder};
 
 type Events = Arc<Mutex<Vec<&'static str>>>;
 

@@ -2,11 +2,11 @@
 
 use std::{error::Error, sync::Arc};
 
-use vernal_core::BoxError;
 use vernal_beans::{
     ComponentDefinition, DefinitionError, GraphError, Qualifier, RegistryBuilder, ResolveError,
     TraitBinding,
 };
+use vernal_core::BoxError;
 
 mod trait_support;
 

@@ -58,8 +58,8 @@ impl Default for TaskOptions {
     /// 默认配置：无超时限制、不重试、正常优先级。
     fn default() -> Self {
         Self {
-            timeout: None,           // 跟随全局 TaskShutdownPolicy
-            max_retries: 0,          // 失败不重试
+            timeout: None,  // 跟随全局 TaskShutdownPolicy
+            max_retries: 0, // 失败不重试
             priority: TaskPriority::Normal,
         }
     }

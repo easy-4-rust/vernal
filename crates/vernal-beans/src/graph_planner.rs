@@ -67,9 +67,9 @@ impl GraphPlanner {
             })
             .collect();
         indexed.sort_by(|a, b| {
-            a.1.cmp(&b.1)                    // 深度优先
-                .then(a.2.cmp(&b.2))          // init_order 升序
-                .then(a.3.cmp(&b.3))          // DFS 位置稳定
+            a.1.cmp(&b.1) // 深度优先
+                .then(a.2.cmp(&b.2)) // init_order 升序
+                .then(a.3.cmp(&b.3)) // DFS 位置稳定
         });
         Ok(indexed.into_iter().map(|(idx, ..)| idx).collect())
     }
@@ -284,10 +284,7 @@ impl GraphPlanner {
     ///
     /// 深度定义为从任意根节点到该节点的最长路径长度。
     /// 根节点（无依赖）的深度为 0，依赖深度 = max(所有依赖深度) + 1。
-    fn compute_depths(
-        definitions: &[Arc<ComponentDefinition>],
-        ordered: &[usize],
-    ) -> Vec<usize> {
+    fn compute_depths(definitions: &[Arc<ComponentDefinition>], ordered: &[usize]) -> Vec<usize> {
         let n = definitions.len();
         // 初始化所有节点深度为 0（根节点保持 0）
         let mut depths = vec![0usize; n];
