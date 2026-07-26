@@ -1,0 +1,16 @@
+[package]
+name = "vernal-aspects"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Vernal 内建 AOP 切面：@Transactional / @Cacheable / @Async / @Scheduled"
+publish = false
+
+[dependencies]
+vernal-core = { path = "../vernal-core" }
+vernal-aop = { path = "../vernal-aop" }
+vernal-context = { path = "../vernal-context" }
+
+[lints]
+workspace = true
