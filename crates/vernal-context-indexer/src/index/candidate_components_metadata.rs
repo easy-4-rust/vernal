@@ -86,6 +86,10 @@ impl core::fmt::Display for CandidateComponentsMetadata {
     /// 对应 Spring `CandidateComponentsMetadata#toString()`：
     /// `"CandidateComponentsMetadata{items=[...]}"` 格式。
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(formatter, "CandidateComponentsMetadata{{items={:?}}}", self.items)
+        write!(
+            formatter,
+            "CandidateComponentsMetadata{{items={:?}}}",
+            self.items
+        )
     }
 }

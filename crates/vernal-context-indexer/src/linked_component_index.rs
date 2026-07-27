@@ -19,9 +19,7 @@ use std::collections::BTreeSet;
 
 use vernal_beans::{DefinitionError, RegistryBuilder};
 
-use crate::{
-    LINKED_COMPONENT_INDEX, LinkedComponentEntry, LinkedComponentIndexError,
-};
+use crate::{LINKED_COMPONENT_INDEX, LinkedComponentEntry, LinkedComponentIndexError};
 
 /// 一次模块路径扫描得到的确定性、只读组件注册索引。
 ///
@@ -329,11 +327,17 @@ impl LinkedComponentIndex {
     /// 调用方可把返回迭代器直接交给
     /// `VernalApplicationBuilder::register_all`。迭代器不暴露或缓存实例，每次
     /// 调用都从静态定义工厂重新创建完整批次。
-    pub fn component_definitions(&self) -> impl Iterator<Item = vernal_beans::ComponentDefinition> + '_ {
+    pub fn component_definitions(
+        &self,
+    ) -> impl Iterator<Item = vernal_beans::ComponentDefinition> + '_ {
         self.static_entries
             .iter()
             .map(|entry| entry.component_definition())
-            .chain(self.runtime_entries.iter().map(|entry| entry.component_definition()))
+            .chain(
+                self.runtime_entries
+                    .iter()
+                    .map(|entry| entry.component_definition()),
+            )
     }
 
     /// 迭代全部条目（链接期 + 运行时）。
@@ -403,9 +407,7 @@ impl LinkedComponentIndex {
     }
 
     /// 校验条目的声明名合法性。
-    fn validate_entry(
-        entry: &LinkedComponentEntry,
-    ) -> Result<(), LinkedComponentIndexError> {
+    fn validate_entry(entry: &LinkedComponentEntry) -> Result<(), LinkedComponentIndexError> {
         if entry.name().is_empty()
             || entry
                 .name()

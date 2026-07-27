@@ -127,7 +127,8 @@ impl SortedProperties {
                 continue;
             }
             if let Some((key, value)) = trimmed.split_once('=') {
-                self.inner.insert(key.trim().to_owned(), value.trim().to_owned());
+                self.inner
+                    .insert(key.trim().to_owned(), value.trim().to_owned());
             }
             // 忽略格式错误的行（与 Spring `Properties#load` 的容错语义一致）
         }

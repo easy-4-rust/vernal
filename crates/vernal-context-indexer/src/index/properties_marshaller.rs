@@ -42,7 +42,10 @@ impl PropertiesMarshaller {
     /// # Errors
     ///
     /// 返回底层 `Write` 操作的 IO 错误。
-    pub fn write(metadata: &CandidateComponentsMetadata, writer: &mut impl Write) -> io::Result<()> {
+    pub fn write(
+        metadata: &CandidateComponentsMetadata,
+        writer: &mut impl Write,
+    ) -> io::Result<()> {
         let mut props = SortedProperties::new(true);
         for item in metadata.get_items() {
             let stereotypes_joined = {

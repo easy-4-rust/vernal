@@ -31,5 +31,5 @@ mod type_helper;
 pub use candidate_components_metadata::CandidateComponentsMetadata;
 pub use item_metadata::ItemMetadata;
 pub use properties_marshaller::PropertiesMarshaller;
-pub use sorted_properties::{SortedProperties, EOL as SORTED_PROPERTIES_EOL};
+pub use sorted_properties::{EOL as SORTED_PROPERTIES_EOL, SortedProperties};
 pub use type_helper::TypeHelper;

@@ -49,7 +49,11 @@ use vernal_context_indexer::{
 
 /// 断言 metadata 包含指定 type + stereotypes 的 entry。
 /// 对标 Spring `Metadata.of(Class<?> type, Class<?>... stereotypes)`。
-fn assert_metadata_contains(metadata: &CandidateComponentsMetadata, type_name: &str, stereotypes: &[&str]) {
+fn assert_metadata_contains(
+    metadata: &CandidateComponentsMetadata,
+    type_name: &str,
+    stereotypes: &[&str],
+) {
     let item = metadata
         .get_items()
         .iter()
@@ -57,10 +61,7 @@ fn assert_metadata_contains(metadata: &CandidateComponentsMetadata, type_name: &
         .unwrap_or_else(|| panic!("type {type_name} not found in metadata"));
     let actual: BTreeSet<&str> = item.get_stereotypes().iter().map(String::as_str).collect();
     let expected: BTreeSet<&str> = stereotypes.iter().copied().collect();
-    assert_eq!(
-        actual, expected,
-        "type {type_name}: stereotypes mismatch"
-    );
+    assert_eq!(actual, expected, "type {type_name}: stereotypes mismatch");
 }
 
 // =============================================================================
@@ -146,12 +147,7 @@ fn inject_entry(
     // `LinkedComponentEntry::new` 需要 `&'static [&'static str]`,因此 stereotype
     // 数组本身也必须为 `&'static`。调用方传入字符串字面量数组时,字面量
     // 自动具有 `'static` 生命周期。
-    LinkedComponentEntry::new(
-        module_path,
-        name,
-        stereotypes,
-        dummy_definition,
-    )
+    LinkedComponentEntry::new(module_path, name, stereotypes, dummy_definition)
 }
 
 /// dummy 组件定义工厂（所有注入 entry 共用一个）。
@@ -341,10 +337,7 @@ fn jakarta_named() {
     ));
 
     let types = index.get("spring_test_cdi", "jakarta.inject.Named");
-    assert_eq!(
-        types,
-        BTreeSet::from(["spring_test_cdi::SampleNamed"])
-    );
+    assert_eq!(types, BTreeSet::from(["spring_test_cdi::SampleNamed"]));
 }
 
 // =============================================================================
@@ -381,10 +374,7 @@ fn jakarta_entity() {
     ));
 
     let types = index.get("spring_test_jpa", "jakarta.persistence.Entity");
-    assert_eq!(
-        types,
-        BTreeSet::from(["spring_test_jpa::SampleEntity"])
-    );
+    assert_eq!(types, BTreeSet::from(["spring_test_jpa::SampleEntity"]));
 }
 
 // =============================================================================
@@ -421,10 +411,7 @@ fn jakarta_embeddable() {
     ));
 
     let types = index.get("spring_test_jpa", "jakarta.persistence.Embeddable");
-    assert_eq!(
-        types,
-        BTreeSet::from(["spring_test_jpa::SampleEmbeddable"])
-    );
+    assert_eq!(types, BTreeSet::from(["spring_test_jpa::SampleEmbeddable"]));
 }
 
 // =============================================================================
@@ -441,10 +428,7 @@ fn jakarta_converter() {
     ));
 
     let types = index.get("spring_test_jpa", "jakarta.persistence.Converter");
-    assert_eq!(
-        types,
-        BTreeSet::from(["spring_test_jpa::SampleConverter"])
-    );
+    assert_eq!(types, BTreeSet::from(["spring_test_jpa::SampleConverter"]));
 }
 
 // =============================================================================
@@ -458,10 +442,7 @@ fn package_info() {
     let mut metadata = CandidateComponentsMetadata::new();
     let mut stereotypes = BTreeSet::new();
     stereotypes.insert("package-info".to_string());
-    metadata.add(ItemMetadata::new(
-        "spring_test_package_info",
-        stereotypes,
-    ));
+    metadata.add(ItemMetadata::new("spring_test_package_info", stereotypes));
 
     assert_metadata_contains(&metadata, "spring_test_package_info", &["package-info"]);
 }
@@ -502,10 +483,7 @@ fn type_stereotype_super_class() {
     ));
 
     let types = index.get("spring_test_type", "Repo");
-    assert_eq!(
-        types,
-        BTreeSet::from(["spring_test_type::SampleRepo"])
-    );
+    assert_eq!(types, BTreeSet::from(["spring_test_type::SampleRepo"]));
 }
 
 // =============================================================================
@@ -547,10 +525,7 @@ fn type_stereotype_on_interface() {
     ));
 
     let types = index.get("spring_test_type", "Repo");
-    assert_eq!(
-        types,
-        BTreeSet::from(["spring_test_type::SpecializedRepo"])
-    );
+    assert_eq!(types, BTreeSet::from(["spring_test_type::SpecializedRepo"]));
 }
 
 // =============================================================================
@@ -568,14 +543,8 @@ fn type_stereotype_on_interface_multi() {
 
     let repo_types = index.get("spring_test_type", "Repo");
     let smart_types = index.get("spring_test_type", "SmartRepo");
-    assert_eq!(
-        repo_types,
-        BTreeSet::from(["spring_test_type::SmartRepo"])
-    );
-    assert_eq!(
-        smart_types,
-        BTreeSet::from(["spring_test_type::SmartRepo"])
-    );
+    assert_eq!(repo_types, BTreeSet::from(["spring_test_type::SmartRepo"]));
+    assert_eq!(smart_types, BTreeSet::from(["spring_test_type::SmartRepo"]));
 }
 
 // =============================================================================
@@ -592,10 +561,7 @@ fn type_stereotype_on_indexed_interface() {
     ));
 
     let types = index.get("spring_test_type", "Repo");
-    assert_eq!(
-        types,
-        BTreeSet::from(["spring_test_type::Repo"])
-    );
+    assert_eq!(types, BTreeSet::from(["spring_test_type::Repo"]));
 }
 
 // =============================================================================
@@ -654,7 +620,9 @@ fn embedded_non_static_ignored() {
 fn runtime_inject_add_entry_and_clear_cache() {
     // 对标 Spring `CandidateComponentsIndexLoader#addIndex` / `clearCache`
     let mut index = LinkedComponentIndex::empty();
-    index.register_scan(vec!["runtime_inject_group".to_string()]).unwrap();
+    index
+        .register_scan(vec!["runtime_inject_group".to_string()])
+        .unwrap();
 
     // has() 在 complete=false 时使用 base_packages 判定
     assert!(index.has("runtime_inject_group"));
@@ -701,12 +669,16 @@ fn runtime_inject_iter_entries_returns_static_and_runtime() {
         .collect();
 
     assert_eq!(entries.len(), 2);
-    assert!(entries
-        .iter()
-        .any(|(name, _)| *name == "iter_test_group::RuntimeA"));
-    assert!(entries
-        .iter()
-        .any(|(name, _)| *name == "iter_test_group::RuntimeB"));
+    assert!(
+        entries
+            .iter()
+            .any(|(name, _)| *name == "iter_test_group::RuntimeA")
+    );
+    assert!(
+        entries
+            .iter()
+            .any(|(name, _)| *name == "iter_test_group::RuntimeB")
+    );
 }
 
 #[test]
@@ -757,7 +729,9 @@ fn type_helper_basic() {
 
     // jakarta 命名空间检测
     assert!(TypeHelper::is_jakarta_annotation("jakarta.inject.Named"));
-    assert!(!TypeHelper::is_jakarta_annotation("org.springframework.stereotype.Component"));
+    assert!(!TypeHelper::is_jakarta_annotation(
+        "org.springframework.stereotype.Component"
+    ));
 
     // @Indexed 元注解检测
     assert!(TypeHelper::is_indexed_annotation(
