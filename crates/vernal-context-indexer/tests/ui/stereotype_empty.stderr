@@ -1,0 +1,11 @@
+error: stereotype 不能为空
+ --> tests/ui/stereotype_empty.rs:4:26
+  |
+4 | #[component(stereotype = "")]
+  |                          ^^
+
+error[E0601]: `main` function not found in crate `$CRATE`
+ --> tests/ui/stereotype_empty.rs:5:19
+  |
+5 | pub struct Sample;
+  |                   ^ consider adding a `main` function to `$DIR/tests/ui/stereotype_empty.rs`

@@ -83,6 +83,34 @@ impl EventBus {
         }
     }
 
+    /// 发布携带任意负载的事件，对标 Spring 7.0
+    /// `ApplicationEventPublisher#publishEvent(Object payload)`。
+    ///
+    /// 调用方提供 `source` 与 `payload`；EventBus 包装成
+    /// [`crate::PayloadApplicationEvent<T>`] 并按该类型广播。订阅方需要订阅
+    /// `PayloadApplicationEvent<T>` 而不是裸 `T`，与 Spring 一致：
+    ///
+    /// ```rust,ignore
+    /// // 发布
+    /// bus.publish_payload(source_arc, "order-42").await;
+    /// // 订阅
+    /// let mut rx = bus.subscribe::<PayloadApplicationEvent<String>>().await;
+    /// ```
+    ///
+    /// 返回成功接收该事件的订阅方数量。
+    pub async fn publish_payload<T>(
+        &self,
+        source: Arc<dyn Any + Send + Sync>,
+        payload: T,
+    ) -> usize
+    where
+        T: Any + Send + Sync,
+    {
+        let event: crate::PayloadApplicationEvent<T> =
+            crate::PayloadApplicationEvent::new(source, Arc::new(payload));
+        self.publish(event).await
+    }
+
     /// 返回指定事件类型的当前订阅方数量。
     ///
     /// 用于诊断和监控。注意：此值是瞬时快照，可能在返回后立即变化。

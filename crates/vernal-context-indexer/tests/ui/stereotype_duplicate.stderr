@@ -1,0 +1,11 @@
+error: stereotype 只能声明一次
+ --> tests/ui/stereotype_duplicate.rs:4:33
+  |
+4 | #[component(stereotype = "app", stereotype = "other")]
+  |                                 ^^^^^^^^^^
+
+error[E0601]: `main` function not found in crate `$CRATE`
+ --> tests/ui/stereotype_duplicate.rs:5:19
+  |
+5 | pub struct Sample;
+  |                   ^ consider adding a `main` function to `$DIR/tests/ui/stereotype_duplicate.rs`

@@ -153,8 +153,10 @@ impl LinkedComponentIndex {
     /// 合并后发现重复注册会返回错误。
     pub fn merge(indices: &[&Self]) -> Result<Self, LinkedComponentIndexError> {
         let mut all: Vec<&'static LinkedComponentEntry> = Vec::new();
+        let mut all_runtime: Vec<LinkedComponentEntry> = Vec::new();
         for index in indices {
             all.extend(index.static_entries.iter().copied());
+            all_runtime.extend(index.runtime_entries.iter().cloned());
         }
 
         // 按 (module_path, name) 排序
@@ -171,7 +173,7 @@ impl LinkedComponentIndex {
 
         Ok(Self {
             static_entries: all,
-            runtime_entries: Vec::new(),
+            runtime_entries: all_runtime,
             base_packages,
             complete: true,
         })

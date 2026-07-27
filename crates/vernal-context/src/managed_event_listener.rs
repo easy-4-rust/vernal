@@ -99,6 +99,12 @@ impl ManagedEventListener {
     }
 
     /// 持续消费事件，直到应用取消、总线关闭或发生 fail-fast 错误。
+    ///
+    /// 在调用 `on_event` 之前先查询监听器的 SmartApplicationListener 钩子：
+    /// `supports_event_type` 与 `supports_source` 任一返回 `false` 都会跳过本次
+    /// 派发，对标 Spring `SimpleApplicationEventMulticaster` 在派发前调用
+    /// `SmartApplicationListener#supportsEventType` /
+    /// `#supportsSourceType` 的行为。
     async fn consume<E, L>(
         listener: Arc<L>,
         mut receiver: broadcast::Receiver<Arc<E>>,
@@ -110,19 +116,35 @@ impl ManagedEventListener {
         L: ApplicationEventListener<E>,
     {
         let event = std::any::type_name::<E>();
+        let event_type_id = std::any::TypeId::of::<E>();
         loop {
             tokio::select! {
                 biased;
                 () = cancellation.cancelled() => return Ok(()),
                 message = receiver.recv() => {
                     match message {
-                        Ok(value) => listener.on_event(value).await.map_err(|source| {
-                            EventListenerError::HandlerFailed {
-                                listener: listener_name,
-                                event,
-                                source: Arc::new(source),
+                        Ok(value) => {
+                            // SmartApplicationListener 过滤：先按事件类型，再按源类型。
+                            // 对标 Spring `SimpleApplicationEventMulticaster#multicastEvent`
+                            // 中的 `supportsEventType` + `supportsSourceType` 检查。
+                            if !listener.supports_event_type(event_type_id) {
+                                continue;
                             }
-                        })?,
+                            // 源类型过滤交给监听器：如果事件类型实现了
+                            // ApplicationContextEvent，监听器可以在 supports_source
+                            // 中通过 TypeId::of::<E>() 检查具体源类型。普通事件
+                            // 传 None，让监听器自行决定。
+                            if !listener.supports_source(None) {
+                                continue;
+                            }
+                            listener.on_event(value).await.map_err(|source| {
+                                EventListenerError::HandlerFailed {
+                                    listener: listener_name,
+                                    event,
+                                    source: Arc::new(source),
+                                }
+                            })?
+                        }
                         Err(broadcast::error::RecvError::Lagged(skipped)) => {
                             return Err(EventListenerError::Lagged {
                                 listener: listener_name,
