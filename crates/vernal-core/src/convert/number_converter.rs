@@ -36,3 +36,60 @@ impl_convertible_for_number!(u128, "u128");
 impl_convertible_for_number!(usize, "usize");
 impl_convertible_for_number!(f32, "f32");
 impl_convertible_for_number!(f64, "f64");
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn i32_valid() {
+        assert_eq!(i32::from_str_value("42").unwrap(), 42);
+        assert_eq!(i32::from_str_value("-1").unwrap(), -1);
+        assert_eq!(i32::from_str_value("0").unwrap(), 0);
+    }
+
+    #[test]
+    fn i32_invalid() {
+        let err = i32::from_str_value("abc").unwrap_err();
+        assert_eq!(err.target_type, "i32");
+    }
+
+    #[test]
+    fn u64_valid() {
+        assert_eq!(u64::from_str_value("123456789").unwrap(), 123456789u64);
+    }
+
+    #[test]
+    fn u64_overflow() {
+        let err = u64::from_str_value("-1").unwrap_err();
+        assert_eq!(err.target_type, "u64");
+    }
+
+    #[test]
+    fn f64_valid() {
+        assert!((f64::from_str_value("3.14").unwrap() - 3.14).abs() < 1e-10);
+    }
+
+    #[test]
+    fn f32_valid() {
+        assert!((f32::from_str_value("2.5").unwrap() - 2.5).abs() < 1e-6);
+    }
+
+    #[test]
+    fn i8_boundary() {
+        assert_eq!(i8::from_str_value("127").unwrap(), 127);
+        assert_eq!(i8::from_str_value("-128").unwrap(), -128);
+        assert!(i8::from_str_value("128").is_err());
+    }
+
+    #[test]
+    fn usize_valid() {
+        assert_eq!(usize::from_str_value("100").unwrap(), 100usize);
+    }
+
+    #[test]
+    fn empty_string_fails() {
+        assert!(i32::from_str_value("").is_err());
+        assert!(f64::from_str_value("").is_err());
+    }
+}

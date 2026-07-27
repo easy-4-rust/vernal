@@ -1,6 +1,6 @@
 //! 错误码 trait。
 //!
-//! 对标 tx_di 的 `CodeMsg` 模式：每个错误枚举变体携带域、码、消息三元组，
+//! 对标 `tx_di` 的 `CodeMsg` 模式：每个错误枚举变体携带域、码、消息三元组，
 //! 支持程序化匹配和跨 crate 边界的结构化错误传播。
 //!
 //! 通过 `#[derive(ErrorCode)]` 宏（在 `vernal-macros` 中实现）自动生成此 trait 的实现。
@@ -14,7 +14,7 @@ use super::VernalError;
 ///
 /// # 设计来源
 ///
-/// 对标 tx_di 的 `CodeMsg` trait，适配 vernal 的类型体系。
+/// 对标 `tx_di` 的 `CodeMsg` trait，适配 vernal 的类型体系。
 ///
 /// # 实现方式
 ///
@@ -65,7 +65,7 @@ pub trait ErrorCode: Send + Sync + 'static {
 
     /// 转换为 [`VernalError::Business`] 变体。
     ///
-    /// 消费自身，将错误码三元组打包为 VernalError。
+    /// 消费自身，将错误码三元组打包为 `VernalError`。
     fn into_vernal_error(self) -> VernalError
     where
         Self: Sized,
@@ -82,5 +82,62 @@ pub trait ErrorCode: Send + Sync + 'static {
     /// 通过比较 domain + code 实现，用于重试逻辑和错误聚合。
     fn is_same_kind(&self, other: &dyn ErrorCode) -> bool {
         self.domain() == other.domain() && self.code() == other.code()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // 手动实现 ErrorCode 的测试枚举
+    #[derive(Debug)]
+    enum TestError {
+        NotFound,
+        Ambiguous,
+    }
+
+    impl ErrorCode for TestError {
+        fn domain(&self) -> &'static str { "test" }
+        fn code(&self) -> i32 {
+            match self {
+                Self::NotFound => -1,
+                Self::Ambiguous => -2,
+            }
+        }
+        fn message(&self) -> &'static str {
+            match self {
+                Self::NotFound => "not found",
+                Self::Ambiguous => "ambiguous",
+            }
+        }
+    }
+
+    #[test]
+    fn domain_code_message() {
+        let err = TestError::NotFound;
+        assert_eq!(err.domain(), "test");
+        assert_eq!(err.code(), -1);
+        assert_eq!(err.message(), "not found");
+    }
+
+    #[test]
+    fn into_vernal_error() {
+        let err = TestError::Ambiguous.into_vernal_error();
+        assert_eq!(err.domain(), Some("test"));
+        assert_eq!(err.code(), Some(-2));
+    }
+
+    #[test]
+    fn is_same_kind_true() {
+        let a = TestError::NotFound;
+        let b = TestError::NotFound;
+        assert!(a.is_same_kind(&b));
+    }
+
+    #[test]
+    fn is_same_kind_false_different_code() {
+        let a = TestError::NotFound;
+        let b = TestError::Ambiguous;
+        assert!(!a.is_same_kind(&b));
     }
 }

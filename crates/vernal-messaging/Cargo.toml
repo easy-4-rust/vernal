@@ -8,7 +8,7 @@ description = "Vernal 消息通道抽象（对标 spring-messaging）"
 publish = false
 
 [dependencies]
-vernal-core = { path = "../vernal-core" }
+tokio.workspace = true
 
 [lints]
 workspace = true

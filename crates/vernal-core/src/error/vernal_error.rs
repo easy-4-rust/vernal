@@ -3,7 +3,7 @@
 //! [`VernalError`] 是 Vernal 框架的顶层错误枚举，支持三种变体：
 //!
 //! - **Business**：零分配的业务错误码（domain / code / message 三元组）
-//! - **WithContext**：在 Business 基础上附加动态诊断信息
+//! - **`WithContext`**：在 Business 基础上附加动态诊断信息
 //! - **Infrastructure**：包装第三方库或 IO 错误
 //!
 //! 与 `BoxError` / `SharedError` 的区别在于：`VernalError` 支持跨 crate 边界的
@@ -19,7 +19,7 @@ use super::{ErrorContext, ErrorReport};
 ///
 /// # 设计来源
 ///
-/// 对标 tx_di 的 `AppError`（domain / code / message）模式，
+/// 对标 `tx_di` 的 `AppError`（domain / code / message）模式，
 /// 增加了结构化上下文（`WithContextEntries`）变体。
 ///
 /// # 错误匹配
@@ -159,7 +159,7 @@ impl VernalError {
         Self::Infrastructure(std::sync::Arc::new(error))
     }
 
-    /// 创建基础设施错误（从 SharedError）。
+    /// 创建基础设施错误（从 `SharedError`）。
     #[must_use]
     pub fn infrastructure_shared(error: SharedError) -> Self {
         Self::Infrastructure(error)
@@ -276,14 +276,14 @@ impl std::error::Error for VernalError {
 // ─── From 转换 ───
 
 impl From<BoxError> for VernalError {
-    /// 从 BoxError 转换为基础设施错误。
+    /// 从 `BoxError` 转换为基础设施错误。
     fn from(error: BoxError) -> Self {
         Self::Infrastructure(std::sync::Arc::from(error))
     }
 }
 
 impl From<SharedError> for VernalError {
-    /// 从 SharedError 转换为基础设施错误。
+    /// 从 `SharedError` 转换为基础设施错误。
     fn from(error: SharedError) -> Self {
         Self::Infrastructure(error)
     }
@@ -293,6 +293,35 @@ impl From<std::io::Error> for VernalError {
     /// 从 IO 错误转换为基础设施错误。
     fn from(error: std::io::Error) -> Self {
         Self::infrastructure(error)
+    }
+}
+
+impl From<String> for VernalError {
+    /// 从字符串创建基础设施错误。
+    ///
+    /// 用于不希望引入 `anyhow` 但仍希望 `?` 传播字符串错误的场景。
+    /// 字符串会被包装在 [`std::io::Error::new`] 中，保留原始消息。
+    ///
+    /// # 等价
+    ///
+    /// ```rust,ignore
+    /// let err: VernalError = "db failed".to_string().into();
+    /// // 等价于
+    /// let err = VernalError::infrastructure(
+    ///     std::io::Error::new(std::io::ErrorKind::Other, "db failed")
+    /// );
+    /// ```
+    fn from(message: String) -> Self {
+        Self::infrastructure(std::io::Error::other(message))
+    }
+}
+
+impl From<&str> for VernalError {
+    /// 从字符串字面量创建基础设施错误。
+    ///
+    /// 与 `From<String>` 等价，便于在 `?` 表达式中直接传递字面量。
+    fn from(message: &str) -> Self {
+        Self::from(message.to_string())
     }
 }
 
@@ -351,3 +380,252 @@ impl PartialEq for VernalError {
 }
 
 impl Eq for VernalError {}
+
+// ─── 单元测试 ─────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::error::Error as _;
+
+    // ── 构造 ──
+
+    #[test]
+    fn business_constructor_sets_all_fields() {
+        let err = VernalError::business("ioc", -1, "组件未找到");
+        assert_eq!(err.domain(), Some("ioc"));
+        assert_eq!(err.code(), Some(-1));
+        assert_eq!(err.message(), "组件未找到");
+        assert!(err.is_business());
+        assert!(!err.is_infrastructure());
+    }
+
+    #[test]
+    fn with_context_constructor_preserves_context() {
+        let err = VernalError::with_context("ioc", -2, "依赖歧义", "DatabasePool vs CachePool");
+        assert_eq!(err.domain(), Some("ioc"));
+        assert_eq!(err.code(), Some(-2));
+        assert!(err.is_business());
+    }
+
+    #[test]
+    fn with_context_entries_constructor_works() {
+        let ctx = ErrorContext::new()
+            .with("component", "DatabasePool")
+            .with("reason", "timeout");
+        let err = VernalError::with_context_entries("ioc", -3, "组件启动失败", ctx);
+        assert_eq!(err.code(), Some(-3));
+        assert!(err.is_business());
+    }
+
+    #[test]
+    fn infrastructure_constructor_wraps_error() {
+        let io_err = std::io::Error::new(std::io::ErrorKind::NotFound, "missing");
+        let err = VernalError::infrastructure(io_err);
+        assert!(err.is_infrastructure());
+        assert!(!err.is_business());
+        assert_eq!(err.domain(), None);
+        assert_eq!(err.code(), None);
+        assert_eq!(err.message(), "internal error");
+    }
+
+    // ── Display ──
+
+    #[test]
+    fn display_business_format_matches_spring_convention() {
+        let err = VernalError::business("ioc", -1, "组件未找到");
+        assert_eq!(err.to_string(), "[ioc:-1] 组件未找到");
+    }
+
+    #[test]
+    fn display_with_context_includes_context_suffix() {
+        let err = VernalError::with_context("ioc", -2, "依赖歧义", "DatabasePool vs CachePool");
+        let s = err.to_string();
+        assert!(s.starts_with("[ioc:-2] 依赖歧义"), "actual: {s}");
+        assert!(s.contains("DatabasePool vs CachePool"), "actual: {s}");
+    }
+
+    #[test]
+    fn display_with_context_entries_does_not_leak_entry_values() {
+        let ctx = ErrorContext::new().with("secret", "hunter2");
+        let err = VernalError::with_context_entries("ioc", -3, "启动失败", ctx);
+        let s = err.to_string();
+        assert!(
+            !s.contains("hunter2"),
+            "敏感数据不应出现在 Display 输出: {s}"
+        );
+    }
+
+    #[test]
+    fn display_infrastructure_starts_with_infrastructure_marker() {
+        let err: VernalError = std::io::Error::other("disk full").into();
+        let s = err.to_string();
+        assert!(s.starts_with("[infrastructure]"), "actual: {s}");
+        assert!(s.contains("disk full"));
+    }
+
+    // ── source() ──
+
+    #[test]
+    fn source_returns_some_only_for_infrastructure() {
+        let infra: VernalError = std::io::Error::other("x").into();
+        assert!(infra.source().is_some());
+
+        let biz = VernalError::business("ioc", -1, "x");
+        assert!(biz.source().is_none());
+
+        let ctx = VernalError::with_context("ioc", -1, "x", "ctx");
+        assert!(ctx.source().is_none());
+
+        let entries = VernalError::with_context_entries("ioc", -1, "x", ErrorContext::new());
+        assert!(entries.source().is_none());
+    }
+
+    // ── PartialEq ──
+
+    #[test]
+    fn business_eq_ignores_message_difference() {
+        let a = VernalError::business("ioc", -1, "消息 A");
+        let b = VernalError::business("ioc", -1, "消息 B");
+        assert_eq!(a, b, "相同 domain+code 应相等，即便消息不同");
+    }
+
+    #[test]
+    fn business_ne_when_domain_differs() {
+        let a = VernalError::business("ioc", -1, "x");
+        let b = VernalError::business("aop", -1, "x");
+        assert_ne!(a, b);
+    }
+
+    #[test]
+    fn business_ne_when_code_differs() {
+        let a = VernalError::business("ioc", -1, "x");
+        let b = VernalError::business("ioc", -2, "x");
+        assert_ne!(a, b);
+    }
+
+    #[test]
+    fn with_context_eq_when_same_domain_code() {
+        let a = VernalError::with_context("ioc", -1, "x", "ctx A");
+        let b = VernalError::with_context("ioc", -1, "x", "ctx B");
+        assert_eq!(a, b, "相同 domain+code 应相等，即便上下文不同");
+    }
+
+    #[test]
+    fn cross_variant_never_equal() {
+        let biz = VernalError::business("ioc", -1, "x");
+        let ctx = VernalError::with_context("ioc", -1, "x", "y");
+        let entries = VernalError::with_context_entries("ioc", -1, "x", ErrorContext::new());
+        let infra: VernalError = std::io::Error::other("z").into();
+
+        assert_ne!(biz, ctx);
+        assert_ne!(biz, entries);
+        assert_ne!(biz, infra);
+        assert_ne!(ctx, entries);
+        assert_ne!(ctx, infra);
+        assert_ne!(entries, infra);
+    }
+
+    #[test]
+    fn infrastructure_eq_uses_arc_ptr_identity() {
+        // 同一 Arc 实例 → 相等
+        let shared_err: SharedError = std::sync::Arc::new(std::io::Error::other("x"));
+        let a = VernalError::infrastructure_shared(shared_err.clone());
+        let b = VernalError::infrastructure_shared(shared_err);
+        assert_eq!(a, b);
+
+        // 不同 Arc 实例（即使消息相同）→ 不相等
+        let c: VernalError = std::io::Error::other("x").into();
+        let d: VernalError = std::io::Error::other("x").into();
+        assert_ne!(c, d);
+    }
+
+    // ── From 转换 ──
+
+    #[test]
+    fn from_box_error_produces_infrastructure() {
+        let boxed: BoxError = Box::new(std::io::Error::other("wrapped"));
+        let err: VernalError = boxed.into();
+        assert!(err.is_infrastructure());
+    }
+
+    #[test]
+    fn from_shared_error_produces_infrastructure() {
+        let shared: SharedError = std::sync::Arc::new(std::io::Error::other("shared"));
+        let err: VernalError = shared.into();
+        assert!(err.is_infrastructure());
+    }
+
+    #[test]
+    fn from_io_error_preserves_message() {
+        let io_err = std::io::Error::new(std::io::ErrorKind::ConnectionRefused, "no route");
+        let err: VernalError = io_err.into();
+        let s = err.to_string();
+        assert!(s.contains("no route"), "actual: {s}");
+        assert!(err.is_infrastructure());
+    }
+
+    #[test]
+    fn from_string_wraps_into_io_error_other() {
+        let err: VernalError = "disk full".to_string().into();
+        assert!(err.is_infrastructure());
+        let s = err.to_string();
+        assert!(s.contains("disk full"), "actual: {s}");
+    }
+
+    #[test]
+    fn from_str_literal_produces_infrastructure() {
+        let err: VernalError = "db unreachable".into();
+        assert!(err.is_infrastructure());
+        assert!(err.to_string().contains("db unreachable"));
+    }
+
+    #[test]
+    fn vernal_error_converts_to_box_error_via_blanket_impl() {
+        let err = VernalError::business("ioc", -1, "x");
+        // 触发 blanket impl `From<E> for Box<dyn Error + Send + Sync>`
+        let boxed: BoxError = Box::new(err);
+        assert!(!boxed.to_string().is_empty());
+    }
+
+    // ── report() / ErrorReport ──
+
+    #[test]
+    fn business_report_contains_full_identity() {
+        let err = VernalError::business("ioc", -1, "组件未找到");
+        let report = err.report();
+        assert_eq!(report.domain(), "ioc");
+        assert_eq!(report.code(), -1);
+        assert_eq!(report.message(), "组件未找到");
+        assert_eq!(report.context_entries(), 0);
+        assert!(!report.is_infrastructure());
+    }
+
+    #[test]
+    fn with_context_report_counts_single_entry() {
+        let err = VernalError::with_context("ioc", -1, "x", "ctx-string");
+        let report = err.report();
+        assert_eq!(report.context_entries(), 1);
+    }
+
+    #[test]
+    fn infrastructure_report_redacts_internal_details() {
+        let err: VernalError = std::io::Error::other("secret stacktrace").into();
+        let report = err.report();
+        assert_eq!(report.domain(), "unknown");
+        assert_eq!(report.code(), -9999);
+        assert_eq!(report.message(), "internal error");
+        assert_eq!(report.context_entries(), 0);
+        assert!(report.is_infrastructure());
+        // 错误消息不得包含源错误细节
+        assert!(!report.to_string().contains("secret stacktrace"));
+    }
+
+    // ── Send + Sync 编译期断言 ──
+
+    #[test]
+    fn vernal_error_is_send_and_sync() {
+        fn assert_send_sync<T: Send + Sync>() {}
+        assert_send_sync::<VernalError>();
+    }
+}

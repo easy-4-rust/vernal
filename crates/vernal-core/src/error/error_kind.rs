@@ -1,6 +1,6 @@
 //! 错误分类枚举。
 //!
-//! 将 VernalError 按照错误性质分为四大类，便于上层统一处理：
+//! 将 `VernalError` 按照错误性质分为四大类，便于上层统一处理：
 //! - 业务错误：用户代码或配置导致的可预期错误
 //! - 基础设施错误：IO、网络、第三方库导致的不可预期错误
 //! - 验证错误：输入数据不满足约束
@@ -45,5 +45,44 @@ impl std::fmt::Display for ErrorKind {
             Self::Validation => write!(f, "validation"),
             Self::Internal => write!(f, "internal"),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn display_outputs_lowercase() {
+        assert_eq!(ErrorKind::Business.to_string(), "business");
+        assert_eq!(ErrorKind::Infrastructure.to_string(), "infrastructure");
+        assert_eq!(ErrorKind::Validation.to_string(), "validation");
+        assert_eq!(ErrorKind::Internal.to_string(), "internal");
+    }
+
+    #[test]
+    fn all_variants_are_distinct() {
+        assert_ne!(ErrorKind::Business, ErrorKind::Infrastructure);
+        assert_ne!(ErrorKind::Business, ErrorKind::Validation);
+        assert_ne!(ErrorKind::Business, ErrorKind::Internal);
+        assert_ne!(ErrorKind::Infrastructure, ErrorKind::Validation);
+        assert_ne!(ErrorKind::Infrastructure, ErrorKind::Internal);
+        assert_ne!(ErrorKind::Validation, ErrorKind::Internal);
+    }
+
+    #[test]
+    fn is_copy() {
+        let k = ErrorKind::Business;
+        let k2 = k;
+        assert_eq!(k, k2);
+    }
+
+    #[test]
+    fn is_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(ErrorKind::Business);
+        set.insert(ErrorKind::Infrastructure);
+        assert_eq!(set.len(), 2);
     }
 }

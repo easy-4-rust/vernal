@@ -23,3 +23,42 @@ impl Convertible for bool {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn true_values() {
+        assert_eq!(bool::from_str_value("true").unwrap(), true);
+        assert_eq!(bool::from_str_value("1").unwrap(), true);
+        assert_eq!(bool::from_str_value("yes").unwrap(), true);
+        assert_eq!(bool::from_str_value("on").unwrap(), true);
+        assert_eq!(bool::from_str_value("TRUE").unwrap(), true);
+        assert_eq!(bool::from_str_value("Yes").unwrap(), true);
+        assert_eq!(bool::from_str_value("ON").unwrap(), true);
+    }
+
+    #[test]
+    fn false_values() {
+        assert_eq!(bool::from_str_value("false").unwrap(), false);
+        assert_eq!(bool::from_str_value("0").unwrap(), false);
+        assert_eq!(bool::from_str_value("no").unwrap(), false);
+        assert_eq!(bool::from_str_value("off").unwrap(), false);
+        assert_eq!(bool::from_str_value("FALSE").unwrap(), false);
+        assert_eq!(bool::from_str_value("No").unwrap(), false);
+        assert_eq!(bool::from_str_value("OFF").unwrap(), false);
+    }
+
+    #[test]
+    fn invalid_returns_error() {
+        let err = bool::from_str_value("invalid").unwrap_err();
+        assert_eq!(err.target_type, "bool");
+    }
+
+    #[test]
+    fn empty_returns_error() {
+        let err = bool::from_str_value("").unwrap_err();
+        assert_eq!(err.target_type, "bool");
+    }
+}

@@ -47,7 +47,7 @@ pub struct ErrorReport {
 }
 
 impl ErrorReport {
-    /// 从 VernalError 创建脱敏报告。
+    /// 从 `VernalError` 创建脱敏报告。
     #[must_use]
     pub fn from_error(error: &VernalError) -> Self {
         match error {
@@ -72,7 +72,7 @@ impl ErrorReport {
                 code: *code,
                 message,
                 // 上下文是单个字符串，计为 1 个条目
-                context_entries: if context.is_empty() { 0 } else { 1 },
+                context_entries: usize::from(!context.is_empty()),
                 kind: ErrorKind::Business,
             },
             VernalError::WithContextEntries {
@@ -159,5 +159,58 @@ impl fmt::Display for ErrorReport {
             write!(f, " ({} diagnostic entries)", self.context_entries)?;
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::error::ErrorContext;
+
+    #[test]
+    fn from_business_error() {
+        let err = VernalError::business("ioc", -1, "not found");
+        let report = ErrorReport::from_error(&err);
+        assert_eq!(report.domain(), "ioc");
+        assert_eq!(report.code(), -1);
+        assert_eq!(report.message(), "not found");
+        assert_eq!(report.context_entries(), 0);
+        assert!(!report.is_infrastructure());
+    }
+
+    #[test]
+    fn from_with_context_error() {
+        let err = VernalError::with_context("aop", -2, "no advisor", "id=42");
+        let report = ErrorReport::from_error(&err);
+        assert_eq!(report.domain(), "aop");
+        assert_eq!(report.context_entries(), 1);
+    }
+
+    #[test]
+    fn from_infrastructure_error() {
+        let io_err = std::io::Error::new(std::io::ErrorKind::Other, "fail");
+        let err = VernalError::infrastructure(io_err);
+        let report = ErrorReport::from_error(&err);
+        assert!(report.is_infrastructure());
+        assert_eq!(report.message(), "internal error");
+    }
+
+    #[test]
+    fn display_format() {
+        let err = VernalError::business("ioc", -1, "not found");
+        let report = ErrorReport::from_error(&err);
+        let s = report.to_string();
+        assert!(s.contains("ioc"));
+        assert!(s.contains("-1"));
+        assert!(s.contains("not found"));
+    }
+
+    #[test]
+    fn display_with_context_entries() {
+        let ctx = ErrorContext::new().with("k", "v");
+        let err = VernalError::with_context_entries("ioc", -1, "err", ctx);
+        let report = ErrorReport::from_error(&err);
+        let s = report.to_string();
+        assert!(s.contains("1 diagnostic entries"));
     }
 }

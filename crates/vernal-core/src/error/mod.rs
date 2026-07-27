@@ -3,7 +3,7 @@
 //! 提供跨子系统的结构化错误类型 [`VernalError`]，支持：
 //!
 //! - **零分配的业务错误码**（domain / code / message）
-//! - **带动态上下文的增强错误**（WithContext 变体）
+//! - **带动态上下文的增强错误**（`WithContext` 变体）
 //! - **第三方错误的透明包装**（Infrastructure 变体）
 //!
 //! ## 与现有错误类型的关系
@@ -16,7 +16,7 @@
 //!
 //! ## 设计来源
 //!
-//! 对标 tx_di 的 `AppError`（domain / code / message）+ `CodeMsg` 模式，
+//! 对标 `tx_di` 的 `AppError`（domain / code / message）+ `CodeMsg` 模式，
 //! 适配 vernal 的类型体系和异步模型。
 
 // ─── 子模块声明 ───

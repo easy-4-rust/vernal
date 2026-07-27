@@ -7,5 +7,78 @@ license.workspace = true
 description = "Stable shared contracts for the Vernal framework."
 publish = false
 
+[dependencies]
+# workspace level(已有)
+linkme = { workspace = true }
+
+# Tier 1:强烈推荐(基础设施)
+thiserror = { version = "2.0", optional = true, default-features = false }
+pastey = { version = "0.2", optional = true }
+once_cell = { version = "1.21", optional = true }
+inventory = { version = "0.3", optional = true }
+
+# Tier 2:强烈推荐(用户可见类型)
+uuid = { version = "1.24", optional = true, default-features = false, features = ["std", "v4", "v7"] }
+ulid = { version = "3.0", optional = true }
+nanoid = { version = "0.5", optional = true }
+url = { version = "2.5", optional = true }
+bytes = { version = "1.12", optional = true }
+time = { version = "0.3", optional = true, default-features = false, features = ["formatting", "parsing", "std"] }
+chrono = { version = "0.4", optional = true, default-features = false, features = ["clock", "std"] }
+serde = { version = "1", optional = true, default-features = false, features = ["std", "derive"] }
+derive_more = { version = "2.1", optional = true, default-features = false, features = ["display", "from", "error"] }
+regex = { version = "1.11", optional = true, default-features = false, features = ["std", "unicode-perl"] }
+mime-type = { version = "0.2", optional = true, package = "mime-type" }
+mimetype-detector = { version = "0.3", optional = true }
+
+# Tier 3:可选(特定场景)
+convert_case = { version = "0.11", optional = true }
+web-time = { version = "1.1", optional = true, default-features = false }
+sha2 = { version = "0.10", optional = true, default-features = false }
+[features]
+default = []
+
+# ─── Tier 1:基础设施(强烈推荐) ─────────────────────────────────
+# 启用 `#[derive(thiserror::Error)]` 在业务 crate 中的提示文档
+error-derive = ["dep:thiserror"]
+# 启用 `pastey` 宏拼接工具(对标 Java `paste`)
+macros = ["dep:pastey"]
+# 启用 `once_cell` 框架级单例(对标 Java static initializer)
+once-cell = ["dep:once_cell"]
+# 启用 `inventory` 分布式注册(对标 Java ServiceLoader)
+registry = ["dep:inventory"]
+
+# ─── Tier 2:用户可见类型(强烈推荐) ─────────────────────────────
+# ID 生成器后端
+id-uuid = ["dep:uuid"]
+id-ulid = ["dep:ulid"]
+id-nanoid = ["dep:nanoid"]
+# 类型转换器(feature-gated)
+convert-uuid = ["dep:uuid"]
+convert-url = ["dep:url"]
+convert-time = ["dep:time"]
+convert-chrono = ["dep:chrono"]
+convert-bytes = ["dep:bytes"]
+# 序列化(对标 Jackson / Gson)
+serde = ["dep:serde"]
+# 派生宏补充(对标 Lombok @Data / @EqualsAndHashCode)
+derive-extras = ["dep:derive_more"]
+# 正则表达式转换器(对标 Spring StringToPatternConverter / StringToRegexConverter)
+convert-regex = ["dep:regex"]
+# MIME 类型支持(对标 Spring MimeType,vernal-core 自实现不依赖外部 crate)
+mime = []
+# 扩展名↔MIME 静态映射(整合 mime-type crate,用于配置绑定/文件名查询)
+mime-ext = ["dep:mime-type"]
+# 字节内容嗅探(整合 mimetype-detector crate,用于上传检测)
+mime-sniff = ["dep:mimetype-detector"]
+# SHA-256 摘要(对标 Spring DigestUtils)
+digest = ["dep:sha2"]
+
+# ─── Tier 3:可选(特定场景) ─────────────────────────────────────
+# enum 大小写无关转换(对标 Spring StringUtils / Spring InitBinder)
+case-conv = ["dep:convert_case"]
+# WASM 兼容时间(对标 Java Nashorn / web time)
+time-web = ["dep:web-time"]
+
 [lints]
 workspace = true

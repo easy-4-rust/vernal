@@ -40,3 +40,52 @@ where
         reason: e.to_string(),
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[derive(Debug, PartialEq)]
+    enum Color {
+        Red,
+        Green,
+        Blue,
+    }
+
+    impl std::str::FromStr for Color {
+        type Err = String;
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            match s.to_lowercase().as_str() {
+                "red" => Ok(Color::Red),
+                "green" => Ok(Color::Green),
+                "blue" => Ok(Color::Blue),
+                _ => Err(format!("未知颜色: {s}")),
+            }
+        }
+    }
+
+    #[test]
+    fn convert_valid_enum() {
+        assert_eq!(convert_enum::<Color>("red").unwrap(), Color::Red);
+        assert_eq!(convert_enum::<Color>("GREEN").unwrap(), Color::Green);
+        assert_eq!(convert_enum::<Color>("Blue").unwrap(), Color::Blue);
+    }
+
+    #[test]
+    fn convert_invalid_enum_returns_error() {
+        let err = convert_enum::<Color>("yellow").unwrap_err();
+        assert!(err.reason.contains("未知颜色"));
+    }
+
+    #[test]
+    fn error_preserves_input_value() {
+        let err = convert_enum::<Color>("invalid").unwrap_err();
+        assert_eq!(err.value, "invalid");
+    }
+
+    #[test]
+    fn error_contains_type_name() {
+        let err = convert_enum::<Color>("x").unwrap_err();
+        assert!(err.target_type.contains("Color"));
+    }
+}

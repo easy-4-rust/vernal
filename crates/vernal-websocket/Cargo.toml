@@ -7,8 +7,23 @@ license.workspace = true
 description = "Vernal WebSocket 支持（对标 spring-websocket）"
 publish = false
 
+[features]
+default = ["tokio-websockets"]
+tokio-websockets = ["dep:futures-util", "dep:tokio-websockets"]
+
 [dependencies]
-vernal-core = { path = "../vernal-core" }
+bytes.workspace = true
+http.workspace = true
+serde_json.workspace = true
+tokio.workspace = true
+tokio-util.workspace = true
+tracing.workspace = true
+vernal-messaging = { path = "../vernal-messaging" }
+futures-util = { workspace = true, optional = true }
+tokio-websockets = { version = "=0.12.0", default-features = false, features = ["client", "server", "sha1_smol", "fastrand"], optional = true }
+
+[dev-dependencies]
+futures-util.workspace = true
 
 [lints]
 workspace = true

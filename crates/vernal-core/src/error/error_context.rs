@@ -81,3 +81,53 @@ impl fmt::Display for ErrorContext {
         write!(f, "[{} diagnostic entries]", self.entries.len())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn new_creates_empty_context() {
+        let ctx = ErrorContext::new();
+        assert!(ctx.is_empty());
+        assert_eq!(ctx.len(), 0);
+    }
+
+    #[test]
+    fn with_adds_entry() {
+        let ctx = ErrorContext::new().with("key", "value");
+        assert!(!ctx.is_empty());
+        assert_eq!(ctx.len(), 1);
+        assert_eq!(ctx.entries()[0].0, "key");
+        assert_eq!(ctx.entries()[0].1, "value");
+    }
+
+    #[test]
+    fn chaining_multiple_entries() {
+        let ctx = ErrorContext::new()
+            .with("component", "DatabasePool")
+            .with("reason", "timeout")
+            .with("timeout_ms", "30000");
+        assert_eq!(ctx.len(), 3);
+    }
+
+    #[test]
+    fn display_shows_entry_count() {
+        let ctx = ErrorContext::new().with("a", "1").with("b", "2");
+        let s = ctx.to_string();
+        assert!(s.contains("2 diagnostic entries"));
+    }
+
+    #[test]
+    fn display_empty_shows_zero() {
+        let ctx = ErrorContext::new();
+        let s = ctx.to_string();
+        assert!(s.contains("0 diagnostic entries"));
+    }
+
+    #[test]
+    fn default_is_empty() {
+        let ctx = ErrorContext::default();
+        assert!(ctx.is_empty());
+    }
+}

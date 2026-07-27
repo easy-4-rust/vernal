@@ -1,0 +1,225 @@
+# spring-aspects → vernal-aspects 功能语义迁移对照表
+
+> 基线：Spring Framework **7.0.8** spring-aspects 模块（21 个 Java 类 + 1 资源）。
+> 现状基线：vernal-aspects 4 个核心切面为骨架（`TransactionalAspect` / `CacheableAspect` / `AsyncAspect` / `ScheduledAspect`），无具体语义实现。
+> 实现底盘：`aspect-rs`（编译期织入）+ `vernal-aop`（运行期环绕拦截）。
+> 目录命名：100% 镜像 Spring 5 个 aspectj 子包路径。
+
+**目录结构镜像表**：
+
+| Spring 包 | vernal 模块 |
+|---|---|
+| `org.springframework.transaction.aspectj` | `transaction/aspectj/` |
+| `org.springframework.cache.aspectj` | `cache/aspectj/` |
+| `org.springframework.scheduling.aspectj` | `scheduling/aspectj/` |
+| `org.springframework.beans.factory.aspectj` | `beans/factory/aspectj/` |
+| `org.springframework.context.annotation.aspectj` | `context/annotation/aspectj/` |
+
+迁移原则：**功能语义对齐，实现方式 Rust 化**。AspectJ pointcut → aspect-rs `Pointcut::parse`；运行时元数据源 → trait + BeanFactory 读取；`@Transactional` / `@Cacheable` / `@Async` → `#[intercept(aspect, config)]` 宏或运行时 attribute trait。
+
+状态图例：✅ 已迁移并有测试 / 🔶 语义等价但形态不同 / ⬜ 未迁移（路线图）/ 🚫 不迁移 / 🆕 Rust 侧新增
+
+---
+
+## 一、织入机制（aspect-rs 是底盘）
+
+| Java 概念 | 语义 | aspect-rs / vernal-aspects 实现 | 状态 |
+|---|---|---|---|
+| AspectJ load-time weaving | 启动时织入切面到类 | aspect-rs 的 `#[aspect]` 编译期宏（proc-macro） | ✅ 编译期 |
+| `META-INF/aop.xml` 清单 | LTW 配置：列出全部切面 | `weaver/aop_xml.rs` + `build.rs`（或 `vernal_aspects::weaver::register_all()`） | 🆕 |
+| AspectJ pointcut | 声明式匹配表达式 | aspect-rs `pointcut::Pointcut::parse`（`execution(...)`, `within(...)`, `@this(...)`） | ✅ |
+| AspectJ advice 类型 | Before / After / Around / AfterReturning / AfterThrowing | aspect-rs `Aspect::before/after/after_error/around` | ✅ |
+| `declare parents` | 强制类实现接口（ITD） | aspect-rs 没有 ITD；改用 trait `ConfigurableObject` 约束 + blanket impl | 🔶 |
+| `declare error` / `declare warning` | 编译期错误/警告（如 `@Async` 必须返回 `void`/`Future`） | aspect-rs 没有；vernal-aspects 用 `static_assertions` 或宏在 trait bound 阶段触发 | 🔶 |
+| `AnnotationTransactionAttributeSource` | 运行时读取 `@Transactional` | `transaction/aspectj/transaction_attribute_source.rs` trait，从 `BeanFactory` 读取 | 🆕 |
+
+---
+
+## 二、事务切面（`org.springframework.transaction.aspectj`）
+
+| Java 类 | 语义 | Rust 实现 | 状态 |
+|---|---|---|---|
+| `AbstractTransactionAspect` | 事务切面抽象：调用 `TransactionAspectSupport#invokeWithinTransaction`，维护 txManager 缓存 | `transaction/aspectj/abstract_transaction_aspect.rs` 中的 `AbstractTransactionAspect` struct | 🔶 |
+| `AbstractTransactionAspect#around` | Around advice：try → invokeWithinTransaction → catch(RuntimeException/Error) rethrow → catch(Throwable) rethrow | `AbstractTransactionAspect::around` 内 try + 异常透传（`rethrower.rs`） | ⬜ |
+| `AbstractTransactionAspect#destroy()` | DisposableBean：清理 txManager 缓存 | `AbstractTransactionAspect::destroy()` 或显式 `cleanup()` 方法 | ⬜ |
+| `AbstractTransactionAspect#transactionalMethodExecution(Object)` | 抽象 pointcut：识别事务方法 | aspect-rs `Pointcut::parse("execution(@Transactional * *(..)) \|\| within(@Transactional *)")` | ⬜ |
+| `AnnotationTransactionAspect` | 具体切面：基于 `@Transactional` 注解；pointcut = `execution(public * ((@Transactional *)+).*(..)) && within(@Transactional *)` 或 `execution(@Transactional * *(..))` | `transaction/aspectj/annotation_transaction_aspect.rs` 中的 `AnnotationTransactionAspect`，组合 aspect-rs Pointcut | ⬜ |
+| `JtaAnnotationTransactionAspect` | 基于 `jakarta.transaction.Transactional` 注解（`@RequiredTypes("jakarta.transaction.Transactional")` 软依赖） | `transaction/aspectj/jta_annotation_transaction_aspect.rs` 中的 `JtaAnnotationTransactionAspect`，提供 `jta_transactional` feature flag | ⬜ |
+| `AspectJTransactionManagementConfiguration` | `@Configuration`：注册 `AnnotationTransactionAspect.aspectOf()` Bean | `transaction/aspectj/aspectj_transaction_management_configuration.rs` 中的 `AspectJTransactionManagementConfiguration` struct（构建器模式，提供 `register(bean_factory)` 方法） | ⬜ |
+| `AspectJJtaTransactionManagementConfiguration` | JTA 版 `@Configuration`：额外注册 `JtaAnnotationTransactionAspect` | `transaction/aspectj/aspectj_jta_transaction_management_configuration.rs` 中的 `AspectJJtaTransactionManagementConfiguration` | ⬜ |
+
+### 2.1 事务配置语义（保留 `Propagation` / `Isolation` 原名）
+
+| Spring 字段 | 语义 | Rust 字段 | 状态 |
+|---|---|---|---|
+| `@Transactional#propagation` | 7 种传播行为（REQUIRED/REQUIRES_NEW/NESTED 等） | `transaction/aspectj/propagation.rs` 中的 `Propagation` enum（7 个变体） | ⬜ |
+| `@Transactional#isolation` | 5 种隔离级别（DEFAULT/READ_UNCOMMITTED 等） | `transaction/aspectj/isolation.rs` 中的 `Isolation` enum（5 个变体） | ⬜ |
+| `@Transactional#readOnly` | 是否只读事务 | `TransactionAttribute::read_only: bool` | ⬜ |
+| `@Transactional#timeout` | 超时秒数（TIMEOUT_DEFAULT = -1） | `TransactionAttribute::timeout_secs: u64`（0 表示 DEFAULT） | ⬜ |
+| `@Transactional#rollbackFor` | 需要回滚的异常类型 | `TransactionAttribute::rollback_for: Vec<&'static str>` | ⬜ |
+| `@Transactional#noRollbackFor` | 不回滚的异常类型 | `TransactionAttribute::no_rollback_for: Vec<&'static str>` | ⬜ |
+| `@Transactional#transactionManager` | 指定事务管理器 bean 名 | `TransactionAttribute::transaction_manager: Cow<'static, str>` | ⬜ |
+| `TransactionAspectSupport#invokeWithinTransaction(method, target_class, callback)` | 核心：开启事务 → callback.proceedWithInvocation() → 提交或回滚 | `transaction/aspectj/transaction_aspect_support.rs` 中的 `TransactionAspectSupport::invoke_within_transaction<F>(&self, method: &MethodMeta, callback: F)` async 方法 | ⬜ |
+
+### 2.2 checked 异常透传
+
+| Spring 模式 | Java 行为 | Rust 行为 |
+|---|---|---|
+| `AbstractTransactionAspect` 中 catch(Throwable) | `Rethrower.rethrow(thr)` 利用泛型擦除把 checked 异常当成 RuntimeException 抛出 | Rust 无 checked 异常概念；保留 `transaction/aspectj/rethrower.rs` 仅作为 `catch_unwind` + 错误转换的辅助层（可选，使用 `unreachable!()` 模式） |
+| `throw new IllegalStateException("Should never get here", thr)` | 不应到达 | Rust 用 `unreachable!()` 宏 |
+
+---
+
+## 三、缓存切面（`org.springframework.cache.aspectj`）
+
+| Java 类 | 语义 | Rust 实现 | 状态 |
+|---|---|---|---|
+| `AbstractCacheAspect` | 抽象切面：调用 `CacheAspectSupport#execute`，维护元数据缓存 | `cache/aspectj/abstract_cache_aspect.rs` 中的 `AbstractCacheAspect` struct | 🔶 |
+| `AbstractCacheAspect#around` | Around advice：try → execute(invoker, target, method, args) → catch(ThrowableWrapper) AnyThrow.throwUnchecked | `AbstractCacheAspect::around` + `any_throw.rs` 错误透传 | ⬜ |
+| `AbstractCacheAspect#destroy()` | 清理元数据缓存 | `AbstractCacheAspect::cleanup()` | ⬜ |
+| `AbstractCacheAspect#cacheMethodExecution(Object)` | 抽象 pointcut | aspect-rs Pointcut 组合 | ⬜ |
+| `AnnotationCacheAspect` | 具体切面：基于 `@Cacheable`/`@CachePut`/`@CacheEvict`/`@Caching` 注解 | `cache/aspectj/annotation_cache_aspect.rs` 中的 `AnnotationCacheAspect`（4 个内部 pointcut 合并） | ⬜ |
+| `JCacheCacheAspect` | JSR-107：`@CacheResult`/`@CachePut`/`@CacheRemove`/`@CacheRemoveAll` | `cache/aspectj/jcache_cache_aspect.rs` 中的 `JCacheCacheAspect`（feature: `jcache`） | ⬜ |
+| `AspectJCachingConfiguration` | `@Configuration`：注册 `AnnotationCacheAspect.aspectOf()` Bean | `cache/aspectj/aspectj_caching_configuration.rs` 中的 `AspectJCachingConfiguration` | ⬜ |
+| `AspectJJCacheConfiguration` | JCache 版 @Configuration | `cache/aspectj/aspectj_jcache_configuration.rs` 中的 `AspectJJCacheConfiguration` | ⬜ |
+| `AnyThrow` | checked 异常透传工具（与事务切面复用） | `cache/aspectj/any_throw.rs`（独立文件，模块化） | ⬜ |
+| `CacheOperationInvoker` | 抽象方法调用器（`invoke()` throws Throwable） | vernal-aop 已提供 `Next::run`，本模块不需要单独抽象 | 🚫 |
+
+### 3.1 缓存操作语义
+
+| Spring 注解 | 语义 | Rust 实现 | 状态 |
+|---|---|---|---|
+| `@Cacheable(value, key, unless)` | 命中缓存返回；未命中执行并缓存 | `cache/aspectj/cache_operation.rs` 中的 `CacheOperation::Cacheable` + `cache_config.rs` 中的 `key` 字段 | ⬜ |
+| `@CachePut(value, key)` | 总是执行并更新缓存 | `CacheOperation::CachePut` | ⬜ |
+| `@CacheEvict(value, key, beforeInvocation, allEntries)` | 驱逐缓存 | `CacheOperation::CacheEvict` | ⬜ |
+| `@Caching` | 复合注解，组合多个 cache 操作 | `cache_config.rs` 支持 `Vec<CacheOperation>` | ⬜ |
+| `@CacheResult` (JSR-107) | 等价 `@Cacheable` | 同 `Cacheable` | ⬜ |
+| `@CacheRemove` / `@CacheRemoveAll` | 等价 `@CacheEvict` | 同 `CacheEvict` | ⬜ |
+
+### 3.2 缓存配置语义
+
+| Spring 字段 | 语义 | Rust 字段 | 状态 |
+|---|---|---|---|
+| `cacheManager` | CacheManager bean 名 | `CacheConfig::cache_manager: Cow<'static, str>` | ⬜ |
+| `keyGenerator` | KeyGenerator bean 名 | `CacheConfig::key_generator: Option<KeyGenerator>` | ⬜ |
+| `cacheResolver` | CacheResolver bean 名 | `CacheConfig::cache_resolver: Option<CacheResolver>` | ⬜ |
+| `errorHandler` | 错误处理器 | `CacheConfig::error_handler: Option<Arc<dyn CacheErrorHandler>>` | ⬜ |
+| `beforeInvocation` | 调用前驱逐 | `CacheConfig::before_invocation: bool` | ⬜ |
+| `allEntries` | 驱逐所有条目 | `CacheConfig::all_entries: bool` | ⬜ |
+
+---
+
+## 四、异步切面（`org.springframework.scheduling.aspectj`）
+
+| Java 类 | 语义 | Rust 实现 | 状态 |
+|---|---|---|---|
+| `AbstractAsyncExecutionAspect` | 抽象：调用 `AsyncExecutionAspectSupport#determineAsyncExecutor` + `doSubmit(task, executor, returnType)` | `scheduling/aspectj/abstract_async_execution_aspect.rs` 中的 `AbstractAsyncExecutionAspect` | 🔶 |
+| `AbstractAsyncExecutionAspect#around` | Around：异步提交 → 返回 Future | `AbstractAsyncExecutionAspect::around`（调用 `AsyncTaskExecutor::submit`） | ⬜ |
+| `AbstractAsyncExecutionAspect#asyncMethod()` | 抽象 pointcut | aspect-rs Pointcut | ⬜ |
+| `AnnotationAsyncExecutionAspect` | `@Async` 注解；pointcut = `execution(@Async (void\|\|Future+) *(..))` 或 `execution((void\|\|Future+) (@Async *).*(..))` | `scheduling/aspectj/annotation_async_execution_aspect.rs` 中的 `AnnotationAsyncExecutionAspect` | ⬜ |
+| `AnnotationAsyncExecutionAspect#declare error/warning` | 编译期校验：`@Async` 必须返回 `void`/`Future` | Rust 用 trait bound 阶段或 `static_assertions` 模拟（部分能力） | 🔶 |
+| `AnnotationAsyncExecutionAspect#getExecutorQualifier` | 读取 `@Async#value()` 决定 executor qualifier | `AnnotationAsyncExecutionAspect::resolve_executor_qualifier(method_meta) -> &str` | ⬜ |
+| `AspectJAsyncConfiguration` | `@Configuration`：注册 `AnnotationAsyncExecutionAspect.aspectOf()` | `scheduling/aspectj/aspectj_async_configuration.rs` 中的 `AspectJAsyncConfiguration` | ⬜ |
+
+### 4.1 异步配置语义
+
+| Spring 字段 | 语义 | Rust 字段 | 状态 |
+|---|---|---|---|
+| `@Async#value` | 指定 executor bean 名 | `AsyncConfig::executor_name: Cow<'static, str>`（在 `async_annotation_beans.rs` 中定义） | ⬜ |
+| `AsyncTaskExecutor` | 异步任务执行器 trait | `scheduling/aspectj/async_task_executor.rs` 中的 `AsyncTaskExecutor` trait | ⬜ |
+| `AsyncUncaughtExceptionHandler` | 异步异常处理器 | `scheduling/aspectj/async_uncaught_exception_handler.rs` 中的 `AsyncUncaughtExceptionHandler` trait | ⬜ |
+| `Executor` vs `AsyncTaskExecutor` | `Executor` 是 `Runnable`；`AsyncTaskExecutor` 增加 `submit(Callable)` 返回 `Future` | vernal-aspects 只用 `AsyncTaskExecutor`（直接命名，无须额外 trait） | ⬜ |
+| 返回 `void` 的 `@Async` 方法 | 异步 fire-and-forget | `AbstractAsyncExecutionAspect::around` 返回 `InvocationResult::Void` | ⬜ |
+| 返回 `Future` 的 `@Async` 方法 | 异步返回 Future | `AbstractAsyncExecutionAspect::around` 返回 `InvocationResult::Future` | ⬜ |
+
+---
+
+## 五、可配置对象切面（`org.springframework.beans.factory.aspectj`）
+
+| Java 类 | 语义 | Rust 实现 | 状态 |
+|---|---|---|---|
+| `AbstractDependencyInjectionAspect` | DI 抽象：定义 pre/post-construction advice；抽象 `configureBean(Object)` | `beans/factory/aspectj/abstract_dependency_injection_aspect.rs` 中的 `AbstractDependencyInjectionAspect`（trait） | ⬜ |
+| `AbstractDependencyInjectionAspect#preConstructionCondition` | `leastSpecificSuperTypeConstruction && preConstructionConfiguration` | aspect-rs Pointcut：`Pointcut::And(...)` | ⬜ |
+| `AbstractDependencyInjectionAspect#postConstructionCondition` | `mostSpecificSubTypeConstruction && !preConstructionConfiguration` | aspect-rs Pointcut | ⬜ |
+| `AbstractDependencyInjectionAspect#before(bean)` | pre-construction advice：`configureBean(bean)` | `AbstractDependencyInjectionAspect::before` | ⬜ |
+| `AbstractDependencyInjectionAspect#after(bean) returning` | post-construction + post-deserialization advice | `AbstractDependencyInjectionAspect::after` | ⬜ |
+| `AbstractInterfaceDrivenDependencyInjectionAspect` | 接口驱动：pointcut = `initialization(ConfigurableObject+.new(..)) && this(bean)` | `beans/factory/aspectj/abstract_interface_driven_dependency_injection_aspect.rs` 中的 `AbstractInterfaceDrivenDependencyInjectionAspect`（trait） | ⬜ |
+| `AbstractInterfaceDrivenDependencyInjectionAspect#declare parents` | `ConfigurableObject+ && Serializable+ implements ConfigurableDeserializationSupport` | Rust 不支持 declare parents；改用 blanket impl + trait bound | 🔶 |
+| `AbstractInterfaceDrivenDependencyInjectionAspect#readResolve` | ITD 引入 `Object readResolve()` 方法 | Rust 用 `Default` 派生 + `Deserialize` 实现中的钩子替代 | 🔶 |
+| `ConfigurableObject` | 标记接口 | `beans/factory/aspectj/configurable_object.rs` 中的 `ConfigurableObject` marker trait | ⬜ |
+| `ConfigurableDeserializationSupport`（嵌套 static interface） | 反序列化支持标记接口（嵌套在 `AbstractInterfaceDrivenDependencyInjectionAspect` 内） | `beans/factory/aspectj/configurable_deserialization_support.rs` 中的 `ConfigurableDeserializationSupport` trait（独立文件，但语义归属 AbstractInterfaceDrivenDependencyInjectionAspect） | ⬜ |
+| `AnnotationBeanConfigurerAspect` | `@Configurable` 注解驱动；实现 `BeanFactoryAware`、`InitializingBean`、`DisposableBean` | `beans/factory/aspectj/annotation_bean_configurer_aspect.rs` 中的 `AnnotationBeanConfigurerAspect` | ⬜ |
+| `AnnotationBeanConfigurerAspect#declare parents` | `@Configurable * implements ConfigurableObject` | Rust blanket impl：`impl<T: ConfigurableAnnotation> ConfigurableObject for T` | 🔶 |
+| `GenericInterfaceDrivenDependencyInjectionAspect<I>` | 泛型驱动：`declare parents: I implements ConfigurableObject` + 抽象 `configure(I bean)` | `beans/factory/aspectj/generic_interface_driven_dependency_injection_aspect.rs` 中的 `GenericInterfaceDrivenDependencyInjectionAspect<I>`（泛型 struct） | ⬜ |
+| `GenericInterfaceDrivenDependencyInjectionAspect#configureBean(Object)` final | 强制类型转换为 I 再调用 `configure(I)` | `GenericInterfaceDrivenDependencyInjectionAspect::configure_bean(bean: &mut dyn Any)` | ⬜ |
+
+### 5.1 Bean 配置支撑
+
+| Spring 类（外部依赖） | 语义 | Rust 实现 | 状态 |
+|---|---|---|---|
+| `BeanConfigurerSupport`（spring-beans） | 支撑类：注入 bean 依赖；持有 `BeanFactory` | `beans/factory/aspectj/bean_configurer_support.rs` 中的 `BeanConfigurerSupport` | 🆕 |
+| `BeanWiringInfo`（spring-beans） | 装配信息：bean 名、是否依赖检查 | `beans/factory/aspectj/bean_wiring_info.rs` 中的 `BeanWiringInfo` | 🆕 |
+| `AnnotationBeanWiringInfoResolver`（spring-beans） | 解析 `@Configurable` 中的 bean 名 | `beans/factory/aspectj/bean_wiring_info_resolver.rs` 中的 `AnnotationBeanWiringInfoResolver` | 🆕 |
+| `BeanFactoryAware`（spring-beans） | 注入 `BeanFactory` | vernal-context 已提供等价的 `Component` trait，`BeanFactoryAware` trait 本模块定义 | 🆕 |
+| `InitializingBean` / `DisposableBean`（spring-beans） | 生命周期 | vernal-context 的 `Lifecycle` 已覆盖，本模块不再重复定义 | 🚫 |
+
+---
+
+## 六、Spring Configured 启用（`org.springframework.context.annotation.aspectj`）
+
+| Java 类 | 语义 | Rust 实现 | 状态 |
+|---|---|---|---|
+| `EnableSpringConfigured` | 启用注解：`@Import(SpringConfiguredConfiguration.class)` | `context/annotation/aspectj/enable_spring_configured.rs` 中的 `enable_spring_configured` proc-macro attribute | 🆕 |
+| `SpringConfiguredConfiguration` | `@Configuration`：注册 `AnnotationBeanConfigurerAspect.aspectOf()` Bean | `context/annotation/aspectj/spring_configured_configuration.rs` 中的 `SpringConfiguredConfiguration`（builder） | ⬜ |
+| `SpringConfiguredConfiguration#BEAN_CONFIGURER_ASPECT_BEAN_NAME` | `"org.springframework.context.config.internalBeanConfigurerAspect"` | `SpringConfiguredConfiguration::BEAN_CONFIGURER_ASPECT_BEAN_NAME: &str = "vernal.context.config.internal_bean_configurer_aspect"` | ⬜ |
+
+---
+
+## 七、与 vernal-aop 集成
+
+| vernal-aop 概念 | 适配方式 |
+|---|---|
+| `vernal_aop::Interceptor` trait | vernal-aspects 内部 trait，`Aspect::around` 适配到 `Interceptor::intercept` |
+| `vernal_aop::Invocation` | 携带 method/target/args 的调用上下文；aspect-rs `JoinPoint` + `ProceedingJoinPoint` 字段映射 |
+| `vernal_aop::Next::run` | 等价于 aspect-rs `ProceedingJoinPoint::proceed` |
+| `vernal_aop::InvocationFuture` | `BoxFuture<'a, Result<InvocationResult, InvocationError>>`，由 `support/aspect_adapter.rs` 适配到 aspect-rs |
+
+---
+
+## 八、不迁移的 Java 特有功能
+
+| Java 概念 | 原因 | Rust 替代 |
+|---|---|---|
+| AspectJ load-time weaving | 需要 Java agent / class 文件 hook | aspect-rs 编译期 `#[aspect]` 宏 |
+| AspectJ inter-type declarations（ITD） | Java 字节码层修改，Rust 无对应 | trait + blanket impl |
+| `AspectJ#aspectOf()` 单例 | AspectJ 自带的 per-aspect singleton | vernal-context 的 `BeanFactory` 单例管理 |
+| `RequiredTypes` | AspectJ 软依赖检查（classpath 缺失则跳过切面） | Cargo feature flag |
+| `META-INF/aop.xml` | XML 配置清单 | `weaver/aop_xml.rs` + `build.rs` |
+
+---
+
+## 九、Rust 侧新增功能
+
+| Rust 模块 | 说明 | 对应 Java 语义 |
+|---|---|---|
+| `weaver/aop_xml.rs` | 切面清单（替代 aop.xml） | `META-INF/aop.xml` |
+| `weaver/advice_kind.rs` | Advice 类型枚举（Before/After/Around/AfterError） | aspect-rs `Aspect` trait 4 个回调 |
+| `weaver/pointcut_matcher.rs` | Pointcut 模式匹配 trait | aspect-rs `Pointcut::parse` |
+| `support/aspect_adapter.rs` | vernal-aop ↔ aspect-rs 双向适配 | 两个 AOP 框架共存 |
+| `support/async_support.rs` | tokio Future 桥接 | aspect-rs 不直接支持 async |
+
+---
+
+## 测试基线
+
+| 模块 | 测试数目标 | 关键场景 |
+|---|---|---|
+| `transaction/aspectj` | 12+ | 7 种 Propagation + 5 种 Isolation + rollback_for 规则 + nested 调用栈 + timeout |
+| `cache/aspectj` | 10+ | 命中/未命中分支 + beforeInvocation 顺序 + allEntries 驱逐 + 复合 `@Caching` |
+| `scheduling/aspectj` | 6+ | void/Future 返回类型 + executor 派发 + 异常处理 |
+| `beans/factory/aspectj` | 8+ | pre/post-construction 注入顺序 + 反序列化 reattach + 泛型 configure 派发 |
+| `context/annotation/aspectj` | 2+ | proc-macro attribute + Config 注册 |
+| `weaver` | 4+ | Pointcut 解析 + Advice 类型分发 + Manifest 注册 |
+| `support` | 4+ | aspect_adapter 双向转换 + async bridge |
+
+总目标：**46+ 单元测试**，与 `vernal-expression` 的 96 个测试保持同等量级。

@@ -13,3 +13,28 @@ impl Convertible for String {
         Ok(value.to_owned())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn converts_string_to_string() {
+        assert_eq!(String::from_str_value("hello").unwrap(), "hello");
+    }
+
+    #[test]
+    fn empty_string_returns_empty() {
+        assert_eq!(String::from_str_value("").unwrap(), "");
+    }
+
+    #[test]
+    fn preserves_whitespace() {
+        assert_eq!(String::from_str_value("  hello  ").unwrap(), "  hello  ");
+    }
+
+    #[test]
+    fn unicode_roundtrip() {
+        assert_eq!(String::from_str_value("你好世界").unwrap(), "你好世界");
+    }
+}
