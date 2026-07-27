@@ -171,6 +171,22 @@ pub enum ContextError {
         /// 原始操作系统信号监听错误。
         source: SharedError,
     },
+    /// `pause()` 或 `restart()` 期间组件钩子执行失败并完成回滚。
+    ///
+    /// 对标 Spring `LifecycleProcessor.onPause()` / `onRestart()` 期间抛出的
+    /// `ApplicationContextException`。错误携带触发的操作名（`pause` 或
+    /// `restart`）、首个失败组件、阶段和原始错误源；后续失败保留在诊断
+    /// `StartupReport::observations` 中，不进入公开 Display 输出。
+    PauseRestart {
+        /// 触发失败的操作：`pause` 或 `restart`。
+        operation: &'static str,
+        /// 首个失败组件诊断名。
+        component: &'static str,
+        /// 失败阶段：`Pause` / `Start` / `Stop`。
+        phase: LifecyclePhase,
+        /// 默认格式化脱敏、显式错误链保留根因的失败对象。
+        source: SharedError,
+    },
 }
 
 impl fmt::Display for ContextError {
@@ -270,6 +286,15 @@ impl fmt::Display for ContextError {
                     "failed to observe system shutdown signal: {source}"
                 )
             }
+            Self::PauseRestart {
+                operation,
+                component,
+                phase,
+                source,
+            } => write!(
+                formatter,
+                "context {operation} failed: component {component} errored during {phase}: {source}"
+            ),
         }
     }
 }

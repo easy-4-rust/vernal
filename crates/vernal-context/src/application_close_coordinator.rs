@@ -198,6 +198,65 @@ impl ApplicationCloseCoordinator {
         first_error
     }
 
+    /// 在独立 Tokio task 中执行一个组件暂停钩子。
+    ///
+    /// 对标 Spring 7.0 `SmartLifecycle#isPauseable()`：调用方负责过滤
+    /// `is_pauseable() == false` 的组件；本方法只执行 `pause()` 并按
+    /// `LifecyclePhase::Pause` 阶段记录诊断。超时与 abort 行为与
+    /// [`Self::stop_component`] 完全一致，使暂停失败的诊断路径与 stop 失败一致。
+    pub(crate) async fn pause_component(
+        &self,
+        component: &Arc<dyn Lifecycle>,
+    ) -> Result<(), ContextError> {
+        let started = Instant::now();
+        let name = component.name();
+        let owned_component = Arc::clone(component);
+        let task = tokio::spawn(async move { owned_component.pause().await });
+        let policy = *self.resources.lifecycle_execution_policy();
+        let result = LifecycleTaskExecutor::execute(
+            task,
+            name,
+            LifecyclePhase::Pause,
+            policy.stop_timeout(),
+            policy.abort_timeout(),
+        )
+        .await;
+        let outcome = if result.is_ok() {
+            DiagnosticOutcome::Succeeded
+        } else {
+            DiagnosticOutcome::Failed
+        };
+        self.record_observation(name, DiagnosticPhase::Pause, outcome, started)
+            .await;
+        if let Err(error) = &result {
+            self.record_lifecycle_warning(error).await;
+        }
+        result
+    }
+
+    /// 逆序暂停全部可暂停组件、隔离每个钩子的 panic，并保留第一个错误。
+    ///
+    /// 对标 Spring `DefaultLifecycleProcessor#stopBeans(true)`：只停止
+    /// `SmartLifecycle#isPauseable()` 返回 `true` 的组件。组件顺序与
+    /// [`Self::stop_all`] 一致（按依赖逆序），让可暂停组件能假定被它依赖的
+    /// 上游组件已经暂停。
+    pub(crate) async fn pause_all(
+        &self,
+        components: &[Arc<dyn Lifecycle>],
+    ) -> Option<ContextError> {
+        let mut first_error = None;
+        for component in components.iter().rev() {
+            if !component.is_pauseable() {
+                continue;
+            }
+            let pause_error = self.pause_component(component).await.err();
+            if first_error.is_none() {
+                first_error = pause_error;
+            }
+        }
+        first_error
+    }
+
     /// 启动唯一关闭协调任务并等待共享结果。
     ///
     /// 当前等待者被取消不会影响后台协调器。低层 Context 没有预绑定 Runtime 时，

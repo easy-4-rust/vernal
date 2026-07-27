@@ -7,9 +7,11 @@
 //! - 初始化排序（init_order）
 //! - 配置绑定（config）
 //! - Trait 注册（as_trait）
+//! - stereotype 标签（stereotype）
 //!
 //! 注意：组件发现已改为自动注册（所有 `#[derive(Component)]` 自动进入 linkme），
-//! 不再需要 `discover` 属性。消费方通过 `ComponentScanModule` 按模块路径过滤。
+//! 不再需要 `discover` 属性。消费方通过 `LinkedComponentIndex::scan(base_packages)`
+//! 按模块路径过滤。
 
 use syn::{Attribute, LitInt, LitStr, Path, Type};
 
@@ -39,6 +41,10 @@ pub(crate) struct ComponentOptions {
     config_prefix: Option<LitStr>,
     /// 自动注册的 Trait 绑定（对标 tx_di 的 `as_trait`）
     as_trait: Option<Path>,
+    /// stereotype 标签（对标 Spring `ItemMetadata.stereotypes`）
+    /// 用户通过 `#[component(stereotype = "Service")]` 显式指定；
+    /// 未指定时默认为 "Component"（对应 Spring `@Component` 自带 `@Indexed` 元注解）。
+    stereotype: Option<LitStr>,
 }
 
 impl ComponentOptions {
@@ -54,9 +60,10 @@ impl ComponentOptions {
     /// - `init_order = N` — 同层初始化排序
     /// - `config` / `config = "prefix"` — 自动配置绑定
     /// - `as_trait = dyn Trait` — 自动 Trait 注册
+    /// - `stereotype = "Service"` — stereotype 标签（对标 Spring `ItemMetadata.stereotypes`）
     ///
-    /// 注意：`discover` 属性已移除。所有 `#[derive(Component)]` 自动注册到
-    /// linkme 分布式切片，消费方通过 `ComponentScanModule` 按模块路径过滤。
+    /// 注意：所有 `#[derive(Component)]` 自动注册到 linkme 分布式切片，
+    /// 消费方通过 `LinkedComponentIndex::scan(base_packages)` 按模块路径过滤。
     pub(crate) fn parse(attributes: &[Attribute]) -> syn::Result<Self> {
         let mut options = Self {
             scope: ComponentScopeOption::Singleton,
@@ -69,6 +76,7 @@ impl ComponentOptions {
             config_mode: false,
             config_prefix: None,
             as_trait: None,
+            stereotype: None,
         };
         let mut scope_declared = false;
 
@@ -173,8 +181,24 @@ impl ComponentOptions {
                     return Ok(());
                 }
 
+                // ─── stereotype ───
+                if metadata.path.is_ident("stereotype") {
+                    if options.stereotype.is_some() {
+                        return Err(metadata.error("stereotype 只能声明一次"));
+                    }
+                    let value = metadata.value()?.parse::<LitStr>()?;
+                    if value.value().is_empty() {
+                        return Err(syn::Error::new_spanned(
+                            value,
+                            "stereotype 不能为空",
+                        ));
+                    }
+                    options.stereotype = Some(value);
+                    return Ok(());
+                }
+
                 Err(metadata.error(
-                    "结构体 component 属性只支持 scope、aop、init、async_init、async_run、shutdown、init_order、config、as_trait",
+                    "结构体 component 属性只支持 scope、aop、init、async_init、async_run、shutdown、init_order、config、as_trait、stereotype",
                 ))
             })?;
         }
@@ -203,6 +227,7 @@ impl ComponentOptions {
             config_mode: self.config_mode,
             config_prefix: self.config_prefix,
             as_trait: self.as_trait,
+            stereotype: self.stereotype,
         }
     }
 }
@@ -219,4 +244,6 @@ pub(crate) struct ComponentOptionsParts {
     pub config_mode: bool,
     pub config_prefix: Option<LitStr>,
     pub as_trait: Option<Path>,
+    /// stereotype 标签
+    pub stereotype: Option<LitStr>,
 }

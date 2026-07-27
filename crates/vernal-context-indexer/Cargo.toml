@@ -1,17 +1,19 @@
 [package]
-name = "vernal-discovery"
+name = "vernal-context-indexer"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
-description = "Optional link-time component discovery frontend for Vernal IoC."
+description = "Vernal 链接期组件索引器，对标 Spring 的 spring-context-indexer"
 publish = false
 
 [dependencies]
 linkme.workspace = true
 vernal-beans = { path = "../vernal-beans" }
+vernal-core = { path = "../vernal-core" }
 
 [dev-dependencies]
+linkme.workspace = true
 tokio.workspace = true
 trybuild.workspace = true
 vernal-context = { path = "../vernal-context" }

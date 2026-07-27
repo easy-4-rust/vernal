@@ -114,6 +114,28 @@ impl ConversionService {
         // 真正的"运行时探测"需要 TypeId 检查,但 vernal 选择静态分发优先
         !std::any::type_name::<T>().is_empty()
     }
+
+    /// 获取全局共享的 ConversionService 实例。
+    ///
+    /// 对标 Spring `DefaultConversionService.getSharedInstance()`。
+    ///
+    /// 返回一个全局单例的 `ConversionService`，所有调用者共享同一个实例。
+    /// 由于 `ConversionService` 是无状态的静态方法集合，单例模式纯粹是为了
+    /// API 兼容性（Spring 中 `ConversionService` 是有状态的，需要单例避免重复注册）。
+    ///
+    /// # 示例
+    ///
+    /// ```rust
+    /// use vernal_core::convert::ConversionService;
+    ///
+    /// let cs = ConversionService::get_shared_instance();
+    /// assert!(cs.can_convert::<i32>());
+    /// ```
+    #[must_use]
+    pub fn get_shared_instance() -> &'static Self {
+        static INSTANCE: ConversionService = ConversionService;
+        &INSTANCE
+    }
 }
 
 /// 可转换的目标类型 trait。

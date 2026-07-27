@@ -10,9 +10,9 @@ use tokio::{
 use vernal_beans::{ComponentKey, Container, ResolveError};
 
 use crate::{
-    ApplicationReadyEvent, ApplicationRefreshedEvent, ContextError, ContextState,
-    DiagnosticOutcome, DiagnosticPhase, Lifecycle, LifecycleExecutionPolicy, LifecyclePhase,
-    application_close_coordinator::ApplicationCloseCoordinator,
+    ApplicationPausedEvent, ApplicationReadyEvent, ApplicationRefreshedEvent, ContextError,
+    ContextState, DiagnosticOutcome, DiagnosticPhase, Lifecycle, LifecycleExecutionPolicy,
+    LifecyclePhase, application_close_coordinator::ApplicationCloseCoordinator,
     application_context_builder::LifecycleResolver, lifecycle_task_executor::LifecycleTaskExecutor,
     managed_application_runner::ManagedApplicationRunner,
     managed_event_listener::ManagedEventListener, managed_scheduled_task::ManagedScheduledTask,
@@ -97,6 +97,48 @@ impl ApplicationStartupCoordinator {
         let operation = handle.spawn(async move { coordinator.finish_start().await });
         self.spawn_observer(&handle, "start", operation, sender);
         self.receive_result("start", receiver).await
+    }
+
+    /// 提交取消安全的 pause 操作并等待其结果。
+    ///
+    /// 对标 Spring 7.0 `ConfigurableApplicationContext#pause()` 与
+    /// `LifecycleProcessor#onPause()`：只停止声明 `is_pauseable() == true` 的
+    /// 生命周期组件；不可暂停组件保持运行。完成后 Context 进入 `Paused`
+    /// 状态，并发布 [`ApplicationPausedEvent`]。
+    ///
+    /// # Errors
+    ///
+    /// Runtime 不可用、当前状态不是 `Ready`，或任一可暂停组件的 `pause()` 钩子
+    /// 失败 / 超时 / panic 时返回结构化 [`ContextError`]。失败会尝试恢复到
+    /// `Ready` 状态：未完成暂停的组件保持原状态，已暂停组件调用 `stop` 释放。
+    pub(crate) async fn pause(self: &Arc<Self>) -> OperationResult {
+        let handle = self.runtime_handle("pause")?;
+        let (sender, receiver) = oneshot::channel();
+        let coordinator = Arc::clone(self);
+        let operation = handle.spawn(async move { coordinator.finish_pause().await });
+        self.spawn_observer(&handle, "pause", operation, sender);
+        self.receive_result("pause", receiver).await
+    }
+
+    /// 提交取消安全的 restart 操作并等待其结果。
+    ///
+    /// 对标 Spring 7.0 `ConfigurableApplicationContext#restart()` 与
+    /// `LifecycleProcessor#onRestart()`：在 `Paused` 状态下重新调用可暂停组件
+    /// 的 `start()` 钩子，恢复它们的工作循环。完成后 Context 推回 `Ready`
+    /// 状态，并重新发布 [`ApplicationReadyEvent`]。
+    ///
+    /// # Errors
+    ///
+    /// Runtime 不可用、当前状态不是 `Paused`，或任一可暂停组件的 `start()` 钩子
+    /// 失败时返回结构化 [`ContextError`]。失败会调用 `close()` 完成完整关闭，
+    /// 与启动期失败处理一致。
+    pub(crate) async fn restart(self: &Arc<Self>) -> OperationResult {
+        let handle = self.runtime_handle("restart")?;
+        let (sender, receiver) = oneshot::channel();
+        let coordinator = Arc::clone(self);
+        let operation = handle.spawn(async move { coordinator.finish_restart().await });
+        self.spawn_observer(&handle, "restart", operation, sender);
+        self.receive_result("restart", receiver).await
     }
 
     /// 在唯一操作锁内完成容器预热、组件解析与顺序初始化。
@@ -434,6 +476,150 @@ impl ApplicationStartupCoordinator {
             }
         }
         Ok(())
+    }
+
+    /// 在有界独立任务中执行 initialize，并隔离业务错误、panic 与永久等待。
+    async fn finish_pause(&self) -> OperationResult {
+        let _operation = self.lifecycle.operation().lock().await;
+        self.require_state("pause", ContextState::Ready).await?;
+        if self.is_cancelled() {
+            return Err(ContextError::LifecycleCancelled { operation: "pause" });
+        }
+        self.lifecycle.set_state(ContextState::Pausing).await;
+
+        // 只暂停声明 is_pauseable() == true 的组件；其余组件保持运行。
+        // 对标 Spring `DefaultLifecycleProcessor.stopBeans(true)`：调用方
+        // 传入 `pauseableOnly=true` 让 stop 链只触及 SmartLifecycle 组件。
+        let components = self.lifecycle.components().await;
+        let pauseable: Vec<Arc<dyn Lifecycle>> = components
+            .iter()
+            .cloned()
+            .filter(|component| component.is_pauseable())
+            .collect();
+        if let Some(error) = self.lifecycle.pause_all(&pauseable).await {
+            // 暂停失败：保持未暂停组件运行，已暂停组件按 stop 释放，最终关闭。
+            // 与 Spring `DefaultLifecycleProcessor` 行为一致 —— 暂停阶段异常会
+            // 让整个生命周期协调器进入失败态。
+            self.lifecycle
+                .record_warning("context.lifecycle-hook.pause-failed")
+                .await;
+            self.rollback_to_closed().await;
+            return Self::upgrade_pause_error("pause", error);
+        }
+        self.lifecycle.set_state(ContextState::Paused).await;
+        let _delivered = self
+            .lifecycle
+            .resources()
+            .events()
+            .publish(ApplicationPausedEvent::new())
+            .await;
+        Ok(())
+    }
+
+    /// 在有界独立任务中重新启动已暂停的可暂停组件，并提交 Ready。
+    async fn finish_restart(&self) -> OperationResult {
+        let _operation = self.lifecycle.operation().lock().await;
+        self.require_state("restart", ContextState::Paused).await?;
+        if self.is_cancelled() {
+            return Err(ContextError::LifecycleCancelled {
+                operation: "restart",
+            });
+        }
+        self.lifecycle.set_state(ContextState::Starting).await;
+
+        // 只重启此前已暂停的可暂停组件；不可暂停组件从未停止，不需要重启。
+        // 对标 Spring `DefaultLifecycleProcessor.onRestart()`：先 stop 已运行的
+        // pauseable bean，再 startBeans(true)；vernal 已经在 pause 阶段停止过
+        // 可暂停组件，restart 直接重新 start 即可。
+        let components = self.lifecycle.components().await;
+        for component in &components {
+            if !component.is_pauseable() {
+                continue;
+            }
+            if self.is_cancelled() {
+                let error = ContextError::LifecycleCancelled {
+                    operation: "restart",
+                };
+                self.rollback_to_closed().await;
+                return Err(error);
+            }
+            let start_started = Instant::now();
+            let policy = *self.lifecycle.resources().lifecycle_execution_policy();
+            let result = Self::start_component(
+                Arc::clone(component),
+                self.lifecycle.resources().cancellation().clone(),
+                policy,
+            )
+            .await;
+            let outcome = if result.is_ok() {
+                DiagnosticOutcome::Succeeded
+            } else {
+                DiagnosticOutcome::Failed
+            };
+            self.lifecycle
+                .record_observation(
+                    component.name(),
+                    DiagnosticPhase::Start,
+                    outcome,
+                    start_started,
+                )
+                .await;
+            if let Err(error) = result {
+                self.lifecycle.record_lifecycle_warning(&error).await;
+                self.rollback_to_closed().await;
+                return Self::upgrade_pause_error("restart", error);
+            }
+        }
+
+        self.lifecycle.set_state(ContextState::Ready).await;
+        let _delivered = self
+            .lifecycle
+            .resources()
+            .events()
+            .publish(ApplicationReadyEvent::new())
+            .await;
+        Ok(())
+    }
+
+    /// 把任意 [`ContextError`] 升级为 [`ContextError::PauseRestart`]，保留原始
+    /// 错误链；非生命周期错误原样返回。
+    fn upgrade_pause_error(
+        operation: &'static str,
+        error: ContextError,
+    ) -> OperationResult {
+        match error {
+            ContextError::Lifecycle {
+                component,
+                phase,
+                source,
+            } => Err(ContextError::PauseRestart {
+                operation,
+                component,
+                phase,
+                source,
+            }),
+            ContextError::LifecycleTimeout {
+                component,
+                phase,
+                timeout,
+                abort_settled,
+            } => {
+                // 超时错误也升级到 PauseRestart，但需要重新包装源错误。
+                // LifecycleTimeout 不携带 source，我们重建一个 io::Error 作为
+                // 诊断占位，保留可读的错误信息。
+                let placeholder = std::io::Error::other(format!(
+                    "{operation} phase {phase} for component {component} exceeded {timeout:?}; \
+                     abort settled: {abort_settled}"
+                ));
+                Err(ContextError::PauseRestart {
+                    operation,
+                    component,
+                    phase,
+                    source: Arc::new(placeholder),
+                })
+            }
+            other => Err(other),
+        }
     }
 
     /// 在有界独立任务中执行 initialize，并隔离业务错误、panic 与永久等待。

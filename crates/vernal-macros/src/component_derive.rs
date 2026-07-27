@@ -30,7 +30,7 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
     } else {
         TokenStream::new()
     };
-    let discovery_registration = generate_discovery_registration(component_name, &ioc)?;
+    let discovery_registration = generate_discovery_registration(component_name, &ioc, &options)?;
 
     // 生命周期钩子生成
     let lifecycle_implementation = generate_lifecycle_implementation(component_name, &options)?;
@@ -592,9 +592,9 @@ fn aop_crate_path() -> syn::Result<TokenStream> {
     }
 }
 
-/// 解析消费方显式依赖的可选链接期发现 crate 路径。
+/// 解析消费方显式依赖的可选链接期索引 crate 路径。
 fn discovery_crate_path() -> syn::Result<TokenStream> {
-    match crate_name("vernal-discovery") {
+    match crate_name("vernal-context-indexer") {
         Ok(FoundCrate::Itself) => Ok(quote! { crate }),
         Ok(FoundCrate::Name(name)) => {
             let crate_name = syn::Ident::new(&name, proc_macro2::Span::call_site());
@@ -602,7 +602,7 @@ fn discovery_crate_path() -> syn::Result<TokenStream> {
         }
         Err(_) => Err(syn::Error::new(
             proc_macro2::Span::call_site(),
-            "Component 派生的自动发现需要直接依赖 vernal-discovery",
+            "Component 派生的自动发现需要直接依赖 vernal-context-indexer",
         )),
     }
 }
@@ -685,35 +685,47 @@ fn generate_aop_implementation(
 /// 对标 Spring 的 `@Component` 自动进入 classpath 扫描范围：
 /// 每个 `#[derive(Component)]` 的结构体自动注册到 linkme 分布式切片，
 /// 携带模块路径（`module_path!()`）和定义工厂。消费方通过
-/// `ComponentScanModule::base_packages()` 按模块路径过滤。
+/// `LinkedComponentIndex::scan(base_packages)` 按模块路径过滤。
 ///
 /// 静态名称包含模块路径和类型名；分布式切片只携带定义工厂，不创建组件实例，也
 /// 不触碰任何全局 Registry。
 ///
-/// 如果消费方没有依赖 `vernal-discovery`，此函数静默返回空 TokenStream，
+/// stereotype 字段携带组件类型标签，对标 Spring `ItemMetadata.stereotypes`：
+/// - 用户通过 `#[component(stereotype = "Service")]` 显式指定 stereotype 字符串
+/// - 未指定时默认为 `"Component"`（对应 Spring `@Component` 自带 `@Indexed` 元注解）
+///
+/// 如果消费方没有依赖 `vernal-context-indexer`，此函数静默返回空 TokenStream，
 /// 不影响 `#[derive(Component)]` 的其他功能。
 fn generate_discovery_registration(
     component_name: &syn::Ident,
     ioc: &TokenStream,
+    options: &ComponentOptionsParts,
 ) -> syn::Result<TokenStream> {
-    // 尝试解析 discovery crate 路径；如果不可用则静默跳过
-    let discovery = match discovery_crate_path() {
+    // 尝试解析 indexer crate 路径；如果不可用则静默跳过
+    let indexer = match discovery_crate_path() {
         Ok(path) => path,
         Err(_) => return Ok(TokenStream::new()),
     };
-    let registration_name =
-        format_ident!("__VERNAL_LINKED_COMPONENT_REGISTRATION_{}", component_name);
+    let entry_name = format_ident!("__VERNAL_LINKED_COMPONENT_ENTRY_{}", component_name);
+
+    // stereotype 字符串处理
+    let stereotype_value: String = options
+        .stereotype
+        .as_ref()
+        .map(|lit| lit.value())
+        .unwrap_or_else(|| "Component".to_string());
 
     Ok(quote! {
-        #[#discovery::linkme::distributed_slice(
-            #discovery::LINKED_COMPONENT_REGISTRATIONS
+        #[#indexer::linkme::distributed_slice(
+            #indexer::LINKED_COMPONENT_INDEX
         )]
-        #[linkme(crate = #discovery::linkme)]
+        #[linkme(crate = #indexer::linkme)]
         #[allow(non_upper_case_globals)]
-        static #registration_name: #discovery::LinkedComponentRegistration =
-            #discovery::LinkedComponentRegistration::new(
+        static #entry_name: #indexer::LinkedComponentEntry =
+            #indexer::LinkedComponentEntry::new(
                 ::core::module_path!(),
                 ::core::concat!(::core::module_path!(), "::", ::core::stringify!(#component_name)),
+                &[#stereotype_value],
                 <#component_name as #ioc::Component>::definition,
             );
     })

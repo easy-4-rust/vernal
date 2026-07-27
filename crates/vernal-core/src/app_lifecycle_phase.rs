@@ -61,12 +61,21 @@ pub enum AppLifecyclePhase {
 }
 
 impl AppLifecyclePhase {
-    /// 是否处于活跃状态（`Initialized` 或 `Started`）。
+    /// 是否处于活跃状态（仅 `Started`）。
     ///
-    /// 对标 Spring `Lifecycle.isRunning()`。
+    /// 对标 Spring `Lifecycle.isRunning()`：仅在 `start()` 后返回 true。
+    /// 注意：`Initialized` 不算活跃（对标 Spring 行为）。
     #[must_use]
     pub fn is_active(&self) -> bool {
-        matches!(self, Self::Initialized | Self::Started)
+        matches!(self, Self::Started)
+    }
+
+    /// 是否处于就绪状态（已初始化但尚未启动）。
+    ///
+    /// vernal-core 扩展：用于区分"已初始化"和"正在运行"。
+    #[must_use]
+    pub fn is_ready(&self) -> bool {
+        matches!(self, Self::Initialized)
     }
 
     /// 是否处于终止状态（`Stopped` 或 `Failed`）。
@@ -133,9 +142,17 @@ mod tests {
     use super::*;
 
     #[test]
-    fn is_active_returns_true_for_initialized_and_started() {
-        assert!(AppLifecyclePhase::Initialized.is_active());
+    fn is_active_returns_true_only_for_started() {
+        // 对标 Spring Lifecycle.isRunning()：仅在 start() 后返回 true
+        assert!(!AppLifecyclePhase::Initialized.is_active());
         assert!(AppLifecyclePhase::Started.is_active());
+    }
+
+    #[test]
+    fn is_ready_returns_true_only_for_initialized() {
+        assert!(AppLifecyclePhase::Initialized.is_ready());
+        assert!(!AppLifecyclePhase::Started.is_ready());
+        assert!(!AppLifecyclePhase::Created.is_ready());
     }
 
     #[test]

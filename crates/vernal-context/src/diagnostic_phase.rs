@@ -23,6 +23,8 @@ pub enum DiagnosticPhase {
     ScheduledTaskActivation,
     /// 正常关闭或失败回滚时执行组件停止钩子。
     Stop,
+    /// `pause()` 期间执行可暂停组件的 pause 钩子（对标 Spring 7.0 `onPause()`）。
+    Pause,
 }
 
 impl DiagnosticPhase {
@@ -37,6 +39,7 @@ impl DiagnosticPhase {
             Self::ApplicationRunner => "application_runner",
             Self::ScheduledTaskActivation => "scheduled_task_activation",
             Self::Stop => "stop",
+            Self::Pause => "pause",
         }
     }
 }

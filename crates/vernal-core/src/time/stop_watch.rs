@@ -346,12 +346,12 @@ impl StopWatch {
             sb.push('\n');
 
             // Spring 算法:整数位 = total 字符串中 '.' 的位置(或长度)
-            // 注意:vernal-core 不使用 Spring 的 minimum-integer-digits 算法,
-            // 保持简单的最大 9 位小数精度即可
-            let _digits = total.find('.').unwrap_or(total.len());
+            // nf.setMinimumIntegerDigits(digits) + nf.setMaximumFractionDigits(10 - digits)
+            let digits = total.find('.').unwrap_or(total.len());
+            let max_frac = 10_usize.saturating_sub(digits).min(9);
             // 任务行:`<time><percent><taskname>`
             for task in list {
-                let task_time = format_fixed(task.time(unit), 9);
+                let task_time = format_task_time(task.time(unit), digits, max_frac);
                 // 左对齐 14 字符(对标 Spring `%-14s`)
                 sb.push_str(&format!("{task_time:<14}"));
 
@@ -496,19 +496,44 @@ impl TaskInfo {
 
 /// 把 f64 格式化为最多 `max_frac` 位小数的字符串,不分组。
 ///
-/// 模仿 Spring `NumberFormat.getNumberInstance(Locale.ENGLISH)` 的行为:
+/// 对标 Spring `NumberFormat.getNumberInstance(Locale.ENGLISH)` 的行为:
 /// - 最多 `max_frac` 位小数
 /// - 不使用千分位分组
+/// - Spring 的 `setMaximumFractionDigits(9)` 会自动去除尾部 0
 fn format_fixed(value: f64, max_frac: usize) -> String {
-    // Spring 用 NumberFormat.setMaximumFractionDigits(9) + setGroupingUsed(false)
-    // Rust 用 {:.9} 即可对齐
+    // 先格式化为固定小数位
     let formatted = format!("{value:.max_frac$}");
-    // 去除尾部的多余 0(对标 Java NumberFormat 不显示尾随 0)
-    // 注意:Java NumberFormat 也不显示尾随 0,但 Spring 这里似乎没有显式去除,
-    // 因此保留默认行为(完整小数)
-    // 但 Spring 测试中 `prettyPrint()` 输出确实有尾随 0,所以这里不处理
-    let _ = formatted.as_str();
-    formatted
+    // 去除尾部多余 0（对标 Java NumberFormat 行为）
+    // 但保留小数点本身（如果原始值是整数则不加小数点）
+    if formatted.contains('.') {
+        let trimmed = formatted.trim_end_matches('0');
+        if trimmed.ends_with('.') {
+            // 保留一位小数（对标 Java 行为）
+            format!("{trimmed}0")
+        } else {
+            trimmed.to_string()
+        }
+    } else {
+        formatted
+    }
+}
+
+/// 把 f64 格式化为指定位数的字符串,用于任务行的时间列。
+///
+/// 对标 Spring 的 `nf.setMinimumIntegerDigits(digits)` + `nf.setMaximumFractionDigits(10 - digits)` 算法。
+/// Spring 的 `minimumIntegerDigits` 会用前导空格填充（不是 0），
+/// vernal-core 用左对齐 14 字符实现等价效果。
+fn format_task_time(value: f64, min_integer_digits: usize, max_frac: usize) -> String {
+    let formatted = format_fixed(value, max_frac);
+    // 提取整数部分长度
+    let int_len = formatted.find('.').unwrap_or(formatted.len());
+    // 如果整数部分不足 min_integer_digits，左填充空格
+    if int_len < min_integer_digits {
+        let padding = " ".repeat(min_integer_digits - int_len);
+        format!("{padding}{formatted}")
+    } else {
+        formatted
+    }
 }
 
 /// 把 0..=1 之间的比例格式化为百分比字符串。

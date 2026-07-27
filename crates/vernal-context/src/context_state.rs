@@ -2,8 +2,12 @@
 
 /// `ApplicationContext` 的显式状态机。
 ///
-/// 状态只允许由上下文公开操作推进，使并发 refresh/start/close 调用可以被验证，
-/// 而不是依赖若干布尔标记推断当前阶段。
+/// 状态只允许由上下文公开操作推进，使并发 refresh/start/close/pause/restart 调用
+/// 可以被验证，而不是依赖若干布尔标记推断当前阶段。
+///
+/// 与 Spring 7.0 `ConfigurableApplicationContext` 的 `isActive()` + `isClosed()`
+/// 状态语义对应，并新增 `Pausing` / `Paused` 以承载 7.0 引入的
+/// `pause()` / `restart()` 钩子。
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub enum ContextState {
     /// 上下文已创建，尚未解析组件。
@@ -23,6 +27,12 @@ pub enum ContextState {
     Draining,
     /// refresh 阶段失败但尚未完成关闭。
     Failed,
+    /// 正在暂停可暂停组件（对标 Spring `LifecycleProcessor.onPause()`）。
+    Pausing,
+    /// 应用已暂停：可暂停组件已暂停，不可暂停组件保持原状态。
+    ///
+    /// `restart()` 会将状态推回 `Starting` → `Ready`。
+    Paused,
     /// 资源已经释放；重复关闭保持幂等。
     Closed,
 }
@@ -40,6 +50,8 @@ impl ContextState {
             Self::RollingBack => "rolling_back",
             Self::Draining => "draining",
             Self::Failed => "failed",
+            Self::Pausing => "pausing",
+            Self::Paused => "paused",
             Self::Closed => "closed",
         }
     }

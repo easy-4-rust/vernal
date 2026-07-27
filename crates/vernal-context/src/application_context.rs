@@ -88,6 +88,45 @@ impl ApplicationContext {
         self.startup_coordinator.start().await
     }
 
+    /// 暂停 Context —— 只停止声明 `is_pauseable() == true` 的组件。
+    ///
+    /// 对标 Spring 7.0 `ConfigurableApplicationContext#pause()` 与
+    /// `LifecycleProcessor#onPause()`：Context 在 `Ready` 状态下调用本方法会
+    /// 让可暂停组件按依赖逆序 `pause()`，然后进入 `Paused` 状态，并发布
+    /// [`ApplicationPausedEvent`]。不可暂停组件保持运行；周期任务、事件
+    /// 监听器、ApplicationRunner 不会被取消。
+    ///
+    /// 实际 pause 链由独立 Tokio task 持有；当前等待者被取消只会丢弃一次性结果
+    /// 接收端，已暂停组件不会恢复。
+    ///
+    /// # Errors
+    ///
+    /// Runtime 不可用、当前状态不是 `Ready`，或任一可暂停组件的 `pause()` 钩子
+    /// 失败 / 超时 / panic 时返回 [`ContextError`]。失败会让 Context 进入完整
+    /// 关闭路径（`close()`）。
+    pub async fn pause(&self) -> Result<(), ContextError> {
+        self.startup_coordinator.pause().await
+    }
+
+    /// 从 `Paused` 状态恢复 —— 重新启动此前被暂停的组件。
+    ///
+    /// 对标 Spring 7.0 `ConfigurableApplicationContext#restart()` 与
+    /// `LifecycleProcessor#onRestart()`：Context 在 `Paused` 状态下调用本方法
+    /// 会重新调用可暂停组件的 `start()`，然后推回 `Ready` 状态，并重新发布
+    /// [`ApplicationReadyEvent`]。
+    ///
+    /// 实际 restart 链由独立 Tokio task 持有；当前等待者被取消只会丢弃一次性
+    /// 结果接收端，未完成重启的组件不会被回滚到 Paused。
+    ///
+    /// # Errors
+    ///
+    /// Runtime 不可用、当前状态不是 `Paused`，或任一可暂停组件的 `start()` 钩子
+    /// 失败时返回 [`ContextError`]。失败会调用 `close()` 完成完整关闭，与启动
+    /// 期失败处理一致。
+    pub async fn restart(&self) -> Result<(), ContextError> {
+        self.startup_coordinator.restart().await
+    }
+
     /// 幂等关闭上下文。
     ///
     /// # Errors
