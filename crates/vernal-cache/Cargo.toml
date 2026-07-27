@@ -8,7 +8,11 @@ description = "Vernal 缓存抽象（对标 spring-cache）"
 publish = false
 
 [dependencies]
+thiserror.workspace = true
 vernal-core = { path = "../vernal-core" }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 
 [lints]
 workspace = true

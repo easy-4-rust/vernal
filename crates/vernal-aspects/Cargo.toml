@@ -8,9 +8,9 @@ description = "Vernal 内建 AOP 切面：@Transactional / @Cacheable / @Async /
 publish = false
 
 [dependencies]
-vernal-core = { path = "../vernal-core" }
-vernal-aop = { path = "../vernal-aop" }
-vernal-context = { path = "../vernal-context" }
+# vernal-aop = { path = "../vernal-aop" }  # 暂时禁用：vernal-aop 有预存编译问题
+# vernal-context = { path = "../vernal-context" }  # 暂时禁用：依赖 vernal-aop
+# vernal-core = { path = "../vernal-core" }  # 暂时禁用：当前阶段不需要
 
 [lints]
 workspace = true

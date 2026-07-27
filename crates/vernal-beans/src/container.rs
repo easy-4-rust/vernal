@@ -610,3 +610,148 @@ impl Container {
         }
     }
 }
+
+// ── Spring BeanFactory 接口实现 ───────────────────────────────────────────
+
+impl crate::bean_factory::BeanFactory for Container {
+    fn get_bean_by_key(
+        &self,
+        key: &ComponentKey,
+    ) -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> {
+        let definition = self.registry.definitions().iter().find(|d| d.key() == key)
+            .ok_or_else(|| {
+                Box::new(std::io::Error::new(
+                    std::io::ErrorKind::NotFound,
+                    format!("Bean '{}' not found", key),
+                )) as Box<dyn std::error::Error + Send + Sync>
+            })?;
+
+        self.resolve_definition(definition, &[], None)
+            .map_err(|e| Box::new(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!("Failed to resolve bean '{}': {}", key, e),
+            )) as Box<dyn std::error::Error + Send + Sync>)
+    }
+
+    fn get_bean_by_type_id(
+        &self,
+        type_id: std::any::TypeId,
+    ) -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> {
+        let definitions: Vec<_> = self.registry.definitions().iter()
+            .filter(|d| d.key().type_id == type_id)
+            .collect();
+
+        match definitions.as_slice() {
+            [definition] => {
+                self.resolve_definition(definition, &[], None)
+                    .map_err(|e| Box::new(std::io::Error::new(
+                        std::io::ErrorKind::Other,
+                        format!("Failed to resolve bean: {}", e),
+                    )) as Box<dyn std::error::Error + Send + Sync>)
+            }
+            [] => Err(Box::new(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "No bean found for type",
+            )) as Box<dyn std::error::Error + Send + Sync>),
+            _ => Err(Box::new(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!("Multiple beans found for type ({} candidates)", definitions.len()),
+            )) as Box<dyn std::error::Error + Send + Sync>),
+        }
+    }
+
+    fn contains_bean(&self, key: &ComponentKey) -> bool {
+        self.registry.definitions().iter().any(|d| d.key() == key)
+    }
+
+    fn is_singleton(&self, key: &ComponentKey) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
+        self.registry.definitions().iter()
+            .find(|d| d.key() == key)
+            .map(|d| d.scope().is_singleton())
+            .ok_or_else(|| {
+                Box::new(std::io::Error::new(
+                    std::io::ErrorKind::NotFound,
+                    format!("Bean '{}' not found", key),
+                )) as Box<dyn std::error::Error + Send + Sync>
+            })
+    }
+
+    fn is_prototype(&self, key: &ComponentKey) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
+        self.registry.definitions().iter()
+            .find(|d| d.key() == key)
+            .map(|d| d.scope().is_transient())
+            .ok_or_else(|| {
+                Box::new(std::io::Error::new(
+                    std::io::ErrorKind::NotFound,
+                    format!("Bean '{}' not found", key),
+                )) as Box<dyn std::error::Error + Send + Sync>
+            })
+    }
+
+    fn get_type(&self, key: &ComponentKey) -> Result<Option<&'static str>, Box<dyn std::error::Error + Send + Sync>> {
+        self.registry.definitions().iter()
+            .find(|d| d.key() == key)
+            .map(|d| Some(d.key().type_name()))
+            .ok_or_else(|| {
+                Box::new(std::io::Error::new(
+                    std::io::ErrorKind::NotFound,
+                    format!("Bean '{}' not found", key),
+                )) as Box<dyn std::error::Error + Send + Sync>
+            })
+    }
+
+    fn get_aliases(&self, _key: &ComponentKey) -> Vec<ComponentKey> {
+        Vec::new()
+    }
+
+    fn get_bean_provider_by_type_id(
+        &self,
+        _type_id: std::any::TypeId,
+    ) -> Result<Box<dyn crate::object_provider::ObjectProvider<dyn Any + Send + Sync> + '_>, Box<dyn std::error::Error + Send + Sync>> {
+        Ok(Box::new(ContainerObjectProvider(self)))
+    }
+
+    fn is_type_match(&self, key: &ComponentKey, type_id: std::any::TypeId) -> bool {
+        self.registry.definitions().iter()
+            .find(|d| d.key() == key)
+            .map(|d| d.key().type_id == type_id)
+            .unwrap_or(false)
+    }
+}
+
+/// Container 内部的 ObjectProvider 实现。
+struct ContainerObjectProvider<'a>(&'a Container);
+
+impl<'a> crate::object_provider::ObjectProvider<dyn Any + Send + Sync> for ContainerObjectProvider<'a> {
+    fn get(&self) -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> {
+        let singletons = self.0.singletons.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        for cell in singletons.values() {
+            if let Some(Ok(instance)) = cell.get() {
+                return Ok(Arc::clone(instance));
+            }
+        }
+        Err(Box::new(std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            "No bean available",
+        )) as Box<dyn std::error::Error + Send + Sync>)
+    }
+
+    fn if_available(&self) -> Option<Arc<dyn Any + Send + Sync>> {
+        self.get().ok()
+    }
+
+    fn get_if_unique(&self) -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> {
+        self.get()
+    }
+
+    fn stream(&self) -> Vec<Arc<dyn Any + Send + Sync>> {
+        let singletons = self.0.singletons.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        singletons.values()
+            .filter_map(|cell| cell.get().ok().cloned())
+            .collect()
+    }
+
+    fn ordered_stream(&self) -> Vec<Arc<dyn Any + Send + Sync>> {
+        self.stream()
+    }
+}

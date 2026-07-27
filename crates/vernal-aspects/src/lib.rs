@@ -3,24 +3,56 @@
 //!
 //! 对标 Spring 的 `spring-aspects` 模块，提供框架级横切关注点实现：
 //!
-//! - `TransactionalAspect`：事务管理（对标 `@Transactional`）
-//! - `CacheableAspect`：缓存管理（对标 `@Cacheable`）
-//! - `AsyncAspect`：异步执行（对标 `@Async`）
-//! - `ScheduledAspect`：定时调度（对标 `@Scheduled`）
+//! - `transaction::aspectj`：事务管理（对标 `@Transactional`，AspectJ 织入）
+//! - `cache::aspectj`：缓存管理（对标 `@Cacheable`，AspectJ 织入）
+//! - `scheduling::aspectj`：异步执行（对标 `@Async`，AspectJ 织入）
+//! - `beans::factory::aspectj`：可配置对象 DI（对标 `@Configurable`，AspectJ 织入）
+//! - `context::annotation::aspectj`：Spring Configured 启用（对标 `@EnableSpringConfigured`）
 //!
 //! ## 设计原则
 //!
+//! - 目录命名 100% 镜像 Spring 5 个 aspectj 子包路径
 //! - 所有切面都是 `vernal-aop::Interceptor` 的实现
 //! - 切面通过 `ApplicationModule` 注册到 ApplicationContext
 //! - 切面不直接依赖具体实现（事务/缓存等由 `vernal-tx`/`vernal-cache` 提供）
 //! - 切面只负责 AOP 拦截逻辑，不负责底层实现
 
-mod async_aspect;
-mod cacheable_aspect;
-mod scheduled_aspect;
-mod transactional_aspect;
+/// 对标 `org.springframework.transaction.aspectj` 包。
+pub mod transaction {
+    /// 对标 `org.springframework.transaction.aspectj` 包。
+    pub mod aspectj;
+}
 
-pub use async_aspect::AsyncAspect;
-pub use cacheable_aspect::CacheableAspect;
-pub use scheduled_aspect::ScheduledAspect;
-pub use transactional_aspect::TransactionalAspect;
+/// 对标 `org.springframework.cache.aspectj` 包。
+pub mod cache {
+    /// 对标 `org.springframework.cache.aspectj` 包。
+    pub mod aspectj;
+}
+
+/// 对标 `org.springframework.scheduling.aspectj` 包。
+pub mod scheduling {
+    /// 对标 `org.springframework.scheduling.aspectj` 包。
+    pub mod aspectj;
+}
+
+/// 对标 `org.springframework.beans.factory.aspectj` 包。
+pub mod beans {
+    pub mod factory {
+        /// 对标 `org.springframework.beans.factory.aspectj` 包。
+        pub mod aspectj;
+    }
+}
+
+/// 对标 `org.springframework.context.annotation.aspectj` 包。
+pub mod context {
+    pub mod annotation {
+        /// 对标 `org.springframework.context.annotation.aspectj` 包。
+        pub mod aspectj;
+    }
+}
+
+/// 切面织入机制（对标 `META-INF/aop.xml` + advice 类型）。
+pub mod weaver;
+
+/// vernal-aop ↔ aspect-rs 桥接。
+pub mod support;
