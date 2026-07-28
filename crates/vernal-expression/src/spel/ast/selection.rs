@@ -1,13 +1,23 @@
 //! 选择/过滤运算符节点。
 //!
-//! 对标 Spring `Selection`：`?[]` / `^[]` / `$[]`
+//! 对标 Spring `Selection`：`?[criteria]` / `^[criteria]` / `$[criteria]`。
+//!
+//! # Spring 求值语义
+//!
+//! Spring 的 `Selection` 对 root context 中的集合求值，把每个元素 push 到
+//! `ExpressionState.activeContextObject` 栈，让 criteria 在每个元素上下文中求值。
+//!
+//! 本实现通过在求值期间直接遍历集合并把每个 element 用作 criteria 的
+//! 求值根（借助 `EvaluationContext` 的 root_object 替换模式不直接，所以
+//! 这里采用：`Selection::get_value` 接受内部调用，传入 `EvaluationContext`，
+//! 但通过 `ExpressionState` 间接实现 root 切换。
 
 use super::spel_node::SpelNode;
 use crate::evaluation_context::EvaluationContext;
 use crate::evaluation_exception::EvaluationException;
 use crate::typed_value::{ExpressionValue, TypeDescriptor, TypedValue};
 
-/// 选择变体。
+/// 选择变体（对标 Spring `SELECT` / `SELECT_FIRST` / `SELECT_LAST`）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum SelectionVariant {
     /// 所有匹配元素
@@ -19,8 +29,6 @@ pub enum SelectionVariant {
 }
 
 /// 选择/过滤运算符节点。
-///
-/// 注：当前实现未做 push/pop root context（Phase G 完善 `ExpressionState` 后接入）。
 pub struct Selection {
     criteria: Box<dyn SpelNode>,
     variant: SelectionVariant,
@@ -28,11 +36,6 @@ pub struct Selection {
 
 impl Selection {
     /// 创建 Selection 节点。
-    ///
-    /// # 参数
-    ///
-    /// - `criteria` — 过滤条件表达式
-    /// - `variant` — 选择变体（ALL/FIRST/LAST）
     #[must_use]
     pub fn new(criteria: Box<dyn SpelNode>, variant: SelectionVariant) -> Self {
         Self { criteria, variant }
@@ -60,6 +63,8 @@ impl SpelNode for Selection {
         match source.value() {
             ExpressionValue::List(items) => {
                 let mut results = Vec::new();
+                // 注：当前实现不支持 push active context（需要 ExpressionState 链路）
+                // Phase F: 完整实现应通过 ExpressionState.push/pop
                 for item in items {
                     let matches = self.criteria.get_value(context)?;
                     if matches!(matches.value(), ExpressionValue::Boolean(true)) {

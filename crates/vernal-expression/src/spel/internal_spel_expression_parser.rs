@@ -60,7 +60,9 @@ use super::ast::type_reference::TypeReference;
 use super::ast::operator_matches::OperatorMatches;
 use super::ast::operator_not::OperatorNot;
 use super::ast::operator_power::OperatorPower;
+use super::ast::projection::Projection;
 use super::ast::property_or_field_reference::PropertyOrFieldReference;
+use super::ast::selection::{Selection, SelectionVariant};
 use super::ast::real_literal::RealLiteral;
 use super::ast::spel_node::SpelNode;
 use super::ast::string_literal::StringLiteral;
@@ -433,6 +435,42 @@ impl InternalSpelExpressionParser {
                     if let Some(idx) = self.maybe_eat_indexer(false) {
                         nodes.push(idx);
                     }
+                }
+                Some(TokenKind::Select) => {
+                    // 对标 Java `.?[expr]` Selection ALL
+                    self.next_token(); // consume ?[
+                    let criteria = self.eat_expression();
+                    self.eat_token(TokenKind::RSquare);
+                    nodes.push(Box::new(Selection::new(
+                        criteria.unwrap_or_else(|| Box::new(NullLiteral::new())),
+                        SelectionVariant::All,
+                    )));
+                }
+                Some(TokenKind::SelectFirst) => {
+                    self.next_token(); // consume ^[
+                    let criteria = self.eat_expression();
+                    self.eat_token(TokenKind::RSquare);
+                    nodes.push(Box::new(Selection::new(
+                        criteria.unwrap_or_else(|| Box::new(NullLiteral::new())),
+                        SelectionVariant::First,
+                    )));
+                }
+                Some(TokenKind::SelectLast) => {
+                    self.next_token(); // consume $[
+                    let criteria = self.eat_expression();
+                    self.eat_token(TokenKind::RSquare);
+                    nodes.push(Box::new(Selection::new(
+                        criteria.unwrap_or_else(|| Box::new(NullLiteral::new())),
+                        SelectionVariant::Last,
+                    )));
+                }
+                Some(TokenKind::Project) => {
+                    self.next_token(); // consume![
+                    let expr = self.eat_expression();
+                    self.eat_token(TokenKind::RSquare);
+                    nodes.push(Box::new(Projection::new(
+                        expr.unwrap_or_else(|| Box::new(NullLiteral::new())),
+                    )));
                 }
                 _ => break,
             }
