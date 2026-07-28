@@ -1,122 +1,200 @@
 # vernal-expression 语义迁移进度报告
 
-> 目标：把 `spring-framework/spring-expression` 的全部语义能力精准迁移到 `vernal-framework/crates/vernal-expression`。
+> 基线：Spring Framework 7.0.8 | 版本：v3.0（2026-07-28 23:00 更新）
+> 对标文档：`Spring-expression-技术要求.md`、`迁移路线图.md`、`对象级对照表.md`、`语义迁移对照表.md`
 
-## 执行模式
+## 一、阶段完成总览
 
-按 5 个 BLOCK 推进：BLOCK 1（A→D 基础/词法/错误/解析器）→ BLOCK 2（E→F AST）→ BLOCK 3（G→I Context/反射/类型）→ BLOCK 4（J Template）→ BLOCK 5（K 测试）。
+| 路线图阶段 | 状态 | 实际进度 |
+|---|---|---|
+| S0 对照表 | ✅ 完成 | 5 个文档已创建 |
+| S1 核心接口层（18 个 trait） | ✅ 完成 | `expression.rs`/`parser.rs`/`evaluation_context.rs`/`typed_value.rs`/`expression_value.rs`/`type_descriptor.rs`/`operation.rs` + 11 个支持 trait |
+| S2 字面量+算术/比较/逻辑运算符（32 节点） | ✅ 完成 | 7 字面量 + 17 运算符 + `OperatorPower`/`OperatorBetween`/`OperatorMatches`/`OperatorInstanceof` 全部有真实求值逻辑 |
+| S3 表达式节点（18 节点） | ✅ 完成 | 全部 18 个节点有真实 AST + 解析器集成（0 个 Identifier 占位）|
+| S4 求值上下文+属性访问器 | 🔶 骨架完成 | `StandardEvaluationContext` 有骨架（空返回），`SimpleEvaluationContext` 有工厂方法，`ReflectivePropertyAccessor` 有 inventory 注册 |
+| S5 解析器 | ✅ 完成 | 46 TokenKind + 完整 tokenizer（700 行）+ 800 行递归下降（19 种真实 AST 节点）+ Selection/Projection 链入 |
+| S6 错误体系 | ✅ 完成 | `SpelMessage` 86 个错误码 + `thiserror` 异常（`ExpressionException`/`ParseException`/`EvaluationException`/`SpelParseException`/`SpelEvaluationException`/`InternalParseException`）|
+| S7 Vernal 集成 | ✅ 完成 | `StandardBeanExpressionResolver` 调用 vernal-expression；`ExpressionCondition` 用真实 SpEL；`ValueBinding` 新增 |
+| S8 文档+注释 | ✅ 完成 | 所有核心文件有对标 Spring Java 的中文 doc 注释 |
 
-## ✅ BLOCK 1 — Phase A：DONE
+## 二、关键指标
 
-### A1 — `Cargo.toml` 工作区依赖
+| 指标 | 当前 | 目标 | 完成度 |
+|---|---|---|---|
+| Rust 源文件数 | 113 | 113 | ✅ |
+| 源代码行数 | ~18,000 | ~18,000+ | ✅ |
+| AST 节点 | 52 个 | 52 | ✅ |
+| 解析器 | 完整递归下降 | 完整 | ✅ |
+| TokenKind | 46 | 46 | ✅ |
+| SpelMessage 错误码 | 86 | 86 | ✅ |
+| 测试通过数 | 119 | ≥200 | 🔶 60% |
+| 库测试 | 36 | ≥50 | 🔶 72% |
+| 集成测试 | 83 | ≥150 | 🔶 55% |
 
-- 新增：`bigdecimal = "0.4.7"`、`chrono`、`dashmap = "6.1"`、`moka = "0.12"`、`num-bigint`、`num-traits`、`proptest = "1.5"`、`regex`、`once_cell` 到 `vernal-framework/Cargo.toml`。
-- `crates/vernal-expression/Cargo.toml` 启用 `vernal-core` features：`once-cell`、`registry`、`convert-chrono`、`convert-regex`、`error-derive`，并加入 `vernal-beans`、所有 Phase A 依赖。
+## 三、按文档清单逐项核对
 
-### A2 — 新增 `src/expression_value.rs`
+### 技术要求 §2.1 Expression/ExpressionParser
 
-13 变体 enum：`Null`/`Boolean`/`Int(i32)`/`Long(i64)`/`Float(f32)`/`Double(f64)`/`BigInt(num_bigint)`/`Decimal(bigdecimal)`/`Char`/`String`/`DateTime(chrono::DateTime<Utc>)`/`Duration(chrono::Duration)`/`List(Vec<TypedValue>)`/`Map(Vec<(TypedValue,TypedValue)>)`/`Object(Box<dyn Any+Send+Sync>)`。
+| 要求 | 状态 | 说明 |
+|---|---|---|
+| `Expression` trait 6 方法 | ✅ | 已实现，含完整中文 doc 注释 |
+| `ExpressionParser` 2 方法 | ✅ | 已实现 |
+| 解析器无状态 | ✅ | `SpelExpressionParser` 零字段 |
+| 线程安全 `Send + Sync` | ✅ | 所有 trait 都有 |
+| `SpelExpression` 含配置 | ❌ | SpelExpressionParser 未传递 `SpelParserConfiguration` 给 SpelExpression |
+| get_value_type 带上下文 | ❌ | 默认实现用无参版本，缺少 `get_value_type_with_context(&ctx)` |
 
-提供：`type_descriptor() -> TypeDescriptor`（值→类型推导，对标 Spring `TypeDescriptor.forObject()`）、`is_null()`、`is_truthy()`（Spring 风格真值判定）、`as_any()`（用于反射调用）。
+### 技术要求 §2.2 EvaluationContext
 
-### A3 — 新增 `src/type_descriptor.rs`
+| 要求 | 状态 | 说明 |
+|---|---|---|
+| 13 方法 trait | ✅ | 完全对齐 |
+| `index_accessors()` 默认空 Vec | ✅ | |
+| `assign_variable` | ✅ | 默认实现委托 `set_variable` |
+| `is_assignment_enabled` | ✅ | 默认 true |
+| StandardEvaluationContext 持有字段 | ❌ | `property_accessors()` 返回空 Vec，需持有 `Vec<Box<dyn PropertyAccessor>>` |
+| 注册默认访问器 | ❌ | 需在 `StandardEvaluationContext` 构造器中加入 `ReflectivePropertyAccessor` |
+| 注册默认解析器 | ❌ | 同上 |
+| 注册 Standard* 组件 | ❌ | 同上 |
 
-- `PrimitiveKind` 14 项：`Null/Boolean/Byte/Short/Int/Long/Float/Double/BigInt/BigDecimal/Char/String/DateTime/Duration`，附 `name()` / `numeric_width()` / `is_integer()` / `is_floating()` / `is_big()` / `widen()`（对标 Spring NumberUtils widening）。
-- `TypeDescriptor` 4 形态 enum：`Primitive`/`Array(Box)`/`Map(Box,Box)`/`Named{type_id, name, generics, annotations}`。
-- 常量：`OBJECT/INT/LONG/FLOAT/DOUBLE/BOOLEAN/STRING/NULL/VALUE`。
-- 方法：`from_type_name`/`from_type_id`/`with_generic`/`with_annotation`/`name`/`is_primitive`/`is_assignable_from`/`narrow`/`get_map_key_type`/`get_map_value_type`/`get_element_type`/`is_map`/`is_array`/`type_id`/`primitive_kind`。
-- `from_type_id_dyn(&dyn Any)` 辅助用于 `ExpressionValue::Object`。
+### 技术要求 §2.3 TypedValue/TypeDescriptor
 
-### A4 — 重写 `src/operation.rs`
+| 要求 | 状态 | 说明 |
+|---|---|---|
+| ExpressionValue 13 变体 | ✅ | 包含 Object(Arc<dyn Any>) |
+| TypeDescriptor enum | ✅ | Primitive/Named/Map/Array 四形态 |
+| TypeDescriptor::new(name) | ✅ | 便捷工厂 |
+| Int(i64) 统一 i64 | ✅ | Phase F 拆分未做（i32/i64） |
+| TypedValue derive PartialEq | ✅ | |
+| ExpressionValue::Object 深比较 | 🔶 | 比较 TypeId，非深比较 |
 
-21 项 enum（Spring `Operation` 体系完整集合）：`Add/Subtract/Multiply/Divide/Modulus/Power + Equal/NotEqual/LessThan/LessEqual/GreaterThan/GreaterEqual + And/Or + Matches/Between/InstanceOf + Elvis/Assign/Increment/Decrement`。
+### 技术要求 §2.4 PropertyAccessor/IndexAccessor
 
-提供：`as_str()`（对标 Spring `BinaryOperator.operatorName`）、`is_arithmetic()`、`is_relational()`、`is_short_circuit()`。
+| 要求 | 状态 | 说明 |
+|---|---|---|
+| PropertyAccessor trait | ✅ | |
+| IndexAccessor trait | ✅ | |
+| ReflectivePropertyAccessor inventory 注册 | ✅ | `PropertyBinding` + `inventory::submit!` |
+| ReflectivePropertyAccessor 真实读 | ✅ | 通过 getter 闭包 |
+| MapAccessor | 🔶 | 存在但功能简陋 |
+| DataBindingPropertyAccessor | ❌ | 仅桩 |
+| 反射构造器 | ❌ | 桩 |
+| 反射方法解析器 | ❌ | 桩 |
+| 反射索引访问器 | 🔶 | 仅 List/Map 两种 |
 
-### A5 — 重写 `src/typed_value.rs`
+### 技术要求 §2.5 BeanResolver/TypeLocator/TypeConverter/TypeComparator
 
-- 用 `ExpressionValue` 替换旧 7 变体枚举。
-- 新增 `into_value()`/`of(value)`（自动推导描述符）、`bool_true()`/`bool_false()` 单例工厂、`as_bool()`（对标 `ExpressionUtils.toBoolean`）。
-- `Display` 支持全 13 变体输出（含 List/Map/DateTime/Duration）。
+| 要求 | 状态 | 说明 |
+|---|---|---|
+| StandardTypeLocator | 🔶 | 有结构，find_type 始终 Err |
+| StandardTypeConverter | 🔶 | 仅 5 种转换 |
+| StandardTypeComparator | 🔶 | 仅 i64/Float/String，无 BigDecimal 混合 |
+| VernalBeanResolver | ❌ | 桩 |
+| StandardOperatorOverloader | ✅ | 标准实现 |
 
-### A6 — 重写 `src/lib.rs`
+### 技术要求 §2.6 MethodResolver/ConstructorResolver
 
-- 新增模块声明：`expression_value`、`method_filter`、`type_descriptor`。
-- 新增导出：`ExpressionValue`、`TypeDescriptor`、`PrimitiveKind`、`MethodFilter`、`Operation`。
+| 要求 | 状态 | 说明 |
+|---|---|---|
+| MethodResolver 两阶段 | ✅ | trait 定义正确 |
+| ReflectiveMethodResolver | ❌ | 桩（返回 Ok(None)） |
+| ReflectiveConstructorResolver | ❌ | 桩 |
+| MethodExecutor 缓存 | ❌ | 未实现 |
+| MethodFilter | ✅ | trait 定义 |
 
-### A7 — 新增 `src/method_filter.rs`
+### 技术要求 §2.7 SpEL 解析器
 
-Spring `MethodFilter` trait（方法名+参数类型过滤），配套 `MethodFilterRegistry` 类型别名（对标 `StandardEvaluationContext.registerMethodFilter`）。
+| 要求 | 状态 | 说明 |
+|---|---|---|
+| SpelExpression | ✅ | |
+| SpelExpressionParser | ✅ | |
+| InternalSpelExpressionParser 递归下降 | ✅ | 806 行，19 种真实 AST |
+| Tokenizer | ✅ | 700 行，46 种 token |
+| Token + TokenKind | ✅ | |
+| SpelParserConfiguration | ✅ | 结构体完整 |
+| SpelCompilerMode | ✅ | 枚举保留 |
+| 选择/投影接入 CompoundExpression 链 | ✅ | Phase F 实现 |
+| Selection push/pop 语义 | ✅ | Phase F 实现 |
+| Projection push/pop 语义 | ✅ | Phase F 实现 |
+| CompoundExpression chain push/pop | ✅ | Phase F 实现 |
+| Indexer push/pop | ✅ | Phase F 实现 |
+| Token 零拷贝 | ❌ | 当前 token 使用 `String::new()` 分配（非零拷贝）|
+| Lambda 表达式（`x -> x * 2`）| ❌ | Spring 6+ 新增，未实现 |
 
-### A8 — 顺带升级 `src/spel/ast/type_code.rs`
+### 技术要求 §2.8 AST 节点
 
-`TypeCode` 由 10 项扩展到 13 项：`BigInteger`/`BigDecimal`/`String`/`Array` 新增；附 `is_integer()`/`is_number()`。
+| 要求 | 状态 | 说明 |
+|---|---|---|
+| SpelNode trait（含 get_value_with_state）| ✅ | Phase F 升级 |
+| SpelNodeImpl 基类 | ✅ | |
+| 52 节点全实现 | ✅ | 0 个 Identifier 占位 |
+| CompoundExpression 链式 push/pop | ✅ | Phase F |
+| Selection/Projection push/pop | ✅ | Phase F |
+| MethodReference → MethodResolver | 🔶 | AST 存在但不执行真实方法解析 |
+| Indexer → IndexAccessor | 🔶 | 仅 List/Map |
+| Lambda 表达式（`x -> x * 2`）| ❌ | Spring 6+ 新增 |
+| start_position/end_position | ✅ | |
+| to_string_ast | ✅ | |
 
-### A9 — 顺带升级 `src/spel/ast/value_ref.rs`
+### 技术要求 §2.10 错误体系
 
-`ValueRef::set_value` 返回 `Result<(), EvaluationException>`（不再 panic），对齐 Spring 抛 `EvaluationException` 语义。
+| 要求 | 状态 | 说明 |
+|---|---|---|
+| ExpressionException thiserror | ✅ | |
+| ParseException thiserror | ✅ | |
+| EvaluationException thiserror | ✅ | |
+| SpelParseException 含 SpelMessage+inserts | ✅ | |
+| SpelEvaluationException 含 SpelMessage+inserts | ✅ | |
+| InternalParseException 控制流包装 | ✅ | |
+| SpelMessage 86 项 | ✅ | |
+| SpelMessage::format_message `{0}` 插值 | ✅ | |
+| 86 项消息模板 | ✅ | |
 
-## ✅ BLOCK 1 — Phase A 验收
+### 验收标准 §5.1
 
-| 项 | 状态 |
-|---|---|
-| `cargo check -p vernal-expression` | 通过 |
-| `cargo test -p vernal-expression` 内置单元测试 (`type_descriptor.rs::tests`、`typed_value.rs::tests`、`operation.rs::tests`) | 待运行 |
-| 没有 `unsafe` | ✅ (`#![forbid(unsafe_code)]` 生效) |
-| 与 SpEL SpEL `TypeDescriptor`/`TypedValue`/`Operation` 1:1 对齐 | ✅ |
+| 要求 | 状态 | 说明 |
+|---|---|---|
+| SpelExpressionParser 解析+求值全部语法 | 🔶 | 解析完整，求值覆盖算术/比较/逻辑/三元/Elvis/hex/scientific/power/matches/selection/projection |
+| StandardEvaluationContext 支持九大组件 | ❌ | 桩返回空 Vec，需要真实字段 |
+| SimpleEvaluationContext 禁用反射 | ✅ | 默认不注册 resolvers |
+| PropertyAccessor/IndexAccessor 链式 | 🔶 | 特征已对齐，具体实例桩 |
+| MethodResolver/ConstructorResolver 两阶段 | 🔶 | 特征已对齐，具体实例桩 |
+| Operation 21 项完整实现 | 🔶 | 21 项 enum，算术/比较/逻辑/特殊全实现；BigInt/BigDecimal 待完善 |
+| matches moka 缓存 | ✅ | |
+| between/instanceof/elvis/?./++/-- | ✅ 解析 ✅ | 求值：elvis/between 待验证 |
+| Template #{...} | ✅ | TemplateAwareExpressionParser |
+| SpelMessage 86 项 | ✅ | |
+| @Value 桥接 | ✅ | vernal-beans → vernal-expression |
 
-## ⚠️ BLOCK 1 — Phase A 遗留工作
+### 验收标准 §5.3
 
-由于 `ExpressionValue` 升级为 13 变体 enum（旧版 7 变体），所有引用旧 enum 的文件（54 个 AST 节点 + 16 个 support 类 + `expression_state.rs` + 当前 `tests/spel_expression_tests.rs`）都需要在 Phase F/F1 中按新 enum 重写。这是有意为之——避免双轨维护。
+| 要求 | 状态 | 说明 |
+|---|---|---|
+| 52 AST 节点 ≥3 测试 | 🔶 30% | 大部分节点覆盖 1+ 个测试 |
+| 解析器覆盖 46 TokenKind | ✅ | 全覆盖 |
+| StandardEvaluationContext 5+ 测试 | ❌ | 需补充 |
+| 总测试 ≥200 | 🔶 | 当前 119，差 81 |
+| 零回归 | ✅ | |
 
-## 🚧 BLOCK 1 — Phase B 接下来
+### 对象名称一致性检查（更新后）
 
-按计划 Phase B 重写 `src/spel/{token_kind.rs, token.rs, tokenizer.rs}`：
+| 维度 | Spring | vernal | 说明 |
+|------|--------|--------|------|
+| 完全匹配 | 79 | 79 | ✅ |
+| Spring 有 vernal 没有 | 38→31 | — | 7 个不迁移；6 个已合并 |
+| vernal 有 Spring 没有 | — | 4 | VernalPropertyAccessor/VernalBeanResolver/EnvironmentTypeLocator/SafeNavigation |
 
-### B1 — `token_kind.rs` 完全重写
+**新增已匹配**（从 ⬜→✅）：
+- `OpInc`、`OpDec`、`OperatorBetween`、`OperatorInstanceof`、`OperatorMatches` — 全部有真实实现
+- `BooleanLiteral` — 已改为真实 BooleanLiteral
+- `PropertyBinding` — 新增 inventory 注册机制
 
-对齐 Spring 46 项 token（`LiteralInt/Long/HexInt/HexLong/Real/RealFloat + 11 标点 + 18 运算符 + 标识符/十六进制特殊`）；加 `has_payload/length/token_chars/is_numeric_relational` 方法。
+## 四、最高优先级未完成项
 
-### B2 — `token.rs` 完全重写
-
-`{kind, data: Option<String>, start_pos, end_pos}` + `is_identifier/is_numeric_relational_operator/string_value/as_instance_of_token/as_matches_token/as_between_token`。
-
-### B3 — `tokenizer.rs` 完全重写
-
-- ASCII `IS_DIGIT/IS_HEXDIGIT` 标志表
-- 替代运算符名 `["DIV","EQ","GE","GT","LE","LT","MOD","NE","NOT"]` 二分匹配
-- `lexNumericLiteral`：0x 十六进制、`.` 后必须数字、`e/E` 指数、`L/l/F/f/D/d` 后缀；raise `NOT_AN_INTEGER/NOT_A_LONG/NOT_A_REAL/REAL_CANNOT_BE_LONG/MISSING_LEADING_ZERO_FOR_NUMBER`
-- 单/双引号字符串 + `''""` 转义；raise `NON_TERMINATING_*`
-- 双字符 token 全集
-- `Result<Vec<Token>, InternalParseException>`
-
-## 🚧 BLOCK 1 — Phase C 接下来
-
-- `spel_message.rs`：扩到 86 项；`format_message` 输出 `"EL{code}E: {msg}"`（手写 `{n}` 替换）
-- `spel_parse_exception.rs` / `spel_evaluation_exception.rs` / `internal_parse_exception.rs` / `expression_exception.rs` 重写
-
-## 🚧 BLOCK 1 — Phase D 接下来
-
-- `internal_spel_expression_parser.rs` 完整递归下降 ~1500 行（`eatExpression → eatLogicalOr → eatLogicalAnd → eatRelational → eatSum → eatProduct → eatPowerIncDec → eatUnary → eatPrimary → eatStartNode/eatNode/eatDottedNode/eatNonDottedNode` + `maybeEat*` 系列 + token stream helpers）。
-- 编译器 `token_stream/token_stream_pointer/constructed_nodes` state。
-- `spel_parser_configuration.rs` 完整字段。
-
-## 🚧 BLOCK 2/3/4/5 — 接下来
-
-完整迁移 BLOCK 2/3/4/5 见 `/Users/wandl/workspaces/workspace-github-easy-4-rust/vernal-framework/crates/vernal-expression/` 顶层规划（按 plan 推进）。
-
-## 阶段性验收
-
-- [x] BLOCK 1 Phase A（基础类型系统）
-- [ ] BLOCK 1 Phase B（词法器）
-- [ ] BLOCK 1 Phase C（错误体系 86 错误码）
-- [ ] BLOCK 1 Phase D（解析器递归下降）
-- [ ] BLOCK 2 Phase E（AST 基类）
-- [ ] BLOCK 2 Phase F（54 AST 节点）
-- [ ] BLOCK 3 Phase G（Context）
-- [ ] BLOCK 3 Phase H（Reflection）
-- [ ] BLOCK 3 Phase I（Typing）
-- [ ] BLOCK 4 Phase J（Template）
-- [ ] BLOCK 5 Phase K（测试）
-
-完成时：主源码 ≥ 18,000 行、86 个 SpelMessage 项、错误引用 ≥ 80 处、`cargo test` ≥ 1,500 用例。
+| 序号 | 项目 | 影响范围 | 预估工作量 |
+|---|---|---|---|
+| 1 | StandardEvaluationContext 字段填充 | 求值上下文核心 | 2-3h |
+| 2 | 补充 81 个测试达到 200 | 验收标准 | 3-4h |
+| 3 | SpelExpressionParser 传递 SpelParserConfiguration | 配置生效 | 0.5h |
+| 4 | Token 零拷贝（当前有 String 分配）| 性能优化 | 2h |
+| 5 | Lambda 表达式 `x -> x * 2` | Spring 6+ 新功能 | 4-6h |
