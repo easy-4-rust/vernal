@@ -88,7 +88,8 @@ vernal 直接封装一个 Rust crate，提供 Spring 语义的 API。
 
 ```
 vernal-cache  → moka（封装 moka::sync::Cache 提供 Spring Cache 语义）
-vernal-db     → sqlx（封装 sqlx 提供 JdbcTemplate 语义）
+vernal-rbdc   → rbdc（rbatis 驱动抽象，对标 spring-jdbc JdbcTemplate 语义）
+vernal-db     → sqlx（通用数据库抽象层，vernal-rbdc 的底层连接池来源之一）
 vernal-log    → tracing（封装 tracing 提供 SLF4J 语义）
 ```
 
@@ -245,7 +246,7 @@ JMS 不单独建 crate，JMS 语义融入 `vernal-messaging` 2.11 节（点对�
 
 | 对标 Spring / Java | vernal crate | 上游 crate | 说明 |
 |:---|:---|:---|:---|
-| `spring-jdbc` / `JdbcTemplate` | `vernal-db` | `sqlx` | 数据库抽象层，sqlx 对标 JdbcTemplate |
+| `spring-jdbc` / `JdbcTemplate` | `vernal-rbdc` | `rbdc` + `rbatis` | rbatis 驱动抽象，rbdc 对标 JdbcTemplate 语义 |
 | `MyBatis` / `MyBatis-Plus` | `vernal-rbatis`（已有） | `rbatis` | ORM 替代方案，rbatis 对标 MyBatis |
 | 数据库驱动 | — | `rbdc` | 数据库连接驱动抽象 |
 
@@ -551,7 +552,8 @@ JMS 不单独建 crate，JMS 语义融入 `vernal-messaging` 2.11 节（点对�
 | `vernal-messaging` | spring-messaging / spring-jms | tokio | `[已确认]` |
 | `vernal-websocket` | spring-websocket | tokio-websockets 0.12.0, vernal-messaging | `[已确认]` |
 | `vernal-cache` | spring-cache | thiserror | `[已确认]` |
-| `vernal-db` | spring-jdbc | vernal-core | `[骨架]` |
+| `vernal-rbdc` | spring-jdbc | vernal-core | `[骨架]` rbatis 驱动抽象（rbdc 4.9.10）|
+| `vernal-db` | （通用数据库抽象）| vernal-core | `[骨架]` sqlx 连接池 |
 | `vernal-tx` | spring-tx | vernal-core | `[骨架]` |
 | `vernal-orm` | spring-orm / spring-data-jpa | toasty（待集成） | `[待集成]` |
 | `vernal-log` | spring-jcl | vernal-core | `[骨架]` |

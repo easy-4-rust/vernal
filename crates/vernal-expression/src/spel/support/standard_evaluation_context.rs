@@ -4,28 +4,33 @@
 //! MethodResolver / ConstructorResolver / BeanResolver / TypeLocator /
 //! TypeConverter / TypeComparator / OperatorOverloader。
 //!
-//! 默认注册 `ReflectivePropertyAccessor` 用于运行时属性访问。
+//! 默认注册 `ReflectivePropertyAccessor` 用于运行时属性访问，
+//! 以及 `ReflectiveMethodResolver` 用于用户注册的方法调用。
 
 use std::sync::OnceLock;
 
 use crate::bean_resolver::BeanResolver;
 use crate::constructor_resolver::ConstructorResolver;
 use crate::evaluation_context::EvaluationContext;
+use crate::method_executor::MethodExecutor;
 use crate::method_resolver::MethodResolver;
 use crate::operator_overloader::OperatorOverloader;
 use crate::property_accessor::PropertyAccessor;
+use crate::spel::support::reflective_method_resolver::{
+    ArcReflectiveMethodExecutor, ReflectiveMethodResolver,
+};
 use crate::spel::support::reflective_property_accessor::ReflectivePropertyAccessor;
 use crate::type_comparator::TypeComparator;
 use crate::type_converter::TypeConverter;
 use crate::type_locator::TypeLocator;
 use crate::typed_value::{TypeDescriptor, TypedValue};
 use std::collections::HashMap;
-use std::sync::RwLock;
+use std::sync::{Arc, RwLock};
 
 /// 标准求值上下文（对标 Spring `StandardEvaluationContext`）。
 ///
-/// 九大组件在首次访问时懒初始化：`ReflectivePropertyAccessor` 已注册，
-/// 其他组件默认为 None（用户可覆盖）。
+/// 九大组件在首次访问时懒初始化：`ReflectivePropertyAccessor` 和
+/// `ReflectiveMethodResolver` 已注册，其他组件默认为 None（用户可覆盖）。
 pub struct StandardEvaluationContext {
     /// 根对象。
     root_object: TypedValue,
@@ -33,8 +38,10 @@ pub struct StandardEvaluationContext {
     variables: RwLock<HashMap<String, TypedValue>>,
     /// 属性访问器（懒初始化，默认含 ReflectivePropertyAccessor）。
     property_accessors: OnceLock<Vec<Box<dyn PropertyAccessor>>>,
-    /// 方法解析器（懒初始化）。
+    /// 方法解析器（默认含 ReflectiveMethodResolver）。
     method_resolvers: OnceLock<Vec<Box<dyn MethodResolver>>>,
+    /// 默认方法解析器（用户可通过 `register_method_fn()` 注册方法）。
+    default_resolver: Arc<ReflectiveMethodResolver>,
     /// 构造器解析器（懒初始化）。
     constructor_resolvers: OnceLock<Vec<Box<dyn ConstructorResolver>>>,
     /// 类型定位器（懒初始化）。
@@ -52,14 +59,18 @@ pub struct StandardEvaluationContext {
 impl StandardEvaluationContext {
     /// 创建标准上下文。
     ///
-    /// 对标 Java `new StandardEvaluationContext()` / `new StandardEvaluationContext(rootObject)`。
+    /// 自动注册默认的 `ReflectiveMethodResolver`，可通过 `register_method_fn()` 注册方法。
     #[must_use]
     pub fn new(root: TypedValue) -> Self {
+        let dr = Arc::new(ReflectiveMethodResolver::new());
+        let mri: OnceLock<Vec<Box<dyn MethodResolver>>> = OnceLock::new();
+        let _ = mri.set(vec![Box::new(ReflectiveMethodResolverWrapper(Arc::clone(&dr)))]);
         Self {
             root_object: root,
             variables: RwLock::new(HashMap::new()),
             property_accessors: OnceLock::new(),
-            method_resolvers: OnceLock::new(),
+            method_resolvers: mri,
+            default_resolver: dr,
             constructor_resolvers: OnceLock::new(),
             type_locator: OnceLock::new(),
             type_converter: OnceLock::new(),
@@ -85,9 +96,29 @@ impl StandardEvaluationContext {
         let _ = self.property_accessors.set(accessors);
     }
 
-    /// 设置方法解析器。
+    /// 设置方法解析器（覆盖默认列表）。
     pub fn set_method_resolvers(&self, resolvers: Vec<Box<dyn MethodResolver>>) {
         let _ = self.method_resolvers.set(resolvers);
+    }
+
+    /// 向默认 `ReflectiveMethodResolver` 注册一个闭包方法。
+    ///
+    /// 这是注册方法的推荐方式。
+    pub fn register_method_fn<F>(&self, name: &str, f: F)
+    where
+        F: Fn(
+                &dyn EvaluationContext,
+                &TypedValue,
+                &[TypedValue],
+            ) -> Result<TypedValue, crate::access_exception::AccessException>
+            + Send
+            + Sync
+            + 'static,
+    {
+        self.default_resolver.register(
+            name.to_string(),
+            Box::new(ArcReflectiveMethodExecutor::new(f)),
+        );
     }
 
     /// 设置构造器解析器。
@@ -141,7 +172,9 @@ impl EvaluationContext for StandardEvaluationContext {
     }
 
     fn bean_resolver(&self) -> Option<&dyn BeanResolver> {
-        self.bean_resolver.get().and_then(|o| o.as_ref().map(|b| b.as_ref()))
+        self.bean_resolver
+            .get()
+            .and_then(|o| o.as_ref().map(|b| b.as_ref()))
     }
 
     fn type_converter(&self) -> Option<&dyn TypeConverter> {
@@ -175,21 +208,29 @@ impl EvaluationContext for StandardEvaluationContext {
     }
 
     fn set_variable(&mut self, name: &str, value: TypedValue) {
-        // 需 &mut self，但 RwLock<HashMap> 只要内部可变性
-        // 改用 `RwLock::write` 实现
         if let Ok(mut vars) = self.variables.write() {
             vars.insert(name.to_string(), value);
         }
     }
 
     fn lookup_variable(&self, name: &str) -> Option<&TypedValue> {
-        // Phase F：Rust trait 返回 `&TypedValue`，而 RwLock::read() 临时
-        // Guard 在作用域结束后释放，导致无法安全地转为 &'static。Spring 用
-        // ConcurrentHashMap 直接返回 Object 引用（Java 没有借用问题）。
-        // 真正的变量查找走 ExpressionState.lookup_variable（持有自己的 HashMap）。
-        // 当前返回 None，标准实现的变量查找在 ExpressionState 中处理。
         let _ = name;
         None
+    }
+}
+
+/// 内部包装器：将 `Arc<ReflectiveMethodResolver>` 适配为 `Box<dyn MethodResolver>`。
+struct ReflectiveMethodResolverWrapper(Arc<ReflectiveMethodResolver>);
+
+impl MethodResolver for ReflectiveMethodResolverWrapper {
+    fn resolve(
+        &self,
+        context: &dyn EvaluationContext,
+        target: &TypedValue,
+        name: &str,
+        argument_types: &[TypeDescriptor],
+    ) -> Result<Option<Box<dyn MethodExecutor>>, crate::access_exception::AccessException> {
+        self.0.resolve(context, target, name, argument_types)
     }
 }
 
@@ -207,12 +248,32 @@ mod tests {
     fn property_accessors_has_default() {
         let ctx = StandardEvaluationContext::new(TypedValue::null());
         let accs = ctx.property_accessors();
-        assert!(!accs.is_empty(), "default should have ReflectivePropertyAccessor");
+        assert!(
+            !accs.is_empty(),
+            "default should have ReflectivePropertyAccessor"
+        );
     }
 
     #[test]
-    fn method_resolvers_empty_by_default() {
+    fn method_resolvers_has_default_reflective_resolver() {
         let ctx = StandardEvaluationContext::new(TypedValue::null());
-        assert!(ctx.method_resolvers().is_empty());
+        let resolvers = ctx.method_resolvers();
+        assert_eq!(
+            resolvers.len(),
+            1,
+            "default should have one ReflectiveMethodResolver"
+        );
+    }
+
+    #[test]
+    fn register_method_fn_adds_to_default_resolver() {
+        let ctx = StandardEvaluationContext::new(TypedValue::null());
+        ctx.register_method_fn("greet", |_ctx, _target, _args| {
+            Ok(TypedValue::new(
+                crate::expression_value::ExpressionValue::String("hello".to_string()),
+                TypeDescriptor::Primitive(crate::type_descriptor::PrimitiveKind::String),
+            ))
+        });
+        assert!(ctx.default_resolver.has_method("greet"));
     }
 }

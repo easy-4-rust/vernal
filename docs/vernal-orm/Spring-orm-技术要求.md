@@ -63,6 +63,24 @@ vernal-orm 是 Vernal Framework 的 **Tokio-first 异步 ORM 抽象内核**，
 | 实体继承 | 🚫 不支持 | Rust 无类继承，用 trait 组合替代 |
 | 缓存 | 外部 vernal-cache | L1 用 HashMap，L2 用 Redis/moka |
 
+### 1.3.1 Toasty 生态完整地址（ORM 主线 crate）
+
+| crate | 版本 | crates.io | docs.rs | GitHub |
+|---|---|---|---|---|
+| toasty | 0.9.0 | [crates.io](https://crates.io/crates/toasty) | [docs.rs](https://docs.rs/toasty/0.9.0/toasty/) | [tokio-rs/toasty](https://github.com/tokio-rs/toasty) |
+| toasty-core | 0.9.0 | [crates.io](https://crates.io/crates/toasty-core) | [docs.rs](https://docs.rs/toasty-core) | [tokio-rs/toasty](https://github.com/tokio-rs/toasty) |
+| toasty-macros | 0.9.0 | [crates.io](https://crates.io/crates/toasty-macros) | [docs.rs](https://docs.rs/toasty-macros) | [tokio-rs/toasty](https://github.com/tokio-rs/toasty) |
+| toasty-sql | 0.9.0 | [crates.io](https://crates.io/crates/toasty-sql) | [docs.rs](https://docs.rs/toasty-sql) | [tokio-rs/toasty](https://github.com/tokio-rs/toasty) |
+| toasty-cli | 0.9.0 | [crates.io](https://crates.io/crates/toasty-cli) | [docs.rs](https://docs.rs/toasty-cli) | [tokio-rs/toasty](https://github.com/tokio-rs/toasty) |
+| toasty-driver-sqlite | 0.9.0 | [crates.io](https://crates.io/crates/toasty-driver-sqlite) | [docs.rs](https://docs.rs/toasty-driver-sqlite) | [tokio-rs/toasty](https://github.com/tokio-rs/toasty) |
+| toasty-driver-turso | 0.9.0 | [crates.io](https://crates.io/crates/toasty-driver-turso) | [docs.rs](https://docs.rs/toasty-driver-turso) | [tokio-rs/toasty](https://github.com/tokio-rs/toasty) |
+| toasty-driver-mysql | 0.9.0 | [crates.io](https://crates.io/crates/toasty-driver-mysql) | [docs.rs](https://docs.rs/toasty-driver-mysql) | [tokio-rs/toasty](https://github.com/tokio-rs/toasty) |
+| toasty-driver-postgresql | 0.9.0 | [crates.io](https://crates.io/crates/toasty-driver-postgresql) | [docs.rs](https://docs.rs/toasty-driver-postgresql) | [tokio-rs/toasty](https://github.com/tokio-rs/toasty) |
+| toasty-driver-dynamodb | 0.9.0 | [crates.io](https://crates.io/crates/toasty-driver-dynamodb) | [docs.rs](https://docs.rs/toasty-driver-dynamodb) | [tokio-rs/toasty](https://github.com/tokio-rs/toasty) |
+
+> 所有 toasty-* 子 crate 共享同一 GitHub 仓库 [tokio-rs/toasty](https://github.com/tokio-rs/toasty)。
+> vernal-orm 的 `Cargo.toml` 依赖 `toasty`（核心）+ 对应 driver（按需），不直接依赖 `toasty-core`/`toasty-macros`/`toasty-sql`。
+
 ### 1.4 JPA 反射 → Toasty 编译期 codegen 对比
 
 | JPA 概念 | 运行时机制 | Toasty 编译期替代 |

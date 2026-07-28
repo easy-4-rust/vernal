@@ -1,9 +1,9 @@
-# vernal-jdbc 技术要求（对标 spring-jdbc）
+# vernal-rbdc 技术要求（对标 spring-jdbc）
 
-> **版本**：v2.0（2026-07-28）
-> **定位**：vernal-jdbc crate 技术交接文档，对标 Spring Framework 7.0.8 spring-jdbc。
-> **选型**：sqlx 0.9（Tokio-first async）为实现主线，spring-jdbc 仅作语义参考。
-> **现状**：2 文件 / 19 行骨架，edition 2024 / rustc 1.88。
+> **版本**：v2.0（2026-07-28）｜修正：spring-jdbc 对应 **vernal-rbdc**（非 vernal-db，vernal-db 是通用数据库抽象层）
+> **定位**：vernal-rbdc crate 技术交接文档，对标 Spring Framework 7.0.8 spring-jdbc。
+> **选型**：**rbdc 4.9.10**（rbatis 驱动抽象）为实现主线，对标 Spring JdbcTemplate 语义。
+> **现状**：rbatis-plus 项目已验证 rbdc/rbs/rbatis 生态，vernal-rbdc 为待建 crate，edition 2024 / rustc 1.88。
 > **引用约定**：crate 选型依据见《Spring 组件替换约定》6.2 节（JDBC/R2DBC）。
 
 ---
@@ -12,7 +12,7 @@
 
 ### 1.1 定位与边界
 
-vernal-jdbc 是 Vernal Framework 的 **Tokio-first 异步数据库访问内核**，
+vernal-rbdc 是 Vernal Framework 的 **Tokio-first 异步数据库访问内核**（rbatis 驱动抽象层），
 对标 spring-jdbc 模块，提供统一的 JDBC 风格数据库操作抽象。
 
 **核心范式转换**：Java 同步 JDBC → Rust 异步 sqlx。
