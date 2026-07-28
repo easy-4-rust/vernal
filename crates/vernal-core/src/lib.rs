@@ -4,6 +4,7 @@
 pub mod app_lifecycle_phase;
 pub mod constants;
 pub mod convert;
+pub mod conventions;
 pub mod diagnostics;
 pub mod error;
 mod failure;
@@ -24,6 +25,7 @@ pub mod time;
 pub mod util;
 
 pub use app_lifecycle_phase::AppLifecyclePhase;
+pub use conventions::{Conventions, PLURAL_SUFFIX};
 pub use failure::{BoxError, SharedError};
 
 /// 当前 Vernal Workspace 发布版本。
