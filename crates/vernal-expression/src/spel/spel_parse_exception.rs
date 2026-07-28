@@ -19,7 +19,7 @@ pub struct SpelParseException {
     /// 错误位置（字节偏移）。
     pub position: Option<usize>,
     /// 完整渲染消息（`EL{code}E: <formatted>`）。
-    message: String,
+    pub message: String,
 }
 
 impl SpelParseException {

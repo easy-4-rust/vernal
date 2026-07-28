@@ -178,7 +178,7 @@ impl PartialEq for ExpressionValue {
             (Self::Boolean(a), Self::Boolean(b)) => a == b,
             (Self::Int(a), Self::Int(b)) => a == b,
             (Self::Long(a), Self::Long(b)) => a == b,
-            (Self::Float(a), Self::Float(b)) => (a - b).abs() < f32::EPSILON,
+            (Self::Float(a), Self::Float(b)) => (a - b).abs() < f64::EPSILON,
             (Self::Double(a), Self::Double(b)) => (a - b).abs() < f64::EPSILON,
             (Self::BigInt(a), Self::BigInt(b)) => a == b,
             (Self::Decimal(a), Self::Decimal(b)) => a == b,

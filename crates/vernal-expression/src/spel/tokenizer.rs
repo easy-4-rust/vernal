@@ -104,7 +104,7 @@ impl<'a> Tokenizer<'a> {
                         tokens.push(Token::empty(TokenKind::SymbolicOr, start, start + 2));
                         self.pos += 2;
                     } else {
-                        return Err(self.error(start, SpelMessage::MissingCharacter, &["||".to_string()]));
+                        return Err(self.error(start, SpelMessage::MissingCharacter, vec!["||".to_string()]));
                     }
                 }
 
@@ -199,7 +199,7 @@ impl<'a> Tokenizer<'a> {
                 }
 
                 b'\\' => {
-                    return Err(self.error(start, SpelMessage::UnexpectedEscapeChar, &[]));
+                    return Err(self.error(start, SpelMessage::UnexpectedEscapeChar, vec![]));
                 }
 
                 _ => {
@@ -207,7 +207,7 @@ impl<'a> Tokenizer<'a> {
                     return Err(self.error(
                         start,
                         SpelMessage::UnsupportedCharacter,
-                        &[ch_str.clone(), format!("U+{:04X}", ch)],
+                        vec![ch_str.clone(), format!("U+{:04X}", ch)],
                     ));
                 }
             }
@@ -225,17 +225,10 @@ impl<'a> Tokenizer<'a> {
         &self,
         position: usize,
         code: SpelMessage,
-        inserts: &[String],
+        inserts: Vec<String>,
     ) -> InternalParseException {
         let insert_strs: Vec<&str> = inserts.iter().map(String::as_str).collect();
-        let msg = code.format_message(&insert_strs);
-        let ex = SpelParseException {
-            code,
-            inserts: inserts.clone(),
-            expression_string: Some(self.expression.to_string()),
-            position: Some(position),
-            message: msg,
-        };
+        let ex = SpelParseException::new(self.expression, position, code, &insert_strs);
         InternalParseException::wrap(ex)
     }
 

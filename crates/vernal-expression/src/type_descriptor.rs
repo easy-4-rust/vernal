@@ -146,7 +146,7 @@ impl TypeDescriptor {
     /// 通用对象类型（用于兜底）。
     pub const OBJECT: Self = Self::Named {
         type_id: None,
-        name: "object".to_string(),
+        name: String::new(),
         generics: Vec::new(),
         annotations: Vec::new(),
     };
@@ -168,7 +168,7 @@ impl TypeDescriptor {
     /// `value` 类型（对标 SpEL 的 `ValueRef` 静态类型）。
     pub const VALUE: Self = Self::Named {
         type_id: None,
-        name: "value".to_string(),
+        name: String::new(),
         generics: Vec::new(),
         annotations: Vec::new(),
     };
@@ -269,8 +269,8 @@ impl TypeDescriptor {
         match (self, src) {
             // 同一类型
             (a, b) if a == b => true,
-            // Object 兜底
-            (Self::OBJECT, _) => true,
+            // Object 兜底：常量比较而非模式
+            _ if std::ptr::eq(self as *const _, &Self::OBJECT as *const _) => true,
             // 数字 widening
             (Self::Primitive(dp), Self::Primitive(sp)) => {
                 dp.numeric_width() >= sp.numeric_width()
@@ -278,7 +278,7 @@ impl TypeDescriptor {
                     || (*dp == PrimitiveKind::Float && *sp == PrimitiveKind::Float)
             }
             // 任何类型可赋给 String 表示 toString 转换存在
-            (Self::STRING, _) => true,
+            _ if std::ptr::eq(self as *const _, &Self::STRING as *const _) => true,
             // Map 兼容
             (Self::Map(ak, av), Self::Map(sk, sv)) => {
                 ak.is_assignable_from(sk) && av.is_assignable_from(sv)
