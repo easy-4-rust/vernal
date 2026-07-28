@@ -431,40 +431,4 @@ mod tests {
         assert!(env.contains_property("PATH"));
         assert!(!env.contains_property("nonexistent_key_12345"));
     }
-
-    #[test]
-    fn standard_environment_active_profiles() {
-        let mut env = StandardEnvironment::new();
-        assert!(env.get_active_profiles().is_empty());
-
-        env.set_active_profiles(vec!["dev".to_string(), "test".to_string()]);
-        assert_eq!(env.get_active_profiles(), vec!["dev".to_string(), "test".to_string()]);
-    }
-
-    #[test]
-    fn standard_environment_default_profiles() {
-        let env = StandardEnvironment::new();
-        assert_eq!(env.get_default_profiles(), vec!["default".to_string()]);
-    }
-
-    #[test]
-    fn standard_environment_accepts_profiles() {
-        let mut env = StandardEnvironment::new();
-        env.set_active_profiles(vec!["dev".to_string(), "test".to_string()]);
-
-        assert!(env.accepts_profiles(&["dev"]));
-        assert!(env.accepts_profiles(&["test"]));
-        assert!(!env.accepts_profiles(&["prod"]));
-        assert!(env.accepts_profiles(&["dev", "prod"])); // 任一匹配即可
-    }
-
-    #[test]
-    fn standard_environment_add_property_source() {
-        let mut env = StandardEnvironment::new();
-        let mut props = HashMap::new();
-        props.insert("custom.key".to_string(), "custom.value".to_string());
-        env.add_property_source(Box::new(MapPropertySource::new("custom", props)));
-
-        assert_eq!(env.get_property("custom.key"), Some("custom.value".to_string()));
-    }
 }

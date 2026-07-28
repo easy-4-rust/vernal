@@ -8,6 +8,15 @@ pub mod diagnostics;
 pub mod error;
 mod failure;
 pub mod id;
+pub mod logging;
+pub mod async_runtime;
+pub mod cli;
+pub mod codec;
+pub mod task;
+pub mod environment;
+pub mod resource;
+pub mod web;
+pub mod serialization;
 pub mod ordered;
 pub mod sorted_properties;
 pub mod spring_version;
@@ -43,7 +52,6 @@ mod tests {
 
     #[test]
     fn minimum_rust_version_is_in_semver_shape() {
-        // 至少形如 "X.Y.Z"，至少 5 个字符（如 1.88.0）
         let v = MINIMUM_RUST_VERSION;
         assert!(v.len() >= 5, "MSRV 看起来不是 semver: {v}");
         let parts: Vec<&str> = v.split('.').collect();
@@ -66,7 +74,6 @@ mod tests {
 
     #[test]
     fn app_lifecycle_phase_reexport_works() {
-        // 验证从 crate 根直接访问 AppLifecyclePhase
         let phase = AppLifecyclePhase::Created;
         assert!(!phase.is_active());
         assert_eq!(phase.to_string(), "created");
