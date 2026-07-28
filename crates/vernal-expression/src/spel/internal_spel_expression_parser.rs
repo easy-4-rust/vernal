@@ -645,7 +645,13 @@ impl InternalSpelExpressionParser {
             TokenKind::LiteralReal | TokenKind::LiteralRealFloat => {
                 let t = self.next_token().unwrap();
                 let raw = t.string_value();
-                let val: f64 = raw.parse().unwrap_or(0.0);
+                // 去掉 F/f/D/d 后缀再解析
+                let stripped = raw
+                    .trim_end_matches('F')
+                    .trim_end_matches('f')
+                    .trim_end_matches('D')
+                    .trim_end_matches('d');
+                let val: f64 = stripped.parse().unwrap_or(0.0);
                 Some(Box::new(RealLiteral::new(val, raw)))
             }
             TokenKind::LiteralHexInt | TokenKind::LiteralHexLong => {
