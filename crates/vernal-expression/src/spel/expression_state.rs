@@ -1,42 +1,38 @@
-//! 表达式求值状态。
-//!
-//! 对标 Spring 的 `ExpressionState`。
+//! 求值状态（对标 Spring `ExpressionState`）。
+
+use std::collections::HashMap;
 
 use crate::evaluation_context::EvaluationContext;
 use crate::evaluation_exception::EvaluationException;
-use crate::operation::Operation;
 use crate::typed_value::TypedValue;
-use crate::typed_value::{ExpressionValue, TypeDescriptor};
-use std::collections::HashMap;
 
-/// 表达式求值状态。
+/// 求值状态（对标 Spring `ExpressionState`）。
 ///
-/// 维护每次表达式求值的局部变量、作用域根对象和活动上下文对象。
-/// 对标 Spring 的 `org.springframework.expression.spel.ExpressionState`。
+/// 维护每次表达式求值的活动上下文对象栈和操作计数。
 pub struct ExpressionState<'a> {
-    /// 求值上下文
+    /// 求值上下文。
     context: &'a dyn EvaluationContext,
-    /// 局部变量
+    /// 活动上下文对象栈（push/pop）。
+    active_context: Vec<TypedValue>,
+    /// 局部变量。
     variables: HashMap<String, TypedValue>,
+    /// 操作计数。
+    operation_count: u32,
 }
 
 impl<'a> ExpressionState<'a> {
-    /// 创建表达式求值状态。
+    /// 创建状态。
     #[must_use]
     pub fn new(context: &'a dyn EvaluationContext) -> Self {
         Self {
             context,
+            active_context: vec![context.root_object().clone()],
             variables: HashMap::new(),
+            operation_count: 0,
         }
     }
 
-    /// 获取根上下文对象。
-    #[must_use]
-    pub fn root_context_object(&self) -> &TypedValue {
-        self.context.root_object()
-    }
-
-    /// 设置变量。
+    /// 设置局部变量。
     pub fn set_variable(&mut self, name: &str, value: TypedValue) {
         self.variables.insert(name.to_string(), value);
     }
@@ -44,44 +40,36 @@ impl<'a> ExpressionState<'a> {
     /// 查找变量。
     #[must_use]
     pub fn lookup_variable(&self, name: &str) -> Option<&TypedValue> {
-        self.variables
-            .get(name)
-            .or_else(|| self.context.lookup_variable(name))
+        if let Some(v) = self.variables.get(name) {
+            return Some(v);
+        }
+        self.context.lookup_variable(name)
+    }
+
+    /// 获取当前活动上下文对象（栈顶）。
+    #[must_use]
+    pub fn active_context_object(&self) -> &TypedValue {
+        self.active_context.last().expect("active context stack empty")
+    }
+
+    /// 压入活动上下文。
+    pub fn push_active_context_object(&mut self, value: TypedValue) {
+        self.active_context.push(value);
+    }
+
+    /// 弹出活动上下文。
+    pub fn pop_active_context_object(&mut self) -> TypedValue {
+        self.active_context.pop().expect("active context stack underflow")
     }
 
     /// 获取求值上下文。
     #[must_use]
-    pub fn evaluation_context(&self) -> &dyn EvaluationContext {
+    pub fn evaluation_context(&self) -> &'a dyn EvaluationContext {
         self.context
     }
 
-    /// 执行操作。
-    pub fn operate(
-        &self,
-        op: Operation,
-        left: &TypedValue,
-        right: &TypedValue,
-    ) -> Result<TypedValue, EvaluationException> {
-        match (op, left.value(), right.value()) {
-            (Operation::Add, ExpressionValue::Int(l), ExpressionValue::Int(r)) => Ok(
-                TypedValue::new(ExpressionValue::Int(l + r), TypeDescriptor::INT),
-            ),
-            (Operation::Subtract, ExpressionValue::Int(l), ExpressionValue::Int(r)) => Ok(
-                TypedValue::new(ExpressionValue::Int(l - r), TypeDescriptor::INT),
-            ),
-            (Operation::Multiply, ExpressionValue::Int(l), ExpressionValue::Int(r)) => Ok(
-                TypedValue::new(ExpressionValue::Int(l * r), TypeDescriptor::INT),
-            ),
-            (Operation::Divide, ExpressionValue::Int(l), ExpressionValue::Int(r)) => {
-                if *r == 0 {
-                    return Err(EvaluationException::new("", None, "除零错误"));
-                }
-                Ok(TypedValue::new(
-                    ExpressionValue::Int(l / r),
-                    TypeDescriptor::INT,
-                ))
-            }
-            _ => Err(EvaluationException::new("", None, "不支持的操作")),
-        }
+    /// 跟踪一次操作。
+    pub fn track_operation(&mut self) {
+        self.operation_count = self.operation_count.saturating_add(1);
     }
 }

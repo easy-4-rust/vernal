@@ -48,7 +48,10 @@ impl SpelNode for PropertyOrFieldReference {
         ))
     }
 
-    fn is_writable(&self) -> bool {
+    fn is_writable(
+        &self,
+        _context: &dyn crate::evaluation_context::EvaluationContext,
+    ) -> bool {
         true
     }
 
