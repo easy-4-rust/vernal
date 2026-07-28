@@ -418,3 +418,36 @@ fn string_concat_with_expression() {
         ExpressionValue::String("Result: 5".to_string())
     );
 }
+
+#[test]
+fn debug_inc_literal_v2() {
+    // ++5 should be OpInc(IntLiteral(5))
+    let parser = SpelExpressionParser::new();
+    let e = parser.parse_expression("++5").unwrap();
+    let ctx = StandardEvaluationContext::new(TypedValue::null());
+    let r = e.get_value_with_context(&ctx).unwrap();
+    // Just print for debug
+    eprintln!("++5 => {:?}", r.value());
+}
+
+#[test]
+fn debug_inc_literal() {
+    let parser = SpelExpressionParser::new();
+    let ctx = StandardEvaluationContext::new(TypedValue::null());
+    for e in &["5", "++5", "--5"] {
+        let parsed = parser.parse_expression(e).unwrap();
+        let r = parsed.get_value_with_context(&ctx).unwrap();
+        eprintln!("{e} => {:?}", r.value());
+    }
+}
+
+#[test]
+fn debug_five_ast() {
+    let parser = SpelExpressionParser::new();
+    let e = parser.parse_expression("5").unwrap();
+    // The Expression trait has expression_string() and get_value methods
+    // Let's check what AST we get
+    let ctx = StandardEvaluationContext::new(TypedValue::null());
+    let r = e.get_value_with_context(&ctx).unwrap();
+    assert_eq!(*r.value(), ExpressionValue::Int(5), "5 should parse to Int(5), got {:?}", r.value());
+}

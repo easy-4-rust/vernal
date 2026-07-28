@@ -340,6 +340,7 @@ impl<'a> Tokenizer<'a> {
             let mut number = String::new();
             while let Some(c) = self.expression.as_bytes().get(self.pos).copied() {
                 if c.is_ascii_hexdigit() {
+                    number.push(c as char);
                     self.pos += 1;
                 } else {
                     break;
@@ -364,6 +365,7 @@ impl<'a> Tokenizer<'a> {
         let mut is_real = false;
         while let Some(c) = self.expression.as_bytes().get(self.pos).copied() {
             if c.is_ascii_digit() {
+                number.push(c as char);
                 self.pos += 1;
             } else if c == b'.' && !is_real {
                 if matches!(self.peek_at(1), Some(d) if d.is_ascii_digit()) {
@@ -389,6 +391,7 @@ impl<'a> Tokenizer<'a> {
             }
             while let Some(c) = self.expression.as_bytes().get(self.pos).copied() {
                 if c.is_ascii_digit() {
+                    number.push(c as char);
                     self.pos += 1;
                 } else {
                     break;
@@ -494,6 +497,15 @@ mod tests {
     fn hex() {
         assert_eq!(t("0x1A")[0].kind, TokenKind::LiteralHexInt);
         assert_eq!(t("0x1AL")[0].kind, TokenKind::LiteralHexLong);
+    }
+
+    #[test]
+    fn inc_dec_tokens() {
+        assert_eq!(kinds("++"), vec![TokenKind::Inc]);
+        assert_eq!(kinds("--"), vec![TokenKind::Dec]);
+        assert_eq!(kinds("++5"), vec![TokenKind::Inc, TokenKind::LiteralInt]);
+        assert_eq!(kinds("--5"), vec![TokenKind::Dec, TokenKind::LiteralInt]);
+        assert_eq!(kinds("5++"), vec![TokenKind::LiteralInt, TokenKind::Inc]);
     }
 
     #[test]

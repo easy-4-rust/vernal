@@ -392,10 +392,11 @@ impl InternalSpelExpressionParser {
             Some(TokenKind::Inc) => {
                 self.next_token(); // consume ++ (prefix)
                 let operand = self.eat_unary_expression();
-                Some(Box::new(OpInc::new(
+                let node = OpInc::new(
                     operand.unwrap_or_else(|| Box::new(IntLiteral::new(0, "0".to_string()))),
                     true, // prefix
-                )))
+                );
+                Some(Box::new(node))
             }
             Some(TokenKind::Dec) => {
                 self.next_token(); // consume -- (prefix)

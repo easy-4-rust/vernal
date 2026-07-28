@@ -115,10 +115,7 @@ impl StandardEvaluationContext {
             + Sync
             + 'static,
     {
-        self.default_resolver.register(
-            name.to_string(),
-            Box::new(ArcReflectiveMethodExecutor::new(f)),
-        );
+        self.default_resolver.register_fn(name.to_string(), f);
     }
 
     /// 设置构造器解析器。

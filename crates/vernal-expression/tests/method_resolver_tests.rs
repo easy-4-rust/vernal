@@ -11,7 +11,7 @@ fn resolver_register_and_resolve_by_name() {
     let executor = ArcReflectiveMethodExecutor::new(|_ctx, _target, _args| {
         Ok(TypedValue::new(ExpressionValue::Int(42), TypeDescriptor::Primitive(PrimitiveKind::Int)))
     });
-    resolver.register("answer".to_string(), Box::new(executor));
+    resolver.register("answer".to_string(), executor);
     let ctx = StandardEvaluationContext::new_default();
     let target = TypedValue::null();
     let result = resolver.resolve(&ctx, &target, "answer", &[]);
@@ -33,8 +33,8 @@ fn resolver_returns_none_for_unregistered_method() {
 fn resolver_has_method_and_method_names() {
     let resolver = ReflectiveMethodResolver::new();
     assert!(!resolver.has_method("foo"));
-    resolver.register("foo".to_string(), Box::new(ArcReflectiveMethodExecutor::new(|_, _, _| Ok(TypedValue::null()))));
-    resolver.register("bar".to_string(), Box::new(ArcReflectiveMethodExecutor::new(|_, _, _| Ok(TypedValue::null()))));
+    resolver.register("foo".to_string(), ArcReflectiveMethodExecutor::new(|_, _, _| Ok(TypedValue::null())));
+    resolver.register("bar".to_string(), ArcReflectiveMethodExecutor::new(|_, _, _| Ok(TypedValue::null())));
     assert!(resolver.has_method("foo"));
     assert!(resolver.has_method("bar"));
     assert!(!resolver.has_method("baz"));
@@ -114,7 +114,7 @@ fn arc_executor_executes_and_clones() {
     let target = TypedValue::null();
     let result = executor.execute(&ctx, &target, &[]).unwrap();
     assert_eq!(*result.value(), ExpressionValue::Boolean(true));
-    let cloned = executor.box_clone();
+    let cloned = executor.clone();
     let result2 = cloned.execute(&ctx, &target, &[]).unwrap();
     assert_eq!(*result2.value(), ExpressionValue::Boolean(true));
 }
