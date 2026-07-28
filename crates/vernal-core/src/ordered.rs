@@ -17,8 +17,8 @@
 //! | [`INIT_SORT_EVENT_LISTENER`](Self::INIT_SORT_EVENT_LISTENER) | `-2_000_000_000` | `ApplicationListener` 注册期 |
 //! | [`INIT_SORT_MESSAGE_SOURCE`](Self::INIT_SORT_MESSAGE_SOURCE) | `-1_000_000_000` | `MessageSource` 注册期 |
 //! | [`INIT_SORT_BUSINESS`](Self::INIT_SORT_BUSINESS) | `0` | 默认业务 Bean（普通 `Ordered`） |
-//! | [`INIT_SORT_APPLICATION`](Self::INIT_SORT_APPLICATION) | `i32::MAX - 1` | Web 服务器 |
-//! | [`INIT_SORT_TASK`](Self::INIT_SORT_TASK) | `i32::MAX - 100` | 异步任务启动 |
+//! | [`INIT_SORT_APPLICATION`](Self::INIT_SORT_APPLICATION) | `i32::MAX - 100` | Web 服务器 |
+//! | [`INIT_SORT_TASK`](Self::INIT_SORT_TASK) | `i32::MAX - 1` | 异步任务启动 |
 //! | [`INIT_SORT_DEFAULT`](Self::INIT_SORT_DEFAULT) | `i32::MAX` | `Ordered.LOWEST_PRECEDENCE = Integer.MAX_VALUE` |
 //!
 //! # 偏序关系（必须保持不变）

@@ -36,6 +36,8 @@ mod conditional_component_module_parts;
 mod configuration_properties;
 mod configuration_properties_error;
 mod context_error;
+pub mod resource;
+
 mod context_resources;
 mod context_state;
 mod diagnostic_configuration;

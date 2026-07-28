@@ -1,6 +1,12 @@
 //! 属性源抽象 trait。
 //!
 //! 对标 Spring `org.springframework.core.env.PropertySource`。
+//!
+//! # 抽象层级
+//!
+//! 本 trait 是最基础的形式，方法返回 `Option<String>`。
+//! `vernal-context::PropertySource` 提供了更高层次的版本，返回 `Result<Option<String>, EnvironmentError>`，
+//! 支持更详细的错误诊断。底层实现可同时实现两个 trait。
 
 /// 属性源抽象 trait。
 ///

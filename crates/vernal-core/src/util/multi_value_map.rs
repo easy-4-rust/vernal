@@ -24,6 +24,15 @@ pub trait MultiValueMapTrait<K, V> {
 
     /// 获取所有值。
     fn get_all(&self, key: &K) -> Option<&[V]>;
+
+    /// 键数量(对标 Spring `Map.size()`)。
+    fn len(&self) -> usize;
+
+    /// 是否为空(对标 Spring `Map.isEmpty()`)。
+    fn is_empty(&self) -> bool;
+
+    /// 是否包含键(对标 Spring `Map.containsKey()`)。
+    fn contains_key(&self, key: &K) -> bool;
 }
 
 /// 多值 Map 默认实现。
@@ -127,6 +136,18 @@ impl<K: Eq + Hash + Clone, V: Clone> MultiValueMapTrait<K, V> for MultiValueMap<
     fn get_all(&self, key: &K) -> Option<&[V]> {
         self.inner.get(key).map(Vec::as_slice)
     }
+
+    fn len(&self) -> usize {
+        self.inner.len()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.inner.is_empty()
+    }
+
+    fn contains_key(&self, key: &K) -> bool {
+        self.inner.contains_key(key)
+    }
 }
 
 impl<K: Eq + Hash, V> Default for MultiValueMap<K, V> {
@@ -197,6 +218,18 @@ impl<K: Eq + Hash + Clone, V: Clone> MultiValueMapTrait<K, V> for UnmodifiableMu
 
     fn get_all(&self, key: &K) -> Option<&[V]> {
         self.inner.get_all(key)
+    }
+
+    fn len(&self) -> usize {
+        self.inner.len()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.inner.is_empty()
+    }
+
+    fn contains_key(&self, key: &K) -> bool {
+        self.inner.contains_key(key)
     }
 }
 
@@ -331,4 +364,129 @@ mod tests {
         let m: TestMap = MultiValueMap::default();
         assert!(m.is_empty());
     }
+
+    #[test]
+    fn from_hashmap_works() {
+        let mut inner = HashMap::new();
+        inner.insert("k", vec![1, 2]);
+        let map = MultiValueMap::from_hashmap(inner);
+        assert_eq!(map.get_first(&"k"), Some(&1));
+    }
+
+    #[test]
+    fn keys_iterator() {
+        let mut map = MultiValueMap::new();
+        map.add("a", 1);
+        map.add("b", 2);
+        let mut keys: Vec<&str> = map.keys().copied().collect();
+        keys.sort();
+        assert_eq!(keys, vec!["a", "b"]);
+    }
+
+    #[test]
+    fn trait_len_is_empty_contains() {
+        let mut map = MultiValueMap::new();
+        assert!(map.is_empty());
+        assert_eq!(map.len(), 0);
+        map.add("k", 1);
+        assert!(!map.is_empty());
+        assert_eq!(map.len(), 1);
+        assert!(map.contains_key(&"k"));
+        assert!(!map.contains_key(&"z"));
+    }
+
+    #[test]
+    fn deref_deref_mut() {
+        let mut map = MultiValueMap::new();
+        map.add("k", 1);
+        // Deref: 直接访问 HashMap 方法
+        assert_eq!(map.inner.len(), 1);
+        // DerefMut: 直接修改
+        map.inner.insert("k2", vec![2]);
+        assert_eq!(map.len(), 2);
+    }
+
+    #[test]
+    fn unmodifiable_as_ref() {
+        let mut inner = MultiValueMap::new();
+        inner.add("k", 1);
+        let unmod = UnmodifiableMultiValueMap::new(inner);
+        let map_ref = unmod.as_ref();
+        assert_eq!(map_ref.get_first(&"k"), Some(&1));
+    }
+
+    #[test]
+    fn unmodifiable_trait_methods() {
+        let mut inner = MultiValueMap::new();
+        inner.add("k", 1);
+        let unmod = UnmodifiableMultiValueMap::new(inner);
+        assert_eq!(unmod.len(), 1);
+        assert!(!unmod.is_empty());
+        assert!(unmod.contains_key(&"k"));
+        assert!(!unmod.contains_key(&"z"));
+    }
+
+    #[test]
+    #[should_panic(expected = "does not support set")]
+    fn unmodifiable_set_panics() {
+        let mut inner = MultiValueMap::new();
+        let mut unmod = UnmodifiableMultiValueMap::new(inner);
+        unmod.set("k", 1);
+    }
+
+    #[test]
+    fn into_inner_and_default() {
+        let map = MultiValueMap::<&str, i32>::default();
+        assert!(map.into_inner().is_empty());
+    }
+
+
+    #[test]
+    fn deref_and_deref_mut() {
+        let mut map = MultiValueMap::new();
+        map.add("k", 1);
+        // Deref: 直接通过 inner 访问
+        assert_eq!(map.inner.len(), 1);
+        // DerefMut: 直接修改 inner
+        map.inner.insert("k2", vec![2]);
+        assert_eq!(map.len(), 2);
+    }
+
+    #[test]
+    fn from_hashmap_and_keys() {
+        let mut inner = HashMap::new();
+        inner.insert("a", vec![1]);
+        inner.insert("b", vec![2]);
+        let map = MultiValueMap::from_hashmap(inner);
+        let mut keys: Vec<&str> = map.keys().copied().collect();
+        keys.sort();
+        assert_eq!(keys, vec!["a", "b"]);
+    }
+
+    #[test]
+    fn trait_len_is_empty_contains_key() {
+        let mut map = MultiValueMap::new();
+        assert!(map.is_empty());
+        assert_eq!(map.len(), 0);
+        map.add("k", 1);
+        assert!(!map.is_empty());
+        assert_eq!(map.len(), 1);
+        assert!(map.contains_key(&"k"));
+        assert!(!map.contains_key(&"z"));
+    }
+
+    #[test]
+    fn unmodifiable_as_ref_and_trait() {
+        let mut inner = MultiValueMap::new();
+        inner.add("k", 1);
+        let unmod = UnmodifiableMultiValueMap::new(inner);
+        let map_ref = unmod.as_ref();
+        assert_eq!(map_ref.get_first(&"k"), Some(&1));
+        assert_eq!(unmod.len(), 1);
+        assert!(!unmod.is_empty());
+        assert!(unmod.contains_key(&"k"));
+    }
+
+
+
 }

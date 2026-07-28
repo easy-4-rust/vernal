@@ -213,4 +213,18 @@ mod tests {
         let s = report.to_string();
         assert!(s.contains("1 diagnostic entries"));
     }
+
+    #[test]
+    fn from_error_code_has_correct_kind() {
+        use crate::error::ErrorCode;
+        struct TestErrorCode;
+        impl ErrorCode for TestErrorCode {
+            fn domain(&self) -> &'static str { "TEST" }
+            fn code(&self) -> i32 { 42 }
+            fn message(&self) -> &'static str { "test error" }
+        }
+        let report = ErrorReport::from_error_code(&TestErrorCode);
+        assert_eq!(report.kind(), ErrorKind::Business);
+    }
+
 }

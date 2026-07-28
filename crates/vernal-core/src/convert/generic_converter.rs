@@ -22,35 +22,10 @@
 use std::any::TypeId;
 use std::collections::HashSet;
 
+use super::convertible_pair::ConvertiblePair;
 use super::{ConditionalConverter, ConversionError};
 
-/// 可转换类型对。
-///
-/// 对标 Spring `GenericConverter.ConvertiblePair`。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct ConvertiblePair {
-    /// 源类型 ID
-    pub source: TypeId,
-    /// 目标类型 ID
-    pub target: TypeId,
-}
 
-impl ConvertiblePair {
-    /// 创建新的类型对。
-    #[must_use]
-    pub fn new<S: 'static, T: 'static>() -> Self {
-        Self {
-            source: TypeId::of::<S>(),
-            target: TypeId::of::<T>(),
-        }
-    }
-
-    /// 从显式 `TypeId` 创建。
-    #[must_use]
-    pub fn from_type_ids(source: TypeId, target: TypeId) -> Self {
-        Self { source, target }
-    }
-}
 
 /// 通用转换器 trait。
 ///
@@ -95,13 +70,14 @@ impl ClosureGenericConverter {
 }
 
 impl ConditionalConverter for ClosureGenericConverter {
-    fn matches(&self, source_type: TypeId, target_type: TypeId) -> bool {
+    fn matches(&self, pair: &ConvertiblePair) -> bool {
         if self.pairs.is_empty() {
             return true;
         }
-        self.pairs
-            .iter()
-            .any(|p| p.source == source_type && p.target == target_type)
+        self.pairs.iter().any(|p| {
+            p.source_type_id() == pair.source_type_id()
+                && p.target_type_id() == pair.target_type_id()
+        })
     }
 }
 
@@ -152,15 +128,15 @@ mod tests {
         pairs.insert(ConvertiblePair::new::<String, i64>());
         let converter = ClosureGenericConverter::new(pairs, |s, _| Ok(s.to_string()));
 
-        assert!(converter.matches(TypeId::of::<String>(), TypeId::of::<i64>()));
-        assert!(!converter.matches(TypeId::of::<String>(), TypeId::of::<bool>()));
+        assert!(converter.matches(&ConvertiblePair::new::<String, i64>()));
+        assert!(!converter.matches(&ConvertiblePair::new::<String, bool>()));
     }
 
     #[test]
     fn closure_converter_with_empty_pairs_matches_all() {
         let converter = ClosureGenericConverter::new(HashSet::new(), |s, _| Ok(s.to_string()));
-        assert!(converter.matches(TypeId::of::<String>(), TypeId::of::<i64>()));
-        assert!(converter.matches(TypeId::of::<bool>(), TypeId::of::<f64>()));
+        assert!(converter.matches(&ConvertiblePair::new::<String, i64>()));
+        assert!(converter.matches(&ConvertiblePair::new::<bool, f64>()));
     }
 
     #[test]

@@ -167,6 +167,18 @@ impl<K: PartialEq, V> MultiValueMapTrait<K, V> for LinkedMultiValueMap<K, V> {
     fn get_all(&self, key: &K) -> Option<&[V]> {
         self.index_of(key).map(|i| self.entries[i].1.as_slice())
     }
+
+    fn len(&self) -> usize {
+        self.entries.len()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
+
+    fn contains_key(&self, key: &K) -> bool {
+        self.index_of(key).is_some()
+    }
 }
 
 #[cfg(test)]

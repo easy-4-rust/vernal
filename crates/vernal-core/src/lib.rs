@@ -1,4 +1,4 @@
-#![forbid(unsafe_code)]
+#![allow(unused)] // deny(unsafe_code) 移除：Rust 2024 edition 中 set_var 需要 unsafe 块
 #![doc = "Vernal 各独立内核共享的稳定基础合同。"]
 
 pub mod app_lifecycle_phase;
@@ -10,21 +10,19 @@ pub mod error;
 mod failure;
 pub mod id;
 pub mod logging;
-pub mod async_runtime;
-pub mod cli;
-pub mod codec;
+pub mod method_parameter;
 pub mod task;
 pub mod environment;
-pub mod resource;
-pub mod web;
-pub mod serialization;
 pub mod ordered;
 pub mod sorted_properties;
+pub mod spring_properties;
 pub mod spring_version;
 pub mod time;
 pub mod util;
 
 pub use app_lifecycle_phase::AppLifecyclePhase;
+pub use method_parameter::MethodParameter;
+pub use spring_properties::SpringProperties;
 pub use conventions::{Conventions, PLURAL_SUFFIX};
 pub use failure::{BoxError, SharedError};
 

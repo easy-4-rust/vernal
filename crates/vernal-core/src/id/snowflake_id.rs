@@ -355,4 +355,24 @@ mod tests {
         // 这里只验证能正常生成
         let _ = ts;
     }
+
+    #[test]
+    fn epoch_ms_is_stored() {
+        let generator = SnowflakeId::new(1).unwrap();
+        assert!(generator.epoch_ms() > 0);
+    }
+
+    #[test]
+    fn new_with_custom_epoch() {
+        let generator = SnowflakeId::with_epoch(1, 1_600_000_000_000).unwrap();
+        assert_eq!(generator.epoch_ms(), 1_600_000_000_000);
+    }
+
+    #[test]
+    fn multiple_ids_are_unique() {
+        let generator = SnowflakeId::new(1).unwrap();
+        let ids: std::collections::HashSet<String> = (0..100).map(|_| generator.next_id()).collect();
+        assert_eq!(ids.len(), 100);
+    }
+
 }

@@ -5,7 +5,7 @@
 /// 类型对，记录转换的源类型与目标类型。
 ///
 /// 对应 Java: `GenericConverter.ConvertiblePair`
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ConvertiblePair {
     /// 源类型 `TypeId`
     pub source_type_id: std::any::TypeId,

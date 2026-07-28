@@ -88,8 +88,8 @@ vernal 直接封装一个 Rust crate，提供 Spring 语义的 API。
 
 ```
 vernal-cache  → moka（封装 moka::sync::Cache 提供 Spring Cache 语义）
-vernal-rbdc   → rbdc（rbatis 驱动抽象，对标 spring-jdbc JdbcTemplate 语义）
-vernal-db     → sqlx（通用数据库抽象层，vernal-rbdc 的底层连接池来源之一）
+vernal-rbdc   → 通用数据库抽象层（对标 spring-jdbc JdbcTemplate，基于 rbdc 4.9.10）
+vernal-db     → sqlx（底层连接池实现，vernal-rbdc 的底层连接池来源之一）
 vernal-log    → tracing（封装 tracing 提供 SLF4J 语义）
 ```
 
