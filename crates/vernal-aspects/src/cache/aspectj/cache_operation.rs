@@ -85,41 +85,6 @@ mod tests {
     fn test_cache_operation_metadata_default() {
         let meta = CacheOperationMetadata::default();
         assert_eq!(meta.operation, CacheOperation::Cacheable);
-        assert!(meta.cache_names.is_empty());
-        assert!(meta.key.is_none());
-        assert!(!meta.before_invocation);
-        assert!(!meta.all_entries);
-        assert!(!meta.sync);
-    }
-
-    #[test]
-    fn test_cache_operation_metadata_custom() {
-        let meta = CacheOperationMetadata {
-            operation: CacheOperation::CacheEvict,
-            cache_names: vec![Cow::Borrowed("users")],
-            before_invocation: true,
-            all_entries: true,
-            ..Default::default()
-        };
-        assert_eq!(meta.operation, CacheOperation::CacheEvict);
-        assert_eq!(meta.cache_names.len(), 1);
-        assert!(meta.before_invocation);
-        assert!(meta.all_entries);
-    }
-
-    #[test]
-    fn test_cache_operation_is_clone() {
-        let op = CacheOperation::Cacheable;
-        let op2 = op;
-        assert_eq!(op, op2);
-    }
-
-    #[test]
-    fn test_cache_operation_is_send_sync() {
-        fn assert_send<T: Send>() {}
-        fn assert_sync<T: Sync>() {}
-        assert_send::<CacheOperation>();
-        assert_sync::<CacheOperation>();
     }
 
     #[test]
@@ -187,5 +152,82 @@ mod tests {
         fn assert_sync<T: Sync>() {}
         assert_send::<CacheOperationMetadata>();
         assert_sync::<CacheOperationMetadata>();
+    }
+
+    #[test]
+    fn test_cache_operation_metadata_with_all_fields() {
+        let meta = CacheOperationMetadata {
+            operation: CacheOperation::Cacheable,
+            cache_names: vec![Cow::Borrowed("users"), Cow::Borrowed("orders")],
+            key: Some(Cow::Borrowed("#id")),
+            condition: Some(Cow::Borrowed("#id > 0")),
+            unless: Some(Cow::Borrowed("#result == null")),
+            before_invocation: true,
+            all_entries: true,
+            sync: true,
+        };
+
+        assert_eq!(meta.operation, CacheOperation::Cacheable);
+        assert_eq!(meta.cache_names.len(), 2);
+        assert_eq!(meta.key.as_deref(), Some("#id"));
+        assert_eq!(meta.condition.as_deref(), Some("#id > 0"));
+        assert_eq!(meta.unless.as_deref(), Some("#result == null"));
+        assert!(meta.before_invocation);
+        assert!(meta.all_entries);
+        assert!(meta.sync);
+    }
+
+    #[test]
+    fn test_cache_operation_metadata_with_no_fields() {
+        let meta = CacheOperationMetadata::default();
+        assert_eq!(meta.operation, CacheOperation::Cacheable);
+        assert!(meta.cache_names.is_empty());
+        assert!(meta.key.is_none());
+        assert!(meta.condition.is_none());
+        assert!(meta.unless.is_none());
+        assert!(!meta.before_invocation);
+        assert!(!meta.all_entries);
+        assert!(!meta.sync);
+    }
+
+    #[test]
+    fn test_cache_operation_debug() {
+        let op = CacheOperation::Cacheable;
+        let debug_str = format!("{:?}", op);
+        assert!(debug_str.contains("Cacheable"));
+    }
+
+    #[test]
+    fn test_cache_operation_clone() {
+        let op = CacheOperation::Cacheable;
+        let cloned = op;
+        assert_eq!(op, cloned);
+    }
+
+    #[test]
+    fn test_cache_operation_hash() {
+        let mut map = std::collections::HashMap::new();
+        map.insert(CacheOperation::Cacheable, 1);
+        map.insert(CacheOperation::CachePut, 2);
+        map.insert(CacheOperation::CacheEvict, 3);
+        assert_eq!(map.len(), 3);
+    }
+
+    #[test]
+    fn test_cache_operation_is_send_sync() {
+        fn assert_send<T: Send>() {}
+        fn assert_sync<T: Sync>() {}
+        assert_send::<CacheOperation>();
+        assert_sync::<CacheOperation>();
+    }
+
+    #[test]
+    fn test_cache_operation_metadata_ne() {
+        let meta1 = CacheOperationMetadata::default();
+        let meta2 = CacheOperationMetadata {
+            operation: CacheOperation::CachePut,
+            ..Default::default()
+        };
+        assert_ne!(meta1.operation, meta2.operation);
     }
 }

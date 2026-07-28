@@ -128,9 +128,18 @@ impl<'a> Tokenizer<'a> {
                     }
                 }
 
-                b'*' => tokens.push(Token::empty(TokenKind::Star, start, start + 1)),
-                b'/' => tokens.push(Token::empty(TokenKind::Div, start, start + 1)),
-                b'%' => tokens.push(Token::empty(TokenKind::Mod, start, start + 1)),
+                b'*' => {
+                    tokens.push(Token::empty(TokenKind::Star, start, start + 1));
+                    self.pos += 1;
+                }
+                b'/' => {
+                    tokens.push(Token::empty(TokenKind::Div, start, start + 1));
+                    self.pos += 1;
+                }
+                b'%' => {
+                    tokens.push(Token::empty(TokenKind::Mod, start, start + 1));
+                    self.pos += 1;
+                }
                 b'^' => {
                     if self.peek_at(1) == Some(b'[') {
                         tokens.push(Token::empty(TokenKind::SelectFirst, start, start + 2));
@@ -168,17 +177,50 @@ impl<'a> Tokenizer<'a> {
                     }
                 },
 
-                b'(' => tokens.push(Token::empty(TokenKind::LParen, start, start + 1)),
-                b')' => tokens.push(Token::empty(TokenKind::RParen, start, start + 1)),
-                b'[' => tokens.push(Token::empty(TokenKind::LSquare, start, start + 1)),
-                b']' => tokens.push(Token::empty(TokenKind::RSquare, start, start + 1)),
-                b'{' => tokens.push(Token::empty(TokenKind::LCurly, start, start + 1)),
-                b'}' => tokens.push(Token::empty(TokenKind::RCurly, start, start + 1)),
-                b',' => tokens.push(Token::empty(TokenKind::Comma, start, start + 1)),
-                b'.' => tokens.push(Token::empty(TokenKind::Dot, start, start + 1)),
-                b':' => tokens.push(Token::empty(TokenKind::Colon, start, start + 1)),
-                b'#' => tokens.push(Token::empty(TokenKind::Hash, start, start + 1)),
-                b'@' => tokens.push(Token::empty(TokenKind::BeanRef, start, start + 1)),
+                b'(' => {
+                    tokens.push(Token::empty(TokenKind::LParen, start, start + 1));
+                    self.pos += 1;
+                }
+                b')' => {
+                    tokens.push(Token::empty(TokenKind::RParen, start, start + 1));
+                    self.pos += 1;
+                }
+                b'[' => {
+                    tokens.push(Token::empty(TokenKind::LSquare, start, start + 1));
+                    self.pos += 1;
+                }
+                b']' => {
+                    tokens.push(Token::empty(TokenKind::RSquare, start, start + 1));
+                    self.pos += 1;
+                }
+                b'{' => {
+                    tokens.push(Token::empty(TokenKind::LCurly, start, start + 1));
+                    self.pos += 1;
+                }
+                b'}' => {
+                    tokens.push(Token::empty(TokenKind::RCurly, start, start + 1));
+                    self.pos += 1;
+                }
+                b',' => {
+                    tokens.push(Token::empty(TokenKind::Comma, start, start + 1));
+                    self.pos += 1;
+                }
+                b'.' => {
+                    tokens.push(Token::empty(TokenKind::Dot, start, start + 1));
+                    self.pos += 1;
+                }
+                b':' => {
+                    tokens.push(Token::empty(TokenKind::Colon, start, start + 1));
+                    self.pos += 1;
+                }
+                b'#' => {
+                    tokens.push(Token::empty(TokenKind::Hash, start, start + 1));
+                    self.pos += 1;
+                }
+                b'@' => {
+                    tokens.push(Token::empty(TokenKind::BeanRef, start, start + 1));
+                    self.pos += 1;
+                }
 
                 b'\'' => {
                     let tok = self.lex_quoted_string(start)?;
@@ -210,6 +252,11 @@ impl<'a> Tokenizer<'a> {
                         vec![ch_str.clone(), format!("U+{:04X}", ch)],
                     ));
                 }
+            }
+
+            // 每轮必须消费至少一个字节，防止新增分支遗漏推进位置后无限追加 token。
+            if self.pos == start {
+                return Err(self.error(start, SpelMessage::InternalError, vec![]));
             }
         }
 
@@ -483,6 +530,28 @@ mod tests {
         assert_eq!(kinds("!["), vec![TokenKind::Project]);
         assert_eq!(kinds("^["), vec![TokenKind::SelectFirst]);
         assert_eq!(kinds("$["), vec![TokenKind::SelectLast]);
+    }
+
+    #[test]
+    fn single_character_tokens_advance() {
+        for (input, expected) in [
+            ("*", TokenKind::Star),
+            ("/", TokenKind::Div),
+            ("%", TokenKind::Mod),
+            ("(", TokenKind::LParen),
+            (")", TokenKind::RParen),
+            ("[", TokenKind::LSquare),
+            ("]", TokenKind::RSquare),
+            ("{", TokenKind::LCurly),
+            ("}", TokenKind::RCurly),
+            (",", TokenKind::Comma),
+            (".", TokenKind::Dot),
+            (":", TokenKind::Colon),
+            ("#", TokenKind::Hash),
+            ("@", TokenKind::BeanRef),
+        ] {
+            assert_eq!(kinds(input), vec![expected], "input: {input}");
+        }
     }
 
     #[test]

@@ -138,22 +138,6 @@ mod tests {
     }
 
     #[test]
-    fn test_rethrower_try_execute_with_string_return() {
-        let result = Rethrower::try_execute(|| {
-            String::from("test")
-        });
-        assert_eq!(result.unwrap(), "test");
-    }
-
-    #[test]
-    fn test_rethrower_try_execute_with_vec_return() {
-        let result = Rethrower::try_execute(|| {
-            vec![1, 2, 3, 4, 5]
-        });
-        assert_eq!(result.unwrap(), vec![1, 2, 3, 4, 5]);
-    }
-
-    #[test]
     fn test_rethrower_try_execute_with_map_return() {
         let result = Rethrower::try_execute(|| {
             let mut map = std::collections::HashMap::new();

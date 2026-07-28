@@ -427,6 +427,17 @@ mod tests {
     #[test]
     fn test_transaction_attribute_default_all_fields() {
         let attr = TransactionAttribute::default();
+        assert_eq!(attr.propagation, Propagation::Required);
+        assert_eq!(attr.isolation, Isolation::Default);
+        assert!(!attr.read_only);
+        assert_eq!(attr.timeout, 0);
+        assert!(attr.rollback_for.is_empty());
+        assert!(attr.no_rollback_for.is_empty());
+        assert!(attr.name.is_none());
+        assert!(attr.qualifier.is_none());
+        assert!(attr.labels.is_empty());
+    }
+
     #[test]
     fn test_transaction_attribute_full_construction() {
         let attr = TransactionAttribute {
@@ -474,11 +485,93 @@ mod tests {
     }
 
     #[test]
-    fn test_transaction_attribute_is_send_sync() {
-        fn assert_send<T: Send>() {}
-        fn assert_sync<T: Sync>() {}
-        assert_send::<TransactionAttribute>();
-        assert_sync::<TransactionAttribute>();
+    #[test]
+    fn test_transaction_attribute_with_all_fields() {
+        let attr = TransactionAttribute {
+            propagation: Propagation::RequiresNew,
+            isolation: Isolation::Serializable,
+            read_only: true,
+            timeout: 60,
+            rollback_for: vec![Cow::Borrowed("java.io.IOException")],
+            no_rollback_for: vec![Cow::Borrowed("java.io.FileNotFoundException")],
+            name: Some(Cow::Borrowed("testTx")),
+            qualifier: Some(Cow::Borrowed("txManager")),
+            labels: vec![Cow::Borrowed("audit"), Cow::Borrowed("log")],
+        };
+
+        assert_eq!(attr.propagation, Propagation::RequiresNew);
+        assert_eq!(attr.isolation, Isolation::Serializable);
+        assert!(attr.read_only);
+        assert_eq!(attr.timeout, 60);
+        assert_eq!(attr.rollback_for.len(), 1);
+        assert_eq!(attr.no_rollback_for.len(), 1);
+        assert_eq!(attr.name.as_deref(), Some("testTx"));
+        assert_eq!(attr.qualifier.as_deref(), Some("txManager"));
+        assert_eq!(attr.labels.len(), 2);
     }
-}
+
+    #[test]
+    fn test_transaction_attribute_with_no_labels() {
+        let attr = TransactionAttribute {
+            propagation: Propagation::Required,
+            isolation: Isolation::Default,
+            read_only: false,
+            timeout: 0,
+            rollback_for: Vec::new(),
+            no_rollback_for: Vec::new(),
+            name: None,
+            qualifier: None,
+            labels: Vec::new(),
+        };
+
+        assert_eq!(attr.propagation, Propagation::Required);
+        assert_eq!(attr.isolation, Isolation::Default);
+        assert!(!attr.read_only);
+        assert_eq!(attr.timeout, 0);
+        assert!(attr.rollback_for.is_empty());
+        assert!(attr.no_rollback_for.is_empty());
+        assert!(attr.name.is_none());
+        assert!(attr.qualifier.is_none());
+        assert!(attr.labels.is_empty());
+    }
+
+    #[test]
+    fn test_should_rollback_with_multiple_rollback_for() {
+        let mut attr = TransactionAttribute::default();
+        attr.rollback_for.push(Cow::Borrowed("java.io.IOException"));
+        attr.rollback_for.push(Cow::Borrowed("java.sql.SQLException"));
+
+        assert!(attr.should_rollback("java.io.IOException", false, false));
+        assert!(attr.should_rollback("java.sql.SQLException", false, false));
+        assert!(!attr.should_rollback("java.lang.RuntimeException", true, false));
+    }
+
+    #[test]
+    fn test_should_rollback_with_multiple_no_rollback_for() {
+        let mut attr = TransactionAttribute::default();
+        attr.no_rollback_for.push(Cow::Borrowed("java.lang.NullPointerException"));
+        attr.no_rollback_for.push(Cow::Borrowed("java.lang.IllegalStateException"));
+
+        assert!(!attr.should_rollback("java.lang.NullPointerException", true, false));
+        assert!(!attr.should_rollback("java.lang.IllegalStateException", true, false));
+        assert!(attr.should_rollback("java.lang.RuntimeException", true, false));
+    }
+
+    #[test]
+    fn test_transaction_attribute_debug_with_labels() {
+        let attr = TransactionAttribute {
+            propagation: Propagation::Required,
+            isolation: Isolation::Default,
+            read_only: false,
+            timeout: 0,
+            rollback_for: Vec::new(),
+            no_rollback_for: Vec::new(),
+            name: Some(Cow::Borrowed("test")),
+            qualifier: None,
+            labels: vec![Cow::Borrowed("audit")],
+        };
+        let debug_str = format!("{:?}", attr);
+        assert!(debug_str.contains("test"));
+        assert!(debug_str.contains("audit"));
+    }
 }

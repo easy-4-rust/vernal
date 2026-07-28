@@ -105,22 +105,19 @@ mod tests {
 
     #[test]
     fn test_any_throw_try_execute_with_string_return() {
-        let result = AnyThrow::try_execute(|| {
-            String::from("test")
-        });
+        let result = AnyThrow::try_execute(|| String::from("test"));
         assert_eq!(result.unwrap(), "test");
     }
 
     #[test]
     fn test_any_throw_try_execute_with_option_return() {
-        let result = AnyThrow::try_execute(|| {
-            Some(42)
-        });
+        let result = AnyThrow::try_execute(|| Some(42));
         assert_eq!(result.unwrap(), Some(42));
+    }
+
+    #[test]
     fn test_any_throw_try_execute_with_vec_return() {
-        let result = AnyThrow::try_execute(|| {
-            vec![1, 2, 3, 4, 5]
-        });
+        let result = AnyThrow::try_execute(|| vec![1, 2, 3, 4, 5]);
         assert_eq!(result.unwrap(), vec![1, 2, 3, 4, 5]);
     }
 
@@ -136,19 +133,8 @@ mod tests {
     }
 
     #[test]
-    fn test_any_throw_try_execute_with_option_return() {
-        let result = AnyThrow::try_execute(|| {
-            Some(42)
-        });
-        assert_eq!(result.unwrap(), Some(42));
-    }
-
-    #[test]
     fn test_any_throw_try_execute_with_result_return() {
-        let result = AnyThrow::try_execute(|| {
-            Ok::<i32, String>(42)
-        });
+        let result = AnyThrow::try_execute(|| Ok::<i32, String>(42));
         assert_eq!(result.unwrap(), Ok(42));
     }
-}
 }

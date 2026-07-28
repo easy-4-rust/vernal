@@ -205,7 +205,7 @@ impl<S: CacheOperationSource> CacheAspectSupport<S> {
 mod tests {
     use super::*;
     use crate::cache::aspectj::cache_operation_source::AnnotationCacheOperationSource;
-    use std::sync::Arc;
+    use crate::cache::aspectj::cache_operation::CacheOperation;
 
     struct MockInvoker;
 
@@ -247,12 +247,10 @@ mod tests {
     }
 
     #[test]
-
-    #[test]
-    fn test_execute_cacheable_operation() {
+    fn test_execute_with_operation() {
         let mut source = AnnotationCacheOperationSource::new();
         let op = CacheOperationMetadata {
-            operation: super::super::cache_operation::CacheOperation::Cacheable,
+            operation: CacheOperation::Cacheable,
             cache_names: vec![std::borrow::Cow::Borrowed("users")],
             ..Default::default()
         };
@@ -419,4 +417,5 @@ mod tests {
         assert!(matches!(CacheResult::Miss, CacheResult::Miss));
         assert!(matches!(CacheResult::Error("err".to_string()), CacheResult::Error(_)));
     }
+
 }

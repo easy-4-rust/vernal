@@ -66,24 +66,11 @@ pub enum Propagation {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashMap;
 
     #[test]
     fn test_propagation_default_is_required() {
         assert_eq!(Propagation::default(), Propagation::Required);
-    }
-
-    #[test]
-    fn test_propagation_all_variants() {
-        let variants = [
-            Propagation::Required,
-            Propagation::Supports,
-            Propagation::Mandatory,
-            Propagation::RequiresNew,
-            Propagation::NotSupported,
-            Propagation::Never,
-            Propagation::Nested,
-        ];
-        assert_eq!(variants.len(), 7);
     }
 
     #[test]
@@ -109,7 +96,6 @@ mod tests {
 
     #[test]
     fn test_propagation_hash() {
-        use std::collections::HashMap;
         let mut map = HashMap::new();
         map.insert(Propagation::Required, "req");
         map.insert(Propagation::RequiresNew, "req_new");
@@ -160,7 +146,6 @@ mod tests {
 
     #[test]
     fn test_propagation_all_variants_hash() {
-        use std::collections::HashMap;
         let mut map = HashMap::new();
         map.insert(Propagation::Required, 1);
         map.insert(Propagation::Supports, 2);

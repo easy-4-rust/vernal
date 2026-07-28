@@ -124,6 +124,12 @@ pub struct TransactionAspectSupport<S: TransactionAttributeSource> {
     transaction_manager_cache: std::sync::RwLock<
         std::collections::HashMap<String, Arc<dyn TransactionManager>>,
     >,
+
+    /// 是否存在当前事务（用于测试）。
+    ///
+    /// 对标 Spring 的 `TransactionSynchronizationManager.isSynchronizationActive()`。
+    #[cfg(test)]
+    has_current_tx: std::sync::atomic::AtomicBool,
 }
 
 impl<S: TransactionAttributeSource> TransactionAspectSupport<S> {
@@ -133,7 +139,15 @@ impl<S: TransactionAttributeSource> TransactionAspectSupport<S> {
             attribute_source,
             transaction_manager: None,
             transaction_manager_cache: std::sync::RwLock::new(std::collections::HashMap::new()),
+            #[cfg(test)]
+            has_current_tx: std::sync::atomic::AtomicBool::new(false),
         }
+    }
+
+    /// 设置是否存在当前事务（用于测试）。
+    #[cfg(test)]
+    fn set_has_current_tx_for_testing(&self, value: bool) {
+        self.has_current_tx.store(value, std::sync::atomic::Ordering::SeqCst);
     }
 
     /// 设置事务管理器。
@@ -515,7 +529,10 @@ impl<S: TransactionAttributeSource> TransactionAspectSupport<S> {
     /// 对标 Spring 的 `TransactionSynchronizationManager.isSynchronizationActive()`。
     fn has_current_transaction(&self, _target_type_name: &str) -> bool {
         // 实际实现需要检查事务同步管理器
-        false
+        #[cfg(test)]
+        return self.has_current_tx.load(std::sync::atomic::Ordering::SeqCst);
+        #[cfg(not(test))]
+        return false;
     }
 
     /// 挂起当前事务。
@@ -665,6 +682,111 @@ mod tests {
                 assert!(err.exception_type.contains("IllegalTransactionStateException"));
             }
             _ => panic!("Expected Err for mandatory without existing tx"),
+        }
+    }
+
+    #[test]
+    fn test_invoke_within_transaction_required_with_existing_tx() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::Required,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        support.set_has_current_tx_for_testing(true);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+
+        let result = support.invoke_within_transaction(&method, "com.example.Foo", || {
+            Ok(Box::new(42) as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Ok(val) => {
+                assert_eq!(val.downcast_ref::<i32>().unwrap(), &42);
+            }
+            _ => panic!("Expected Ok result"),
+        }
+    }
+
+    #[test]
+    fn test_invoke_within_transaction_supports_with_existing_tx() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::Supports,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        support.set_has_current_tx_for_testing(true);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+
+        let result = support.invoke_within_transaction(&method, "com.example.Foo", || {
+            Ok(Box::new(42) as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Ok(val) => {
+                assert_eq!(val.downcast_ref::<i32>().unwrap(), &42);
+            }
+            _ => panic!("Expected Ok result"),
+        }
+    }
+
+    #[test]
+    fn test_invoke_within_transaction_mandatory_with_existing_tx() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::Mandatory,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        support.set_has_current_tx_for_testing(true);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+
+        let result = support.invoke_within_transaction(&method, "com.example.Foo", || {
+            Ok(Box::new(42) as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Ok(val) => {
+                assert_eq!(val.downcast_ref::<i32>().unwrap(), &42);
+            }
+            _ => panic!("Expected Ok result"),
+        }
+    }
+
+    #[test]
+    fn test_invoke_within_transaction_never_with_existing_tx() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::Never,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        support.set_has_current_tx_for_testing(true);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+
+        let result = support.invoke_within_transaction(&method, "com.example.Foo", || {
+            Ok(Box::new(42) as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Err(err) => {
+                assert!(err.exception_type.contains("IllegalTransactionStateException"));
+            }
+            _ => panic!("Expected Err for never with existing tx"),
+        }
+    }
+
+    #[test]
+    fn test_invoke_within_transaction_nested_with_existing_tx() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::Nested,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        support.set_has_current_tx_for_testing(true);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+
+        let result = support.invoke_within_transaction(&method, "com.example.Foo", || {
+            Ok(Box::new(42) as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Ok(val) => {
+                assert_eq!(val.downcast_ref::<i32>().unwrap(), &42);
+            }
+            _ => panic!("Expected Ok result"),
         }
     }
 

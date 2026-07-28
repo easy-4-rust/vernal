@@ -10,6 +10,6 @@ mod parser;
 mod pattern;
 
 pub use ast::PointcutExpr;
-pub use matcher::{FunctionDescriptor, PointcutMatcher};
+pub use matcher::{FunctionDescriptor, PointcutMatcher, QualifierPattern, TagPattern};
 pub use parser::{PointcutParseError, parse_pointcut_expr};
 pub use pattern::{ExecutionPattern, ModulePattern, NamePattern, Visibility};

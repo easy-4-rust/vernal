@@ -243,7 +243,7 @@ mod tests {
     fn numeric_relational() {
         assert!(TokenKind::Equal.is_numeric_relational());
         assert!(TokenKind::Lt.is_numeric_relational());
-        assert!(!TokenKind::And.is_numeric_relational());
+        assert!(!TokenKind::SymbolicAnd.is_numeric_relational());
     }
 
     #[test]
