@@ -196,4 +196,123 @@ mod tests {
             _ => panic!("Expected Err result"),
         }
     }
+
+    #[test]
+    fn test_get_support() {
+        let aspect = make_aspect();
+        let _ = aspect.get_support();
+    }
+
+    #[test]
+    fn test_get_support_mut() {
+        let mut aspect = make_aspect();
+        let _ = aspect.get_support_mut();
+    }
+
+    #[test]
+    fn test_abstract_transaction_aspect_debug() {
+        let aspect = make_aspect();
+        let debug_str = format!("{:?}", aspect);
+        assert!(debug_str.contains("AbstractTransactionAspect"));
+    }
+
+    #[test]
+    fn test_abstract_transaction_aspect_invoke_within_transaction_success() {
+        let aspect = make_aspect();
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+
+        let result = aspect.invoke_within_transaction(&method, "com.example.Foo", || {
+            Ok(Box::new(42) as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Ok(val) => {
+                assert_eq!(val.downcast_ref::<i32>().unwrap(), &42);
+            }
+            _ => panic!("Expected Ok result"),
+        }
+    }
+
+    #[test]
+    fn test_abstract_transaction_aspect_invoke_within_transaction_failure() {
+        let aspect = make_aspect();
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+
+        let result = aspect.invoke_within_transaction(&method, "com.example.Foo", || {
+            Err(Box::new("error") as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Err(err) => {
+                assert!(err.is_runtime);
+            }
+            _ => panic!("Expected Err result"),
+        }
+    }
+
+    #[test]
+    fn test_abstract_transaction_aspect_get_support() {
+        let aspect = make_aspect();
+        let _ = aspect.get_support();
+    }
+
+    #[test]
+    fn test_abstract_transaction_aspect_get_support_mut() {
+        let mut aspect = make_aspect();
+        let _ = aspect.get_support_mut();
+    }
+
+    #[test]
+    fn test_abstract_transaction_aspect_destroy() {
+        let aspect = make_aspect();
+        aspect.destroy();
+    }
+
+    #[test]
+    fn test_abstract_transaction_aspect_creation_with_support() {
+        let aspect = make_aspect();
+        let support = aspect.get_support();
+        assert!(support.get_transaction_manager().is_none());
+    }
+
+    #[test]
+    fn test_abstract_transaction_aspect_creation_with_support_mut() {
+        let mut aspect = make_aspect();
+        let support = aspect.get_support_mut();
+        assert!(support.get_transaction_manager().is_none());
+    }
+
+    #[test]
+    fn test_abstract_transaction_aspect_invoke_within_transaction_success_with_different_value() {
+        let aspect = make_aspect();
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+
+        let result = aspect.invoke_within_transaction(&method, "com.example.Foo", || {
+            Ok(Box::new("hello") as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Ok(val) => {
+                assert_eq!(val.downcast_ref::<&str>().unwrap(), &"hello");
+            }
+            _ => panic!("Expected Ok result"),
+        }
+    }
+
+    #[test]
+    fn test_abstract_transaction_aspect_invoke_within_transaction_failure_with_different_error() {
+        let aspect = make_aspect();
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+
+        let result = aspect.invoke_within_transaction(&method, "com.example.Foo", || {
+            Err(Box::new("different error") as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Err(err) => {
+                assert!(err.is_runtime);
+            }
+            _ => panic!("Expected Err result"),
+        }
+    }
 }

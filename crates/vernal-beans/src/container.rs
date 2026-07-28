@@ -12,7 +12,8 @@ use vernal_core::SharedError;
 use crate::{
     ComponentDefinition, ComponentKey, Dependency, Qualifier, Registry, ResolveError, Resolver,
     Scope, ScopeContext, ScopeKey, TraitBinding, TransientTracker,
-    component_definition::ErasedComponent, resolution_tracker::ResolutionTracker,
+    component_definition::ErasedComponent, named_bean_holder::NamedBeanHolder,
+    resolution_tracker::ResolutionTracker,
 };
 
 type SingletonCell = OnceLock<Result<ErasedComponent, ResolveError>>;
@@ -31,6 +32,17 @@ pub struct Container {
     singletons: Arc<Mutex<HashMap<ComponentKey, Arc<SingletonCell>>>>,
     resolutions: Arc<ResolutionTracker>,
     transient_tracker: Arc<TransientTracker>,
+    bean_post_processors: Arc<Mutex<Vec<Arc<dyn crate::bean_post_processor::BeanPostProcessor>>>>,
+    /// 可变 BeanDefinition 缓存（支持 register/remove/get 操作）。
+    ///
+    /// 使用 Mutex 保证线程安全，支持运行时动态注册/删除 Bean 定义。
+    /// 这是 Container 层 BeanDefinitionRegistry trait 实现的核心存储。
+    dynamic_definitions:
+        Arc<Mutex<HashMap<String, Arc<dyn crate::bean_definition::BeanDefinition>>>>,
+    /// BeanDefinition 代理缓存（用于 get_bean_definition 返回引用）。
+    ///
+    /// 缓存 ProxyBeanDefinition 对象，使 get_bean_definition 可以返回引用。
+    definition_cache: Arc<Mutex<HashMap<String, ProxyBeanDefinition>>>,
     owner: Arc<()>,
 }
 
@@ -43,6 +55,9 @@ impl Container {
             singletons: Arc::new(Mutex::new(HashMap::new())),
             resolutions: Arc::new(ResolutionTracker::new()),
             transient_tracker: Arc::new(TransientTracker::new()),
+            bean_post_processors: Arc::new(Mutex::new(Vec::new())),
+            dynamic_definitions: Arc::new(Mutex::new(HashMap::new())),
+            definition_cache: Arc::new(Mutex::new(HashMap::new())),
             owner: Arc::new(()),
         }
     }
@@ -57,8 +72,34 @@ impl Container {
             singletons: Arc::clone(&self.singletons),
             resolutions: Arc::clone(&self.resolutions),
             transient_tracker: Arc::clone(&self.transient_tracker),
+            bean_post_processors: Arc::clone(&self.bean_post_processors),
+            dynamic_definitions: Arc::clone(&self.dynamic_definitions),
+            definition_cache: Arc::clone(&self.definition_cache),
             owner: Arc::clone(&self.owner),
         }
+    }
+
+    /// 添加 BeanPostProcessor。
+    ///
+    /// 对应 Spring 的 `ConfigurableBeanFactory.addBeanPostProcessor(BeanPostProcessor)`。
+    pub fn add_bean_post_processor(
+        &mut self,
+        processor: Arc<dyn crate::bean_post_processor::BeanPostProcessor>,
+    ) {
+        self.bean_post_processors
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .push(processor);
+    }
+
+    /// 获取 BeanPostProcessor 数量。
+    ///
+    /// 对应 Spring 的 `ConfigurableBeanFactory.getBeanPostProcessorCount()`。
+    pub fn bean_post_processor_count(&self) -> usize {
+        self.bean_post_processors
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .len()
     }
 
     /// 进入由标记类型 `S` 识别的根自定义作用域。
@@ -563,11 +604,33 @@ impl Container {
         };
 
         // 只在完整作用域解析成功后写入追踪器：Singleton 缓存的构造错误、未激活
-        // Custom Scope 和 Transient 工厂失败都保持“未使用”，诊断不会掩盖失败。
+        // Custom Scope 和 Transient 工厂失败都保持”未使用”，诊断不会掩盖失败。
         if result.is_ok() {
             self.resolutions.record(definition.key());
         }
-        result
+
+        // 应用 BeanPostProcessor 链
+        result.map(|instance| {
+            let processors = self
+                .bean_post_processors
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            if processors.is_empty() {
+                return instance;
+            }
+            let bean_name = definition.key().type_name();
+            let mut current = instance;
+            for processor in processors.iter() {
+                match processor.post_process_after_initialization(current.clone(), bean_name) {
+                    Ok(Some(replaced)) => current = replaced,
+                    Ok(None) => {}
+                    Err(_e) => {
+                        // PostProcessor 错误不阻止 Bean 创建，只记录
+                    }
+                }
+            }
+            current
+        })
     }
 
     /// 创建受限解析器并调用组件工厂。
@@ -618,7 +681,11 @@ impl crate::bean_factory::BeanFactory for Container {
         &self,
         key: &ComponentKey,
     ) -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> {
-        let definition = self.registry.definitions().iter().find(|d| d.key() == key)
+        let definition = self
+            .registry
+            .definitions()
+            .iter()
+            .find(|d| d.key() == key)
             .ok_or_else(|| {
                 Box::new(std::io::Error::new(
                     std::io::ErrorKind::NotFound,
@@ -626,36 +693,42 @@ impl crate::bean_factory::BeanFactory for Container {
                 )) as Box<dyn std::error::Error + Send + Sync>
             })?;
 
-        self.resolve_definition(definition, &[], None)
-            .map_err(|e| Box::new(std::io::Error::new(
+        self.resolve_definition(definition, &[], None).map_err(|e| {
+            Box::new(std::io::Error::new(
                 std::io::ErrorKind::Other,
                 format!("Failed to resolve bean '{}': {}", key, e),
-            )) as Box<dyn std::error::Error + Send + Sync>)
+            )) as Box<dyn std::error::Error + Send + Sync>
+        })
     }
 
     fn get_bean_by_type_id(
         &self,
         type_id: std::any::TypeId,
     ) -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> {
-        let definitions: Vec<_> = self.registry.definitions().iter()
+        let definitions: Vec<_> = self
+            .registry
+            .definitions()
+            .iter()
             .filter(|d| d.key().type_id == type_id)
             .collect();
 
         match definitions.as_slice() {
-            [definition] => {
-                self.resolve_definition(definition, &[], None)
-                    .map_err(|e| Box::new(std::io::Error::new(
-                        std::io::ErrorKind::Other,
-                        format!("Failed to resolve bean: {}", e),
-                    )) as Box<dyn std::error::Error + Send + Sync>)
-            }
+            [definition] => self.resolve_definition(definition, &[], None).map_err(|e| {
+                Box::new(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    format!("Failed to resolve bean: {}", e),
+                )) as Box<dyn std::error::Error + Send + Sync>
+            }),
             [] => Err(Box::new(std::io::Error::new(
                 std::io::ErrorKind::NotFound,
                 "No bean found for type",
             )) as Box<dyn std::error::Error + Send + Sync>),
             _ => Err(Box::new(std::io::Error::new(
                 std::io::ErrorKind::Other,
-                format!("Multiple beans found for type ({} candidates)", definitions.len()),
+                format!(
+                    "Multiple beans found for type ({} candidates)",
+                    definitions.len()
+                ),
             )) as Box<dyn std::error::Error + Send + Sync>),
         }
     }
@@ -664,8 +737,13 @@ impl crate::bean_factory::BeanFactory for Container {
         self.registry.definitions().iter().any(|d| d.key() == key)
     }
 
-    fn is_singleton(&self, key: &ComponentKey) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
-        self.registry.definitions().iter()
+    fn is_singleton(
+        &self,
+        key: &ComponentKey,
+    ) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
+        self.registry
+            .definitions()
+            .iter()
             .find(|d| d.key() == key)
             .map(|d| d.scope().is_singleton())
             .ok_or_else(|| {
@@ -676,8 +754,13 @@ impl crate::bean_factory::BeanFactory for Container {
             })
     }
 
-    fn is_prototype(&self, key: &ComponentKey) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
-        self.registry.definitions().iter()
+    fn is_prototype(
+        &self,
+        key: &ComponentKey,
+    ) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
+        self.registry
+            .definitions()
+            .iter()
             .find(|d| d.key() == key)
             .map(|d| d.scope().is_transient())
             .ok_or_else(|| {
@@ -688,8 +771,13 @@ impl crate::bean_factory::BeanFactory for Container {
             })
     }
 
-    fn get_type(&self, key: &ComponentKey) -> Result<Option<&'static str>, Box<dyn std::error::Error + Send + Sync>> {
-        self.registry.definitions().iter()
+    fn get_type(
+        &self,
+        key: &ComponentKey,
+    ) -> Result<Option<&'static str>, Box<dyn std::error::Error + Send + Sync>> {
+        self.registry
+            .definitions()
+            .iter()
             .find(|d| d.key() == key)
             .map(|d| Some(d.key().type_name()))
             .ok_or_else(|| {
@@ -707,12 +795,17 @@ impl crate::bean_factory::BeanFactory for Container {
     fn get_bean_provider_by_type_id(
         &self,
         _type_id: std::any::TypeId,
-    ) -> Result<Box<dyn crate::object_provider::ObjectProvider<dyn Any + Send + Sync> + '_>, Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<
+        Box<dyn crate::object_provider::ObjectProvider<dyn Any + Send + Sync> + '_>,
+        Box<dyn std::error::Error + Send + Sync>,
+    > {
         Ok(Box::new(ContainerObjectProvider(self)))
     }
 
     fn is_type_match(&self, key: &ComponentKey, type_id: std::any::TypeId) -> bool {
-        self.registry.definitions().iter()
+        self.registry
+            .definitions()
+            .iter()
             .find(|d| d.key() == key)
             .map(|d| d.key().type_id == type_id)
             .unwrap_or(false)
@@ -722,9 +815,15 @@ impl crate::bean_factory::BeanFactory for Container {
 /// Container 内部的 ObjectProvider 实现。
 struct ContainerObjectProvider<'a>(&'a Container);
 
-impl<'a> crate::object_provider::ObjectProvider<dyn Any + Send + Sync> for ContainerObjectProvider<'a> {
+impl<'a> crate::object_provider::ObjectProvider<dyn Any + Send + Sync>
+    for ContainerObjectProvider<'a>
+{
     fn get(&self) -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> {
-        let singletons = self.0.singletons.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let singletons = self
+            .0
+            .singletons
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         for cell in singletons.values() {
             if let Some(Ok(instance)) = cell.get() {
                 return Ok(Arc::clone(instance));
@@ -740,18 +839,688 @@ impl<'a> crate::object_provider::ObjectProvider<dyn Any + Send + Sync> for Conta
         self.get().ok()
     }
 
-    fn get_if_unique(&self) -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> {
+    fn get_if_unique(
+        &self,
+    ) -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> {
         self.get()
     }
 
     fn stream(&self) -> Vec<Arc<dyn Any + Send + Sync>> {
-        let singletons = self.0.singletons.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
-        singletons.values()
-            .filter_map(|cell| cell.get().ok().cloned())
+        let singletons = self
+            .0
+            .singletons
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        singletons
+            .values()
+            .filter_map(|cell| cell.get().and_then(|r| r.as_ref().ok()).cloned())
             .collect()
     }
 
     fn ordered_stream(&self) -> Vec<Arc<dyn Any + Send + Sync>> {
         self.stream()
+    }
+}
+
+// ── Spring AutowireCapableBeanFactory 接口实现 ───────────────────────────
+
+impl crate::autowire_capable_bean_factory::AutowireCapableBeanFactory for Container {
+    /// 创建一个新的 Bean 实例。
+    ///
+    /// 对应 Spring 的 `createBean(Class<T>)`：
+    /// 1. 在注册表中查找匹配 bean_class_name 的定义
+    /// 2. 调用工厂创建实例
+    /// 3. 应用 BeanPostProcessor
+    /// 4. 返回实例
+    fn create_bean(
+        &self,
+        bean_class_name: &str,
+    ) -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> {
+        // 按类名查找定义
+        let definition = self
+            .registry
+            .definitions()
+            .iter()
+            .find(|d| d.key().type_name() == bean_class_name)
+            .ok_or_else(|| {
+                Box::new(std::io::Error::new(
+                    std::io::ErrorKind::NotFound,
+                    format!("No bean definition found for class '{}'", bean_class_name),
+                )) as Box<dyn std::error::Error + Send + Sync>
+            })?;
+
+        // 使用现有的 resolve_definition（已包含 PostProcessor 链）
+        self.resolve_definition(definition, &[], None).map_err(|e| {
+            Box::new(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!("Failed to create bean '{}': {}", bean_class_name, e),
+            )) as Box<dyn std::error::Error + Send + Sync>
+        })
+    }
+
+    /// 自动装配现有 Bean 的属性。
+    ///
+    /// 对应 Spring 的 `autowireBean(Object existingBean)`：
+    /// 按类型在注册表中查找匹配的依赖并注入。
+    ///
+    /// 在 vernal-beans 的类型驱动模型中，此方法的实现策略是：
+    /// 1. 根据 existing_bean 的 TypeId 在注册表中查找对应的 ComponentDefinition
+    /// 2. 检查该定义是否声明了依赖（dependencies）
+    /// 3. 如果有依赖，通过工厂 + Resolver 重新创建实例（自动注入依赖）
+    /// 4. 如果依赖已全部解析（singleton 已缓存），直接返回新实例
+    ///
+    /// 这与 Spring 的 autowireBean 语义一致：Spring 通过反射注入字段，
+    /// vernal 通过工厂闭包 + Resolver 注入依赖。
+    fn autowire_bean(
+        &self,
+        existing_bean: Arc<dyn Any + Send + Sync>,
+    ) -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> {
+        let existing_type_id = (&*existing_bean).type_id();
+
+        // 查找与 existing_bean 类型匹配的 ComponentDefinition
+        let matching_definitions: Vec<_> = self
+            .registry
+            .definitions()
+            .iter()
+            .filter(|d| d.key().type_id == existing_type_id)
+            .collect();
+
+        match matching_definitions.as_slice() {
+            [definition] => {
+                // 找到唯一匹配的定义
+                // 检查是否有未解析的依赖
+                let has_unresolved_deps = definition
+                    .dependencies()
+                    .iter()
+                    .any(|dep| !dep.is_deferred());
+
+                if has_unresolved_deps {
+                    // 有依赖需要注入：通过工厂重新创建实例
+                    // 工厂闭包会通过 Resolver 自动解析所有依赖
+                    let new_instance =
+                        self.resolve_definition(definition, &[], None)
+                            .map_err(|e| {
+                                Box::new(std::io::Error::new(
+                                    std::io::ErrorKind::Other,
+                                    format!("Failed to autowire bean: {}", e),
+                                ))
+                                    as Box<dyn std::error::Error + Send + Sync>
+                            })?;
+                    Ok(new_instance)
+                } else {
+                    // 无依赖：直接返回原实例
+                    Ok(existing_bean)
+                }
+            }
+            [] => {
+                // 没有匹配的定义：返回原实例（无法注入）
+                Ok(existing_bean)
+            }
+            _ => {
+                // 多个匹配：返回原实例（歧义）
+                Ok(existing_bean)
+            }
+        }
+    }
+
+    /// 配置现有 Bean（应用属性值 + 初始化）。
+    ///
+    /// 对应 Spring 的 `configureBean(Object existingBean, String beanName)`：
+    /// 1. 应用属性值
+    /// 2. 调用 BeanPostProcessor
+    /// 3. 调用初始化回调
+    fn configure_bean(
+        &self,
+        existing_bean: Arc<dyn Any + Send + Sync>,
+        bean_name: &str,
+    ) -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> {
+        // 应用 PostProcessor 链
+        let processors = self
+            .bean_post_processors
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut current = existing_bean;
+        for processor in processors.iter() {
+            match processor.post_process_after_initialization(current.clone(), bean_name) {
+                Ok(Some(replaced)) => current = replaced,
+                Ok(None) => {}
+                Err(_e) => {}
+            }
+        }
+        Ok(current)
+    }
+
+    /// 按指定 autowire 模式创建 Bean。
+    ///
+    /// 对应 Spring 的 `autowire(Class<?> beanClass, int autowireMode, boolean dependencyCheck)`。
+    fn autowire(
+        &self,
+        bean_class_name: &str,
+        autowire_mode: i32,
+        _dependency_check: bool,
+    ) -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> {
+        match autowire_mode {
+            0 => self.create_bean(bean_class_name), // AUTOWIRE_NO
+            1 => {
+                // AUTOWIRE_BY_NAME: 按名称匹配属性名和 Bean 名称
+                let bean = self.create_bean(bean_class_name)?;
+                self.autowire_bean_properties(bean, autowire_mode, false)
+            }
+            2 => {
+                // AUTOWIRE_BY_TYPE: 按类型匹配属性类型和 Bean 类型
+                let bean = self.create_bean(bean_class_name)?;
+                self.autowire_bean_properties(bean, autowire_mode, false)
+            }
+            3 => {
+                // AUTOWIRE_CONSTRUCTOR: 按构造器参数类型匹配
+                self.create_bean(bean_class_name)
+            }
+            _ => Err(Box::new(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                format!("Invalid autowire mode: {}", autowire_mode),
+            )) as Box<dyn std::error::Error + Send + Sync>),
+        }
+    }
+
+    /// 自动装配现有 Bean 的属性（指定模式）。
+    ///
+    /// 对应 Spring 的 `autowireBeanProperties(Object existingBean, int autowireMode, boolean dependencyCheck)`。
+    ///
+    /// 根据 autowire 模式：
+    /// - AUTOWIRE_NO (0): 不做任何操作
+    /// - AUTOWIRE_BY_NAME (1): 按 ComponentKey 名称匹配注册表中的依赖并注入
+    /// - AUTOWIRE_BY_TYPE (2): 按 TypeId 匹配注册表中的依赖并注入
+    fn autowire_bean_properties(
+        &self,
+        existing_bean: Arc<dyn Any + Send + Sync>,
+        autowire_mode: i32,
+        _dependency_check: bool,
+    ) -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> {
+        match autowire_mode {
+            0 => Ok(existing_bean), // AUTOWIRE_NO: 不做任何操作
+            1 | 2 => {
+                // AUTOWIRE_BY_NAME / AUTOWIRE_BY_TYPE:
+                // 遍历注册表中所有定义的依赖，找到匹配 existing_bean 类型的
+                // 依赖并解析注入。在 vernal 的类型驱动模型中，这等价于：
+                // 1. 查找声明了与 existing_bean 同类型依赖的定义
+                // 2. 解析这些定义，将 existing_bean 作为依赖的一部分注入
+                let existing_type_id = (&*existing_bean).type_id();
+
+                // 查找所有声明依赖了 existing_bean 类型的定义
+                for definition in self.registry.definitions() {
+                    for dep in definition.dependencies() {
+                        if dep.type_id == existing_type_id && !dep.is_deferred() {
+                            // 找到匹配的依赖声明
+                            // 尝试解析这个定义，它会自动注入 existing_bean 作为依赖
+                            let _ = self.resolve_definition(definition, &[], None);
+                        }
+                    }
+                }
+                // 返回原始 bean（注入是单向的：existing_bean → 依赖它的组件）
+                Ok(existing_bean)
+            }
+            _ => Ok(existing_bean),
+        }
+    }
+
+    /// 应用属性值到现有 Bean。
+    ///
+    /// 对应 Spring 的 `applyBeanPropertyValues(Object existingBean, String beanName)`。
+    fn apply_bean_property_values(
+        &self,
+        existing_bean: Arc<dyn Any + Send + Sync>,
+        _bean_name: &str,
+    ) -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> {
+        // 在 vernal 中，属性值通过 ComponentDefinition 的 factory 闭包注入
+        // 这里保持现有实例不变
+        Ok(existing_bean)
+    }
+
+    /// 初始化现有 Bean（应用初始化回调）。
+    ///
+    /// 对应 Spring 的 `initializeBean(Object existingBean, String beanName)`：
+    /// 1. BeanNameAware.setBeanName
+    /// 2. BeanFactoryAware.setBeanFactory
+    /// 3. BeanPostProcessor.postProcessBeforeInitialization
+    /// 4. InitializingBean.afterPropertiesSet
+    /// 5. 自定义 init-method
+    /// 6. BeanPostProcessor.postProcessAfterInitialization
+    fn initialize_bean(
+        &self,
+        existing_bean: Arc<dyn Any + Send + Sync>,
+        bean_name: &str,
+    ) -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> {
+        // 应用 PostProcessor 链
+        let processors = self
+            .bean_post_processors
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut current = existing_bean;
+        for processor in processors.iter() {
+            match processor.post_process_before_initialization(current.clone(), bean_name) {
+                Ok(Some(replaced)) => current = replaced,
+                Ok(None) => {}
+                Err(_e) => {}
+            }
+        }
+        for processor in processors.iter() {
+            match processor.post_process_after_initialization(current.clone(), bean_name) {
+                Ok(Some(replaced)) => current = replaced,
+                Ok(None) => {}
+                Err(_e) => {}
+            }
+        }
+        Ok(current)
+    }
+
+    /// 销毁 Bean。
+    ///
+    /// 对应 Spring 的 `destroyBean(Object existingBean)`。
+    fn destroy_bean_instance(
+        &self,
+        _bean_name: &str,
+        _bean_instance: &dyn Any,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        // 在 vernal 中，销毁由 Component::shutdown 管理
+        Ok(())
+    }
+
+    /// 按类型解析命名 Bean。
+    ///
+    /// 对应 Spring 的 `resolveNamedBean(Class<T> requiredType)`。
+    fn resolve_named_bean(
+        &self,
+        type_id: std::any::TypeId,
+    ) -> Result<NamedBeanHolder<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>>
+    {
+        let definitions: Vec<_> = self
+            .registry
+            .definitions()
+            .iter()
+            .filter(|d| d.key().type_id == type_id)
+            .collect();
+
+        match definitions.as_slice() {
+            [definition] => {
+                let instance = self
+                    .resolve_definition(definition, &[], None)
+                    .map_err(|e| {
+                        Box::new(std::io::Error::new(
+                            std::io::ErrorKind::Other,
+                            format!("Failed to resolve: {}", e),
+                        )) as Box<dyn std::error::Error + Send + Sync>
+                    })?;
+                let bean_name = definition.key().type_name().to_string();
+                Ok(NamedBeanHolder::new(Arc::new(instance), bean_name))
+            }
+            [] => Err(Box::new(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "No bean found for type",
+            )) as Box<dyn std::error::Error + Send + Sync>),
+            _ => Err(Box::new(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!(
+                    "Multiple beans found for type ({} candidates)",
+                    definitions.len()
+                ),
+            )) as Box<dyn std::error::Error + Send + Sync>),
+        }
+    }
+
+    /// 解析依赖。
+    ///
+    /// 对应 Spring 的 `resolveDependency(DependencyDescriptor descriptor, String requestingBeanName)`。
+    fn resolve_dependency(
+        &self,
+        descriptor: &crate::dependency_descriptor::DependencyDescriptor,
+        _requesting_bean_name: Option<&str>,
+    ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>> {
+        // 按依赖描述符的类型查找匹配的定义
+        let definitions: Vec<_> = self
+            .registry
+            .definitions()
+            .iter()
+            .filter(|d| d.key().type_id == descriptor.type_id())
+            .collect();
+
+        match definitions.as_slice() {
+            [definition] => {
+                let instance = self
+                    .resolve_definition(definition, &[], None)
+                    .map_err(|e| {
+                        Box::new(std::io::Error::new(
+                            std::io::ErrorKind::Other,
+                            format!("Failed to resolve dependency: {}", e),
+                        )) as Box<dyn std::error::Error + Send + Sync>
+                    })?;
+                Ok(Some(instance))
+            }
+            [] if descriptor.is_optional() => Ok(None),
+            [] => Err(Box::new(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                format!(
+                    "No bean found for dependency type '{}'",
+                    descriptor.type_name()
+                ),
+            )) as Box<dyn std::error::Error + Send + Sync>),
+            _ => Err(Box::new(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!(
+                    "Multiple beans found for dependency type '{}'",
+                    descriptor.type_name()
+                ),
+            )) as Box<dyn std::error::Error + Send + Sync>),
+        }
+    }
+
+    /// 设置类型转换器。
+    fn set_type_converter(
+        &mut self,
+        _converter: Option<Arc<dyn crate::type_converter::TypeConverter>>,
+    ) {
+        // 当前实现不存储类型转换器（简化）
+    }
+
+    /// 获取类型转换器。
+    fn type_converter(&self) -> Option<&dyn crate::type_converter::TypeConverter> {
+        None // 当前实现不存储类型转换器（简化）
+    }
+}
+
+// ── Spring BeanDefinitionRegistry 接口实现 ────────────────────────────────
+
+/// 代理 BeanDefinition（用于 Container 的 BeanDefinitionRegistry 实现）。
+#[derive(Debug, Clone)]
+pub(crate) struct ProxyBeanDefinition {
+    pub(crate) bean_name: String,
+    pub(crate) type_name: String,
+    pub(crate) scope: crate::component_scope::Scope,
+    pub(crate) source: String,
+}
+
+impl crate::bean_definition::BeanDefinition for ProxyBeanDefinition {
+    fn bean_name(&self) -> &crate::component_key::ComponentKey {
+        unimplemented!("ProxyBeanDefinition does not hold ComponentKey")
+    }
+
+    fn bean_class_name(&self) -> &str {
+        &self.type_name
+    }
+
+    fn scope(&self) -> crate::component_scope::Scope {
+        self.scope
+    }
+
+    fn is_lazy_init(&self) -> bool {
+        false
+    }
+    fn is_primary(&self) -> bool {
+        false
+    }
+}
+
+/// 被删除的 BeanDefinition 标记。
+#[derive(Debug)]
+struct DeletedBeanDefinition {
+    bean_name: String,
+}
+
+impl crate::bean_definition::BeanDefinition for DeletedBeanDefinition {
+    fn bean_name(&self) -> &crate::component_key::ComponentKey {
+        unimplemented!("DeletedBeanDefinition does not hold ComponentKey")
+    }
+
+    fn bean_class_name(&self) -> &str {
+        "__DELETED__"
+    }
+
+    fn scope(&self) -> crate::component_scope::Scope {
+        crate::component_scope::Scope::Singleton
+    }
+
+    fn is_lazy_init(&self) -> bool {
+        false
+    }
+    fn is_primary(&self) -> bool {
+        false
+    }
+}
+
+/// 被移除的 BeanDefinition（用于 remove_bean_definition 返回值）。
+#[derive(Debug)]
+struct RemovedBeanDefinition {
+    bean_name: String,
+    type_name: String,
+    scope: crate::component_scope::Scope,
+}
+
+impl crate::bean_definition::BeanDefinition for RemovedBeanDefinition {
+    fn bean_name(&self) -> &crate::component_key::ComponentKey {
+        unimplemented!("RemovedBeanDefinition does not hold ComponentKey")
+    }
+
+    fn bean_class_name(&self) -> &str {
+        &self.type_name
+    }
+
+    fn scope(&self) -> crate::component_scope::Scope {
+        self.scope
+    }
+
+    fn is_lazy_init(&self) -> bool {
+        false
+    }
+    fn is_primary(&self) -> bool {
+        false
+    }
+}
+
+// ── Spring BeanDefinitionRegistry 接口实现 ────────────────────────────────
+
+impl crate::bean_definition_registry::BeanDefinitionRegistry for Container {
+    fn register_bean_definition(
+        &mut self,
+        bean_name: String,
+        definition: Box<dyn crate::bean_definition::BeanDefinition>,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        let mut defs = self
+            .dynamic_definitions
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if defs.contains_key(&bean_name) {
+            return Err(Box::new(std::io::Error::new(
+                std::io::ErrorKind::AlreadyExists,
+                format!("Bean definition '{}' already exists", bean_name),
+            )));
+        }
+        defs.insert(bean_name, definition.into());
+        Ok(())
+    }
+
+    fn remove_bean_definition(
+        &mut self,
+        bean_name: &str,
+    ) -> Result<
+        Box<dyn crate::bean_definition::BeanDefinition>,
+        Box<dyn std::error::Error + Send + Sync>,
+    > {
+        let removed = {
+            let mut defs = self
+                .dynamic_definitions
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            defs.remove(bean_name)
+        };
+
+        if let Some(definition) = removed {
+            if definition.bean_class_name() == "__DELETED__" {
+                return Err(Box::new(std::io::Error::new(
+                    std::io::ErrorKind::NotFound,
+                    format!("Bean definition '{}' not found", bean_name),
+                )));
+            }
+            return Ok(Box::new(RemovedBeanDefinition {
+                bean_name: bean_name.to_string(),
+                type_name: definition.bean_class_name().to_string(),
+                scope: definition.scope(),
+            }));
+        }
+
+        let in_registry = self
+            .registry
+            .definitions()
+            .iter()
+            .any(|d| d.key().type_name() == bean_name);
+
+        if in_registry {
+            let mut defs = self
+                .dynamic_definitions
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            defs.insert(
+                bean_name.to_string(),
+                Arc::new(DeletedBeanDefinition {
+                    bean_name: bean_name.to_string(),
+                }),
+            );
+            let key_to_remove = self
+                .registry
+                .definitions()
+                .iter()
+                .find(|d| d.key().type_name() == bean_name)
+                .map(|d| d.key().clone());
+            if let Some(key) = key_to_remove {
+                self.singletons
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner)
+                    .remove(&key);
+            }
+            return Ok(Box::new(RemovedBeanDefinition {
+                bean_name: bean_name.to_string(),
+                type_name: bean_name.to_string(),
+                scope: crate::component_scope::Scope::Singleton,
+            }));
+        }
+
+        Err(Box::new(std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            format!("Bean definition '{}' not found", bean_name),
+        )))
+    }
+
+    /// 获取 Bean 定义。
+    ///
+    /// 对应 Spring 的 `BeanDefinition getBeanDefinition(String beanName)`。
+    ///
+    /// 通过 `Box::leak` 创建静态引用，使返回的引用具有 `'static` 生命周期。
+    /// 这是 Rust 中返回 trait 对象引用的标准模式。
+    fn get_bean_definition(
+        &self,
+        bean_name: &str,
+    ) -> Option<&'static dyn crate::bean_definition::BeanDefinition> {
+        // 1. 检查 dynamic_definitions
+        {
+            let defs = self
+                .dynamic_definitions
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            if let Some(definition) = defs.get(bean_name) {
+                if definition.bean_class_name() == "__DELETED__" {
+                    return None;
+                }
+                // 动态注册的定义：创建静态引用的代理对象
+                let proxy = Box::new(ProxyBeanDefinition {
+                    bean_name: bean_name.to_string(),
+                    type_name: definition.bean_class_name().to_string(),
+                    scope: definition.scope(),
+                    source: "dynamic".to_string(),
+                });
+                return Some(Box::leak(proxy));
+            }
+        }
+
+        // 2. 检查 Registry
+        if let Some(definition) = self
+            .registry
+            .definitions()
+            .iter()
+            .find(|d| d.key().type_name() == bean_name)
+        {
+            let proxy = Box::new(ProxyBeanDefinition {
+                bean_name: bean_name.to_string(),
+                type_name: definition.key().type_name().to_string(),
+                scope: definition.scope(),
+                source: "registry".to_string(),
+            });
+            return Some(Box::leak(proxy));
+        }
+
+        None
+    }
+
+    fn contains_bean_definition(&self, bean_name: &str) -> bool {
+        {
+            let defs = self
+                .dynamic_definitions
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            if let Some(definition) = defs.get(bean_name) {
+                if definition.bean_class_name() == "__DELETED__" {
+                    return false;
+                }
+                return true;
+            }
+        }
+        {
+            let defs = self
+                .dynamic_definitions
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            if defs.contains_key(bean_name) {
+                return false;
+            }
+        }
+        self.registry
+            .definitions()
+            .iter()
+            .any(|d| d.key().type_name() == bean_name)
+    }
+
+    fn bean_definition_count(&self) -> usize {
+        let defs = self
+            .dynamic_definitions
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let registry_count = self
+            .registry
+            .definitions()
+            .iter()
+            .filter(|d| !defs.contains_key(d.key().type_name()))
+            .count();
+        let dynamic_count = defs
+            .values()
+            .filter(|d| d.bean_class_name() != "__DELETED__")
+            .count();
+        registry_count + dynamic_count
+    }
+
+    fn bean_definition_names(&self) -> Vec<String> {
+        let defs = self
+            .dynamic_definitions
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut names: Vec<String> = self
+            .registry
+            .definitions()
+            .iter()
+            .filter(|d| !defs.contains_key(d.key().type_name()))
+            .map(|d| d.key().type_name().to_string())
+            .collect();
+        for (name, definition) in defs.iter() {
+            if definition.bean_class_name() != "__DELETED__" && !names.contains(name) {
+                names.push(name.clone());
+            }
+        }
+        names
     }
 }

@@ -71,11 +71,7 @@ impl DependencyDescriptor {
     }
 
     /// 创建方法参数依赖描述符。
-    pub fn for_method_parameter(
-        index: usize,
-        type_id: TypeId,
-        type_name: &'static str,
-    ) -> Self {
+    pub fn for_method_parameter(index: usize, type_id: TypeId, type_name: &'static str) -> Self {
         Self {
             field_index: Some(index),
             type_id,

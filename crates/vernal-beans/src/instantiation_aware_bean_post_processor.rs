@@ -49,8 +49,7 @@ pub trait InstantiationAwareBeanPostProcessor: BeanPostProcessor {
         &self,
         _bean_type: &dyn std::any::Any,
         _bean_name: &str,
-    ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>>
-    {
+    ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>> {
         Ok(None)
     }
 
@@ -90,8 +89,10 @@ pub trait InstantiationAwareBeanPostProcessor: BeanPostProcessor {
         &self,
         _bean: Arc<dyn Any + Send + Sync>,
         _bean_name: &str,
-    ) -> Result<Option<Vec<(String, Arc<dyn Any + Send + Sync>)>>, Box<dyn std::error::Error + Send + Sync>>
-    {
+    ) -> Result<
+        Option<Vec<(String, Arc<dyn Any + Send + Sync>)>>,
+        Box<dyn std::error::Error + Send + Sync>,
+    > {
         Ok(None)
     }
 }

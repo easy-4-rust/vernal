@@ -697,4 +697,340 @@ mod tests {
         let support = TransactionAspectSupport::new(source);
         support.clear_transaction_manager_cache();
     }
+
+
+    #[test]
+    fn test_set_transaction_manager() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::Required,
+        ));
+        let mut support = TransactionAspectSupport::new(source);
+        let tm = Arc::new(NoOpTransactionManager);
+        support.set_transaction_manager(tm.clone());
+        assert!(support.get_transaction_manager().is_some());
+        assert_eq!(support.get_transaction_manager().unwrap().get_name(), "NoOpTransactionManager");
+    }
+
+    #[test]
+    fn test_get_transaction_manager_none() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::Required,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        assert!(support.get_transaction_manager().is_none());
+    }
+
+    #[test]
+    fn test_clear_metadata_cache() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::Required,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        support.clear_transaction_manager_cache();
+    }
+
+    #[test]
+    fn test_invoke_within_transaction_required_exception() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::Required,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+
+        let result = support.invoke_within_transaction(&method, "com.example.Foo", || {
+            Err(Box::new("test error") as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Err(err) => {
+                assert!(err.is_runtime);
+            }
+            _ => panic!("Expected Err result"),
+        }
+    }
+
+    #[test]
+    fn test_invoke_within_transaction_supports_exception() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::Supports,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+
+        let result = support.invoke_within_transaction(&method, "com.example.Foo", || {
+            Err(Box::new("test error") as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Err(err) => {
+                assert!(!err.is_runtime);
+            }
+            _ => panic!("Expected Err result"),
+        }
+    }
+
+    #[test]
+    fn test_invoke_within_transaction_requires_new_exception() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::RequiresNew,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+
+        let result = support.invoke_within_transaction(&method, "com.example.Foo", || {
+            Err(Box::new("test error") as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Err(err) => {
+                assert!(err.is_runtime);
+            }
+            _ => panic!("Expected Err result"),
+        }
+    }
+
+    #[test]
+    fn test_invoke_within_transaction_not_supported_exception() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::NotSupported,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+
+        let result = support.invoke_within_transaction(&method, "com.example.Foo", || {
+            Err(Box::new("test error") as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Err(err) => {
+                assert!(!err.is_runtime);
+            }
+            _ => panic!("Expected Err result"),
+        }
+    }
+
+    #[test]
+    fn test_invoke_within_transaction_mandatory_exception() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::Mandatory,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+
+        let result = support.invoke_within_transaction(&method, "com.example.Foo", || {
+            Err(Box::new("test error") as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Err(err) => {
+                assert!(err.exception_type.contains("IllegalTransactionStateException"));
+            }
+            _ => panic!("Expected Err result"),
+        }
+    }
+
+    #[test]
+    fn test_invoke_within_transaction_never_exception() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::Never,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+
+        let result = support.invoke_within_transaction(&method, "com.example.Foo", || {
+            Err(Box::new("test error") as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Err(err) => {
+                assert!(!err.is_runtime);
+            }
+            _ => panic!("Expected Err result"),
+        }
+    }
+
+    #[test]
+    fn test_invoke_within_transaction_nested_exception() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::Nested,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+
+        let result = support.invoke_within_transaction(&method, "com.example.Foo", || {
+            Err(Box::new("test error") as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Err(err) => {
+                assert!(err.is_runtime);
+            }
+            _ => panic!("Expected Err result"),
+        }
+    }
+
+    #[test]
+    fn test_invoke_within_transaction_required_success() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::Required,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+
+        let result = support.invoke_within_transaction(&method, "com.example.Foo", || {
+            Ok(Box::new(42) as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Ok(val) => {
+                assert_eq!(val.downcast_ref::<i32>().unwrap(), &42);
+            }
+            _ => panic!("Expected Ok result"),
+        }
+    }
+
+    #[test]
+    fn test_invoke_within_transaction_supports_success() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::Supports,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+
+        let result = support.invoke_within_transaction(&method, "com.example.Foo", || {
+            Ok(Box::new(42) as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Ok(val) => {
+                assert_eq!(val.downcast_ref::<i32>().unwrap(), &42);
+            }
+            _ => panic!("Expected Ok result"),
+        }
+    }
+
+    #[test]
+    fn test_invoke_within_transaction_requires_new_success() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::RequiresNew,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+
+        let result = support.invoke_within_transaction(&method, "com.example.Foo", || {
+            Ok(Box::new(42) as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Ok(val) => {
+                assert_eq!(val.downcast_ref::<i32>().unwrap(), &42);
+            }
+            _ => panic!("Expected Ok result"),
+        }
+    }
+
+    #[test]
+    fn test_invoke_within_transaction_not_supported_success() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::NotSupported,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+
+        let result = support.invoke_within_transaction(&method, "com.example.Foo", || {
+            Ok(Box::new(42) as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Ok(val) => {
+                assert_eq!(val.downcast_ref::<i32>().unwrap(), &42);
+            }
+            _ => panic!("Expected Ok result"),
+        }
+    }
+
+    #[test]
+    fn test_invoke_within_transaction_never_success() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::Never,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+
+        let result = support.invoke_within_transaction(&method, "com.example.Foo", || {
+            Ok(Box::new(42) as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Ok(val) => {
+                assert_eq!(val.downcast_ref::<i32>().unwrap(), &42);
+            }
+            _ => panic!("Expected Ok result"),
+        }
+    }
+
+    #[test]
+    fn test_invoke_within_transaction_nested_success() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::Nested,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+
+        let result = support.invoke_within_transaction(&method, "com.example.Foo", || {
+            Ok(Box::new(42) as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Ok(val) => {
+                assert_eq!(val.downcast_ref::<i32>().unwrap(), &42);
+            }
+            _ => panic!("Expected Ok result"),
+        }
+    }
+
+    #[test]
+    fn test_transaction_result_debug() {
+        let ok = TransactionResult::Ok(Box::new(42) as Box<dyn Any + Send + Sync>);
+        let err = TransactionResult::Err(TransactionError::new("error".to_string(), "unknown", false, false));
+        assert!(format!("{:?}", ok).contains("Ok"));
+        assert!(format!("{:?}", err).contains("Err"));
+    }
+
+    #[test]
+    fn test_transaction_error_debug() {
+        let err = TransactionError::new("error".to_string(), "java.lang.Error", false, true);
+        let debug_str = format!("{:?}", err);
+        assert!(debug_str.contains("error"));
+        assert!(debug_str.contains("java.lang.Error"));
+    }
+
+    #[test]
+    fn test_transaction_error_new() {
+        let err = TransactionError::new("error".to_string(), "java.lang.Error", false, true);
+        assert_eq!(err.message, "error");
+        assert_eq!(err.exception_type, "java.lang.Error");
+        assert!(!err.is_runtime);
+        assert!(err.is_error);
+        assert!(!err.is_checked);
+    }
+
+    #[test]
+    fn test_suspended_transaction_info() {
+        let info = SuspendedTransactionInfo {
+            transaction_name: "testTx".to_string(),
+            transaction_manager_name: "txManager".to_string(),
+            metadata: std::collections::HashMap::new(),
+        };
+        assert_eq!(info.transaction_name, "testTx");
+        assert_eq!(info.transaction_manager_name, "txManager");
+        assert!(info.metadata.is_empty());
+    }
+
+    #[test]
+    fn test_no_op_transaction_manager() {
+        let tm = NoOpTransactionManager;
+        assert_eq!(tm.get_name(), "NoOpTransactionManager");
+        assert_eq!(tm.get_type(), "NoOp");
+    }
 }

@@ -75,11 +75,7 @@ pub trait Aspect: Send + Sync + 'static {
     ///   → Ok: after(inv, result)     // 成功后置
     ///   → Err: after_error(inv, err) // 异常通知
     /// ```
-    fn around<'a>(
-        &'a self,
-        inv: Arc<Invocation>,
-        next: Next<'a>,
-    ) -> InvocationFuture<'a> {
+    fn around<'a>(&'a self, inv: Arc<Invocation>, next: Next<'a>) -> InvocationFuture<'a> {
         Box::pin(async move {
             self.before(&inv).await?;
             let result = next.run(inv.clone()).await;
@@ -107,8 +103,9 @@ mod tests {
         fn before<'a>(
             &'a self,
             _inv: &'a Invocation,
-        ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), InvocationError>> + Send + 'a>>
-        {
+        ) -> std::pin::Pin<
+            Box<dyn std::future::Future<Output = Result<(), InvocationError>> + Send + 'a>,
+        > {
             self.before_count.fetch_add(1, Ordering::SeqCst);
             Box::pin(async { Ok(()) })
         }

@@ -6,8 +6,8 @@ use vernal_beans::{ComponentDefinition, Qualifier, TraitBinding};
 
 use crate::{
     ApplicationEnvironment, ApplicationEventListener, ApplicationRunner, ComponentCondition,
-    ConditionError, ConditionEvaluationSnapshot, ConfigurationProperties, Lifecycle, ScheduledTask,
-    application_runner_registrar::ApplicationRunnerRegistrar,
+    ConditionError, ConditionEvaluationSnapshot, ConfigurationPhase, ConfigurationProperties,
+    Lifecycle, ScheduledTask, application_runner_registrar::ApplicationRunnerRegistrar,
     condition_contribution_counts::ConditionContributionCounts,
     conditional_component_module_parts::ConditionalComponentModuleParts,
     event_listener_registrar::EventListenerRegistrar, lifecycle_registrar::LifecycleRegistrar,
@@ -20,9 +20,14 @@ use crate::{
 /// 模块只有在条件命中时才整体提交到 `RegistryBuilder`。这避免组件定义被排除、
 /// Trait Binding 却残留，或生命周期仍尝试解析不存在组件的半装配状态。模块名和
 /// 条件名进入启动报告，条件捕获的属性键和值不会进入诊断对象。
+///
+/// `phase` 字段对标 Spring `ConfigurationCondition#getConfigurationPhase`：
+/// 默认 `ParseConfiguration` 与 vernal 当前在 builder 阶段评估条件的行为一致；
+/// 设置为 `RegisterBean` 让模块语义与 Spring `@Conditional` 在注册普通 bean 阶段评估。
 pub struct ConditionalComponentModule {
     name: &'static str,
     condition: Arc<dyn ComponentCondition>,
+    phase: ConfigurationPhase,
     definitions: Vec<ComponentDefinition>,
     bindings: Vec<TraitBinding>,
     lifecycle_registrars: Vec<Box<LifecycleRegistrar>>,
@@ -47,6 +52,7 @@ impl ConditionalComponentModule {
         Self {
             name,
             condition,
+            phase: ConfigurationPhase::ParseConfiguration,
             definitions: Vec::new(),
             bindings: Vec::new(),
             lifecycle_registrars: Vec::new(),
@@ -54,6 +60,24 @@ impl ConditionalComponentModule {
             application_runner_registrars: Vec::new(),
             scheduled_task_registrars: Vec::new(),
         }
+    }
+
+    /// 设置模块的评估阶段（对标 Spring `ConfigurationCondition#getConfigurationPhase`）。
+    ///
+    /// 默认为 `ConfigurationPhase::ParseConfiguration`：在 builder 阶段立即评估，
+    /// 不命中时整个模块都不会进入依赖图。设置为 `RegisterBean` 时模块与 Spring
+    /// 的 `@Conditional(REGISTER_BEAN)` 等价 —— 此时 vernal 由调用方负责延后评估
+    /// 时机（当前架构下两者效果相同，因为 vernal 评估时机固定在 builder 阶段）。
+    #[must_use]
+    pub fn with_phase(mut self, phase: ConfigurationPhase) -> Self {
+        self.phase = phase;
+        self
+    }
+
+    /// 返回模块的当前评估阶段。
+    #[must_use]
+    pub const fn phase(&self) -> ConfigurationPhase {
+        self.phase
     }
 
     /// 向模块追加一个组件定义。

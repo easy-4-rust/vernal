@@ -225,4 +225,91 @@ mod tests {
             _ => panic!("Expected error"),
         }
     }
+
+    #[test]
+    fn test_matches_all_type_pointcuts() {
+        let source = Arc::new(AnnotationCacheOperationSource::new());
+        let aspect = AnnotationCacheAspect::new(source);
+
+        assert!(aspect.matches_cacheable_type(true, true));
+        assert!(!aspect.matches_cacheable_type(false, true));
+        assert!(!aspect.matches_cacheable_type(true, false));
+
+        assert!(aspect.matches_cache_evict_type(true, true));
+        assert!(!aspect.matches_cache_evict_type(false, true));
+
+        assert!(aspect.matches_cache_put_type(true, true));
+        assert!(!aspect.matches_cache_put_type(false, true));
+
+        assert!(aspect.matches_caching_type(true, true));
+        assert!(!aspect.matches_caching_type(false, true));
+    }
+
+    #[test]
+    fn test_matches_all_method_pointcuts() {
+        let source = Arc::new(AnnotationCacheOperationSource::new());
+        let aspect = AnnotationCacheAspect::new(source);
+
+        assert!(aspect.matches_cacheable_method(true));
+        assert!(!aspect.matches_cacheable_method(false));
+
+        assert!(aspect.matches_cache_evict_method(true));
+        assert!(!aspect.matches_cache_evict_method(false));
+
+        assert!(aspect.matches_cache_put_method(true));
+        assert!(!aspect.matches_cache_put_method(false));
+
+        assert!(aspect.matches_caching_method(true));
+        assert!(!aspect.matches_caching_method(false));
+    }
+
+    #[test]
+    fn test_cache_method_execution_all_combinations() {
+        let source = Arc::new(AnnotationCacheOperationSource::new());
+        let aspect = AnnotationCacheAspect::new(source);
+
+        // this 不匹配
+        assert!(!aspect.cache_method_execution(true, false, false, false, false, false, false, false, false, false));
+
+        // cacheable 类型匹配
+        assert!(aspect.cache_method_execution(true, false, false, false, true, false, false, false, false, true));
+
+        // cache_evict 类型匹配
+        assert!(aspect.cache_method_execution(false, true, false, false, true, false, false, false, false, true));
+
+        // cache_put 类型匹配
+        assert!(aspect.cache_method_execution(false, false, true, false, true, false, false, false, false, true));
+
+        // caching 类型匹配
+        assert!(aspect.cache_method_execution(false, false, false, true, true, false, false, false, false, true));
+
+        // cacheable 方法匹配
+        assert!(aspect.cache_method_execution(false, false, false, false, false, true, false, false, false, true));
+
+        // cache_evict 方法匹配
+        assert!(aspect.cache_method_execution(false, false, false, false, false, false, true, false, false, true));
+
+        // cache_put 方法匹配
+        assert!(aspect.cache_method_execution(false, false, false, false, false, false, false, true, false, true));
+
+        // caching 方法匹配
+        assert!(aspect.cache_method_execution(false, false, false, false, false, false, false, false, true, true));
+
+        // 都不匹配
+        assert!(!aspect.cache_method_execution(false, false, false, false, false, false, false, false, false, true));
+    }
+
+    #[test]
+    fn test_annotation_cache_aspect_debug() {
+        let source = Arc::new(AnnotationCacheOperationSource::new());
+        let aspect = AnnotationCacheAspect::new(source);
+        let _ = aspect;
+    }
+
+    #[test]
+    fn test_annotation_cache_aspect_clone() {
+        let source = Arc::new(AnnotationCacheOperationSource::new());
+        let aspect = AnnotationCacheAspect::new(source);
+        let _ = aspect;
+    }
 }

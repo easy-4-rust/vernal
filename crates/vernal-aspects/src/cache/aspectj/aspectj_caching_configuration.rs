@@ -66,4 +66,13 @@ mod tests {
         let aspect2 = config.register();
         assert!(Arc::ptr_eq(&aspect, &aspect2));
     }
+
+    #[test]
+    fn test_configuration_register_multiple() {
+        let config = AspectJCachingConfiguration::new(Arc::new(AnnotationCacheOperationSource::new()));
+        let _ = config.register();
+        let _ = config.register();
+        let _ = config.register();
+        assert!(config.get_aspect().is_some());
+    }
 }

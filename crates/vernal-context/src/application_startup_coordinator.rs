@@ -331,8 +331,19 @@ impl ApplicationStartupCoordinator {
         }
         self.lifecycle.set_state(ContextState::Starting).await;
 
+        // 对标 Spring 7.0 `DefaultLifecycleProcessor#startBeans(true)`：
+        // - `is_auto_startup() == false` 的 Lifecycle 组件不参与自动启动
+        //   （调用方应显式调用 `ApplicationContext::start` 完成该组件启动）
+        // - 同拓扑深度的组件按 `phase()` 升序排列
         let components = self.lifecycle.components().await;
-        for component in &components {
+        let mut ordered: Vec<Arc<dyn Lifecycle>> = components
+            .iter()
+            .cloned()
+            .filter(|component| component.is_auto_startup())
+            .collect();
+        ordered.sort_by_key(|component| component.phase());
+
+        for component in &ordered {
             if self.is_cancelled() {
                 let error = ContextError::LifecycleCancelled { operation: "start" };
                 self.rollback_to_closed().await;
@@ -583,10 +594,7 @@ impl ApplicationStartupCoordinator {
 
     /// 把任意 [`ContextError`] 升级为 [`ContextError::PauseRestart`]，保留原始
     /// 错误链；非生命周期错误原样返回。
-    fn upgrade_pause_error(
-        operation: &'static str,
-        error: ContextError,
-    ) -> OperationResult {
+    fn upgrade_pause_error(operation: &'static str, error: ContextError) -> OperationResult {
         match error {
             ContextError::Lifecycle {
                 component,

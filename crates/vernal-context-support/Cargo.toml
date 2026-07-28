@@ -1,0 +1,31 @@
+[package]
+name = "vernal-context-support"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Vernal 上下文支持层（对标 spring-context-support）"
+publish = false
+
+[features]
+default = ["cache", "scheduling", "mail"]
+cache = ["dep:moka"]
+scheduling = []
+mail = ["dep:lettre"]
+freemarker = ["dep:tera"]
+
+[dependencies]
+async-trait.workspace = true
+moka = { version = "0.12", features = ["sync", "future"], optional = true }
+lettre = { version = "0.11", features = ["builder", "hostname", "tokio1-native-tls"], optional = true }
+tera = { version = "1", optional = true }
+thiserror = "2.0"
+tokio.workspace = true
+vernal-cache = { path = "../vernal-cache" }
+vernal-context = { path = "../vernal-context" }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt-multi-thread", "time"] }
+
+[lints]
+workspace = true

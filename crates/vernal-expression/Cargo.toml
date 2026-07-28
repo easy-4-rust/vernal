@@ -15,6 +15,7 @@ vernal-beans = { path = "../vernal-beans" }
 # 任意精度数字
 bigdecimal.workspace = true
 num-bigint.workspace = true
+num-traits = { workspace = true, features = ["std"] }
 
 # 时间
 chrono.workspace = true

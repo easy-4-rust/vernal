@@ -39,7 +39,11 @@ impl<A: Aspect> AspectAdapter<A> {
 }
 
 impl<A: Aspect> Interceptor for AspectAdapter<A> {
-    fn intercept<'a>(&'a self, invocation: Arc<Invocation>, next: Next<'a>) -> InvocationFuture<'a> {
+    fn intercept<'a>(
+        &'a self,
+        invocation: Arc<Invocation>,
+        next: Next<'a>,
+    ) -> InvocationFuture<'a> {
         // 关键：&self.aspect 的生命周期与 &'a self 绑定，因此 &self.aspect: &'a A
         // 满足 around(&'a self, ..., Next<'a>) 的签名约束。
         self.aspect.around(invocation, next)

@@ -166,4 +166,70 @@ mod tests {
         let aspect = AnnotationAsyncExecutionAspect::default();
         assert!(aspect.get_inner().determine_async_executor(&super::super::abstract_async_execution_aspect::MethodMetadata::new("Foo", "bar", "void")).is_none());
     }
+
+    #[test]
+    fn test_get_executor_qualifier_all_none() {
+        let aspect = AnnotationAsyncExecutionAspect::new();
+        assert_eq!(
+            aspect.get_executor_qualifier(false, None, false, None),
+            None
+        );
+    }
+
+    #[test]
+    fn test_get_executor_qualifier_method_only() {
+        let aspect = AnnotationAsyncExecutionAspect::new();
+        assert_eq!(
+            aspect.get_executor_qualifier(true, Some("methodExec"), false, None),
+            Some("methodExec")
+        );
+    }
+
+    #[test]
+    fn test_get_executor_qualifier_class_only() {
+        let aspect = AnnotationAsyncExecutionAspect::new();
+        assert_eq!(
+            aspect.get_executor_qualifier(false, None, true, Some("classExec")),
+            Some("classExec")
+        );
+    }
+
+    #[test]
+    fn test_get_executor_qualifier_both() {
+        let aspect = AnnotationAsyncExecutionAspect::new();
+        // 方法级优先
+        assert_eq!(
+            aspect.get_executor_qualifier(true, Some("methodExec"), true, Some("classExec")),
+            Some("methodExec")
+        );
+    }
+
+    #[test]
+    fn test_async_method_all_combinations() {
+        let aspect = AnnotationAsyncExecutionAspect::new();
+
+        // 方法级 @Async + return type void
+        assert!(aspect.async_method(true, false, true));
+
+        // 方法级 @Async + return type Future
+        assert!(aspect.async_method(true, false, true));
+
+        // 类级 @Async + return type void
+        assert!(aspect.async_method(false, true, true));
+
+        // 类级 @Async + return type Future
+        assert!(aspect.async_method(false, true, true));
+
+        // 都不匹配
+        assert!(!aspect.async_method(false, false, false));
+
+        // return type 不匹配
+        assert!(!aspect.async_method(true, false, false));
+    }
+
+    #[test]
+    fn test_annotation_async_execution_aspect_clone() {
+        let aspect = AnnotationAsyncExecutionAspect::new();
+        let _ = aspect;
+    }
 }

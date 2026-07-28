@@ -12,10 +12,7 @@
 //! 镜像 Spring `org.springframework.context.support.DefaultLifecycleProcessorTests`
 //! 与 `org.springframework.context.LifecycleTests`（2026-07-27）。
 
-use std::sync::{
-    Arc,
-    Mutex,
-};
+use std::sync::{Arc, Mutex};
 
 use vernal_beans::{ComponentDefinition, RegistryBuilder};
 use vernal_context::{
@@ -48,10 +45,7 @@ impl Lifecycle for Database {
         self.trace.record("database:initialize");
         Box::pin(async { Ok(()) })
     }
-    fn start(
-        &self,
-        _cancellation: tokio_util::sync::CancellationToken,
-    ) -> LifecycleFuture<'_> {
+    fn start(&self, _cancellation: tokio_util::sync::CancellationToken) -> LifecycleFuture<'_> {
         self.trace.record("database:start");
         Box::pin(async { Ok(()) })
     }
@@ -71,10 +65,7 @@ impl Lifecycle for ApiService {
         self.trace.record("api:initialize");
         Box::pin(async { Ok(()) })
     }
-    fn start(
-        &self,
-        _cancellation: tokio_util::sync::CancellationToken,
-    ) -> LifecycleFuture<'_> {
+    fn start(&self, _cancellation: tokio_util::sync::CancellationToken) -> LifecycleFuture<'_> {
         self.trace.record("api:start");
         Box::pin(async { Ok(()) })
     }
@@ -92,11 +83,13 @@ fn build_lifecycle_context(trace: &CallTrace) -> ApplicationContext {
     let trace_for_api = trace.clone();
     let mut registry = RegistryBuilder::new();
     registry
-        .register(ComponentDefinition::try_singleton::<Database, _>(move |_resolver| {
-            Ok(Database {
-                trace: trace_for_db.clone(),
-            })
-        }))
+        .register(ComponentDefinition::try_singleton::<Database, _>(
+            move |_resolver| {
+                Ok(Database {
+                    trace: trace_for_db.clone(),
+                })
+            },
+        ))
         .expect("Database");
     registry
         .register(
@@ -205,10 +198,7 @@ async fn lifecycle_close_calls_stop_in_reverse_dependency_order() {
     context.close().await.expect("close");
     let events = trace.snapshot();
     let stop_count = events.iter().filter(|e| e.contains(":stop")).count();
-    assert_eq!(
-        stop_count, 2,
-        "both components must be stopped on close"
-    );
+    assert_eq!(stop_count, 2, "both components must be stopped on close");
 }
 
 /// Spring `Phased_getPhase` 差分测试：

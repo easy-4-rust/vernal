@@ -65,4 +65,13 @@ mod tests {
         let aspect2 = config.register_jcache_aspect();
         assert!(Arc::ptr_eq(&aspect, &aspect2));
     }
+
+    #[test]
+    fn test_jcache_configuration_register_multiple() {
+        let config = AspectJJCacheConfiguration::new(Arc::new(AnnotationCacheOperationSource::new()));
+        let _ = config.register_jcache_aspect();
+        let _ = config.register_jcache_aspect();
+        let _ = config.register_jcache_aspect();
+        assert!(config.get_jcache_aspect().is_some());
+    }
 }

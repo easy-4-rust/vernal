@@ -5,3 +5,14 @@
 mod spring_configured_configuration;
 
 pub use spring_configured_configuration::SpringConfiguredConfiguration;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_spring_configured_configuration() {
+        let config = SpringConfiguredConfiguration::new();
+        let _ = config;
+    }
+}

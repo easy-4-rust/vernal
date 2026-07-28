@@ -19,9 +19,7 @@ use crate::{ComponentDefinition, Resolver};
 ///
 /// 对标 tx_di 的完整生命周期：
 ///
-/// ```
-/// build → inner_init → init → async_init → async_run → shutdown（逆序）
-/// ```
+/// `build` -> `inner_init` -> `init` -> `async_init` -> `async_run` -> `shutdown`（逆序）
 ///
 /// - `inner_init`：工厂内初始化，可访问 `Resolver`（对标 tx_di 的 `inner_init`）
 /// - `init_order`：同层初始化排序（对标 tx_di 的 `init_sort`）

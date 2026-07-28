@@ -11,5 +11,5 @@ mod pattern;
 
 pub use ast::PointcutExpr;
 pub use matcher::{FunctionDescriptor, PointcutMatcher};
-pub use parser::{parse_pointcut_expr, PointcutParseError};
+pub use parser::{PointcutParseError, parse_pointcut_expr};
 pub use pattern::{ExecutionPattern, ModulePattern, NamePattern, Visibility};

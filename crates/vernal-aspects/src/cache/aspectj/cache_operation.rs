@@ -121,4 +121,71 @@ mod tests {
         assert_send::<CacheOperation>();
         assert_sync::<CacheOperation>();
     }
+
+    #[test]
+    fn test_cache_operation_metadata_with_key_and_condition() {
+        let meta = CacheOperationMetadata {
+            operation: CacheOperation::Cacheable,
+            cache_names: vec![Cow::Borrowed("users")],
+            key: Some(Cow::Borrowed("#id")),
+            condition: Some(Cow::Borrowed("#id > 0")),
+            unless: Some(Cow::Borrowed("#result == null")),
+            sync: true,
+            ..Default::default()
+        };
+        assert_eq!(meta.key.as_deref(), Some("#id"));
+        assert_eq!(meta.condition.as_deref(), Some("#id > 0"));
+        assert_eq!(meta.unless.as_deref(), Some("#result == null"));
+        assert!(meta.sync);
+    }
+
+    #[test]
+    fn test_cache_operation_metadata_clone() {
+        let meta = CacheOperationMetadata {
+            operation: CacheOperation::CachePut,
+            cache_names: vec![Cow::Borrowed("users")],
+            ..Default::default()
+        };
+        let cloned = meta.clone();
+        assert_eq!(meta.operation, cloned.operation);
+        assert_eq!(meta.cache_names, cloned.cache_names);
+    }
+
+    #[test]
+    fn test_cache_operation_metadata_debug() {
+        let meta = CacheOperationMetadata {
+            operation: CacheOperation::Cacheable,
+            cache_names: vec![Cow::Borrowed("users")],
+            ..Default::default()
+        };
+        let debug_str = format!("{:?}", meta);
+        assert!(debug_str.contains("Cacheable"));
+    }
+
+    #[test]
+    fn test_cache_operation_metadata_hash() {
+        use std::collections::HashMap;
+        let mut map = HashMap::new();
+        let meta1 = CacheOperationMetadata {
+            operation: CacheOperation::Cacheable,
+            cache_names: vec![Cow::Borrowed("users")],
+            ..Default::default()
+        };
+        let meta2 = CacheOperationMetadata {
+            operation: CacheOperation::CachePut,
+            cache_names: vec![Cow::Borrowed("users")],
+            ..Default::default()
+        };
+        map.insert(format!("{:?}", meta1), 1);
+        map.insert(format!("{:?}", meta2), 2);
+        assert_eq!(map.len(), 2);
+    }
+
+    #[test]
+    fn test_cache_operation_metadata_is_send_sync() {
+        fn assert_send<T: Send>() {}
+        fn assert_sync<T: Sync>() {}
+        assert_send::<CacheOperationMetadata>();
+        assert_sync::<CacheOperationMetadata>();
+    }
 }

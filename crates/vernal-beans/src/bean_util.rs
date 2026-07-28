@@ -6,7 +6,7 @@
 use std::any::TypeId;
 use std::collections::HashMap;
 
-use super::bean_descriptor::{BeanDescriptor, PropertyDescriptor};
+use super::bean_descriptor::PropertyDescriptor;
 
 /// Bean 工具类。
 ///

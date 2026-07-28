@@ -51,10 +51,32 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_default_handler() {
+    fn test_default_handler_str() {
         let handler = DefaultAsyncUncaughtExceptionHandler;
-        // 不应 panic
         handler.handle_uncaught_exception(&"test error", "testMethod", &[]);
+    }
+
+    #[test]
+    fn test_default_handler_string() {
+        let handler = DefaultAsyncUncaughtExceptionHandler;
+        let msg = String::from("string error");
+        handler.handle_uncaught_exception(&msg, "testMethod", &[]);
+    }
+
+    #[test]
+    fn test_default_handler_unknown() {
+        let handler = DefaultAsyncUncaughtExceptionHandler;
+        handler.handle_uncaught_exception(&42, "testMethod", &[]);
+    }
+
+    #[test]
+    fn test_default_handler_with_args() {
+        let handler = DefaultAsyncUncaughtExceptionHandler;
+        let args: Vec<Box<dyn std::any::Any + Send + Sync>> = vec![
+            Box::new(42),
+            Box::new("test".to_string()),
+        ];
+        handler.handle_uncaught_exception(&"error", "testMethod", &args);
     }
 
     #[test]

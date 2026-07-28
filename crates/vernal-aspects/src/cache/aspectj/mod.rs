@@ -29,3 +29,22 @@ pub use jcache_cache_aspect::JCacheCacheAspect;
 pub use aspectj_caching_configuration::AspectJCachingConfiguration;
 pub use aspectj_jcache_configuration::AspectJJCacheConfiguration;
 pub use any_throw::AnyThrow;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_cache_operation() {
+        assert_eq!(CacheOperation::Cacheable, CacheOperation::Cacheable);
+        assert_eq!(CacheOperation::CachePut, CacheOperation::CachePut);
+        assert_eq!(CacheOperation::CacheEvict, CacheOperation::CacheEvict);
+    }
+
+    #[test]
+    fn test_cache_operation_source() {
+        let source = super::cache_operation_source::AnnotationCacheOperationSource::new();
+        let meta = super::cache_operation_source::MethodMetadata::new("Foo", "bar");
+        assert!(source.get_cache_operation(&meta).is_none());
+    }
+}

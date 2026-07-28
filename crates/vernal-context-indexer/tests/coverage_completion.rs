@@ -180,10 +180,7 @@ fn merge_combines_multiple_indices_atomically() {
         BTreeSet::from(["merge_test_a::ComponentA"])
     );
     let service_types = merged.get("merge_test_b", "Service");
-    assert_eq!(
-        service_types,
-        BTreeSet::from(["merge_test_b::ComponentB"])
-    );
+    assert_eq!(service_types, BTreeSet::from(["merge_test_b::ComponentB"]));
 }
 
 #[test]
@@ -222,20 +219,29 @@ fn new_default_stereotype_is_component() {
 #[test]
 fn invalid_group_with_whitespace_is_rejected() {
     let result = LinkedComponentIndex::scan(["with space"]);
-    assert!(matches!(result, Err(LinkedComponentIndexError::InvalidGroup { .. })));
+    assert!(matches!(
+        result,
+        Err(LinkedComponentIndexError::InvalidGroup { .. })
+    ));
 }
 
 #[test]
 fn invalid_group_with_control_chars_is_rejected() {
     let result = LinkedComponentIndex::scan(["tab\there"]);
-    assert!(matches!(result, Err(LinkedComponentIndexError::InvalidGroup { .. })));
+    assert!(matches!(
+        result,
+        Err(LinkedComponentIndexError::InvalidGroup { .. })
+    ));
 }
 
 #[test]
 fn invalid_group_with_empty_string_is_rejected() {
     // 空字符串由 EmptySelection 处理;这里测含控制字符
     let result = LinkedComponentIndex::scan(["\0"]);
-    assert!(matches!(result, Err(LinkedComponentIndexError::InvalidGroup { .. })));
+    assert!(matches!(
+        result,
+        Err(LinkedComponentIndexError::InvalidGroup { .. })
+    ));
 }
 
 // =============================================================================
@@ -375,7 +381,9 @@ fn sorted_properties_store_writes_key_equals_value_lines() {
 fn sorted_properties_load_parses_key_equals_value() {
     let mut props = SortedProperties::new(true);
     let input = "alpha=1\nbeta=2\n";
-    props.load(&mut Cursor::new(input.as_bytes())).expect("load");
+    props
+        .load(&mut Cursor::new(input.as_bytes()))
+        .expect("load");
 
     assert_eq!(props.get("alpha"), Some("1"));
     assert_eq!(props.get("beta"), Some("2"));
@@ -385,7 +393,9 @@ fn sorted_properties_load_parses_key_equals_value() {
 fn sorted_properties_load_skips_comment_lines_when_omit_comments() {
     let mut props = SortedProperties::new(true);
     let input = "# this is a comment\nalpha=1\n# another comment\nbeta=2\n";
-    props.load(&mut Cursor::new(input.as_bytes())).expect("load");
+    props
+        .load(&mut Cursor::new(input.as_bytes()))
+        .expect("load");
 
     assert_eq!(props.get("alpha"), Some("1"));
     assert_eq!(props.get("beta"), Some("2"));
@@ -396,7 +406,9 @@ fn sorted_properties_load_skips_comment_lines_when_omit_comments() {
 fn sorted_properties_load_skips_blank_lines() {
     let mut props = SortedProperties::new(true);
     let input = "\nalpha=1\n\nbeta=2\n\n";
-    props.load(&mut Cursor::new(input.as_bytes())).expect("load");
+    props
+        .load(&mut Cursor::new(input.as_bytes()))
+        .expect("load");
 
     assert_eq!(props.len(), 2);
 }
@@ -627,14 +639,20 @@ fn component_definitions_includes_runtime_entries() {
 fn register_scan_rejects_empty_string() {
     let mut index = LinkedComponentIndex::empty();
     let result = index.register_scan(vec!["".to_string()]);
-    assert!(matches!(result, Err(LinkedComponentIndexError::InvalidGroup { .. })));
+    assert!(matches!(
+        result,
+        Err(LinkedComponentIndexError::InvalidGroup { .. })
+    ));
 }
 
 #[test]
 fn register_scan_rejects_whitespace() {
     let mut index = LinkedComponentIndex::empty();
     let result = index.register_scan(vec!["with space".to_string()]);
-    assert!(matches!(result, Err(LinkedComponentIndexError::InvalidGroup { .. })));
+    assert!(matches!(
+        result,
+        Err(LinkedComponentIndexError::InvalidGroup { .. })
+    ));
 }
 
 // =============================================================================
@@ -701,13 +719,17 @@ fn type_helper_to_package_format_no_separator() {
 #[test]
 fn type_helper_is_jakarta_annotation_empty() {
     assert!(!TypeHelper::is_jakarta_annotation(""));
-    assert!(!TypeHelper::is_jakarta_annotation("org.springframework.stereotype.Indexed"));
+    assert!(!TypeHelper::is_jakarta_annotation(
+        "org.springframework.stereotype.Indexed"
+    ));
 }
 
 #[test]
 fn type_helper_is_indexed_annotation_empty() {
     assert!(!TypeHelper::is_indexed_annotation(""));
-    assert!(!TypeHelper::is_indexed_annotation("org.springframework.stereotype.Component"));
+    assert!(!TypeHelper::is_indexed_annotation(
+        "org.springframework.stereotype.Component"
+    ));
 }
 
 // =============================================================================
@@ -789,11 +811,7 @@ fn scan_all_returns_sorted_static_entries() {
     let index = LinkedComponentIndex::scan_all().expect("scan_all");
     // scan_all 返回链接期切片中的所有静态条目
     assert!(index.len() >= 1);
-    let names: Vec<&str> = index
-        .static_entries()
-        .iter()
-        .map(|e| e.name())
-        .collect();
+    let names: Vec<&str> = index.static_entries().iter().map(|e| e.name()).collect();
     // 验证排序：按 (module_path, name) 升序
     assert!(names.windows(2).all(|pair| pair[0] <= pair[1]));
 }
@@ -864,10 +882,7 @@ fn get_runtime_entry_with_separator() {
         dummy_def,
     ));
     let types = index.get("my::module", "Component");
-    assert_eq!(
-        types,
-        BTreeSet::from(["my::module::sub::Component"])
-    );
+    assert_eq!(types, BTreeSet::from(["my::module::sub::Component"]));
 }
 
 #[test]
@@ -880,10 +895,7 @@ fn get_runtime_entry_no_separator() {
         dummy_def,
     ));
     let types = index.get("toplevel", "Component");
-    assert_eq!(
-        types,
-        BTreeSet::from(["toplevel::Component"])
-    );
+    assert_eq!(types, BTreeSet::from(["toplevel::Component"]));
 }
 
 // =============================================================================
@@ -923,11 +935,8 @@ fn entry_ref_static_module_path() {
 
 #[test]
 fn linked_component_entry_new_default_is_component() {
-    let entry = LinkedComponentEntry::new_default(
-        "default_test",
-        "default_test::Sample",
-        dummy_def,
-    );
+    let entry =
+        LinkedComponentEntry::new_default("default_test", "default_test::Sample", dummy_def);
     assert_eq!(entry.stereotypes(), &["Component"]);
     assert!(entry.has_stereotype("Component"));
 }

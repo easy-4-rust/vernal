@@ -36,5 +36,8 @@ pub trait BeanExpressionResolver: Send + Sync + 'static {
         &self,
         expression: &str,
         bean_name: Option<&str>,
-    ) -> Result<Option<Arc<dyn std::any::Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>>;
+    ) -> Result<
+        Option<Arc<dyn std::any::Any + Send + Sync>>,
+        Box<dyn std::error::Error + Send + Sync>,
+    >;
 }

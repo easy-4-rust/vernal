@@ -1,37 +1,64 @@
-//! 内部解析异常。
+//! InternalParseException — 解析器内部流转异常。
 //!
-//! 对标 Spring 的 `InternalParseException`：在解析器内部流转，最终转换为 SpelParseException。
+//! 对标 Spring `org.springframework.expression.spel.InternalParseException`。
+//! 该异常是 `RuntimeException`，目的是让深层的 `eatXxx` / `maybeEatXxx` 抛出 SpelParseException
+//! 时不用跨越复杂控制流；顶层 `doParseExpression` 抓住后 unwrap 出原始 SpelParseException 重抛。
 
-use crate::parse_exception::ParseException;
+use super::spel_message::SpelMessage;
+use super::spel_parse_exception::SpelParseException;
 
-/// 内部解析异常。
+/// 内部解析异常（控制流异常，不应暴露给最终用户）。
 ///
-/// 在解析器内部流转，最终在顶层的 parseExpression 方法中转换为 ParseException。
-/// 对标 Spring 的 `org.springframework.expression.spel.InternalParseException`。
-#[derive(Debug, Clone)]
+/// 对标 Spring `InternalParseException(SpelParseException)`。
+#[derive(Clone)]
 pub struct InternalParseException {
-    message: String,
-    position: usize,
+    /// 携带的 SpelParseException。
+    cause: SpelParseException,
+}
+
+impl std::fmt::Debug for InternalParseException {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("InternalParseException")
+            .field("cause", &self.cause)
+            .finish()
+    }
 }
 
 impl InternalParseException {
-    /// 创建内部解析异常。
+    /// 通过 SpelParseException 包装。
     #[must_use]
-    pub fn new(message: String, position: usize) -> Self {
-        Self { message, position }
+    pub fn wrap(cause: SpelParseException) -> Self {
+        Self { cause }
     }
 
-    /// 转换为公共 ParseException。
+    /// 通过代码与 inserts 快捷构造。
+    pub fn new(expression: impl Into<String>, position: usize, code: SpelMessage, inserts: &[&str]) -> Self {
+        Self {
+            cause: SpelParseException::new(expression, position, code, inserts),
+        }
+    }
+
+    /// 取出内部的 SpelParseException。
     #[must_use]
-    pub fn to_parse_exception(&self, expression: String) -> ParseException {
-        ParseException::new(expression, Some(self.position), self.message.clone())
+    pub fn into_parse_exception(self) -> SpelParseException {
+        self.cause
+    }
+
+    /// 借用内部的 SpelParseException。
+    #[must_use]
+    pub fn parse_exception(&self) -> &SpelParseException {
+        &self.cause
     }
 }
 
 impl std::fmt::Display for InternalParseException {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.message)
+        std::fmt::Display::fmt(&self.cause, f)
     }
 }
 
-impl std::error::Error for InternalParseException {}
+impl std::error::Error for InternalParseException {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        Some(&self.cause)
+    }
+}

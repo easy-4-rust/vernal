@@ -14,8 +14,11 @@ description = "A lightweight IoC, AOP and application context framework for Rust
 actix-http = "=3.11.2"
 actix-web = { version = "=4.11.0", default-features = false, features = ["macros"] }
 axum = { version = "0.8.9", default-features = false, features = ["http1", "json", "matched-path", "tokio"] }
+bigdecimal = "0.4.7"
 bytes = "1.11.1"
+chrono = { version = "0.4.45", default-features = false, features = ["std", "clock"] }
 criterion = { version = "=0.7.0", default-features = false, features = ["async_tokio"] }
+dashmap = "6.1.0"
 futures-core = "0.3.32"
 futures-lite = "2.6.1"
 futures-util = { version = "0.3.32", features = ["sink"] }
@@ -47,6 +50,12 @@ petgraph = "0.8"
 scopeguard = "1.2"
 async-trait = "0.1"
 inventory = "0.3"
+moka = { version = "0.12", default-features = false, features = ["sync"] }
+num-bigint = "0.4.6"
+num-traits = "0.2.19"
+once_cell = "1.21"
+proptest = "1.5"
+regex = "1.11"
 trybuild = "1.0.116"
 tide = { version = "=0.17.0-beta.1", default-features = false }
 warp = { version = "=0.4.3", default-features = false }

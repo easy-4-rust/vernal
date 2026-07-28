@@ -35,7 +35,7 @@ mod evaluation_exception;
 mod expression;
 mod expression_exception;
 mod expression_invocation_target_exception;
-mod expression_value;
+pub mod expression_value;
 mod method_executor;
 mod method_filter;
 mod method_resolver;
@@ -47,7 +47,7 @@ mod parser_context;
 mod property_accessor;
 mod type_comparator;
 mod type_converter;
-mod type_descriptor;
+pub mod type_descriptor;
 mod type_locator;
 mod typed_value;
 
@@ -56,6 +56,12 @@ pub mod spel;
 
 // ─── 通用工具层 ───
 pub mod common;
+
+// Re-export ExpressionValue / TypeDescriptor from typed_value's slot so legacy
+// `use crate::typed_value::{ExpressionValue, TypeDescriptor}` paths compile while
+// we migrate the AST nodes (Phase F).
+pub use crate::expression_value::ExpressionValue as LegacyExpressionValue;
+pub use crate::type_descriptor::TypeDescriptor as LegacyTypeDescriptor;
 
 // ─── 公开导出 ───
 pub use access_exception::AccessException;

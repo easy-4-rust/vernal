@@ -243,6 +243,26 @@ impl TypeDescriptor {
         matches!(self, Self::Primitive(PrimitiveKind::Null))
     }
 
+    /// 便捷工厂：按字符串名字构造（兼容旧 API 的 `TypeDescriptor::new(name)`）。
+    ///
+    /// 当名字匹配 Spring 已知基本类型（int/long/float/double/boolean/string/object/value）
+    /// 时返回对应常量；否则退化为具名类型。
+    #[must_use]
+    pub fn new(name: &str) -> Self {
+        match name {
+            "int" | "Integer" => Self::INT,
+            "long" | "Long" => Self::LONG,
+            "float" | "Float" => Self::FLOAT,
+            "double" | "Double" => Self::DOUBLE,
+            "boolean" | "Boolean" => Self::BOOLEAN,
+            "String" => Self::STRING,
+            "object" => Self::OBJECT,
+            "value" => Self::VALUE,
+            "null" => Self::NULL,
+            _ => Self::from_type_name(name),
+        }
+    }
+
     /// Spring `TypeDescriptor.isAssignableTo` 等价语义。
     #[must_use]
     pub fn is_assignable_from(&self, src: &TypeDescriptor) -> bool {

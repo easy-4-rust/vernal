@@ -4,5 +4,8 @@
 mod cache;
 mod manager;
 
-pub use cache::{Cache, CacheError, CacheExt, CacheResult, SimpleCache, SimpleValueWrapper, TypedCacheValue, ValueWrapper};
+pub use cache::{
+    Cache, CacheError, CacheExt, CacheResult, SimpleCache, SimpleValueWrapper, TypedCacheValue,
+    ValueWrapper,
+};
 pub use manager::CacheManager;

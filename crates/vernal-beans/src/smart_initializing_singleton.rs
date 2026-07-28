@@ -25,5 +25,6 @@ pub trait SmartInitializingSingleton: Send + Sync + 'static {
     /// 所有 singleton 实例化完成后调用。
     ///
     /// 对应 Spring 的 `SmartInitializingSingleton.afterSingletonsInstantiated()`。
-    fn after_singletons_instantiated(&self) -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
+    fn after_singletons_instantiated(&self)
+    -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
 }

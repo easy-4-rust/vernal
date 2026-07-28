@@ -50,9 +50,8 @@ pub trait BeanPostProcessor: Send + Sync + 'static {
     fn post_process_before_initialization(
         &self,
         bean: Arc<dyn Any + Send + Sync>,
-        bean_name: &str,
-    ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>>
-    {
+        _bean_name: &str,
+    ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>> {
         Ok(Some(bean))
     }
 
@@ -63,7 +62,7 @@ pub trait BeanPostProcessor: Send + Sync + 'static {
     /// # 参数
     ///
     /// - `bean` — 已完成初始化的 Bean（类型擦除）
-    /// - `bean_name` — Bean 在容器中的名称
+    /// - `_bean_name` — Bean 在容器中的名称
     ///
     /// # 返回
     ///
@@ -73,9 +72,8 @@ pub trait BeanPostProcessor: Send + Sync + 'static {
     fn post_process_after_initialization(
         &self,
         bean: Arc<dyn Any + Send + Sync>,
-        bean_name: &str,
-    ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>>
-    {
+        _bean_name: &str,
+    ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>> {
         Ok(Some(bean))
     }
 }

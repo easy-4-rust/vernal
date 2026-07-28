@@ -44,18 +44,20 @@ async fn get_bean_for_class() {
     registry
         .register(ComponentDefinition::shared_arc(Arc::clone(&shared_bean)))
         .expect("register BeanB");
-    let context = ApplicationContextBuilder::new(
-        registry
-            .build()
-            .expect("registry build"),
-    )
-    .build()
-    .expect("context build");
+    let context = ApplicationContextBuilder::new(registry.build().expect("registry build"))
+        .build()
+        .expect("context build");
 
     context.refresh().await.expect("refresh");
 
-    let first = context.container().resolve::<BeanB>().expect("first resolve");
-    let second = context.container().resolve::<BeanB>().expect("second resolve");
+    let first = context
+        .container()
+        .resolve::<BeanB>()
+        .expect("first resolve");
+    let second = context
+        .container()
+        .resolve::<BeanB>()
+        .expect("second resolve");
     assert!(Arc::ptr_eq(&first, &second));
 }
 
@@ -68,13 +70,9 @@ async fn with_singleton_supplier() {
     registry
         .register(ComponentDefinition::shared_arc(Arc::new(BeanC)))
         .expect("register BeanC");
-    let context = ApplicationContextBuilder::new(
-        registry
-            .build()
-            .expect("registry build"),
-    )
-    .build()
-    .expect("context build");
+    let context = ApplicationContextBuilder::new(registry.build().expect("registry build"))
+        .build()
+        .expect("context build");
 
     context.refresh().await.expect("refresh");
 
@@ -89,17 +87,13 @@ async fn with_singleton_supplier() {
 async fn with_scoped_supplier() {
     let mut registry = RegistryBuilder::new();
     registry
-        .register(ComponentDefinition::try_transient::<BeanC, _>(|_resolver| {
-            Ok(BeanC)
-        }))
+        .register(ComponentDefinition::try_transient::<BeanC, _>(
+            |_resolver| Ok(BeanC),
+        ))
         .expect("register BeanC");
-    let context = ApplicationContextBuilder::new(
-        registry
-            .build()
-            .expect("registry build"),
-    )
-    .build()
-    .expect("context build");
+    let context = ApplicationContextBuilder::new(registry.build().expect("registry build"))
+        .build()
+        .expect("context build");
 
     context.refresh().await.expect("refresh");
 
@@ -119,13 +113,9 @@ async fn access_after_closing() {
     registry
         .register(ComponentDefinition::shared_arc(Arc::new(BeanC)))
         .expect("register BeanC");
-    let context = ApplicationContextBuilder::new(
-        registry
-            .build()
-            .expect("registry build"),
-    )
-    .build()
-    .expect("context build");
+    let context = ApplicationContextBuilder::new(registry.build().expect("registry build"))
+        .build()
+        .expect("context build");
 
     context.refresh().await.expect("refresh");
 
@@ -164,13 +154,9 @@ async fn individual_beans() {
         .register(ComponentDefinition::shared_arc(Arc::new(BeanC)))
         .expect("register BeanC");
 
-    let context = ApplicationContextBuilder::new(
-        registry
-            .build()
-            .expect("registry build"),
-    )
-    .build()
-    .expect("context build");
+    let context = ApplicationContextBuilder::new(registry.build().expect("registry build"))
+        .build()
+        .expect("context build");
     context.refresh().await.expect("refresh");
 
     let a = context.container().resolve::<BeanA>().expect("BeanA");
@@ -190,19 +176,18 @@ async fn refresh_success_and_close_idempotent() {
         .register(ComponentDefinition::shared_arc(Arc::new(BeanC)))
         .expect("register BeanC");
 
-    let context = ApplicationContextBuilder::new(
-        registry
-            .build()
-            .expect("registry build"),
-    )
-    .build()
-    .expect("context build");
+    let context = ApplicationContextBuilder::new(registry.build().expect("registry build"))
+        .build()
+        .expect("context build");
 
     context.refresh().await.expect("refresh must succeed");
 
     // 验证 close 幂等。
     context.close().await.expect("first close must succeed");
-    context.close().await.expect("second close must be idempotent");
+    context
+        .close()
+        .await
+        .expect("second close must be idempotent");
 
     // 验证 close 后 refresh 必须返回 InvalidState。
     let refresh_after_close = context.refresh().await;
@@ -220,13 +205,9 @@ async fn refresh_after_start_fails() {
     registry
         .register(ComponentDefinition::shared_arc(Arc::new(BeanC)))
         .expect("register BeanC");
-    let context = ApplicationContextBuilder::new(
-        registry
-            .build()
-            .expect("registry build"),
-    )
-    .build()
-    .expect("context build");
+    let context = ApplicationContextBuilder::new(registry.build().expect("registry build"))
+        .build()
+        .expect("context build");
 
     context.refresh().await.expect("first refresh");
     let second_refresh = context.refresh().await;
@@ -261,13 +242,9 @@ async fn bean_registrar_dependency_chain() {
         .register(ComponentDefinition::shared_arc(Arc::new(BeanC)))
         .expect("BeanC");
 
-    let context = ApplicationContextBuilder::new(
-        registry
-            .build()
-            .expect("registry build"),
-    )
-    .build()
-    .expect("context build");
+    let context = ApplicationContextBuilder::new(registry.build().expect("registry build"))
+        .build()
+        .expect("context build");
     context.refresh().await.expect("refresh");
 
     let a = context.container().resolve::<BeanA>().expect("BeanA");
@@ -285,18 +262,12 @@ async fn get_bean_by_qualified_key() {
     let qualifier = Qualifier::new("primary").expect("valid qualifier");
     let mut registry = RegistryBuilder::new();
     registry
-        .register(
-            ComponentDefinition::shared_arc(Arc::new(BeanB)).qualified(qualifier.clone()),
-        )
+        .register(ComponentDefinition::shared_arc(Arc::new(BeanB)).qualified(qualifier.clone()))
         .expect("register BeanB");
 
-    let context = ApplicationContextBuilder::new(
-        registry
-            .build()
-            .expect("registry build"),
-    )
-    .build()
-    .expect("context build");
+    let context = ApplicationContextBuilder::new(registry.build().expect("registry build"))
+        .build()
+        .expect("context build");
     context.refresh().await.expect("refresh");
 
     let by_qualifier = context
@@ -345,23 +316,15 @@ async fn qualified_same_type_different_instances() {
 
     let mut registry = RegistryBuilder::new();
     registry
-        .register(
-            ComponentDefinition::shared_arc(Arc::new(BeanB)).qualified(qualifier_a.clone()),
-        )
+        .register(ComponentDefinition::shared_arc(Arc::new(BeanB)).qualified(qualifier_a.clone()))
         .expect("register a");
     registry
-        .register(
-            ComponentDefinition::shared_arc(Arc::new(BeanB)).qualified(qualifier_b.clone()),
-        )
+        .register(ComponentDefinition::shared_arc(Arc::new(BeanB)).qualified(qualifier_b.clone()))
         .expect("register b");
 
-    let context = ApplicationContextBuilder::new(
-        registry
-            .build()
-            .expect("registry build"),
-    )
-    .build()
-    .expect("context build");
+    let context = ApplicationContextBuilder::new(registry.build().expect("registry build"))
+        .build()
+        .expect("context build");
     context.refresh().await.expect("refresh");
 
     let a = context

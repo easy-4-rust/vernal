@@ -28,11 +28,7 @@ impl DefaultPointcutAdvisor {
     }
 
     /// 使用指定顺序创建顾问。
-    pub fn with_order<I: Interceptor>(
-        pointcut: impl Pointcut,
-        interceptor: I,
-        order: i32,
-    ) -> Self {
+    pub fn with_order<I: Interceptor>(pointcut: impl Pointcut, interceptor: I, order: i32) -> Self {
         Self {
             pointcut: Arc::new(pointcut),
             interceptor: Arc::new(interceptor),
@@ -88,19 +84,15 @@ mod tests {
 
     #[test]
     fn default_advisor_matches_all_with_any_pointcut() {
-        let advisor =
-            DefaultPointcutAdvisor::new(crate::AnyPointcut::new(), NopInterceptor);
+        let advisor = DefaultPointcutAdvisor::new(crate::AnyPointcut::new(), NopInterceptor);
         let op = Operation::new("Svc", "method");
         assert!(advisor.pointcut().matches(&op));
     }
 
     #[test]
     fn default_advisor_order() {
-        let advisor = DefaultPointcutAdvisor::with_order(
-            crate::AnyPointcut::new(),
-            NopInterceptor,
-            42,
-        );
+        let advisor =
+            DefaultPointcutAdvisor::with_order(crate::AnyPointcut::new(), NopInterceptor, 42);
         assert_eq!(advisor.order(), 42);
     }
 

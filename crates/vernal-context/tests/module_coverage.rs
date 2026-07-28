@@ -4,8 +4,7 @@
 use tokio::runtime::Handle;
 use vernal_beans::ComponentDefinition;
 use vernal_context::{
-    ApplicationBuildError, ApplicationModule, ApplicationModuleRegistrar,
-    VernalApplicationBuilder,
+    ApplicationBuildError, ApplicationModule, ApplicationModuleRegistrar, VernalApplicationBuilder,
 };
 use vernal_core::BoxError;
 
@@ -167,9 +166,7 @@ async fn duplicate_module_name_rejected() {
 struct FailingLifecycle;
 impl vernal_context::Lifecycle for FailingLifecycle {
     fn initialize(&self) -> vernal_context::LifecycleFuture<'_> {
-        Box::pin(async {
-            Err(Box::new(std::io::Error::other("init failed")) as BoxError)
-        })
+        Box::pin(async { Err(Box::new(std::io::Error::other("init failed")) as BoxError) })
     }
 }
 

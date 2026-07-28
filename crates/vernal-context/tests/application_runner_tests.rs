@@ -13,10 +13,7 @@
 //! 镜像 Spring `org.springframework.boot.ApplicationRunnerTests` 与
 //! `org.springframework.scheduling.TaskSchedulerTests`（2026-07-27）。
 
-use std::sync::{
-    Arc,
-    Mutex,
-};
+use std::sync::{Arc, Mutex};
 
 use tokio::time::{Duration, timeout};
 use vernal_beans::{ComponentDefinition, RegistryBuilder};
@@ -213,11 +210,13 @@ async fn scheduled_task_executes_periodically() {
     let trace_for_task = trace.clone();
     let mut builder = VernalApplicationBuilder::new(tokio::runtime::Handle::current());
     builder
-        .register(ComponentDefinition::try_singleton::<TickTask, _>(move |_resolver| {
-            Ok(TickTask {
-                trace: trace_for_task.clone(),
-            })
-        }))
+        .register(ComponentDefinition::try_singleton::<TickTask, _>(
+            move |_resolver| {
+                Ok(TickTask {
+                    trace: trace_for_task.clone(),
+                })
+            },
+        ))
         .expect("register TickTask");
     builder.scheduled_task::<TickTask>();
 
@@ -244,11 +243,13 @@ async fn scheduled_task_responds_to_cancellation() {
     let trace_for_task = trace.clone();
     let mut builder = VernalApplicationBuilder::new(tokio::runtime::Handle::current());
     builder
-        .register(ComponentDefinition::try_singleton::<TickTask, _>(move |_resolver| {
-            Ok(TickTask {
-                trace: trace_for_task.clone(),
-            })
-        }))
+        .register(ComponentDefinition::try_singleton::<TickTask, _>(
+            move |_resolver| {
+                Ok(TickTask {
+                    trace: trace_for_task.clone(),
+                })
+            },
+        ))
         .expect("register TickTask");
     builder.scheduled_task::<TickTask>();
 
@@ -296,10 +297,7 @@ struct RunnerOrderLifecycle {
 }
 
 impl Lifecycle for RunnerOrderLifecycle {
-    fn start(
-        &self,
-        _cancellation: tokio_util::sync::CancellationToken,
-    ) -> LifecycleFuture<'_> {
+    fn start(&self, _cancellation: tokio_util::sync::CancellationToken) -> LifecycleFuture<'_> {
         self.trace.record("lifecycle:start");
         Box::pin(async { Ok(()) })
     }
@@ -312,13 +310,13 @@ async fn runner_runs_after_lifecycle_start() {
     let trace_for_runner = trace.clone();
     let mut builder = VernalApplicationBuilder::new(tokio::runtime::Handle::current());
     builder
-        .register(ComponentDefinition::try_singleton::<RunnerOrderLifecycle, _>(
-            move |_resolver| {
+        .register(
+            ComponentDefinition::try_singleton::<RunnerOrderLifecycle, _>(move |_resolver| {
                 Ok(RunnerOrderLifecycle {
                     trace: trace_for_lifecycle.clone(),
                 })
-            },
-        ))
+            }),
+        )
         .expect("register RunnerOrderLifecycle");
     builder
         .register(ComponentDefinition::try_singleton::<CacheWarmupRunner, _>(

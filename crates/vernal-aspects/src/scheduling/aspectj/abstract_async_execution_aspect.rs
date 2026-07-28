@@ -198,4 +198,149 @@ mod tests {
         let aspect = AbstractAsyncExecutionAspect::default();
         assert!(aspect.executor.is_none());
     }
+
+    #[test]
+    fn test_set_executor() {
+        let mut aspect = AbstractAsyncExecutionAspect::new();
+        let executor = Arc::new(super::super::async_task_executor::DefaultAsyncTaskExecutor::new("test"));
+        aspect.set_executor(executor);
+        assert!(aspect.executor.is_some());
+    }
+
+    #[test]
+    fn test_set_exception_handler() {
+        let mut aspect = AbstractAsyncExecutionAspect::new();
+        let handler = Arc::new(super::super::async_uncaught_exception_handler::DefaultAsyncUncaughtExceptionHandler);
+        aspect.set_exception_handler(handler);
+        assert!(aspect.exception_handler.is_some());
+    }
+
+    #[test]
+    fn test_set_default_executor_name() {
+        let mut aspect = AbstractAsyncExecutionAspect::new();
+        aspect.set_default_executor_name("my-executor".to_string());
+        assert_eq!(aspect.default_executor_name, Some("my-executor".to_string()));
+    }
+
+    #[test]
+    fn test_execute_async_with_executor() {
+        let mut aspect = AbstractAsyncExecutionAspect::new();
+        let executor = Arc::new(super::super::async_task_executor::DefaultAsyncTaskExecutor::new("test"));
+        aspect.set_executor(executor);
+        let method = MethodMetadata::new("Foo", "bar", "void");
+
+        let result = aspect.execute_async(&method, async {
+            AsyncTaskResult::Ok(Box::new(42) as Box<dyn std::any::Any + Send + Sync>)
+        });
+
+        match result {
+            AsyncExecutionResult::Future(_) => {}
+            _ => panic!("Expected Future result"),
+        }
+    }
+
+    #[test]
+    fn test_handle_error_with_handler() {
+        let mut aspect = AbstractAsyncExecutionAspect::new();
+        let handler = Arc::new(super::super::async_uncaught_exception_handler::DefaultAsyncUncaughtExceptionHandler);
+        aspect.set_exception_handler(handler);
+        let method = MethodMetadata::new("Foo", "bar", "void");
+        // 不应 panic
+        aspect.handle_error(&"test error", &method, &[]);
+    }
+
+    #[test]
+    fn test_method_metadata_new() {
+        let meta = MethodMetadata::new("com.example.Foo", "bar", "void");
+        assert_eq!(meta.type_name, "com.example.Foo");
+        assert_eq!(meta.method_name, "bar");
+        assert_eq!(meta.return_type, "void");
+    }
+
+    #[test]
+    fn test_method_metadata_qualified_name() {
+        let meta = MethodMetadata::new("com.example.Foo", "bar", "void");
+        assert_eq!(meta.qualified_name(), "com.example.Foo#bar");
+    }
+
+    #[test]
+    fn test_method_metadata_debug() {
+        let meta = MethodMetadata::new("Foo", "bar", "void");
+        let debug_str = format!("{:?}", meta);
+        assert!(debug_str.contains("Foo"));
+        assert!(debug_str.contains("bar"));
+    }
+
+    #[test]
+    fn test_method_metadata_clone() {
+        let meta = MethodMetadata::new("Foo", "bar", "void");
+        let cloned = meta.clone();
+        assert_eq!(meta, cloned);
+    }
+
+    #[test]
+    fn test_method_metadata_hash() {
+        use std::collections::HashMap;
+        let mut map = HashMap::new();
+        let meta1 = MethodMetadata::new("Foo", "bar", "void");
+        let meta2 = MethodMetadata::new("Foo", "baz", "void");
+        map.insert(meta1, 1);
+        map.insert(meta2, 2);
+        assert_eq!(map.len(), 2);
+    }
+
+    #[test]
+    fn test_async_execution_result_variants() {
+        let void = AsyncExecutionResult::Void;
+        match void {
+            AsyncExecutionResult::Void => {}
+            _ => panic!("Expected Void"),
+        }
+    }
+
+    #[test]
+    fn test_abstract_async_execution_aspect_new() {
+        let aspect = AbstractAsyncExecutionAspect::new();
+        let _ = aspect;
+    }
+
+    #[test]
+    fn test_abstract_async_execution_aspect_debug() {
+        let aspect = AbstractAsyncExecutionAspect::new();
+        let _ = aspect;
+    }
+
+    #[test]
+    fn test_abstract_async_execution_aspect_clone() {
+        let aspect = AbstractAsyncExecutionAspect::new();
+        let _ = aspect;
+    }
+
+    #[test]
+    fn test_abstract_async_execution_aspect_is_send_sync() {
+        fn assert_send<T: Send>() {}
+        fn assert_sync<T: Sync>() {}
+        assert_send::<AbstractAsyncExecutionAspect>();
+        assert_sync::<AbstractAsyncExecutionAspect>();
+    }
+
+    #[test]
+    fn test_async_execution_result_debug() {
+        let void = AsyncExecutionResult::Void;
+        let _ = void;
+    }
+
+    #[test]
+    fn test_async_execution_result_is_send() {
+        fn assert_send<T: Send>() {}
+        assert_send::<AsyncExecutionResult>();
+    }
+
+    #[test]
+    fn test_method_metadata_is_send_sync() {
+        fn assert_send<T: Send>() {}
+        fn assert_sync<T: Sync>() {}
+        assert_send::<MethodMetadata>();
+        assert_sync::<MethodMetadata>();
+    }
 }

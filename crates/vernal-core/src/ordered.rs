@@ -203,7 +203,12 @@ impl OrderComparator {
     /// - `Greater` 表示 `a` 排在 `b` 后面
     /// - `Equal` 表示两者排序相同
     #[must_use]
-    pub fn compare(a_priority: bool, a_order: i32, b_priority: bool, b_order: i32) -> std::cmp::Ordering {
+    pub fn compare(
+        a_priority: bool,
+        a_order: i32,
+        b_priority: bool,
+        b_order: i32,
+    ) -> std::cmp::Ordering {
         // PriorityOrdered 总是排在 Ordered 之前
         match (a_priority, b_priority) {
             (true, false) => std::cmp::Ordering::Less,
@@ -351,23 +356,35 @@ mod tests {
         }
 
         let mut items = vec![
-            Item { name: "C".into(), priority: false, order: 0 },
-            Item { name: "A".into(), priority: true, order: 100 },
-            Item { name: "B".into(), priority: false, order: -10 },
-            Item { name: "D".into(), priority: true, order: 200 },
+            Item {
+                name: "C".into(),
+                priority: false,
+                order: 0,
+            },
+            Item {
+                name: "A".into(),
+                priority: true,
+                order: 100,
+            },
+            Item {
+                name: "B".into(),
+                priority: false,
+                order: -10,
+            },
+            Item {
+                name: "D".into(),
+                priority: true,
+                order: 200,
+            },
         ];
 
-        OrderComparator::sort(
-            &mut items,
-            |item| item.priority,
-            |item| item.order,
-        );
+        OrderComparator::sort(&mut items, |item| item.priority, |item| item.order);
 
         // PriorityOrdered 组件排在前面，同组内按 order 升序
-        assert_eq!(items[0].name, "A");  // priority=true, order=100
-        assert_eq!(items[1].name, "D");  // priority=true, order=200
-        assert_eq!(items[2].name, "B");  // priority=false, order=-10
-        assert_eq!(items[3].name, "C");  // priority=false, order=0
+        assert_eq!(items[0].name, "A"); // priority=true, order=100
+        assert_eq!(items[1].name, "D"); // priority=true, order=200
+        assert_eq!(items[2].name, "B"); // priority=false, order=-10
+        assert_eq!(items[3].name, "C"); // priority=false, order=0
     }
 
     #[test]
@@ -379,9 +396,18 @@ mod tests {
         }
 
         let mut items = vec![
-            Item { name: "A".into(), order: 1 },
-            Item { name: "B".into(), order: 1 },
-            Item { name: "C".into(), order: 1 },
+            Item {
+                name: "A".into(),
+                order: 1,
+            },
+            Item {
+                name: "B".into(),
+                order: 1,
+            },
+            Item {
+                name: "C".into(),
+                order: 1,
+            },
         ];
 
         OrderComparator::sort(&mut items, |_| false, |item| item.order);

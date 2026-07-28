@@ -34,11 +34,20 @@ fn diagnostic_outcome_serde_round_trip() {
 
 #[test]
 fn diagnostic_phase_as_str_covers_all_variants() {
-    assert_eq!(DiagnosticPhase::ContainerWarmUp.as_str(), "container_warm_up");
-    assert_eq!(DiagnosticPhase::ComponentResolution.as_str(), "component_resolution");
+    assert_eq!(
+        DiagnosticPhase::ContainerWarmUp.as_str(),
+        "container_warm_up"
+    );
+    assert_eq!(
+        DiagnosticPhase::ComponentResolution.as_str(),
+        "component_resolution"
+    );
     assert_eq!(DiagnosticPhase::Initialize.as_str(), "initialize");
     assert_eq!(DiagnosticPhase::Start.as_str(), "start");
-    assert_eq!(DiagnosticPhase::ApplicationRunner.as_str(), "application_runner");
+    assert_eq!(
+        DiagnosticPhase::ApplicationRunner.as_str(),
+        "application_runner"
+    );
     assert_eq!(
         DiagnosticPhase::ScheduledTaskActivation.as_str(),
         "scheduled_task_activation"
@@ -214,8 +223,7 @@ fn configuration_properties_error_nested_factory() {
             key: "a.b".to_string(),
         },
     );
-    let outer =
-        ConfigurationPropertiesError::nested::<String>("outer", "a".to_string(), inner);
+    let outer = ConfigurationPropertiesError::nested::<String>("outer", "a".to_string(), inner);
     assert_eq!(outer.field(), "outer");
     assert_eq!(outer.property_key(), "a");
     // 嵌套错误仍可 Display。

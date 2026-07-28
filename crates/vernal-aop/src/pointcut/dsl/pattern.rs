@@ -135,8 +135,7 @@ impl ModulePattern {
     ///
     /// 支持精确匹配和前缀匹配（子模块）。
     pub fn matches_path(&self, module_path: &str) -> bool {
-        module_path == self.path
-            || module_path.starts_with(&format!("{}::", self.path))
+        module_path == self.path || module_path.starts_with(&format!("{}::", self.path))
     }
 }
 

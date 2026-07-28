@@ -36,8 +36,7 @@ pub trait SmartInstantiationAwareBeanPostProcessor: InstantiationAwareBeanPostPr
         &self,
         _bean_type: &dyn Any,
         _bean_name: &str,
-    ) -> Result<Option<Box<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>>
-    {
+    ) -> Result<Option<Box<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>> {
         Ok(None)
     }
 

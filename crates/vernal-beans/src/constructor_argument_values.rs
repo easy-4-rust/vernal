@@ -198,13 +198,14 @@ impl ConstructorArgumentValues {
         }
 
         // 然后在通用参数中查找
-        self.generic_argument_values.iter().find(|vh| {
-            let type_match = type_name
-                .map(|t| vh.type_name() == Some(t))
-                .unwrap_or(true);
-            let name_match = name.map(|n| vh.name() == Some(n)).unwrap_or(true);
-            type_match && name_match
-        }).cloned()
+        self.generic_argument_values
+            .iter()
+            .find(|vh| {
+                let type_match = type_name.map(|t| vh.type_name() == Some(t)).unwrap_or(true);
+                let name_match = name.map(|n| vh.name() == Some(n)).unwrap_or(true);
+                type_match && name_match
+            })
+            .cloned()
     }
 
     /// 检查是否包含命名参数。

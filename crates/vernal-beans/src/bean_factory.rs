@@ -63,17 +63,26 @@ pub trait BeanFactory: Send + Sync + 'static {
     /// 查询 Bean 是否为 singleton。
     ///
     /// 对应 Spring 的 `boolean isSingleton(String name) throws NoSuchBeanDefinitionException`。
-    fn is_singleton(&self, key: &ComponentKey) -> Result<bool, Box<dyn std::error::Error + Send + Sync>>;
+    fn is_singleton(
+        &self,
+        key: &ComponentKey,
+    ) -> Result<bool, Box<dyn std::error::Error + Send + Sync>>;
 
     /// 查询 Bean 是否为 prototype（Transient）。
     ///
     /// 对应 Spring 的 `boolean isPrototype(String name) throws NoSuchBeanDefinitionException`。
-    fn is_prototype(&self, key: &ComponentKey) -> Result<bool, Box<dyn std::error::Error + Send + Sync>>;
+    fn is_prototype(
+        &self,
+        key: &ComponentKey,
+    ) -> Result<bool, Box<dyn std::error::Error + Send + Sync>>;
 
     /// 获取 Bean 类型名。
     ///
     /// 对应 Spring 的 `Class<?> getType(String name) throws NoSuchBeanDefinitionException`。
-    fn get_type(&self, key: &ComponentKey) -> Result<Option<&'static str>, Box<dyn std::error::Error + Send + Sync>>;
+    fn get_type(
+        &self,
+        key: &ComponentKey,
+    ) -> Result<Option<&'static str>, Box<dyn std::error::Error + Send + Sync>>;
 
     /// 获取 Bean 的别名。
     ///
@@ -87,7 +96,10 @@ pub trait BeanFactory: Send + Sync + 'static {
     fn get_bean_provider_by_type_id(
         &self,
         type_id: std::any::TypeId,
-    ) -> Result<Box<dyn ObjectProvider<dyn Any + Send + Sync> + '_>, Box<dyn std::error::Error + Send + Sync>>;
+    ) -> Result<
+        Box<dyn ObjectProvider<dyn Any + Send + Sync> + '_>,
+        Box<dyn std::error::Error + Send + Sync>,
+    >;
 
     /// 按类型检查类型是否匹配。
     ///

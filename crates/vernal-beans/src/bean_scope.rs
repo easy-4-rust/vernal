@@ -46,7 +46,7 @@ pub trait BeanScope: Send + Sync + 'static {
     /// 不支持移除时返回 `Ok(None)`。
     fn remove(
         &self,
-        name: &str,
+        _name: &str,
     ) -> Result<Option<Box<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>> {
         Ok(None)
     }
@@ -57,10 +57,9 @@ pub trait BeanScope: Send + Sync + 'static {
     /// 作用域关闭时，按注册顺序执行所有回调。
     fn register_destruction_callback(
         &self,
-        name: &str,
-        callback: Box<dyn FnOnce() + Send + Sync>,
+        _name: &str,
+        _callback: Box<dyn FnOnce() + Send + Sync>,
     ) {
-        let _ = (name, callback);
     }
 
     /// 解析上下文对象。

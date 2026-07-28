@@ -116,4 +116,59 @@ mod tests {
         assert_eq!(map.len(), 2);
         assert_eq!(map.get(&Propagation::Required), Some(&"req"));
     }
+
+    #[test]
+    fn test_propagation_partial_eq() {
+        assert_eq!(Propagation::Required, Propagation::Required);
+        assert_ne!(Propagation::Required, Propagation::RequiresNew);
+        assert_ne!(Propagation::Supports, Propagation::Mandatory);
+    }
+
+    #[test]
+    fn test_propagation_all_variants_debug() {
+        let variants = [
+            Propagation::Required,
+            Propagation::Supports,
+            Propagation::Mandatory,
+            Propagation::RequiresNew,
+            Propagation::NotSupported,
+            Propagation::Never,
+            Propagation::Nested,
+        ];
+        for variant in variants {
+            let debug_str = format!("{:?}", variant);
+            assert!(!debug_str.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_propagation_all_variants_clone() {
+        let variants = [
+            Propagation::Required,
+            Propagation::Supports,
+            Propagation::Mandatory,
+            Propagation::RequiresNew,
+            Propagation::NotSupported,
+            Propagation::Never,
+            Propagation::Nested,
+        ];
+        for variant in variants {
+            let cloned = variant;
+            assert_eq!(variant, cloned);
+        }
+    }
+
+    #[test]
+    fn test_propagation_all_variants_hash() {
+        use std::collections::HashMap;
+        let mut map = HashMap::new();
+        map.insert(Propagation::Required, 1);
+        map.insert(Propagation::Supports, 2);
+        map.insert(Propagation::Mandatory, 3);
+        map.insert(Propagation::RequiresNew, 4);
+        map.insert(Propagation::NotSupported, 5);
+        map.insert(Propagation::Never, 6);
+        map.insert(Propagation::Nested, 7);
+        assert_eq!(map.len(), 7);
+    }
 }

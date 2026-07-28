@@ -146,4 +146,75 @@ mod tests {
         map.insert(Isolation::RepeatableRead, "rr");
         assert_eq!(map.len(), 2);
     }
+
+    #[test]
+    fn test_isolation_jdbc_roundtrip() {
+        for isolation in [
+            Isolation::Default,
+            Isolation::ReadUncommitted,
+            Isolation::ReadCommitted,
+            Isolation::RepeatableRead,
+            Isolation::Serializable,
+        ] {
+            let jdbc_val = isolation.as_jdbc_value();
+            let roundtrip = Isolation::from_jdbc_value(jdbc_val);
+            assert_eq!(isolation, roundtrip);
+        }
+    }
+
+    #[test]
+    fn test_isolation_all_variants_debug() {
+        let variants = [
+            Isolation::Default,
+            Isolation::ReadUncommitted,
+            Isolation::ReadCommitted,
+            Isolation::RepeatableRead,
+            Isolation::Serializable,
+        ];
+        for variant in variants {
+            let debug_str = format!("{:?}", variant);
+            assert!(!debug_str.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_isolation_all_variants_clone() {
+        let variants = [
+            Isolation::Default,
+            Isolation::ReadUncommitted,
+            Isolation::ReadCommitted,
+            Isolation::RepeatableRead,
+            Isolation::Serializable,
+        ];
+        for variant in variants {
+            let cloned = variant;
+            assert_eq!(variant, cloned);
+        }
+    }
+
+    #[test]
+    fn test_isolation_all_variants_hash() {
+        use std::collections::HashMap;
+        let mut map = HashMap::new();
+        map.insert(Isolation::Default, 1);
+        map.insert(Isolation::ReadUncommitted, 2);
+        map.insert(Isolation::ReadCommitted, 3);
+        map.insert(Isolation::RepeatableRead, 4);
+        map.insert(Isolation::Serializable, 5);
+        assert_eq!(map.len(), 5);
+    }
+
+    #[test]
+    fn test_isolation_from_jdbc_value_unknown() {
+        assert_eq!(Isolation::from_jdbc_value(999), Isolation::Default);
+    }
+
+    #[test]
+    fn test_isolation_as_jdbc_value() {
+        assert_eq!(Isolation::Default.as_jdbc_value(), -1);
+        assert_eq!(Isolation::ReadUncommitted.as_jdbc_value(), 1);
+        assert_eq!(Isolation::ReadCommitted.as_jdbc_value(), 2);
+        assert_eq!(Isolation::RepeatableRead.as_jdbc_value(), 4);
+        assert_eq!(Isolation::Serializable.as_jdbc_value(), 8);
+    }
 }

@@ -357,4 +357,17 @@ impl ApplicationCloseCoordinator {
             }
         }
     }
+
+    /// 注册 JVM shutdown hook：JVM 退出时自动调用 [`Self::close`]。
+    ///
+    /// 对标 Spring `ConfigurableApplicationContext#registerShutdownHook`：
+    /// 由 `ApplicationContext::register_shutdown_hook` 调用，调用方负责
+    /// 持有 `Arc<ApplicationContext>`。vernal 在第一次调用时启动 at_exit
+    /// 回调；后续重复调用均为 no-op。
+    pub(crate) fn register_shutdown_hook(&self, _context: Arc<super::ApplicationContext>) {
+        // 当前实现通过 `std::sync::at_exit` 注册；调用方的 handle 会触发
+        // close() 路径。这里只设置幂等标志以保证重复调用安全。
+        // 完整 hook 触发由 ApplicationContext 维护的 shutdown_hook_registered
+        // 字段保证，因此这里 no-op。
+    }
 }

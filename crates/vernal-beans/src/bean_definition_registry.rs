@@ -52,10 +52,7 @@ pub trait BeanDefinitionRegistry: Send + Sync + 'static {
     /// 获取 Bean 定义。
     ///
     /// 对应 Spring 的 `BeanDefinition getBeanDefinition(String beanName)`。
-    fn get_bean_definition(
-        &self,
-        bean_name: &str,
-    ) -> Option<&dyn BeanDefinition>;
+    fn get_bean_definition(&self, bean_name: &str) -> Option<&dyn BeanDefinition>;
 
     /// 检查是否包含指定 Bean 定义。
     ///

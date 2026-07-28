@@ -6,8 +6,8 @@
 
 use std::sync::Arc;
 
-use crate::bean_scope::BeanScope;
 use crate::bean_post_processor::BeanPostProcessor;
+use crate::bean_scope::BeanScope;
 use crate::hierarchical_bean_factory::HierarchicalBeanFactory;
 
 /// 标准 singleton 作用域名称：`"singleton"`。
@@ -38,11 +38,7 @@ pub trait ConfigurableBeanFactory: HierarchicalBeanFactory {
     /// 注册自定义 Scope。
     ///
     /// 对应 Spring 的 `void registerScope(String scopeName, Scope scope)`。
-    fn register_scope(
-        &mut self,
-        scope_name: &str,
-        scope: Box<dyn BeanScope>,
-    );
+    fn register_scope(&mut self, scope_name: &str, scope: Box<dyn BeanScope>);
 
     /// 获取已注册的 Scope 名称。
     ///
@@ -120,10 +116,7 @@ pub trait ConfigurableBeanFactory: HierarchicalBeanFactory {
     /// 添加嵌入式值解析器（用于 `@Value` 注解）。
     ///
     /// 对应 Spring 的 `void addEmbeddedValueResolver(StringValueResolver valueResolver)`。
-    fn add_embedded_value_resolver(
-        &mut self,
-        resolver: Arc<dyn Fn(&str) -> String + Send + Sync>,
-    );
+    fn add_embedded_value_resolver(&mut self, resolver: Arc<dyn Fn(&str) -> String + Send + Sync>);
 
     /// 解析嵌入式值（`${...}` 占位符）。
     ///

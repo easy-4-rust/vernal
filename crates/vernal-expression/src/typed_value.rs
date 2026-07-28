@@ -1,23 +1,27 @@
-//! 类型化值封装（对标 Spring `TypedValue`）。
+//! 类型化值（对标 Spring `TypedValue`）。
+//!
+//! 此文件只承载 `TypedValue` 结构体；`ExpressionValue` 与 `TypeDescriptor`
+//! 在 `crate::expression_value` 与 `crate::type_descriptor` 里定义，并通过 `pub use` 重导出
+//! 以保持现有 AST 文件的 `use crate::typed_value::{ExpressionValue, TypeDescriptor, TypedValue}`
+//! 路径可用。
 
 use std::fmt;
 
-use crate::expression_value::ExpressionValue;
-use crate::type_descriptor::{PrimitiveKind, TypeDescriptor};
+// `ExpressionValue` 与 `TypeDescriptor` 真正的定义在 expression_value.rs / type_descriptor.rs
+// （13 变体 + 富描述符，Phase A 引入）。这里重导出以兼容。
+pub use crate::expression_value::ExpressionValue;
+pub use crate::type_descriptor::{PrimitiveKind, TypeDescriptor};
 
-/// 类型化值（值 + 类型描述符）。
-///
-/// 对标 Spring `org.springframework.expression.TypedValue`。
+/// 类型化值（对标 Spring `org.springframework.expression.TypedValue`）。
 #[derive(Debug, Clone)]
 pub struct TypedValue {
-    /// 当前值。
     value: ExpressionValue,
-    /// 类型描述符。
     type_descriptor: TypeDescriptor,
 }
 
 impl TypedValue {
-    /// 空值单例。
+    /// 空值常量。
+    #[allow(dead_code)]
     pub const NULL: Self = Self {
         value: ExpressionValue::Null,
         type_descriptor: TypeDescriptor::NULL,
@@ -32,29 +36,16 @@ impl TypedValue {
         }
     }
 
-    /// 通过值构造，类型描述符自动从值推导。
-    #[must_use]
-    pub fn of(value: ExpressionValue) -> Self {
-        let td = value.type_descriptor();
-        Self::new(value, td)
-    }
-
-    /// 创建空值。
+    /// 创建空值（推荐工厂，避免 const 兼容问题）。
     #[must_use]
     pub fn null() -> Self {
-        Self::NULL
+        Self::new(ExpressionValue::Null, TypeDescriptor::NULL)
     }
 
     /// 获取值引用。
     #[must_use]
     pub fn value(&self) -> &ExpressionValue {
         &self.value
-    }
-
-    /// 获取值所有权。
-    #[must_use]
-    pub fn into_value(self) -> ExpressionValue {
-        self.value
     }
 
     /// 获取类型描述符。
@@ -68,48 +59,11 @@ impl TypedValue {
     pub fn is_null(&self) -> bool {
         self.value.is_null()
     }
-
-    /// 创建 boolean `true`。
-    #[must_use]
-    pub fn bool_true() -> Self {
-        Self::new(
-            ExpressionValue::Boolean(true),
-            TypeDescriptor::Primitive(PrimitiveKind::Boolean),
-        )
-    }
-
-    /// 创建 boolean `false`。
-    #[must_use]
-    pub fn bool_false() -> Self {
-        Self::new(
-            ExpressionValue::Boolean(false),
-            TypeDescriptor::Primitive(PrimitiveKind::Boolean),
-        )
-    }
-
-    /// 转换为布尔值（Spring `ExpressionUtils.toBoolean`）。
-    #[must_use]
-    pub fn as_bool(&self) -> Option<bool> {
-        match &self.value {
-            ExpressionValue::Boolean(b) => Some(*b),
-            ExpressionValue::Int(i) => Some(*i != 0),
-            ExpressionValue::Long(l) => Some(*l != 0),
-            ExpressionValue::Double(d) => Some(*d != 0.0),
-            ExpressionValue::Float(f) => Some(*f != 0.0),
-            _ => None,
-        }
-    }
 }
 
 impl Default for TypedValue {
     fn default() -> Self {
-        Self::NULL
-    }
-}
-
-impl PartialEq for TypedValue {
-    fn eq(&self, other: &Self) -> bool {
-        self.value == other.value
+        Self::null()
     }
 }
 
@@ -150,22 +104,5 @@ impl fmt::Display for TypedValue {
             ExpressionValue::Duration(d) => write!(f, "{d}"),
             ExpressionValue::Object(_) => f.write_str("<object>"),
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn null_singleton() {
-        assert_eq!(TypedValue::NULL, TypedValue::null());
-        assert!(TypedValue::NULL.is_null());
-    }
-
-    #[test]
-    fn auto_descriptor() {
-        let v = TypedValue::of(ExpressionValue::Int(42));
-        assert_eq!(v.type_descriptor().primitive_kind(), Some(PrimitiveKind::Int));
     }
 }

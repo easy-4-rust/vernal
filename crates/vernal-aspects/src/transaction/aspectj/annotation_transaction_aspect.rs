@@ -311,10 +311,60 @@ mod tests {
     }
 
     #[test]
-    fn test_annotation_transaction_aspect_is_debug() {
+    fn test_annotation_transaction_aspect_debug() {
         let source = Arc::new(MockTransactionAttributeSource);
         let aspect = AnnotationTransactionAspect::new(source);
         let debug_str = format!("{:?}", aspect);
         assert!(debug_str.contains("AnnotationTransactionAspect"));
+    }
+
+    #[test]
+    fn test_annotation_transaction_aspect_clone() {
+        let source = Arc::new(MockTransactionAttributeSource);
+        let aspect = AnnotationTransactionAspect::new(source);
+        let _ = aspect;
+    }
+
+    #[test]
+    fn test_annotation_transaction_aspect_hash() {
+        use std::collections::HashMap;
+        let mut map = HashMap::new();
+        let source = Arc::new(MockTransactionAttributeSource);
+        let aspect = AnnotationTransactionAspect::new(source);
+        map.insert(format!("{:?}", aspect), 1);
+        assert_eq!(map.len(), 1);
+    }
+
+    #[test]
+    fn test_annotation_transaction_aspect_get_attribute_source() {
+        let source = Arc::new(MockTransactionAttributeSource);
+        let aspect = AnnotationTransactionAspect::new(source);
+        let _ = aspect.get_attribute_source();
+    }
+
+    #[test]
+    fn test_annotation_transaction_aspect_get_support() {
+        let source = Arc::new(MockTransactionAttributeSource);
+        let aspect = AnnotationTransactionAspect::new(source);
+        let _ = aspect.get_support();
+    }
+
+    #[test]
+    fn test_annotation_transaction_aspect_transactional_method_execution_all_combinations() {
+        let source = Arc::new(MockTransactionAttributeSource);
+        let aspect = AnnotationTransactionAspect::new(source);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+
+        // this 不匹配
+        assert!(!aspect.transactional_method_execution(&method, true, true, true, false));
+
+        // 类型匹配
+        assert!(aspect.transactional_method_execution(&method, true, true, false, true));
+
+        // 方法匹配
+        assert!(aspect.transactional_method_execution(&method, false, false, true, true));
+
+        // 都不匹配
+        assert!(!aspect.transactional_method_execution(&method, false, false, false, true));
     }
 }

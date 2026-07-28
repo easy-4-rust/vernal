@@ -7,8 +7,8 @@
 
 use std::sync::Arc;
 
-use crate::listable_bean_factory::ListableBeanFactory;
 use crate::configurable_bean_factory::ConfigurableBeanFactory;
+use crate::listable_bean_factory::ListableBeanFactory;
 
 /// Spring 风格的可配置可列举 BeanFactory 接口。
 ///

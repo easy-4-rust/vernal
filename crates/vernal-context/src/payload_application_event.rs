@@ -155,11 +155,8 @@ mod tests {
     #[test]
     fn payload_event_with_timestamp_is_deterministic() {
         let source: Arc<dyn Any + Send + Sync> = Arc::new(0_i32);
-        let event = PayloadApplicationEvent::with_timestamp(
-            source,
-            Arc::new(42_u64),
-            1_700_000_000_000,
-        );
+        let event =
+            PayloadApplicationEvent::with_timestamp(source, Arc::new(42_u64), 1_700_000_000_000);
         assert_eq!(event.timestamp(), 1_700_000_000_000);
         assert_eq!(*event.payload(), 42_u64);
     }

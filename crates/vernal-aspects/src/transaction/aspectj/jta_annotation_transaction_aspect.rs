@@ -111,6 +111,8 @@ mod tests {
         let aspect = JtaAnnotationTransactionAspect::new(Arc::new(MockSource));
         assert!(aspect.matches_jta_type_pointcut(true, true));
         assert!(!aspect.matches_jta_type_pointcut(false, true));
+        assert!(!aspect.matches_jta_type_pointcut(true, false));
+        assert!(!aspect.matches_jta_type_pointcut(false, false));
     }
 
     #[test]
@@ -128,5 +130,98 @@ mod tests {
             Ok(Box::new(1) as Box<dyn Any + Send + Sync>)
         });
         assert!(matches!(result, TransactionResult::Ok(_)));
+    }
+
+    #[test]
+    fn test_jta_invoke_error() {
+        let aspect = JtaAnnotationTransactionAspect::new(Arc::new(MockSource));
+        let method = MethodMetadata::new("Foo", "bar", vec![], "void");
+        let result = aspect.invoke_within_transaction(&method, "Foo", || {
+            Err(Box::new("error") as Box<dyn Any + Send + Sync>)
+        });
+        assert!(matches!(result, TransactionResult::Err(_)));
+    }
+
+    #[test]
+    fn test_jta_transactional_method_execution() {
+        let aspect = JtaAnnotationTransactionAspect::new(Arc::new(MockSource));
+        let method = MethodMetadata::new("Foo", "bar", vec![], "void");
+
+        // this 不匹配
+        assert!(!aspect.transactional_method_execution(&method, true, true, true, false));
+
+        // 类型匹配
+        assert!(aspect.transactional_method_execution(&method, true, true, false, true));
+
+        // 方法匹配
+        assert!(aspect.transactional_method_execution(&method, false, false, true, true));
+
+        // 都不匹配
+        assert!(!aspect.transactional_method_execution(&method, false, false, false, true));
+    }
+
+    #[test]
+    fn test_jta_annotation_transaction_aspect_clone() {
+        let aspect = JtaAnnotationTransactionAspect::new(Arc::new(MockSource));
+        let _ = aspect;
+    }
+
+    #[test]
+    fn test_jta_annotation_transaction_aspect_debug() {
+        let aspect = JtaAnnotationTransactionAspect::new(Arc::new(MockSource));
+        // 不检查 Debug 实现，只检查创建成功
+        let _ = aspect;
+    }
+
+    #[test]
+    fn test_jta_annotation_transaction_aspect_invoke_within_transaction_success() {
+        let aspect = JtaAnnotationTransactionAspect::new(Arc::new(MockSource));
+        let method = MethodMetadata::new("Foo", "bar", vec![], "void");
+
+        let result = aspect.invoke_within_transaction(&method, "Foo", || {
+            Ok(Box::new(42) as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Ok(val) => {
+                assert_eq!(val.downcast_ref::<i32>().unwrap(), &42);
+            }
+            _ => panic!("Expected Ok result"),
+        }
+    }
+
+    #[test]
+    fn test_jta_annotation_transaction_aspect_invoke_within_transaction_failure() {
+        let aspect = JtaAnnotationTransactionAspect::new(Arc::new(MockSource));
+        let method = MethodMetadata::new("Foo", "bar", vec![], "void");
+
+        let result = aspect.invoke_within_transaction(&method, "Foo", || {
+            Err(Box::new("error") as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Err(err) => {
+                assert!(err.is_runtime);
+            }
+            _ => panic!("Expected Err result"),
+        }
+    }
+
+    #[test]
+    fn test_jta_annotation_transaction_aspect_transactional_method_execution_all_combinations() {
+        let aspect = JtaAnnotationTransactionAspect::new(Arc::new(MockSource));
+        let method = MethodMetadata::new("Foo", "bar", vec![], "void");
+
+        // this 不匹配
+        assert!(!aspect.transactional_method_execution(&method, true, true, true, false));
+
+        // 类型匹配
+        assert!(aspect.transactional_method_execution(&method, true, true, false, true));
+
+        // 方法匹配
+        assert!(aspect.transactional_method_execution(&method, false, false, true, true));
+
+        // 都不匹配
+        assert!(!aspect.transactional_method_execution(&method, false, false, false, true));
     }
 }

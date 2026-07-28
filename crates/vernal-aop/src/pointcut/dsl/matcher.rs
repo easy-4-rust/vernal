@@ -68,11 +68,7 @@ impl FunctionDescriptor {
             module_path: operation.component().to_string(),
             visibility: String::new(),
             return_type: None,
-            tags: metadata
-                .tags()
-                .iter()
-                .map(|tag| tag.to_string())
-                .collect(),
+            tags: metadata.tags().iter().map(|tag| tag.to_string()).collect(),
             qualifier: metadata.qualifier().map(String::from),
         }
     }
@@ -93,9 +89,10 @@ impl PointcutMatcher for PointcutExpr {
         match self {
             PointcutExpr::Execution(pattern) => pattern.matches_descriptor(&func),
             PointcutExpr::Within(pattern) => pattern.matches_path(&func.module_path),
-            PointcutExpr::Tag(pattern) => {
-                pattern.tags.iter().any(|tag| operation.metadata().has_tag(tag))
-            }
+            PointcutExpr::Tag(pattern) => pattern
+                .tags
+                .iter()
+                .any(|tag| operation.metadata().has_tag(tag)),
             PointcutExpr::Qualifier(pattern) => {
                 operation.metadata().qualifier() == Some(pattern.qualifier.as_str())
             }
@@ -151,8 +148,8 @@ impl ExecutionPattern {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::pointcut::dsl::pattern::{NamePattern, Visibility};
     use crate::OperationMetadata;
+    use crate::pointcut::dsl::pattern::{NamePattern, Visibility};
 
     #[test]
     fn execution_pattern_matches_public_exact_name() {
@@ -255,16 +252,15 @@ mod tests {
 
     #[test]
     fn function_descriptor_from_operation_extracts_metadata() {
-        let op = Operation::new("UserService", "create_user")
-            .with_metadata(
-                OperationMetadata::empty()
-                    .with_tag("transactional")
-                    .unwrap()
-                    .with_tag("secured")
-                    .unwrap()
-                    .with_qualifier("primary")
-                    .unwrap(),
-            );
+        let op = Operation::new("UserService", "create_user").with_metadata(
+            OperationMetadata::empty()
+                .with_tag("transactional")
+                .unwrap()
+                .with_tag("secured")
+                .unwrap()
+                .with_qualifier("primary")
+                .unwrap(),
+        );
         let fd = FunctionDescriptor::from_operation(&op);
 
         assert_eq!(fd.name, "create_user");
@@ -281,11 +277,7 @@ mod tests {
         });
 
         let op = Operation::new("Svc", "method")
-            .with_metadata(
-                OperationMetadata::empty()
-                    .with_tag("secured")
-                    .unwrap(),
-            );
+            .with_metadata(OperationMetadata::empty().with_tag("secured").unwrap());
         assert!(pattern.matches_operation(&op));
 
         let op2 = Operation::new("Svc", "method");
@@ -298,20 +290,18 @@ mod tests {
             qualifier: "primary".to_string(),
         });
 
-        let op = Operation::new("Svc", "method")
-            .with_metadata(
-                OperationMetadata::empty()
-                    .with_qualifier("primary")
-                    .unwrap(),
-            );
+        let op = Operation::new("Svc", "method").with_metadata(
+            OperationMetadata::empty()
+                .with_qualifier("primary")
+                .unwrap(),
+        );
         assert!(pattern.matches_operation(&op));
 
-        let op2 = Operation::new("Svc", "method")
-            .with_metadata(
-                OperationMetadata::empty()
-                    .with_qualifier("secondary")
-                    .unwrap(),
-            );
+        let op2 = Operation::new("Svc", "method").with_metadata(
+            OperationMetadata::empty()
+                .with_qualifier("secondary")
+                .unwrap(),
+        );
         assert!(!pattern.matches_operation(&op2));
 
         let op3 = Operation::new("Svc", "method");

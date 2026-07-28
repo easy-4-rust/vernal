@@ -19,11 +19,7 @@ pub trait MergedBeanDefinitionPostProcessor: BeanPostProcessor {
     /// 合并 Bean 定义完成后调用。
     ///
     /// 对应 Spring 的 `MergedBeanDefinitionPostProcessor.postProcessMergedBeanDefinition(RootBeanDefinition beanDefinition, Class<?> beanType, String beanName)`。
-    fn post_process_merged_beandefinition(
-        &self,
-        bean_type_name: &str,
-        bean_name: &str,
-    );
+    fn post_process_merged_beandefinition(&self, bean_type_name: &str, bean_name: &str);
 
     /// 重置 Bean 定义（Bean 定义被覆盖时调用）。
     ///

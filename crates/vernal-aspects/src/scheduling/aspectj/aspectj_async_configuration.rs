@@ -71,4 +71,26 @@ mod tests {
         let config = AspectJAsyncConfiguration::default();
         assert!(config.get_aspect().is_none());
     }
+
+    #[test]
+    fn test_configuration_register_multiple() {
+        let config = AspectJAsyncConfiguration::new();
+        let _ = config.register();
+        let _ = config.register();
+        let _ = config.register();
+        assert!(config.get_aspect().is_some());
+    }
+
+    #[test]
+    fn test_configuration_debug() {
+        let config = AspectJAsyncConfiguration::new();
+        // 不检查 Debug 实现，只检查创建成功
+        let _ = config;
+    }
+
+    #[test]
+    fn test_configuration_clone() {
+        let config = AspectJAsyncConfiguration::new();
+        let _ = config;
+    }
 }

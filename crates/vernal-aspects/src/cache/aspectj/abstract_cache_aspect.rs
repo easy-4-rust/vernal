@@ -82,6 +82,13 @@ mod tests {
     }
 
     #[test]
+    fn test_get_support_mut() {
+        let source = Arc::new(AnnotationCacheOperationSource::new());
+        let mut aspect = AbstractCacheAspect::new(source);
+        let _ = aspect.get_support_mut();
+    }
+
+    #[test]
     fn test_destroy_does_not_panic() {
         let source = Arc::new(AnnotationCacheOperationSource::new());
         let aspect = AbstractCacheAspect::new(source);
@@ -103,5 +110,99 @@ mod tests {
             CacheResult::Error(msg) => assert!(msg.contains("No cache operation")),
             _ => panic!("Expected error"),
         }
+    }
+
+    #[test]
+    fn test_execute_with_operation() {
+        let mut source = AnnotationCacheOperationSource::new();
+        let op = super::super::cache_operation::CacheOperationMetadata {
+            operation: super::super::cache_operation::CacheOperation::Cacheable,
+            cache_names: vec![std::borrow::Cow::Borrowed("users")],
+            ..Default::default()
+        };
+        source.register_method("Foo#bar()".to_string(), op);
+        let source = Arc::new(source);
+        let aspect = AbstractCacheAspect::new(source);
+        let invoker = MockInvoker;
+        let method = super::super::cache_operation_source::MethodMetadata::new("Foo", "bar");
+
+        let result = aspect.execute(&method, "Foo", &invoker, || {
+            Ok(Box::new(42) as Box<dyn std::any::Any + Send + Sync>)
+        });
+
+        match result {
+            CacheResult::Hit(val) => {
+                assert_eq!(val.downcast_ref::<i32>().unwrap(), &42);
+            }
+            _ => panic!("Expected Hit result"),
+        }
+    }
+
+    #[test]
+    fn test_execute_cache_put_operation() {
+        let mut source = AnnotationCacheOperationSource::new();
+        let op = super::super::cache_operation::CacheOperationMetadata {
+            operation: super::super::cache_operation::CacheOperation::CachePut,
+            cache_names: vec![std::borrow::Cow::Borrowed("users")],
+            ..Default::default()
+        };
+        source.register_method("Foo#bar()".to_string(), op);
+        let source = Arc::new(source);
+        let aspect = AbstractCacheAspect::new(source);
+        let invoker = MockInvoker;
+        let method = super::super::cache_operation_source::MethodMetadata::new("Foo", "bar");
+
+        let result = aspect.execute(&method, "Foo", &invoker, || {
+            Ok(Box::new(42) as Box<dyn std::any::Any + Send + Sync>)
+        });
+
+        match result {
+            CacheResult::Hit(val) => {
+                assert_eq!(val.downcast_ref::<i32>().unwrap(), &42);
+            }
+            _ => panic!("Expected Hit result"),
+        }
+    }
+
+    #[test]
+    fn test_execute_cache_evict_operation() {
+        let mut source = AnnotationCacheOperationSource::new();
+        let op = super::super::cache_operation::CacheOperationMetadata {
+            operation: super::super::cache_operation::CacheOperation::CacheEvict,
+            cache_names: vec![std::borrow::Cow::Borrowed("users")],
+            before_invocation: true,
+            all_entries: true,
+            ..Default::default()
+        };
+        source.register_method("Foo#bar()".to_string(), op);
+        let source = Arc::new(source);
+        let aspect = AbstractCacheAspect::new(source);
+        let invoker = MockInvoker;
+        let method = super::super::cache_operation_source::MethodMetadata::new("Foo", "bar");
+
+        let result = aspect.execute(&method, "Foo", &invoker, || {
+            Ok(Box::new(42) as Box<dyn std::any::Any + Send + Sync>)
+        });
+
+        match result {
+            CacheResult::Hit(val) => {
+                assert_eq!(val.downcast_ref::<i32>().unwrap(), &42);
+            }
+            _ => panic!("Expected Hit result"),
+        }
+    }
+
+    #[test]
+    fn test_abstract_cache_aspect_debug() {
+        let source = Arc::new(AnnotationCacheOperationSource::new());
+        let aspect = AbstractCacheAspect::new(source);
+        let _ = aspect;
+    }
+
+    #[test]
+    fn test_abstract_cache_aspect_clone() {
+        let source = Arc::new(AnnotationCacheOperationSource::new());
+        let aspect = AbstractCacheAspect::new(source);
+        let _ = aspect;
     }
 }

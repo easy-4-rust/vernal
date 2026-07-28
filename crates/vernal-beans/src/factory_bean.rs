@@ -36,7 +36,9 @@ pub trait FactoryBean: Send + Sync + 'static {
     /// 对应 Spring 的 `T getObject() throws Exception`。
     ///
     /// 每次调用都返回一个新的产品实例（prototype）或同一个实例（singleton）。
-    fn get_object(&self) -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>>;
+    fn get_object(
+        &self,
+    ) -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>>;
 
     /// 获取产品类型。
     ///

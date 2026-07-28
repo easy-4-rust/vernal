@@ -256,9 +256,7 @@ fn condition_error_duplicate_module_display() {
 
 #[test]
 fn condition_error_invalid_module_name_display() {
-    let error = ConditionError::InvalidModuleName {
-        name: "bad name",
-    };
+    let error = ConditionError::InvalidModuleName { name: "bad name" };
     let display = format!("{error}");
     assert!(!display.is_empty());
 }
@@ -351,9 +349,7 @@ fn environment_snapshot_via_environment_snapshot_method() {
 
     let source = MapPropertySource::new("app", [("name", "vernal")]).expect("valid source");
     let mut builder = ApplicationEnvironment::builder();
-    builder
-        .add_last(Arc::new(source))
-        .expect("add source");
+    builder.add_last(Arc::new(source)).expect("add source");
     builder.active_profile("prod").expect("valid profile");
     let env = builder.build();
 

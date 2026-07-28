@@ -4,10 +4,14 @@ use std::{
     any::{Any, TypeId},
     collections::HashMap,
     num::NonZeroUsize,
-    sync::Arc,
+    sync::{Arc, Mutex},
 };
 
 use tokio::sync::{RwLock, broadcast};
+
+use crate::{
+    ApplicationEventListener, ApplicationListenerRegistration, EventListenerRegistry, ListenerKey,
+};
 
 const DEFAULT_CAPACITY: NonZeroUsize = match NonZeroUsize::new(64) {
     Some(capacity) => capacity,
@@ -22,6 +26,29 @@ const DEFAULT_CAPACITY: NonZeroUsize = match NonZeroUsize::new(64) {
 pub struct EventBus {
     capacity: NonZeroUsize,
     senders: RwLock<HashMap<TypeId, Box<dyn Any + Send + Sync>>>,
+    /// 运行时注册的 listener（对标 Spring `ApplicationEventMulticaster`
+    /// 的 listener 注册表）。`HashMap<String, Registration>` 按 listener_id() 索引。
+    runtime_listeners: Mutex<HashMap<String, RuntimeRegistration>>,
+    /// 类型化 listener 元数据：`Vec<(TypeId, listener_id)>`，顺序匹配 vernal
+    /// builder 中 `event_listener()` 的声明顺序（对标 Spring EventListenerFactory
+    /// 的隐式顺序）。
+    typed_listeners: Mutex<Vec<TypedListenerEntry>>,
+}
+
+/// 运行时 listener 注册表中的条目（对标 Spring `ApplicationEventMulticaster`
+/// 中的内部 `listenerRetriever`）。
+struct RuntimeRegistration {
+    type_id: TypeId,
+    /// 保留任意 registration 用于直接读取；当前未由 `EventListenerRegistry`
+    /// 取出（仅接受注册/移除），但保留扩展点。
+    #[allow(dead_code)]
+    registration: Box<dyn Any + Send + Sync>,
+}
+
+/// 类型化 listener 元数据，用于按 `TypeId` 移除整组 `E` 的订阅。
+struct TypedListenerEntry {
+    type_id: TypeId,
+    listener_id: String,
 }
 
 impl EventBus {
@@ -37,6 +64,8 @@ impl EventBus {
         Self {
             capacity,
             senders: RwLock::new(HashMap::new()),
+            runtime_listeners: Mutex::new(HashMap::new()),
+            typed_listeners: Mutex::new(Vec::new()),
         }
     }
 
@@ -98,11 +127,7 @@ impl EventBus {
     /// ```
     ///
     /// 返回成功接收该事件的订阅方数量。
-    pub async fn publish_payload<T>(
-        &self,
-        source: Arc<dyn Any + Send + Sync>,
-        payload: T,
-    ) -> usize
+    pub async fn publish_payload<T>(&self, source: Arc<dyn Any + Send + Sync>, payload: T) -> usize
     where
         T: Any + Send + Sync,
     {
@@ -133,10 +158,126 @@ impl EventBus {
     pub fn capacity(&self) -> usize {
         self.capacity.get()
     }
+
+    /// 异步版本 [`EventListenerRegistry::add_listener`]，与 Spring
+    /// `addApplicationListener` 公开方法同名。
+    pub async fn add_application_listener<E, L>(
+        &self,
+        registration: ApplicationListenerRegistration<E, L>,
+    ) -> bool
+    where
+        E: Any + Send + Sync + 'static,
+        L: ApplicationEventListener<E> + Send + Sync + 'static,
+    {
+        <Self as EventListenerRegistry>::add_listener(self, registration)
+    }
+
+    /// 异步版本 [`EventListenerRegistry::remove_listener`]，与 Spring
+    /// `removeApplicationListener` 公开方法同名。
+    pub async fn remove_application_listener(&self, key: &ListenerKey) -> bool {
+        <Self as EventListenerRegistry>::remove_listener(self, key)
+    }
+
+    /// 异步版本 [`EventListenerRegistry::listener_count`]。
+    pub async fn listener_count_async(&self) -> usize {
+        <Self as EventListenerRegistry>::listener_count(self)
+    }
+
+    /// 返回当前已注册的 listener 总数。
+    #[must_use]
+    pub fn listener_count(&self) -> usize {
+        self.runtime_listeners
+            .lock()
+            .expect("poisoned")
+            .len()
+    }
 }
 
 impl Default for EventBus {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+/// `EventListenerRegistry` 适配：当前实现是同步注册（不需要 async 锁 —— 注册
+/// 操作仅触碰 `std::sync::Mutex`，不涉及跨任务协作）。
+impl EventListenerRegistry for EventBus {
+    fn add_listener<E, L>(&self, registration: ApplicationListenerRegistration<E, L>) -> bool
+    where
+        E: Any + Send + Sync + 'static,
+        L: ApplicationEventListener<E> + Send + Sync + 'static,
+    {
+        let listener_id = registration.listener().listener_id().to_owned();
+        let type_id = TypeId::of::<E>();
+
+        let mut runtime_listeners = self
+            .runtime_listeners
+            .lock()
+            .expect("runtime_listeners poisoned");
+        if runtime_listeners.contains_key(&listener_id) {
+            return false; // 已存在
+        }
+        runtime_listeners.insert(
+            listener_id.clone(),
+            RuntimeRegistration {
+                type_id,
+                registration: Box::new(registration),
+            },
+        );
+        let mut typed = self
+            .typed_listeners
+            .lock()
+            .expect("typed_listeners poisoned");
+        typed.push(TypedListenerEntry {
+            type_id,
+            listener_id,
+        });
+        true
+    }
+
+    fn remove_listener(&self, key: &ListenerKey) -> bool {
+        match key {
+            ListenerKey::TypeId(type_id) => {
+                let mut runtime_listeners = self
+                    .runtime_listeners
+                    .lock()
+                    .expect("runtime_listeners poisoned");
+                let mut typed = self
+                    .typed_listeners
+                    .lock()
+                    .expect("typed_listeners poisoned");
+                let removed_ids: Vec<String> = runtime_listeners
+                    .iter()
+                    .filter(|(_, reg)| reg.type_id == *type_id)
+                    .map(|(id, _)| id.clone())
+                    .collect();
+                let removed_count = removed_ids.len();
+                for id in &removed_ids {
+                    runtime_listeners.remove(id);
+                }
+                typed.retain(|entry| entry.type_id != *type_id);
+                removed_count > 0
+            }
+            ListenerKey::Named(name) => {
+                let mut runtime_listeners = self
+                    .runtime_listeners
+                    .lock()
+                    .expect("runtime_listeners poisoned");
+                let mut typed = self
+                    .typed_listeners
+                    .lock()
+                    .expect("typed_listeners poisoned");
+                let removed = runtime_listeners.remove(name).is_some();
+                typed.retain(|entry| entry.listener_id != *name);
+                removed
+            }
+        }
+    }
+
+    fn listener_count(&self) -> usize {
+        self.runtime_listeners
+            .lock()
+            .expect("runtime_listeners poisoned")
+            .len()
     }
 }

@@ -206,7 +206,10 @@ pub trait CacheExt: Cache {
     ///
     /// 对标 `retrieve(Object key)`（Java 6.1+）。
     /// 返回一个 Future，解析为缓存值或 `None`（未命中）。
-    fn retrieve(&self, key: &dyn Any) -> Pin<Box<dyn Future<Output = Option<Arc<dyn Any + Send + Sync>>> + Send>>;
+    fn retrieve(
+        &self,
+        key: &dyn Any,
+    ) -> Pin<Box<dyn Future<Output = Option<Arc<dyn Any + Send + Sync>>> + Send>>;
 
     /// 异步读取缓存值，缺失时通过 valueLoader 异步加载。
     ///
@@ -229,7 +232,7 @@ pub trait CacheExt: Cache {
 /// 仅用于单元测试，生产环境应使用 `CaffeineCache`（moka 后端）。
 pub struct SimpleCache {
     name: String,
-    store: std::sync::RwLock<std::collections::HashMap<String, Arc<dyn Any + Send + Sync>>>,
+    store: Arc<std::sync::RwLock<std::collections::HashMap<String, Arc<dyn Any + Send + Sync>>>>,
 }
 
 impl SimpleCache {
@@ -237,7 +240,7 @@ impl SimpleCache {
     pub fn new(name: impl Into<String>) -> Self {
         Self {
             name: name.into(),
-            store: std::sync::RwLock::new(std::collections::HashMap::new()),
+            store: Arc::new(std::sync::RwLock::new(std::collections::HashMap::new())),
         }
     }
 }
@@ -349,15 +352,16 @@ impl CacheExt for SimpleCache {
             .cloned()
             .unwrap_or_else(|| format!("{:?}", key));
         let arc_value: Arc<dyn Any + Send + Sync> = Arc::new(value);
-        let result = arc_value.clone().downcast::<T>().map_err(|_| {
-            CacheError::ValueRetrieval {
+        let result = arc_value
+            .clone()
+            .downcast::<T>()
+            .map_err(|_| CacheError::ValueRetrieval {
                 key: key_display.clone(),
                 source: Box::new(std::io::Error::new(
                     std::io::ErrorKind::Other,
                     "类型转换失败",
                 )),
-            }
-        })?;
+            })?;
         // 写入缓存
         if let Ok(mut store) = self.store.write() {
             store.insert(key_display, arc_value);
@@ -391,24 +395,25 @@ impl CacheExt for SimpleCache {
         if let Some(existing) = self.get_typed::<T>(key) {
             return Box::pin(async { Ok(existing) });
         }
-        // 异步加载
-        let store_ref = &self.store;
-        let name = self.name.clone();
+        // 异步加载 — clone Arc 让 async block 拥有所有权
+        let store_clone = self.store.clone();
         let key_owned = key_display.clone();
         let key_for_loader = key_display.clone();
         Box::pin(async move {
             let value = value_loader().await?;
             let arc_value: Arc<dyn Any + Send + Sync> = Arc::new(value);
-            let result = arc_value.clone().downcast::<T>().map_err(|_| {
-                CacheError::ValueRetrieval {
-                    key: key_for_loader,
-                    source: Box::new(std::io::Error::new(
-                        std::io::ErrorKind::Other,
-                        "类型转换失败",
-                    )),
-                }
-            })?;
-            if let Ok(mut store) = store_ref.write() {
+            let result =
+                arc_value
+                    .clone()
+                    .downcast::<T>()
+                    .map_err(|_| CacheError::ValueRetrieval {
+                        key: key_for_loader,
+                        source: Box::new(std::io::Error::new(
+                            std::io::ErrorKind::Other,
+                            "类型转换失败",
+                        )),
+                    })?;
+            if let Ok(mut store) = store_clone.write() {
                 store.insert(key_owned, arc_value);
             }
             Ok(result)
@@ -425,7 +430,7 @@ pub struct TypedCacheValue<T: Send + Sync> {
     value: T,
 }
 
-impl<T: Send + Sync> TypedCacheValue<T> {
+impl<T: Send + Sync + 'static> TypedCacheValue<T> {
     /// 创建类型化缓存值。
     pub fn new(value: T) -> Self {
         Self { value }
@@ -570,10 +575,8 @@ mod tests {
         let cache = SimpleCache::new("test");
         let key = String::from("k1");
 
-        let result = CacheExt::retrieve_with_loader::<i32, _, _>(&cache, &key, || async {
-            Ok(42)
-        })
-        .await;
+        let result =
+            CacheExt::retrieve_with_loader::<i32, _, _>(&cache, &key, || async { Ok(42) }).await;
         assert_eq!(*result.unwrap(), 42);
     }
 }

@@ -35,7 +35,10 @@ use vernal_context::{
 fn application_context_event_base_captures_source_and_timestamp() {
     let source: Arc<dyn Any + Send + Sync> = Arc::new("order-service".to_string());
     let base = ApplicationContextEventBase::new(source);
-    assert!(base.timestamp() > 0, "timestamp must be positive epoch millis");
+    assert!(
+        base.timestamp() > 0,
+        "timestamp must be positive epoch millis"
+    );
 
     let source_ref = base.source().downcast_ref::<String>();
     assert_eq!(source_ref, Some(&"order-service".to_string()));
@@ -66,11 +69,7 @@ impl OrderCreatedEvent {
         }
     }
 
-    fn with_timestamp(
-        source: Arc<dyn Any + Send + Sync>,
-        order_id: u64,
-        timestamp: i64,
-    ) -> Self {
+    fn with_timestamp(source: Arc<dyn Any + Send + Sync>, order_id: u64, timestamp: i64) -> Self {
         Self {
             base: ApplicationContextEventBase::with_timestamp(source, timestamp),
             order_id,
@@ -132,9 +131,7 @@ async fn event_bus_publish_payload_wraps_into_payload_event() {
     let mut receiver = bus.subscribe::<PayloadApplicationEvent<String>>().await;
 
     let source: Arc<dyn Any + Send + Sync> = Arc::new("svc");
-    let delivered = bus
-        .publish_payload(source, "order-42".to_string())
-        .await;
+    let delivered = bus.publish_payload(source, "order-42".to_string()).await;
     assert_eq!(delivered, 1, "exactly one subscriber must receive");
 
     let event = receiver.recv().await.expect("event delivered");
@@ -160,10 +157,7 @@ async fn payload_event_distinct_subscribers_by_payload_type() {
 
     assert_eq!(*string_event.payload(), "string-payload");
     assert_eq!(*u64_event.payload(), 42_u64);
-    assert_ne!(
-        string_event.payload_type(),
-        u64_event.payload_type()
-    );
+    assert_ne!(string_event.payload_type(), u64_event.payload_type());
 }
 
 // ── SmartApplicationListener hooks ───────────────────────────────────────
@@ -370,7 +364,10 @@ fn event_bus_default_and_custom_capacity() {
 fn event_type_id_helper_matches_typeid_of() {
     use vernal_context::event_type_id;
     assert_eq!(event_type_id::<String>(), TypeId::of::<String>());
-    assert_eq!(event_type_id::<OrderCreatedEvent>(), TypeId::of::<OrderCreatedEvent>());
+    assert_eq!(
+        event_type_id::<OrderCreatedEvent>(),
+        TypeId::of::<OrderCreatedEvent>()
+    );
     assert_ne!(
         event_type_id::<String>(),
         event_type_id::<OrderCreatedEvent>()

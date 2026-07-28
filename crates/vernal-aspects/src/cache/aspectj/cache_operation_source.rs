@@ -130,6 +130,51 @@ mod tests {
     }
 
     #[test]
+    fn test_annotation_cache_operation_source_with_class() {
+        let mut source = AnnotationCacheOperationSource::new();
+        let op = CacheOperationMetadata {
+            operation: CacheOperation::CachePut,
+            cache_names: vec![std::borrow::Cow::Borrowed("users")],
+            ..Default::default()
+        };
+        source.register_class("com.example.Foo".to_string(), op);
+
+        assert!(source.is_candidate_class("com.example.Foo"));
+
+        let meta = MethodMetadata::new("com.example.Foo", "bar");
+        let found = source.get_cache_operation(&meta);
+        assert!(found.is_some());
+        assert_eq!(found.unwrap().operation, CacheOperation::CachePut);
+    }
+
+    #[test]
+    fn test_annotation_cache_operation_source_method_overrides_class() {
+        let mut source = AnnotationCacheOperationSource::new();
+
+        // 类级操作
+        let class_op = CacheOperationMetadata {
+            operation: CacheOperation::CachePut,
+            cache_names: vec![std::borrow::Cow::Borrowed("users")],
+            ..Default::default()
+        };
+        source.register_class("com.example.Foo".to_string(), class_op);
+
+        // 方法级操作（覆盖类级）
+        let method_op = CacheOperationMetadata {
+            operation: CacheOperation::Cacheable,
+            cache_names: vec![std::borrow::Cow::Borrowed("users")],
+            ..Default::default()
+        };
+        source.register_method("com.example.Foo#bar()".to_string(), method_op);
+
+        let meta = MethodMetadata::new("com.example.Foo", "bar");
+        let found = source.get_cache_operation(&meta);
+        assert!(found.is_some());
+        // 方法级覆盖类级
+        assert_eq!(found.unwrap().operation, CacheOperation::Cacheable);
+    }
+
+    #[test]
     fn test_annotation_cache_operation_source_is_send_sync() {
         fn assert_send<T: Send>() {}
         fn assert_sync<T: Sync>() {}
@@ -144,5 +189,38 @@ mod tests {
         fn assert_dyn_send_sync<T: CacheOperationSource>() {}
         assert_send::<AnnotationCacheOperationSource>();
         assert_sync::<AnnotationCacheOperationSource>();
+    }
+
+    #[test]
+    fn test_annotation_cache_operation_source_default() {
+        let source = AnnotationCacheOperationSource::default();
+        let meta = MethodMetadata::new("Foo", "bar");
+        assert!(source.get_cache_operation(&meta).is_none());
+    }
+
+    #[test]
+    fn test_method_metadata_debug() {
+        let meta = MethodMetadata::new("com.example.Foo", "bar");
+        let debug_str = format!("{:?}", meta);
+        assert!(debug_str.contains("com.example.Foo"));
+        assert!(debug_str.contains("bar"));
+    }
+
+    #[test]
+    fn test_method_metadata_hash() {
+        use std::collections::HashMap;
+        let mut map = HashMap::new();
+        let meta1 = MethodMetadata::new("Foo", "bar");
+        let meta2 = MethodMetadata::new("Foo", "baz");
+        map.insert(meta1, 1);
+        map.insert(meta2, 2);
+        assert_eq!(map.len(), 2);
+    }
+
+    #[test]
+    fn test_method_metadata_clone() {
+        let meta = MethodMetadata::new("Foo", "bar");
+        let cloned = meta.clone();
+        assert_eq!(meta, cloned);
     }
 }

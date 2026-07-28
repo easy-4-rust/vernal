@@ -8,8 +8,8 @@
 use std::any::Any;
 use std::fmt;
 
-use crate::component_scope::Scope;
 use crate::component_key::ComponentKey;
+use crate::component_scope::Scope;
 
 /// Bean 定义 trait — Spring 风格的 IoC 注册入口。
 ///

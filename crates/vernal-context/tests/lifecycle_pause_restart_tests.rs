@@ -39,10 +39,7 @@ impl CallTrace {
     }
 
     fn count(&self, event: &str) -> usize {
-        self.snapshot()
-            .iter()
-            .filter(|e| *e == event)
-            .count()
+        self.snapshot().iter().filter(|e| *e == event).count()
     }
 }
 
@@ -166,14 +163,14 @@ async fn pause_only_invokes_pausable_components() {
         ))
         .expect("register PausableComponent");
     builder
-        .register(ComponentDefinition::try_singleton::<NonPausableComponent, _>(
-            move |_resolver| {
+        .register(
+            ComponentDefinition::try_singleton::<NonPausableComponent, _>(move |_resolver| {
                 Ok(NonPausableComponent {
                     name: "nonpausable",
                     trace: trace_for_nonpausable.clone(),
                 })
-            },
-        ))
+            }),
+        )
         .expect("register NonPausableComponent");
     builder.lifecycle::<PausableComponent>();
     builder.lifecycle::<NonPausableComponent>();
@@ -252,14 +249,14 @@ async fn restart_skips_non_pausable_components() {
         ))
         .expect("register PausableComponent");
     builder
-        .register(ComponentDefinition::try_singleton::<NonPausableComponent, _>(
-            move |_resolver| {
+        .register(
+            ComponentDefinition::try_singleton::<NonPausableComponent, _>(move |_resolver| {
                 Ok(NonPausableComponent {
                     name: "nonpausable",
                     trace: trace_for_nonpausable.clone(),
                 })
-            },
-        ))
+            }),
+        )
         .expect("register NonPausableComponent");
     builder.lifecycle::<PausableComponent>();
     builder.lifecycle::<NonPausableComponent>();
@@ -337,7 +334,10 @@ async fn restart_from_invalid_state_fails() {
     // 从 Ready 状态直接 restart 必须失败（没有先 pause）。
     let restart_without_pause = context.restart().await;
     assert!(
-        matches!(restart_without_pause, Err(ContextError::InvalidState { .. })),
+        matches!(
+            restart_without_pause,
+            Err(ContextError::InvalidState { .. })
+        ),
         "expected InvalidState, got {restart_without_pause:?}"
     );
 
@@ -363,14 +363,14 @@ async fn pause_then_close_stops_all_components() {
         ))
         .expect("register PausableComponent");
     builder
-        .register(ComponentDefinition::try_singleton::<NonPausableComponent, _>(
-            move |_resolver| {
+        .register(
+            ComponentDefinition::try_singleton::<NonPausableComponent, _>(move |_resolver| {
                 Ok(NonPausableComponent {
                     name: "nonpausable",
                     trace: trace_for_nonpausable.clone(),
                 })
-            },
-        ))
+            }),
+        )
         .expect("register NonPausableComponent");
     builder.lifecycle::<PausableComponent>();
     builder.lifecycle::<NonPausableComponent>();
@@ -492,10 +492,7 @@ struct EventCapture {
 impl vernal_context::ApplicationEventListener<ApplicationPausedEvent> for EventCapture {
     type Error = std::io::Error;
 
-    async fn on_event(
-        &self,
-        _event: Arc<ApplicationPausedEvent>,
-    ) -> Result<(), Self::Error> {
+    async fn on_event(&self, _event: Arc<ApplicationPausedEvent>) -> Result<(), Self::Error> {
         *self.received.lock().unwrap() = true;
         Ok(())
     }
@@ -526,9 +523,11 @@ impl Lifecycle for FailingPauseComponent {
 async fn pause_failure_closes_context() {
     let mut builder = VernalApplicationBuilder::new(Handle::current());
     builder
-        .register(ComponentDefinition::try_singleton::<FailingPauseComponent, _>(
-            |_resolver| Ok(FailingPauseComponent),
-        ))
+        .register(
+            ComponentDefinition::try_singleton::<FailingPauseComponent, _>(|_resolver| {
+                Ok(FailingPauseComponent)
+            }),
+        )
         .expect("register FailingPauseComponent");
     builder.lifecycle::<FailingPauseComponent>();
 

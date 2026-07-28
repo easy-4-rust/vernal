@@ -31,9 +31,7 @@ fn build_env(name: &str, entries: &[(&str, &str)]) -> ApplicationEnvironment {
         .collect();
     let source = MapPropertySource::new(name, pairs).expect("valid source");
     let mut builder = ApplicationEnvironment::builder();
-    builder
-        .add_last(Arc::new(source))
-        .expect("add source");
+    builder.add_last(Arc::new(source)).expect("add source");
     builder.build()
 }
 
@@ -48,11 +46,11 @@ fn build_env_with_profiles(
         .collect();
     let source = MapPropertySource::new(name, pairs).expect("valid source");
     let mut builder = ApplicationEnvironment::builder();
-    builder
-        .add_last(Arc::new(source))
-        .expect("add source");
+    builder.add_last(Arc::new(source)).expect("add source");
     for profile in active {
-        builder.active_profile(*profile).expect("valid active profile");
+        builder
+            .active_profile(*profile)
+            .expect("valid active profile");
     }
     builder.build()
 }
@@ -169,8 +167,7 @@ async fn property_condition_missing() {
 #[tokio::test]
 async fn property_condition_having_value() {
     let env = build_env("app", &[("feature.x", "on")]);
-    let condition =
-        PropertyCondition::having_value("feature.x", "on").expect("valid condition");
+    let condition = PropertyCondition::having_value("feature.x", "on").expect("valid condition");
     assert_eq!(condition.name(), "property.equals");
     assert!(condition.matches(&env).unwrap());
 }
@@ -180,8 +177,7 @@ async fn property_condition_having_value() {
 #[tokio::test]
 async fn property_condition_having_value_mismatch() {
     let env = build_env("app", &[("feature.x", "off")]);
-    let condition =
-        PropertyCondition::having_value("feature.x", "on").expect("valid condition");
+    let condition = PropertyCondition::having_value("feature.x", "on").expect("valid condition");
     assert!(!condition.matches(&env).unwrap());
 }
 
@@ -190,8 +186,7 @@ async fn property_condition_having_value_mismatch() {
 #[tokio::test]
 async fn property_condition_having_value_missing_key() {
     let env = build_env("app", &[("feature.y", "on")]);
-    let condition =
-        PropertyCondition::having_value("feature.x", "on").expect("valid condition");
+    let condition = PropertyCondition::having_value("feature.x", "on").expect("valid condition");
     assert!(!condition.matches(&env).unwrap());
 }
 
@@ -200,8 +195,8 @@ async fn property_condition_having_value_missing_key() {
 #[tokio::test]
 async fn property_condition_having_value_or_missing() {
     let env = build_env("app", &[("feature.y", "on")]);
-    let condition = PropertyCondition::having_value_or_missing("feature.x", "on")
-        .expect("valid condition");
+    let condition =
+        PropertyCondition::having_value_or_missing("feature.x", "on").expect("valid condition");
     assert_eq!(condition.name(), "property.equals-or-missing");
     assert!(condition.matches(&env).unwrap());
 }
@@ -232,10 +227,16 @@ async fn property_condition_not_having_value_missing_key() {
 #[tokio::test]
 async fn property_condition_invalid_key() {
     let result = PropertyCondition::present("");
-    assert!(matches!(result, Err(ConditionError::InvalidPropertyKey { .. })));
+    assert!(matches!(
+        result,
+        Err(ConditionError::InvalidPropertyKey { .. })
+    ));
 
     let result = PropertyCondition::present("has space");
-    assert!(matches!(result, Err(ConditionError::InvalidPropertyKey { .. })));
+    assert!(matches!(
+        result,
+        Err(ConditionError::InvalidPropertyKey { .. })
+    ));
 }
 
 // ── ExpressionCondition ──────────────────────────────────────────────────

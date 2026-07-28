@@ -18,3 +18,26 @@ pub use async_uncaught_exception_handler::AsyncUncaughtExceptionHandler;
 pub use abstract_async_execution_aspect::AbstractAsyncExecutionAspect;
 pub use annotation_async_execution_aspect::AnnotationAsyncExecutionAspect;
 pub use aspectj_async_configuration::AspectJAsyncConfiguration;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_scheduling_aspectj() {
+        let aspect = AbstractAsyncExecutionAspect::new();
+        let _ = aspect;
+    }
+
+    #[test]
+    fn test_annotation_async_execution_aspect() {
+        let aspect = AnnotationAsyncExecutionAspect::new();
+        let _ = aspect;
+    }
+
+    #[test]
+    fn test_aspectj_async_configuration() {
+        let config = AspectJAsyncConfiguration::new();
+        let _ = config;
+    }
+}

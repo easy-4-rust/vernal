@@ -7,3 +7,21 @@ mod pointcut_matcher;
 
 pub use advice_kind::AdviceKind;
 pub use pointcut_matcher::PointcutMatcher;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_weaver_advice_kind() {
+        let kind = AdviceKind::Before;
+        assert_eq!(kind.as_str(), "Before");
+        assert_eq!(kind.as_chinese(), "前置");
+    }
+
+    #[test]
+    fn test_weaver_pointcut_matcher() {
+        let meta = super::pointcut_matcher::MethodMetadata::new("Foo", "bar");
+        assert!(PointcutMatcher::match_execution_public(&meta));
+    }
+}

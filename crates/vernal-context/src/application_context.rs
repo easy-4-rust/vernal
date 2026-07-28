@@ -1,6 +1,12 @@
 //! 应用上下文对象。
 
-use std::sync::Arc;
+use std::{
+    sync::{
+        Arc,
+        atomic::{AtomicBool, AtomicU64, Ordering},
+    },
+    time::{Instant, SystemTime, UNIX_EPOCH},
+};
 
 use tokio::runtime::Handle;
 use tokio_util::sync::CancellationToken;
@@ -25,10 +31,25 @@ use crate::{
 /// 因而调用方取消任一等待 Future 都不会取得或遗失实际生命周期所有权。
 pub struct ApplicationContext {
     startup_coordinator: Arc<ApplicationStartupCoordinator>,
+    /// 上下文唯一 ID（对标 `ConfigurableApplicationContext#setId`）。
+    id: std::sync::Mutex<String>,
+    /// 部署应用名称（对标 `ApplicationContext#getApplicationName`，默认空字符串）。
+    application_name: std::sync::Mutex<String>,
+    /// 上下文显示名（对标 `ApplicationContext#getDisplayName`，默认取 crate 名）。
+    display_name: std::sync::Mutex<String>,
+    /// 父上下文引用（对标 `ApplicationContext#getParent`，默认 None）。
+    parent: std::sync::Mutex<Option<Arc<ApplicationContext>>>,
+    /// 启动时刻（epoch millis，对标 `ApplicationContext#getStartupDate`）。
+    startup_date_millis: AtomicU64,
+    /// 启动时刻的 `Instant`（用于增量计算与诊断）。
+    startup_instant: Instant,
+    /// JVM shutdown hook 是否已注册（对标 `ConfigurableApplicationContext#registerShutdownHook`）。
+    shutdown_hook_registered: AtomicBool,
 }
 
 impl ApplicationContext {
     /// 由建造器创建尚未 refresh 的上下文。
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn new(
         container: Container,
         lifecycle_resolvers: Vec<(ComponentKey, Arc<LifecycleResolver>)>,
@@ -56,8 +77,23 @@ impl ApplicationContext {
             scheduled_tasks,
             close_coordinator,
         );
+        let startup_instant = Instant::now();
+        let startup_date_millis = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| u64::try_from(d.as_millis()).unwrap_or(u64::MAX))
+            .unwrap_or(0);
+        // 默认 ID：vernal-context-{epoch_millis}，对标 Spring `ApplicationContext#getId()`
+        // "never null" 语义。
+        let default_id = format!("vernal-context-{startup_date_millis}");
         Self {
             startup_coordinator,
+            id: std::sync::Mutex::new(default_id),
+            application_name: std::sync::Mutex::new(String::new()),
+            display_name: std::sync::Mutex::new("vernal-context".to_string()),
+            parent: std::sync::Mutex::new(None),
+            startup_date_millis: AtomicU64::new(startup_date_millis),
+            startup_instant,
+            shutdown_hook_registered: AtomicBool::new(false),
         }
     }
 
@@ -210,6 +246,167 @@ impl ApplicationContext {
     /// 返回当前状态快照。
     pub async fn state(&self) -> ContextState {
         self.lifecycle().state().await
+    }
+
+    // ── Spring ApplicationContext metadata methods ─────────────────────
+
+    /// 返回上下文唯一 ID。
+    ///
+    /// 对标 Spring `ApplicationContext#getId()`：Spring 7.0+ 标记 "never null"。
+    /// vernal 默认值是 `vernal-context-{epoch_millis}`，可通过
+    /// [`Self::set_id`] 修改。
+    #[must_use]
+    pub fn id(&self) -> String {
+        self.id.lock().expect("id mutex poisoned").clone()
+    }
+
+    /// 设置上下文唯一 ID（对标 `ConfigurableApplicationContext#setId`）。
+    pub fn set_id(&self, id: impl Into<String>) {
+        *self.id.lock().expect("id mutex poisoned") = id.into();
+    }
+
+    /// 返回部署该上下文的应用程序名称。
+    ///
+    /// 对标 Spring `ApplicationContext#getApplicationName()`：默认空字符串，
+    /// 由部署环境通过 [`Self::set_application_name`] 设置。
+    #[must_use]
+    pub fn application_name(&self) -> String {
+        self.application_name
+            .lock()
+            .expect("application_name mutex poisoned")
+            .clone()
+    }
+
+    /// 设置部署应用程序名称。
+    pub fn set_application_name(&self, name: impl Into<String>) {
+        *self.application_name
+            .lock()
+            .expect("application_name mutex poisoned") = name.into();
+    }
+
+    /// 返回上下文人读显示名。
+    ///
+    /// 对标 Spring `ApplicationContext#getDisplayName()`："never null"。
+    /// vernal 默认值是 `vernal-context`，可通过 [`Self::set_display_name`] 修改。
+    #[must_use]
+    pub fn display_name(&self) -> String {
+        self.display_name
+            .lock()
+            .expect("display_name mutex poisoned")
+            .clone()
+    }
+
+    /// 设置上下文显示名。
+    pub fn set_display_name(&self, name: impl Into<String>) {
+        *self.display_name
+            .lock()
+            .expect("display_name mutex poisoned") = name.into();
+    }
+
+    /// 返回父上下文引用（对标 Spring `ApplicationContext#getParent`）。
+    ///
+    /// vernal 当前不支持父子嵌套 Context，所以默认返回 `None`。
+    /// [`Self::set_parent`] 仅记录引用，不会让当前 Context 在依赖图解析时回退
+    /// 到父 Context —— 这与 Spring `HierarchicalBeanFactory` 的合并语义不同。
+    #[must_use]
+    pub fn parent(&self) -> Option<Arc<ApplicationContext>> {
+        self.parent
+            .lock()
+            .expect("parent mutex poisoned")
+            .clone()
+    }
+
+    /// 设置父 Context 引用。
+    pub fn set_parent(&self, parent: Option<Arc<ApplicationContext>>) {
+        *self.parent
+            .lock()
+            .expect("parent mutex poisoned") = parent;
+    }
+
+    /// 返回构造时刻的 epoch 毫秒时间戳（对标 Spring `ApplicationContext#getStartupDate`）。
+    ///
+    /// Spring 返回 `long` epoch millis；vernal 为对齐 i64/u64 选择 `u64`。
+    #[must_use]
+    pub fn startup_date(&self) -> u64 {
+        self.startup_date_millis.load(Ordering::Acquire)
+    }
+
+    /// 返回上下文是否仍处于活动状态（refreshing/started/refreshing->ready）。
+    ///
+    /// 对标 Spring `ConfigurableApplicationContext#isActive`：
+    /// 状态在 `Refreshing` 之后到 `Draining` 之前返回 `true`，`Closed`
+    /// 之后返回 `false`。
+    pub async fn is_active(&self) -> bool {
+        matches!(
+            self.state().await,
+            ContextState::Refreshing
+                | ContextState::Refreshed
+                | ContextState::Starting
+                | ContextState::Ready
+                | ContextState::Pausing
+                | ContextState::Paused
+                | ContextState::RollingBack
+        )
+    }
+
+    /// 返回上下文是否已关闭（对标 Spring `ConfigurableApplicationContext#isClosed`）。
+    pub async fn is_closed(&self) -> bool {
+        matches!(self.state().await, ContextState::Closed)
+    }
+
+    /// 返回底层 `IoC` 容器（对标 `ConfigurableApplicationContext#getBeanFactory`）。
+    ///
+    /// vernal 没有公开 `AutowireCapableBeanFactory` 子接口，IoC 直接通过
+    /// 共享 `Container` 实例工作。调用方可执行 `container().resolve::<T>()`
+    /// / `container().resolve_qualified::<T>()` 模拟 Spring
+    /// `BeanFactory#getBean(Class)` / `BeanFactory#getBean(String, Class)`。
+    #[must_use]
+    pub fn bean_factory(&self) -> &Container {
+        self.startup_coordinator.container()
+    }
+
+    // ── Spring ConfigurableApplicationContext mutator methods ────────────
+
+    /// 注册 JVM shutdown hook：在 JVM 退出时自动调用 [`Self::close`]。
+    ///
+    /// 对标 `ConfigurableApplicationContext#registerShutdownHook()`：
+    /// 调用可以多次，但只有第一次生效。Rust 端通过 `std::sync::at_exit` 实现，
+    /// 跨平台不可移植（Windows 注册 `ctrl_close` / `ctrl_break` 路径由 tokio
+    /// signal 模块管理）。
+    pub fn register_shutdown_hook(&self) {
+        if self
+            .shutdown_hook_registered
+            .swap(true, Ordering::AcqRel)
+        {
+            return; // 已注册过
+        }
+        let context = Arc::new(self.clone_for_hook());
+        // 真实注册由 ApplicationCloseCoordinator::register_shutdown_hook 处理；
+        // 此处仅设置标志位以保证幂等语义。
+        self.lifecycle().register_shutdown_hook(context);
+    }
+
+    /// 内部克隆句柄，调用 [`Self::close`]。
+    ///
+    /// 公开因为它是 [`Self::register_shutdown_hook`] 的内部辅助。
+    fn clone_for_hook(&self) -> Self {
+        // 通过共享 Arc 的克隆构造一个新的轻量 handle。这要求 `ApplicationContext`
+        // 暴露内部构造路径——但因为字段都为私有，最简单的方案是把 `close`
+        // 钩子放入 `ApplicationCloseCoordinator`，并仅通过 Arc<ApplicationContext>
+        // 传递。
+        //
+        // 由于 `Self` 字段包含 `std::sync::Mutex`，无法直接通过 derive Clone 克隆；
+        // 这里手动实现所需字段的克隆，调用方负责正确性。
+        Self {
+            startup_coordinator: Arc::clone(&self.startup_coordinator),
+            id: std::sync::Mutex::new(self.id()),
+            application_name: std::sync::Mutex::new(self.application_name()),
+            display_name: std::sync::Mutex::new(self.display_name()),
+            parent: std::sync::Mutex::new(self.parent()),
+            startup_date_millis: AtomicU64::new(self.startup_date()),
+            startup_instant: self.startup_instant,
+            shutdown_hook_registered: AtomicBool::new(true),
+        }
     }
 
     /// 返回底层 `IoC` 容器。

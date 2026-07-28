@@ -111,6 +111,30 @@ mod tests {
     }
 
     #[test]
+    fn test_matches_jcache_put_method() {
+        let source = Arc::new(AnnotationCacheOperationSource::new());
+        let aspect = JCacheCacheAspect::new(source);
+        assert!(aspect.matches_jcache_put_method(true));
+        assert!(!aspect.matches_jcache_put_method(false));
+    }
+
+    #[test]
+    fn test_matches_cache_remove_method() {
+        let source = Arc::new(AnnotationCacheOperationSource::new());
+        let aspect = JCacheCacheAspect::new(source);
+        assert!(aspect.matches_cache_remove_method(true));
+        assert!(!aspect.matches_cache_remove_method(false));
+    }
+
+    #[test]
+    fn test_matches_cache_remove_all_method() {
+        let source = Arc::new(AnnotationCacheOperationSource::new());
+        let aspect = JCacheCacheAspect::new(source);
+        assert!(aspect.matches_cache_remove_all_method(true));
+        assert!(!aspect.matches_cache_remove_all_method(false));
+    }
+
+    #[test]
     fn test_cache_method_execution_combination() {
         let source = Arc::new(AnnotationCacheOperationSource::new());
         let aspect = JCacheCacheAspect::new(source);
@@ -121,5 +145,43 @@ mod tests {
         assert!(aspect.cache_method_execution(false, false, true, false, true));
         assert!(aspect.cache_method_execution(false, false, false, true, true));
         assert!(!aspect.cache_method_execution(false, false, false, false, true));
+    }
+
+    #[test]
+    fn test_execute_success() {
+        let source = Arc::new(AnnotationCacheOperationSource::new());
+        let aspect = JCacheCacheAspect::new(source);
+        let invoker = MockInvoker;
+        let method = super::super::cache_operation_source::MethodMetadata::new("Foo", "bar");
+
+        let result = aspect.execute(&method, "Foo", &invoker, || {
+            Ok(Box::new(42) as Box<dyn std::any::Any + Send + Sync>)
+        });
+
+        match result {
+            CacheResult::Hit(val) => {
+                assert_eq!(val.downcast_ref::<i32>().unwrap(), &42);
+            }
+            _ => panic!("Expected Hit result"),
+        }
+    }
+
+    #[test]
+    fn test_execute_error() {
+        let source = Arc::new(AnnotationCacheOperationSource::new());
+        let aspect = JCacheCacheAspect::new(source);
+        let invoker = MockInvoker;
+        let method = super::super::cache_operation_source::MethodMetadata::new("Foo", "bar");
+
+        let result = aspect.execute(&method, "Foo", &invoker, || {
+            Err(Box::new("error") as Box<dyn std::any::Any + Send + Sync>)
+        });
+
+        match result {
+            CacheResult::Error(msg) => {
+                assert!(msg.contains("Execution failed"));
+            }
+            _ => panic!("Expected Error result"),
+        }
     }
 }

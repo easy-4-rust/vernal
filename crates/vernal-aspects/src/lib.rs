@@ -56,3 +56,48 @@ pub mod weaver;
 
 /// vernal-aop ↔ aspect-rs 桥接。
 pub mod support;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_transaction_aspectj() {
+        let _ = transaction::aspectj::Propagation::default();
+        let _ = transaction::aspectj::Isolation::default();
+    }
+
+    #[test]
+    fn test_cache_aspectj() {
+        let _ = cache::aspectj::CacheOperation::Cacheable;
+    }
+
+    #[test]
+    fn test_scheduling_aspectj() {
+        let _ = scheduling::aspectj::AbstractAsyncExecutionAspect::new();
+    }
+
+    #[test]
+    fn test_beans_factory_aspectj() {
+        fn assert_impl<T: beans::factory::aspectj::ConfigurableObject>() {}
+        struct Test;
+        impl beans::factory::aspectj::ConfigurableObject for Test {}
+        assert_impl::<Test>();
+    }
+
+    #[test]
+    fn test_context_annotation_aspectj() {
+        let _ = context::annotation::aspectj::SpringConfiguredConfiguration::new();
+    }
+
+    #[test]
+    fn test_weaver() {
+        let _ = weaver::AdviceKind::Before;
+        let _ = weaver::PointcutMatcher::match_execution_public;
+    }
+
+    #[test]
+    fn test_support() {
+        let _ = support::AopBridge::new();
+    }
+}

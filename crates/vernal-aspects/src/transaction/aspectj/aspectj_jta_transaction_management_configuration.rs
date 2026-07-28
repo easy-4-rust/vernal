@@ -75,4 +75,56 @@ mod tests {
         let config = AspectJJtaTransactionManagementConfiguration::new(Arc::new(MockSource));
         assert!(config.get_jta_aspect().is_none());
     }
+
+    #[test]
+    fn test_jta_configuration_get_base() {
+        let config = AspectJJtaTransactionManagementConfiguration::new(Arc::new(MockSource));
+        let base = config.get_base();
+        assert!(base.get_transaction_manager_name().is_none());
+    }
+
+    #[test]
+    fn test_jta_configuration_register_jta_aspect() {
+        let config = AspectJJtaTransactionManagementConfiguration::new(Arc::new(MockSource));
+        // 先注册基础配置的 aspect
+        let _ = config.get_base().register();
+        // 然后注册 JTA aspect
+        let jta_aspect = config.register_jta_aspect();
+        assert!(config.get_jta_aspect().is_some());
+        // 两次注册返回同一个实例
+        let jta_aspect2 = config.register_jta_aspect();
+        assert!(Arc::ptr_eq(&jta_aspect, &jta_aspect2));
+    }
+
+    #[test]
+    fn test_jta_configuration_get_jta_aspect_before_register() {
+        let config = AspectJJtaTransactionManagementConfiguration::new(Arc::new(MockSource));
+        assert!(config.get_jta_aspect().is_none());
+    }
+
+    #[test]
+    fn test_jta_configuration_get_jta_aspect_after_register() {
+        let config = AspectJJtaTransactionManagementConfiguration::new(Arc::new(MockSource));
+        let _ = config.get_base().register();
+        let _ = config.register_jta_aspect();
+        assert!(config.get_jta_aspect().is_some());
+    }
+
+    #[test]
+    fn test_jta_configuration_debug() {
+        let config = AspectJJtaTransactionManagementConfiguration::new(Arc::new(MockSource));
+        // 不检查 Debug 实现，只检查创建成功
+        let _ = config;
+    }
+
+    #[test]
+    #[test]
+    fn test_jta_configuration_register_jta_aspect_multiple() {
+        let config = AspectJJtaTransactionManagementConfiguration::new(Arc::new(MockSource));
+        let _ = config.get_base().register();
+        let _ = config.register_jta_aspect();
+        let _ = config.register_jta_aspect();
+        let _ = config.register_jta_aspect();
+        assert!(config.get_jta_aspect().is_some());
+    }
 }

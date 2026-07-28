@@ -351,4 +351,134 @@ mod tests {
         let cloned = attr.clone();
         assert_eq!(attr, cloned);
     }
+
+    #[test]
+    fn test_should_rollback_empty_rollback_for() {
+        let mut attr = TransactionAttribute::default();
+        attr.rollback_for.push(Cow::Borrowed("java.io.IOException"));
+
+        // 列表非空时，只有列表中的异常才回滚
+        assert!(attr.should_rollback("java.io.IOException", false, false));
+        // RuntimeException 不再默认回滚（当 rollbackFor 非空时）
+        assert!(!attr.should_rollback("java.lang.IllegalArgumentException", true, false));
+        // Error 不再默认回滚（当 rollbackFor 非空时）
+        assert!(!attr.should_rollback("java.lang.Error", false, true));
+    }
+
+    #[test]
+    fn test_should_rollback_no_rollback_for_runtime() {
+        let mut attr = TransactionAttribute::default();
+        attr.no_rollback_for
+            .push(Cow::Borrowed("java.lang.IllegalArgumentException"));
+
+        // 在 no_rollback_for 列表中的 RuntimeException 不回滚
+        assert!(!attr.should_rollback("java.lang.IllegalArgumentException", true, false));
+        // 不在列表中的 RuntimeException 回滚
+        assert!(attr.should_rollback("java.lang.NullPointerException", true, false));
+    }
+
+    #[test]
+    fn test_should_rollback_empty_lists() {
+        let attr = TransactionAttribute::default();
+        // 空列表：RuntimeException 和 Error 回滚，checked 异常不回滚
+        assert!(attr.should_rollback("java.lang.IllegalArgumentException", true, false));
+        assert!(attr.should_rollback("java.lang.Error", false, true));
+        assert!(!attr.should_rollback("java.io.IOException", false, false));
+    }
+
+    #[test]
+    fn test_should_rollback_all_runtime_exceptions() {
+        let mut attr = TransactionAttribute::default();
+        attr.no_rollback_for
+            .push(Cow::Borrowed("java.lang.NullPointerException"));
+
+        // NullPointerException 不回滚
+        assert!(!attr.should_rollback("java.lang.NullPointerException", true, false));
+        // 其他 RuntimeException 回滚
+        assert!(attr.should_rollback("java.lang.IllegalArgumentException", true, false));
+        assert!(attr.should_rollback("java.lang.IllegalStateException", true, false));
+    }
+
+    #[test]
+    fn test_should_rollback_all_errors() {
+        let mut attr = TransactionAttribute::default();
+        attr.no_rollback_for
+            .push(Cow::Borrowed("java.lang.OutOfMemoryError"));
+
+        // OutOfMemoryError 不回滚
+        assert!(!attr.should_rollback("java.lang.OutOfMemoryError", false, true));
+        // 其他 Error 回滚
+        assert!(attr.should_rollback("java.lang.StackOverflowError", false, true));
+        assert!(attr.should_rollback("java.lang.Error", false, true));
+    }
+
+    #[test]
+    fn test_should_rollback_all_checked_exceptions() {
+        let mut attr = TransactionAttribute::default();
+        attr.rollback_for
+            .push(Cow::Borrowed("java.io.IOException"));
+
+        // IOException 回滚
+        assert!(attr.should_rollback("java.io.IOException", false, false));
+        // 其他 checked 异常不回滚
+        assert!(!attr.should_rollback("java.sql.SQLException", false, false));
+    }
+
+    #[test]
+    fn test_transaction_attribute_default_all_fields() {
+        let attr = TransactionAttribute::default();
+    #[test]
+    fn test_transaction_attribute_full_construction() {
+        let attr = TransactionAttribute {
+            propagation: Propagation::RequiresNew,
+            isolation: Isolation::Serializable,
+            read_only: true,
+            timeout: 60,
+            rollback_for: vec![Cow::Borrowed("java.io.IOException")],
+            no_rollback_for: vec![Cow::Borrowed("java.io.FileNotFoundException")],
+            name: Some(Cow::Borrowed("testTx")),
+            qualifier: Some(Cow::Borrowed("txManager")),
+            labels: vec![Cow::Borrowed("audit"), Cow::Borrowed("log")],
+        };
+
+        assert_eq!(attr.propagation, Propagation::RequiresNew);
+        assert_eq!(attr.isolation, Isolation::Serializable);
+        assert!(attr.read_only);
+        assert_eq!(attr.timeout, 60);
+        assert_eq!(attr.rollback_for.len(), 1);
+        assert_eq!(attr.no_rollback_for.len(), 1);
+        assert_eq!(attr.name.as_deref(), Some("testTx"));
+        assert_eq!(attr.qualifier.as_deref(), Some("txManager"));
+        assert_eq!(attr.labels.len(), 2);
+    }
+
+    #[test]
+    fn test_transaction_attribute_debug() {
+        let attr = TransactionAttribute::default();
+        let debug_str = format!("{:?}", attr);
+        assert!(debug_str.contains("Required"));
+    }
+
+    #[test]
+    fn test_transaction_attribute_hash() {
+        use std::collections::HashMap;
+        let mut map = HashMap::new();
+        let attr1 = TransactionAttribute::default();
+        let attr2 = TransactionAttribute {
+            propagation: Propagation::RequiresNew,
+            ..Default::default()
+        };
+        map.insert(format!("{:?}", attr1), 1);
+        map.insert(format!("{:?}", attr2), 2);
+        assert_eq!(map.len(), 2);
+    }
+
+    #[test]
+    fn test_transaction_attribute_is_send_sync() {
+        fn assert_send<T: Send>() {}
+        fn assert_sync<T: Sync>() {}
+        assert_send::<TransactionAttribute>();
+        assert_sync::<TransactionAttribute>();
+    }
+}
 }

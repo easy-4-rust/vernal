@@ -1,63 +1,84 @@
-//! 表达式异常。
+//! ExpressionException — 表达式处理异常基类。
 //!
-//! 对标 Spring 的 `ExpressionException`：表达式处理异常的基类。
+//! 对标 Spring `org.springframework.expression.ExpressionException`，
+//! 使用 `thiserror` 派生。
 
-use std::fmt;
+use thiserror::Error;
 
-/// 表达式异常基类。
-///
-/// 对标 Spring 的 `org.springframework.expression.ExpressionException`。
-#[derive(Debug, Clone)]
+/// 表达式异常基类（对标 Spring `ExpressionException`）。
+#[derive(Debug, Error)]
 pub struct ExpressionException {
-    /// 表达式字符串
-    expression: String,
-    /// 错误位置
-    position: Option<usize>,
-    /// 错误消息
-    message: String,
+    /// 关联的表达式字符串。
+    pub expression: Option<String>,
+    /// 错误位置。
+    pub position: Option<i32>,
+    /// 简单消息。
+    pub simple_message: String,
 }
 
 impl ExpressionException {
-    /// 创建表达式异常。
-    #[must_use]
+    /// 创建异常。
     pub fn new(
         expression: impl Into<String>,
-        position: Option<usize>,
+        position: Option<i32>,
         message: impl Into<String>,
     ) -> Self {
         Self {
-            expression: expression.into(),
+            expression: Some(expression.into()),
             position,
-            message: message.into(),
+            simple_message: message.into(),
         }
     }
 
-    /// 获取表达式字符串。
-    #[must_use]
-    pub fn expression(&self) -> &str {
-        &self.expression
+    /// 无表达式的异常。
+    pub fn new_no_expr(position: Option<i32>, message: impl Into<String>) -> Self {
+        Self {
+            expression: None,
+            position,
+            simple_message: message.into(),
+        }
     }
 
-    /// 获取错误位置。
+    /// 获取简单消息（对标 Spring `getSimpleMessage()`）。
     #[must_use]
-    pub fn position(&self) -> Option<usize> {
-        self.position
+    pub fn simple_message(&self) -> &str {
+        &self.simple_message
     }
 
-    /// 获取详细错误信息。
+    /// 详细消息：`Expression [{expr}] @{pos}: {simple}`。
     #[must_use]
     pub fn detailed_string(&self) -> String {
-        match self.position {
-            Some(pos) => format!("{}: '{}' @ position {}", self.message, self.expression, pos),
-            None => format!("{}: '{}'", self.message, self.expression),
+        match (&self.expression, self.position) {
+            (Some(expr), Some(pos)) => {
+                format!("Expression [{expr}] @{pos}: {}", self.simple_message)
+            }
+            (Some(expr), None) => {
+                format!("Expression [{expr}]: {}", self.simple_message)
+            }
+            (None, _) => self.simple_message.clone(),
         }
     }
 }
 
-impl fmt::Display for ExpressionException {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.detailed_string())
+impl std::fmt::Display for ExpressionException {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.detailed_string())
     }
 }
 
-impl std::error::Error for ExpressionException {}
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn build_with_expr_and_pos() {
+        let e = ExpressionException::new("1+2", Some(3), "boom");
+        assert!(e.detailed_string().contains("Expression [1+2] @3: boom"));
+    }
+
+    #[test]
+    fn build_no_expr() {
+        let e = ExpressionException::new_no_expr(None, "boom");
+        assert_eq!(e.detailed_string(), "boom");
+    }
+}

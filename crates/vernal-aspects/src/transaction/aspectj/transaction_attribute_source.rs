@@ -305,4 +305,127 @@ mod tests {
         assert_send::<AnnotationTransactionAttributeSource>();
         assert_sync::<AnnotationTransactionAttributeSource>();
     }
+
+    #[test]
+    fn test_transaction_attribute_source_trait_is_send_sync() {
+        fn assert_send<T: Send>() {}
+        fn assert_sync<T: Sync>() {}
+        fn assert_dyn_send_sync<T: TransactionAttributeSource>() {}
+        assert_send::<AnnotationTransactionAttributeSource>();
+        assert_sync::<AnnotationTransactionAttributeSource>();
+    }
+
+    #[test]
+    fn test_method_metadata_qualified_name() {
+        let meta = MethodMetadata::new("com.example.Foo", "bar", vec!["String", "int"], "void");
+        assert_eq!(meta.qualified_name(), "com.example.Foo#bar(String, int)");
+    }
+
+    #[test]
+    fn test_method_metadata_simple_signature() {
+        let meta = MethodMetadata::new("com.example.Foo", "bar", vec!["String", "int"], "void");
+        assert_eq!(meta.simple_signature(), "bar(String, int)");
+    }
+
+    #[test]
+    fn test_method_metadata_debug() {
+        let meta = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+        let debug_str = format!("{:?}", meta);
+        assert!(debug_str.contains("Foo"));
+        assert!(debug_str.contains("bar"));
+    }
+
+    #[test]
+    fn test_method_metadata_clone() {
+        let meta = MethodMetadata::new("com.example.Foo", "bar", vec!["String"], "void");
+        let cloned = meta.clone();
+        assert_eq!(meta, cloned);
+    }
+
+    #[test]
+    fn test_method_metadata_hash() {
+        use std::collections::HashMap;
+        let mut map = HashMap::new();
+        let meta1 = MethodMetadata::new("Foo", "bar", vec![], "void");
+        let meta2 = MethodMetadata::new("Foo", "baz", vec![], "void");
+        map.insert(meta1, 1);
+        map.insert(meta2, 2);
+        assert_eq!(map.len(), 2);
+    }
+
+    #[test]
+    fn test_method_metadata_new() {
+        let meta = MethodMetadata::new("com.example.Foo", "bar", vec!["String", "int"], "void");
+        assert_eq!(meta.type_name, "com.example.Foo");
+        assert_eq!(meta.method_name, "bar");
+        assert_eq!(meta.parameter_types, vec!["String", "int"]);
+        assert_eq!(meta.return_type, "void");
+    }
+
+    #[test]
+    fn test_method_metadata_qualified_name_empty_params() {
+        let meta = MethodMetadata::new("Foo", "bar", vec![], "void");
+        assert_eq!(meta.qualified_name(), "Foo#bar()");
+    }
+
+    #[test]
+    fn test_method_metadata_simple_signature_empty_params() {
+        let meta = MethodMetadata::new("Foo", "bar", vec![], "void");
+        assert_eq!(meta.simple_signature(), "bar()");
+    }
+
+    #[test]
+    fn test_annotation_transaction_attribute_source_new() {
+        let source = AnnotationTransactionAttributeSource::new(true);
+        assert!(source.only_public);
+    }
+
+    #[test]
+    fn test_annotation_transaction_attribute_source_new_default() {
+        let source = AnnotationTransactionAttributeSource::new(false);
+        assert!(!source.only_public);
+    }
+
+    #[test]
+    fn test_annotation_transaction_attribute_source_register_method() {
+        let mut source = AnnotationTransactionAttributeSource::new(false);
+        let attr = TransactionAttribute::default();
+        source.register_method("Foo#bar()".to_string(), attr);
+        let meta = MethodMetadata::new("Foo", "bar", vec![], "void");
+        assert!(source.get_transaction_attribute(&meta).is_some());
+    }
+
+    #[test]
+    fn test_annotation_transaction_attribute_source_register_class() {
+        let mut source = AnnotationTransactionAttributeSource::new(false);
+        let attr = TransactionAttribute::default();
+        source.register_class("Foo".to_string(), attr);
+        assert!(source.is_candidate_class("Foo"));
+        assert!(!source.is_candidate_class("Bar"));
+    }
+
+    #[test]
+    fn test_annotation_transaction_attribute_source_get_transaction_attribute() {
+        let source = AnnotationTransactionAttributeSource::new(false);
+        let meta = MethodMetadata::new("Foo", "bar", vec![], "void");
+        assert!(source.get_transaction_attribute(&meta).is_none());
+    }
+
+    #[test]
+
+    #[test]
+    fn test_annotation_transaction_attribute_source_is_send_sync() {
+        fn assert_send<T: Send>() {}
+        fn assert_sync<T: Sync>() {}
+        assert_send::<AnnotationTransactionAttributeSource>();
+        assert_sync::<AnnotationTransactionAttributeSource>();
+    }
+
+    #[test]
+    fn test_method_metadata_is_send_sync() {
+        fn assert_send<T: Send>() {}
+        fn assert_sync<T: Sync>() {}
+        assert_send::<MethodMetadata>();
+        assert_sync::<MethodMetadata>();
+    }
 }

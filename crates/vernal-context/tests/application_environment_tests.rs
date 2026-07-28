@@ -30,9 +30,7 @@ fn build_env(name: &str, entries: &[(&str, &str)]) -> ApplicationEnvironment {
         .collect();
     let source = MapPropertySource::new(name, pairs).expect("valid source");
     let mut builder = ApplicationEnvironment::builder();
-    builder
-        .add_last(Arc::new(source))
-        .expect("add source");
+    builder.add_last(Arc::new(source)).expect("add source");
     builder.build()
 }
 
@@ -42,31 +40,22 @@ fn build_env(name: &str, entries: &[(&str, &str)]) -> ApplicationEnvironment {
 async fn get_property_single_source() {
     let env = build_env("app", &[("name", "vernal"), ("version", "0.1.0")]);
     assert_eq!(env.property("name").unwrap(), Some("vernal".to_string()));
-    assert_eq!(
-        env.property("version").unwrap(),
-        Some("0.1.0".to_string())
-    );
+    assert_eq!(env.property("version").unwrap(), Some("0.1.0".to_string()));
 }
 
 /// Spring `getProperty` 差分测试：
 /// 高优先级 PropertySource 覆盖低优先级。
 #[tokio::test]
 async fn higher_priority_source_wins() {
-    let low_priority = MapPropertySource::new(
-        "low",
-        [("app.mode", "dev"), ("shared", "low-value")],
-    )
-    .expect("valid source");
-    let high_priority = MapPropertySource::new(
-        "high",
-        [("app.mode", "production"), ("only-high", "x")],
-    )
-    .expect("valid source");
+    let low_priority =
+        MapPropertySource::new("low", [("app.mode", "dev"), ("shared", "low-value")])
+            .expect("valid source");
+    let high_priority =
+        MapPropertySource::new("high", [("app.mode", "production"), ("only-high", "x")])
+            .expect("valid source");
 
     let mut builder = ApplicationEnvironment::builder();
-    builder
-        .add_last(Arc::new(low_priority))
-        .expect("add low");
+    builder.add_last(Arc::new(low_priority)).expect("add low");
     builder
         .add_first(Arc::new(high_priority))
         .expect("add high");
@@ -82,10 +71,7 @@ async fn higher_priority_source_wins() {
         Some("low-value".to_string()),
         "low-priority source still serves missing keys"
     );
-    assert_eq!(
-        env.property("only-high").unwrap(),
-        Some("x".to_string())
-    );
+    assert_eq!(env.property("only-high").unwrap(), Some("x".to_string()));
 }
 
 /// Spring `getProperty_missingKeyReturnsNull` 差分测试。
@@ -236,9 +222,7 @@ async fn placeholder_circular_chain() {
     }
     let source = MapPropertySource::new("app", entries).expect("valid source");
     let mut builder = ApplicationEnvironment::builder();
-    builder
-        .add_last(Arc::new(source))
-        .expect("add source");
+    builder.add_last(Arc::new(source)).expect("add source");
     let env = builder.build();
 
     let result = env.property("k0");
@@ -259,10 +243,16 @@ async fn invalid_property_key_rejected() {
     let env = build_env("app", &[("name", "vernal")]);
 
     let result = env.property("");
-    assert!(matches!(result, Err(EnvironmentError::InvalidPropertyKey { .. })));
+    assert!(matches!(
+        result,
+        Err(EnvironmentError::InvalidPropertyKey { .. })
+    ));
 
     let result = env.property("has space");
-    assert!(matches!(result, Err(EnvironmentError::InvalidPropertyKey { .. })));
+    assert!(matches!(
+        result,
+        Err(EnvironmentError::InvalidPropertyKey { .. })
+    ));
 }
 
 /// Spring `activeProfilesTakePrecedenceOverDefault` 差分测试。
@@ -274,12 +264,8 @@ async fn active_profiles_take_precedence() {
             MapPropertySource::new("app", [("name", "vernal")]).expect("valid source"),
         ))
         .expect("add source");
-    builder
-        .default_profile("default")
-        .expect("valid default");
-    builder
-        .active_profile("production")
-        .expect("valid active");
+    builder.default_profile("default").expect("valid default");
+    builder.active_profile("production").expect("valid active");
     let env = builder.build();
 
     assert_eq!(env.active_profiles(), &["production".to_string()]);
@@ -318,10 +304,16 @@ async fn is_profile_active_rejects_invalid() {
     let env = builder.build();
 
     let result = env.is_profile_active("");
-    assert!(matches!(result, Err(EnvironmentError::InvalidProfile { .. })));
+    assert!(matches!(
+        result,
+        Err(EnvironmentError::InvalidProfile { .. })
+    ));
 
     let result = env.is_profile_active("has space");
-    assert!(matches!(result, Err(EnvironmentError::InvalidProfile { .. })));
+    assert!(matches!(
+        result,
+        Err(EnvironmentError::InvalidProfile { .. })
+    ));
 }
 
 /// Spring `duplicateSourceName` 差分测试：
@@ -332,12 +324,13 @@ async fn duplicate_source_name_rejected() {
     let second = MapPropertySource::new("app", [("a", "2")]).expect("valid source");
 
     let mut builder = ApplicationEnvironment::builder();
-    builder
-        .add_last(Arc::new(first))
-        .expect("first add");
+    builder.add_last(Arc::new(first)).expect("first add");
     let result = builder.add_last(Arc::new(second));
     assert!(
-        matches!(result, Err(EnvironmentError::DuplicatePropertySource { .. })),
+        matches!(
+            result,
+            Err(EnvironmentError::DuplicatePropertySource { .. })
+        ),
         "expected DuplicatePropertySource, got an error"
     );
 }

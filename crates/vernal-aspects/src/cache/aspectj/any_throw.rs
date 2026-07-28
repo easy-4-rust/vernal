@@ -76,4 +76,79 @@ mod tests {
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("key not found"));
     }
+
+    #[test]
+    fn test_any_throw_try_execute_unknown_panic() {
+        let result = AnyThrow::try_execute(|| {
+            panic!("numeric panic");
+        });
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("numeric panic"));
+    }
+
+    #[test]
+    fn test_any_throw_try_execute_no_panic() {
+        let result = AnyThrow::try_execute(|| "hello");
+        assert_eq!(result.unwrap(), "hello");
+    }
+
+    #[test]
+    fn test_any_throw_try_execute_with_return_value() {
+        let result = AnyThrow::try_execute(|| {
+            let mut v = Vec::new();
+            v.push(1);
+            v.push(2);
+            v
+        });
+        assert_eq!(result.unwrap(), vec![1, 2]);
+    }
+
+    #[test]
+    fn test_any_throw_try_execute_with_string_return() {
+        let result = AnyThrow::try_execute(|| {
+            String::from("test")
+        });
+        assert_eq!(result.unwrap(), "test");
+    }
+
+    #[test]
+    fn test_any_throw_try_execute_with_option_return() {
+        let result = AnyThrow::try_execute(|| {
+            Some(42)
+        });
+        assert_eq!(result.unwrap(), Some(42));
+    fn test_any_throw_try_execute_with_vec_return() {
+        let result = AnyThrow::try_execute(|| {
+            vec![1, 2, 3, 4, 5]
+        });
+        assert_eq!(result.unwrap(), vec![1, 2, 3, 4, 5]);
+    }
+
+    #[test]
+    fn test_any_throw_try_execute_with_map_return() {
+        let result = AnyThrow::try_execute(|| {
+            let mut map = std::collections::HashMap::new();
+            map.insert("key1", "value1");
+            map.insert("key2", "value2");
+            map
+        });
+        assert_eq!(result.unwrap().len(), 2);
+    }
+
+    #[test]
+    fn test_any_throw_try_execute_with_option_return() {
+        let result = AnyThrow::try_execute(|| {
+            Some(42)
+        });
+        assert_eq!(result.unwrap(), Some(42));
+    }
+
+    #[test]
+    fn test_any_throw_try_execute_with_result_return() {
+        let result = AnyThrow::try_execute(|| {
+            Ok::<i32, String>(42)
+        });
+        assert_eq!(result.unwrap(), Ok(42));
+    }
+}
 }

@@ -106,4 +106,39 @@ mod tests {
         config.set_transaction_manager_name("txManager".to_string());
         assert_eq!(config.get_transaction_manager_name(), Some("txManager"));
     }
+
+    #[test]
+    fn test_configuration_debug() {
+        let config = AspectJTransactionManagementConfiguration::new(Arc::new(MockSource));
+        // 不检查 Debug 实现，只检查创建成功
+        let _ = config;
+    }
+
+    #[test]
+    fn test_configuration_get_transaction_manager_name() {
+        let config = AspectJTransactionManagementConfiguration::new(Arc::new(MockSource));
+        assert!(config.get_transaction_manager_name().is_none());
+    }
+
+    #[test]
+    fn test_configuration_register_multiple() {
+        let config = AspectJTransactionManagementConfiguration::new(Arc::new(MockSource));
+        let _ = config.register();
+        let _ = config.register();
+        let _ = config.register();
+        assert!(config.get_aspect().is_some());
+    }
+
+    #[test]
+    fn test_configuration_get_aspect_before_register() {
+        let config = AspectJTransactionManagementConfiguration::new(Arc::new(MockSource));
+        assert!(config.get_aspect().is_none());
+    }
+
+    #[test]
+    fn test_configuration_get_aspect_after_register() {
+        let config = AspectJTransactionManagementConfiguration::new(Arc::new(MockSource));
+        let _ = config.register();
+        assert!(config.get_aspect().is_some());
+    }
 }

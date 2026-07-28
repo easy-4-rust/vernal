@@ -97,7 +97,9 @@ mod tests {
     }
 
     impl ErrorCode for TestError {
-        fn domain(&self) -> &'static str { "test" }
+        fn domain(&self) -> &'static str {
+            "test"
+        }
         fn code(&self) -> i32 {
             match self {
                 Self::NotFound => -1,

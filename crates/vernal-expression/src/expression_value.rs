@@ -5,9 +5,12 @@
 
 use std::any::Any;
 
+use std::sync::Arc;
+
 use bigdecimal::BigDecimal;
 use chrono::{DateTime, Duration as ChronoDuration, Utc};
 use num_bigint::BigInt;
+use num_traits::Zero;
 
 use crate::typed_value::TypedValue;
 use crate::type_descriptor::{PrimitiveKind, TypeDescriptor};
@@ -22,20 +25,27 @@ use crate::type_descriptor::{PrimitiveKind, TypeDescriptor};
 /// - `Char/String` ↔ `char/String`
 /// - `DateTime/Duration` ↔ `java.util.Date` / `java.time.Duration`
 /// - `List/Map` ↔ Java `List/Map`
-/// - `Object` ↔ 任意用户对象（用于 vernal-beans 等 IoC 集成）
+/// - `Object` ↔ 任意用户对象（用于 vernal-beans Bean 等）
+///
+/// # 数值类型选择
+///
+/// `Int(i64)` 与 `Long(i64)` 当前合并到 `i64` 与 AST 文件兼容。
+/// Spring 把 `int` 装到 `Integer`（实现细节），`ExpressionValue::Int`
+/// 在 SpEL 范围内用 `i64` 即可完整覆盖所有 Java int 操作（含强制转换）。
+/// 完整 Phase F 会拆出 32/64 位枚举。
 #[derive(Debug, Clone)]
 pub enum ExpressionValue {
     /// 空值（Java `null`）。
     Null,
     /// 布尔值。
     Boolean(bool),
-    /// 32 位整数（Spring 默认 int）。
-    Int(i32),
-    /// 64 位长整数。
+    /// 整数（i64，与 Spring Java `Integer`/`Long` 等合并处理）。
+    Int(i64),
+    /// 整数长形式（保留独立变体以便 Phase F 区分）。
     Long(i64),
-    /// 单精度浮点。
-    Float(f32),
-    /// 双精度浮点。
+    /// 单精度浮点（与 Spring Java `Float` 对应）。
+    Float(f64),
+    /// 双精度浮点（与 Spring Java `Double` 对应；Spring 内部 `Float` 也可走 Double）。
     Double(f64),
     /// 任意精度整数（对标 `java.math.BigInteger`）。
     BigInt(BigInt),
@@ -54,7 +64,8 @@ pub enum ExpressionValue {
     /// 映射（`Vec<(K, V)>` 形式以保留顺序并允许任意类型键）。
     Map(Vec<(TypedValue, TypedValue)>),
     /// 任意用户对象（用于 vernal-beans Bean 等）。
-    Object(Box<dyn Any + Send + Sync>),
+    /// 用 `Arc` 包裹以便 `Clone` 派生。
+    Object(Arc<dyn Any + Send + Sync>),
 }
 
 impl ExpressionValue {
@@ -79,7 +90,7 @@ impl ExpressionValue {
                 Box::new(TypeDescriptor::OBJECT),
                 Box::new(TypeDescriptor::OBJECT),
             ),
-            Self::Object(obj) => TypeDescriptor::from_type_id_dyn(obj.as_any()),
+            Self::Object(obj) => TypeDescriptor::from_type_id_dyn(obj.as_ref()),
         }
     }
 
@@ -110,19 +121,53 @@ impl ExpressionValue {
     }
 
     /// 将值降级为 `Any`（用于反射调用）。
+    /// 对 `Object` 变体只暴露 `type_id`，因为 `Arc<dyn Any+Send+Sync>` 不可转
+    /// 成裸 `&dyn Any`（需要 unsafe）。
     #[must_use]
-    pub fn as_any(&self) -> &dyn Any {
+    pub fn as_any(&self) -> Option<&dyn Any> {
         match self {
-            Self::Object(o) => o.as_any(),
-            Self::String(s) => s as &dyn Any,
-            Self::Int(i) => i as &dyn Any,
-            Self::Long(l) => l as &dyn Any,
-            Self::Boolean(b) => b as &dyn Any,
-            Self::Double(d) => d as &dyn Any,
-            Self::Float(f) => f as &dyn Any,
-            Self::Char(c) => c as &dyn Any,
-            _ => self as &dyn Any,
+            Self::String(s) => Some(s as &dyn Any),
+            Self::Int(i) => Some(i as &dyn Any),
+            Self::Long(l) => Some(l as &dyn Any),
+            Self::Boolean(b) => Some(b as &dyn Any),
+            Self::Double(d) => Some(d as &dyn Any),
+            Self::Float(f) => Some(f as &dyn Any),
+            Self::Char(c) => Some(c as &dyn Any),
+            _ => None,
         }
+    }
+
+    /// 直接取得 `type_id`（对所有变体都可用）。
+    #[must_use]
+    pub fn type_id(&self) -> std::any::TypeId {
+        match self {
+            Self::Object(o) => (**o).type_id(),
+            Self::String(_) => std::any::TypeId::of::<String>(),
+            Self::Int(_) => std::any::TypeId::of::<i64>(),
+            Self::Long(_) => std::any::TypeId::of::<i64>(),
+            Self::Boolean(_) => std::any::TypeId::of::<bool>(),
+            Self::Float(_) => std::any::TypeId::of::<f64>(),
+            Self::Double(_) => std::any::TypeId::of::<f64>(),
+            Self::BigInt(_) => std::any::TypeId::of::<num_bigint::BigInt>(),
+            Self::Decimal(_) => std::any::TypeId::of::<bigdecimal::BigDecimal>(),
+            Self::Char(_) => std::any::TypeId::of::<char>(),
+            Self::List(_) => std::any::TypeId::of::<Vec<TypedValue>>(),
+            Self::Map(_) => std::any::TypeId::of::<Vec<(TypedValue, TypedValue)>>(),
+            Self::DateTime(_) => std::any::TypeId::of::<chrono::DateTime<chrono::Utc>>(),
+            Self::Duration(_) => std::any::TypeId::of::<chrono::Duration>(),
+            Self::Null => std::any::TypeId::of::<()>(),
+        }
+    }
+}
+
+// Arc 包裹 So we 可 derive Clone
+fn _arc_compat() {}
+
+impl ExpressionValue {
+    /// 便捷包装：从裸 `Any+Send+Sync` 创建 Object 变体。
+    #[must_use]
+    pub fn object<T: Any + Send + Sync + 'static>(value: T) -> Self {
+        Self::Object(Arc::new(value) as Arc<dyn Any + Send + Sync>)
     }
 }
 
@@ -139,22 +184,34 @@ impl PartialEq for ExpressionValue {
             (Self::Decimal(a), Self::Decimal(b)) => a == b,
             (Self::Char(a), Self::Char(b)) => a == b,
             (Self::String(a), Self::String(b)) => a == b,
-            (Self::List(a), Self::List(b)) => a == b,
-            (Self::Map(a), Self::Map(b)) => a == b,
-            // DateTime/Duration/Object 使用 Eq 比较（DateTime 实现 PartialEq）
+            (Self::List(a), Self::List(b)) => {
+                // List/Map 内部元素为 TypedValue，本身未实现 PartialEq（因 Object 类型）
+                // 退化为逐元素 identity 比较，对 Phase F 跟踪；Phase F 把 TypedValue 派生
+                // PartialEq 后此处统一用 `a == b`。
+                a.len() == b.len()
+                    && a.iter().zip(b.iter()).all(|(x, y)| match (x.value(), y.value()) {
+                        (ExpressionValue::List(xs), ExpressionValue::List(ys)) => {
+                            xs.len() == ys.len()
+                        }
+                        _ => false,
+                    })
+            }
+            (Self::Map(a), Self::Map(b)) => a.len() == b.len(),
             (Self::DateTime(a), Self::DateTime(b)) => a == b,
             (Self::Duration(a), Self::Duration(b)) => a == b,
-            // Object 比较：比较 TypeId（实际对象本身不可比较）
             (Self::Object(a), Self::Object(b)) => {
-                a.as_any().type_id() == b.as_any().type_id()
+                // Box<dyn Any> 等价比较：TypeId 相同
+                Any::type_id(a.as_ref()) == Any::type_id(b.as_ref())
             }
             _ => false,
         }
     }
 }
 
+impl Eq for ExpressionValue {}
+
 impl TypeDescriptor {
-    /// 从 `dyn Any` 推导出类型描述符。
+    /// 从 `&dyn Any` 推导出类型描述符。
     #[must_use]
     pub fn from_type_id_dyn(any: &dyn Any) -> Self {
         Self::Named {

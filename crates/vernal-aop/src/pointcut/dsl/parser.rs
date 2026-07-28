@@ -112,11 +112,7 @@ fn strip_outer_parens(input: &str) -> Option<&str> {
         }
     }
 
-    if depth == 0 {
-        Some(inner)
-    } else {
-        None
-    }
+    if depth == 0 { Some(inner) } else { None }
 }
 
 /// 在括号外查找运算符位置。
@@ -296,10 +292,7 @@ mod tests {
         match pc {
             PointcutExpr::Execution(pattern) => {
                 assert_eq!(pattern.visibility, None);
-                assert_eq!(
-                    pattern.name,
-                    NamePattern::Exact("save_user".to_string())
-                );
+                assert_eq!(pattern.name, NamePattern::Exact("save_user".to_string()));
             }
             _ => panic!("Expected Execution pointcut"),
         }
@@ -321,10 +314,7 @@ mod tests {
         let pc = parse_pointcut_expr("execution(fn *_user(..))").unwrap();
         match pc {
             PointcutExpr::Execution(pattern) => {
-                assert_eq!(
-                    pattern.name,
-                    NamePattern::Suffix("_user".to_string())
-                );
+                assert_eq!(pattern.name, NamePattern::Suffix("_user".to_string()));
             }
             _ => panic!("Expected Execution pointcut"),
         }
@@ -335,10 +325,7 @@ mod tests {
         let pc = parse_pointcut_expr("execution(fn *save*(..))").unwrap();
         match pc {
             PointcutExpr::Execution(pattern) => {
-                assert_eq!(
-                    pattern.name,
-                    NamePattern::Contains("save".to_string())
-                );
+                assert_eq!(pattern.name, NamePattern::Contains("save".to_string()));
             }
             _ => panic!("Expected Execution pointcut"),
         }
@@ -390,8 +377,7 @@ mod tests {
 
     #[test]
     fn parse_and() {
-        let pc =
-            parse_pointcut_expr("execution(pub fn *(..)) && within(crate::api)").unwrap();
+        let pc = parse_pointcut_expr("execution(pub fn *(..)) && within(crate::api)").unwrap();
         match pc {
             PointcutExpr::And(left, right) => {
                 assert!(matches!(*left, PointcutExpr::Execution(_)));
@@ -403,10 +389,7 @@ mod tests {
 
     #[test]
     fn parse_or() {
-        let pc = parse_pointcut_expr(
-            "execution(fn save(..)) || execution(fn update(..))",
-        )
-        .unwrap();
+        let pc = parse_pointcut_expr("execution(fn save(..)) || execution(fn update(..))").unwrap();
         match pc {
             PointcutExpr::Or(_, _) => {}
             _ => panic!("Expected Or pointcut"),
@@ -449,10 +432,9 @@ mod tests {
     #[test]
     fn parse_operator_precedence() {
         // Without parens: A || B && C should parse as A || (B && C)
-        let pc = parse_pointcut_expr(
-            "execution(fn a(..)) || execution(fn b(..)) && within(crate::api)",
-        )
-        .unwrap();
+        let pc =
+            parse_pointcut_expr("execution(fn a(..)) || execution(fn b(..)) && within(crate::api)")
+                .unwrap();
 
         match pc {
             PointcutExpr::Or(left, right) => {
