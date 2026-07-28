@@ -656,34 +656,14 @@ eat_primary             → start_node (.property / [index] / .method())*
 **文件**：`spel/spel_expression.rs`（66 行）
 **对标**：`org.springframework.expression.spel.standard.SpelExpression`
 
-```rust
-pub struct SpelExpression {
-    expression_string: String,
-    ast: Box<dyn SpelNode>,
-}
-```
-
-- `get_value()` 无上下文时返回错误
-- `get_value_with_context()` 委托 `ast.get_value(context)`
-- `get_value_with_root()` 当前忽略 root 参数，直接委托 AST
+持有 `expression_string: String` 和 `ast: Box<dyn SpelNode>`。`get_value()` 无上下文时返回错误；`get_value_with_context()` 委托 `ast.get_value(context)`；`get_value_with_root()` 当前忽略 root 参数，直接委托 AST。
 
 ### 6.5 ExpressionState（求值状态栈）
 
 **文件**：`spel/expression_state.rs`（75 行）
 **对标**：`org.springframework.expression.spel.ExpressionState`
 
-```rust
-pub struct ExpressionState<'a> {
-    context: &'a dyn EvaluationContext,
-    active_context: Vec<TypedValue>,      // 活动上下文对象栈
-    variables: HashMap<String, TypedValue>, // 局部变量
-    operation_count: u32,                  // 操作计数
-}
-```
-
-**API**：`new()` / `set_variable()` / `lookup_variable()` / `active_context_object()` / `push_active_context_object()` / `pop_active_context_object()` / `evaluation_context()` / `track_operation()`
-
-变量查找优先局部变量表，其次上下文。
+维护每次表达式求值的活动上下文对象栈（`Vec<TypedValue>`）和局部变量表（`HashMap<String, TypedValue>`）。变量查找优先局部变量表，其次上下文。提供 `push_active_context_object` / `pop_active_context_object` 栈操作和 `track_operation` 操作计数。
 
 ### 6.6 SpelParserConfiguration
 
