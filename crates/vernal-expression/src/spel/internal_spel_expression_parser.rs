@@ -811,3 +811,146 @@ impl Default for InternalSpelExpressionParser {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::expression::Expression;
+    use crate::spel::support::standard_evaluation_context::StandardEvaluationContext;
+    use crate::typed_value::{ExpressionValue, TypedValue};
+
+    fn parse_and_eval(expr: &str) -> ExpressionValue {
+        let mut parser = InternalSpelExpressionParser::new();
+        let result = parser.do_parse_expression(expr).unwrap();
+        let ctx = StandardEvaluationContext::new(TypedValue::null());
+        let val = result.get_value_with_context(&ctx).unwrap();
+        val.value().clone()
+    }
+
+    fn parse_ok(expr: &str) {
+        let mut parser = InternalSpelExpressionParser::new();
+        parser.do_parse_expression(expr).unwrap_or_else(|e| panic!("parse failed for {expr:?}: {e}"));
+    }
+
+    fn parse_err(expr: &str) {
+        let mut parser = InternalSpelExpressionParser::new();
+        assert!(parser.do_parse_expression(expr).is_err(), "expected error for: {expr:?}");
+    }
+
+    #[test]
+    fn literal_int() { assert_eq!(parse_and_eval("42"), ExpressionValue::Int(42)); }
+
+    #[test]
+    fn literal_string() { assert_eq!(parse_and_eval("'hello'"), ExpressionValue::String("hello".to_string())); }
+
+    #[test]
+    fn literal_true() { assert_eq!(parse_and_eval("true"), ExpressionValue::Boolean(true)); }
+
+    #[test]
+    fn literal_null() { assert_eq!(parse_and_eval("null"), ExpressionValue::Null); }
+
+    #[test]
+    fn add() { assert_eq!(parse_and_eval("2 + 3"), ExpressionValue::Int(5)); }
+
+    #[test]
+    fn sub() { assert_eq!(parse_and_eval("10 - 4"), ExpressionValue::Int(6)); }
+
+    #[test]
+    fn mul() { assert_eq!(parse_and_eval("3 * 5"), ExpressionValue::Int(15)); }
+
+    #[test]
+    fn div() { assert_eq!(parse_and_eval("10 / 2"), ExpressionValue::Int(5)); }
+
+    #[test]
+    fn modulus() { assert_eq!(parse_and_eval("10 % 3"), ExpressionValue::Int(1)); }
+
+    #[test]
+    fn power() { assert_eq!(parse_and_eval("2 ^ 3"), ExpressionValue::Int(8)); }
+
+    #[test]
+    fn equal() { assert_eq!(parse_and_eval("5 == 5"), ExpressionValue::Boolean(true)); }
+
+    #[test]
+    fn not_equal() { assert_eq!(parse_and_eval("5 != 3"), ExpressionValue::Boolean(true)); }
+
+    #[test]
+    fn less_than() { assert_eq!(parse_and_eval("3 < 5"), ExpressionValue::Boolean(true)); }
+
+    #[test]
+    fn and() { assert_eq!(parse_and_eval("true && false"), ExpressionValue::Boolean(false)); }
+
+    #[test]
+    fn or() { assert_eq!(parse_and_eval("true || false"), ExpressionValue::Boolean(true)); }
+
+    #[test]
+    fn not() { assert_eq!(parse_and_eval("!true"), ExpressionValue::Boolean(false)); }
+
+    #[test]
+    fn ternary() { assert_eq!(parse_and_eval("true ? 1 : 2"), ExpressionValue::Int(1)); }
+
+    #[test]
+    fn elvis() { assert_eq!(parse_and_eval("'v' ?: 'd'"), ExpressionValue::String("v".to_string())); }
+
+    #[test]
+    fn matches() { assert_eq!(parse_and_eval("'abc' matches 'a.+'"), ExpressionValue::Boolean(true)); }
+
+    #[test]
+    fn inc() { assert_eq!(parse_and_eval("++5"), ExpressionValue::Int(6)); }
+
+    #[test]
+    fn dec() { assert_eq!(parse_and_eval("--5"), ExpressionValue::Int(4)); }
+
+    #[test]
+    fn compound() { parse_ok("a.b.c"); }
+
+    #[test]
+    fn safe_nav() { parse_ok("a?.b?.c"); }
+
+    #[test]
+    fn selection() { parse_ok("{1,2,3}.?[true]"); }
+
+    #[test]
+    fn projection() { parse_ok("{1,2,3}.![true]"); }
+
+    #[test]
+    fn assign() { parse_ok("a = 5"); }
+
+    #[test]
+    fn method_call() { parse_ok("'hello'.toUpperCase()"); }
+
+    #[test]
+    fn constructor() { parse_ok("new ArrayList()"); }
+
+    #[test]
+    fn variable() { parse_ok("#myVar"); }
+
+    #[test]
+    fn bean_ref() { parse_ok("@myBean"); }
+
+    #[test]
+    fn type_ref() { parse_ok("T(String)"); }
+
+    #[test]
+    fn empty_err() { parse_err(""); }
+
+    #[test]
+    fn unclosed_string_err() { parse_err("'hello"); }
+
+    #[test]
+    fn trailing_garbage_err() { parse_err("1 + 2 abc"); }
+
+    #[test]
+    fn complex_expr() { assert_eq!(parse_and_eval("(2 + 3) * 4 - 1"), ExpressionValue::Int(19)); }
+
+    #[test]
+    fn string_concat() { assert_eq!(parse_and_eval("'a' + 'b'"), ExpressionValue::String("ab".to_string())); }
+
+    #[test]
+    fn real_literal() { assert_eq!(parse_and_eval("3.14"), ExpressionValue::Float(3.14)); }
+
+    #[test]
+    fn hex_literal() { assert_eq!(parse_and_eval("0xFF"), ExpressionValue::Int(255)); }
+
+    #[test]
+    fn scientific() { assert_eq!(parse_and_eval("1e3"), ExpressionValue::Float(1000.0)); }
+}
