@@ -15,14 +15,14 @@ pub mod task;
 pub mod environment;
 pub mod ordered;
 pub mod sorted_properties;
-pub mod spring_properties;
-pub mod spring_version;
+pub mod properties_file;
+pub mod version;
 pub mod time;
 pub mod util;
 
 pub use app_lifecycle_phase::AppLifecyclePhase;
 pub use method_parameter::MethodParameter;
-pub use spring_properties::SpringProperties;
+pub use properties_file::FrameworkProperties;
 pub use conventions::{Conventions, PLURAL_SUFFIX};
 pub use failure::{BoxError, SharedError};
 

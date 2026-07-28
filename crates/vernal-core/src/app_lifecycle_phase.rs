@@ -109,7 +109,7 @@ impl AppLifecyclePhase {
     /// - `Stopping / Stopped → Integer.MAX_VALUE - 1`
     /// - `Failed → Integer.MIN_VALUE + 1`
     #[must_use]
-    pub fn spring_phase(&self) -> i32 {
+    pub fn phase_value(&self) -> i32 {
         match self {
             Self::Created | Self::Initializing => i32::MIN,
             Self::Initialized => 0,
@@ -214,15 +214,15 @@ mod tests {
     }
 
     #[test]
-    fn spring_phase_maps_smart_lifecycle_correctly() {
-        assert_eq!(AppLifecyclePhase::Created.spring_phase(), i32::MIN);
-        assert_eq!(AppLifecyclePhase::Initializing.spring_phase(), i32::MIN);
-        assert_eq!(AppLifecyclePhase::Initialized.spring_phase(), 0);
-        assert_eq!(AppLifecyclePhase::Starting.spring_phase(), i32::MAX);
-        assert_eq!(AppLifecyclePhase::Started.spring_phase(), i32::MAX);
-        assert_eq!(AppLifecyclePhase::Stopping.spring_phase(), i32::MAX - 1);
-        assert_eq!(AppLifecyclePhase::Stopped.spring_phase(), i32::MAX - 1);
-        assert_eq!(AppLifecyclePhase::Failed.spring_phase(), i32::MIN + 1);
+    fn phase_value_maps_lifecycle_correctly() {
+        assert_eq!(AppLifecyclePhase::Created.phase_value(), i32::MIN);
+        assert_eq!(AppLifecyclePhase::Initializing.phase_value(), i32::MIN);
+        assert_eq!(AppLifecyclePhase::Initialized.phase_value(), 0);
+        assert_eq!(AppLifecyclePhase::Starting.phase_value(), i32::MAX);
+        assert_eq!(AppLifecyclePhase::Started.phase_value(), i32::MAX);
+        assert_eq!(AppLifecyclePhase::Stopping.phase_value(), i32::MAX - 1);
+        assert_eq!(AppLifecyclePhase::Stopped.phase_value(), i32::MAX - 1);
+        assert_eq!(AppLifecyclePhase::Failed.phase_value(), i32::MIN + 1);
     }
 
     #[test]

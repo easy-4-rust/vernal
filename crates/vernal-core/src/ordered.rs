@@ -293,7 +293,7 @@ mod tests {
     }
 
     #[test]
-    fn spring_alias_semantics() {
+    fn high_low_precedence_aliases() {
         // Spring `Ordered.HIGHEST_PRECEDENCE` = Integer.MIN_VALUE = -2147483648
         // vernal-core 选择 i32::MIN + 1 = -2147483647 以保留 1 slot
         assert_eq!(HIGHEST_PRECEDENCE, -2_147_483_647);
