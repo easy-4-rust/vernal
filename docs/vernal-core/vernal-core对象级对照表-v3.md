@@ -42,9 +42,9 @@
 | **util/function** | 6 | 0 | 0 | 6 | std::ops::Fn 替代 |
 | **util/unit** | 2 | 0 | 1 | 1 | vernal-core(新增 DataSize) |
 | **util/xml** | 22 | 0 | 0 | 22 | quick-xml 等替代 |
-| **合计** | **433** | **13** | **58** | **362** | — |
+| **合计** | **433** | **63** | **8** | **362** | — |
 
-**vernal-core 实际承接范围**:13(已迁移)+ 58(待迁移)= **71 个 Java 类**(占 16%);其余 362 个(84%)分配到 vernal-macros / vernal-context / vernal-web / vernal-log / vernal-observability 等上层 crate,或用 std/serde/tokio 等价物替代。
+**vernal-core 实际承接范围**:63(已迁移)+ 8(待迁移)= **71 个 Java 类**(占 16%);其余 362 个(84%)分配到 vernal-macros / vernal-context / vernal-web / vernal-log / vernal-observability 等上层 crate,或用 std/serde/tokio 等价物替代。
 
 ---
 

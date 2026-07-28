@@ -731,60 +731,27 @@ pub trait SpelNode: Send + Sync {
 
 #### 6.7.2 字面量节点（7 个）
 
-| 节点 | 文件 | 行数 | 说明 |
-|:-----|:-----|:-----|:-----|
-| `IntLiteral` | `ast/int_literal.rs` | 57 | 整数字面量 |
-| `LongLiteral` | `ast/long_literal.rs` | 47 | 长整型字面量 |
-| `RealLiteral` | `ast/real_literal.rs` | 45 | 实数字面量 |
-| `FloatLiteral` | `ast/float_literal.rs` | 45 | 单精度实数字面量 |
-| `StringLiteral` | `ast/string_literal.rs` | 44 | 字符串字面量 |
-| `BooleanLiteral` | `ast/boolean_literal.rs` | 48 | 布尔字面量 |
-| `NullLiteral` | `ast/null_literal.rs` | 45 | 空值字面量 |
+`IntLiteral`（57 行）、`LongLiteral`（47）、`RealLiteral`（45）、`FloatLiteral`（45）、`StringLiteral`（44）、`BooleanLiteral`（48）、`NullLiteral`（45）。
 
 #### 6.7.3 算术运算符节点（6 个）
 
-| 节点 | 文件 | 行数 | 运算符 |
-|:-----|:-----|:-----|:-------|
-| `OpPlus` | `ast/op_plus.rs` | 140 | `+` |
-| `OpMinus` | `ast/op_minus.rs` | 76 | `-` |
-| `OpMultiply` | `ast/op_multiply.rs` | 76 | `*` |
-| `OpDivide` | `ast/op_divide.rs` | 86 | `/` |
-| `OpModulus` | `ast/op_modulus.rs` | 77 | `%` |
-| `OperatorPower` | `ast/operator_power.rs` | 76 | `^` |
+`OpPlus`（140 行，`+`）、`OpMinus`（76，`-`）、`OpMultiply`（76，`*`）、`OpDivide`（86，`/`）、`OpModulus`（77，`%`）、`OperatorPower`（76，`^`）。
 
 #### 6.7.4 比较运算符节点（6 个）
 
-| 节点 | 文件 | 行数 | 运算符 |
-|:-----|:-----|:-----|:-------|
-| `OpEq` | `ast/op_eq.rs` | 72 | `==` |
-| `OpNe` | `ast/op_ne.rs` | 72 | `!=` |
-| `OpLt` | `ast/op_lt.rs` | 76 | `<` |
-| `OpLe` | `ast/op_le.rs` | 76 | `<=` |
-| `OpGt` | `ast/op_gt.rs` | 76 | `>` |
-| `OpGe` | `ast/op_ge.rs` | 76 | `>=` |
+`OpEq`（72 行，`==`）、`OpNe`（72，`!=`）、`OpLt`（76，`<`）、`OpLe`（76，`<=`）、`OpGt`（76，`>`）、`OpGe`（76，`>=`）。
 
 #### 6.7.5 逻辑运算符节点（3 个）
 
-| 节点 | 文件 | 行数 | 运算符 |
-|:-----|:-----|:-----|:-------|
-| `OpAnd` | `ast/op_and.rs` | 52 | `&&` |
-| `OpOr` | `ast/op_or.rs` | 52 | `||` |
-| `OperatorNot` | `ast/operator_not.rs` | 48 | `!` |
+`OpAnd`（52 行，`&&`）、`OpOr`（52，`||`）、`OperatorNot`（48，`!`）。
 
 #### 6.7.6 自增自减节点（2 个）
 
-| 节点 | 文件 | 行数 | 说明 |
-|:-----|:-----|:-----|:-----|
-| `OpInc` | `ast/op_inc.rs` | 54 | `++`（前缀/后缀） |
-| `OpDec` | `ast/op_dec.rs` | 51 | `--`（前缀/后缀） |
+`OpInc`（54 行，`++` 前缀/后缀）、`OpDec`（51 行，`--` 前缀/后缀）。
 
 #### 6.7.7 特殊运算符节点（3 个）
 
-| 节点 | 文件 | 行数 | 说明 |
-|:-----|:-----|:-----|:-----|
-| `OperatorInstanceof` | `ast/operator_instanceof.rs` | 52 | `instanceof` 类型检查 |
-| `OperatorMatches` | `ast/operator_matches.rs` | 107 | `matches` 正则匹配（依赖 `regex` crate） |
-| `OperatorBetween` | `ast/operator_between.rs` | 68 | `between` 范围包含 |
+`OperatorInstanceof`（52 行，类型检查）、`OperatorMatches`（107 行，正则匹配，依赖 `regex` crate）、`OperatorBetween`（68 行，范围包含）。
 
 #### 6.7.8 表达式节点（17 个）
 
@@ -816,59 +783,21 @@ pub trait SpelNode: Send + Sync {
 **文件**：`spel/spel_message.rs`（506 行）
 **对标**：`org.springframework.expression.spel.SpelMessage`
 
-```rust
-pub enum SpelMessage {
-    // Type / Conversion / Construct (1001-1005)
-    TypeConversionError, ConstructorNotFound, ConstructorInvocationProblem,
-    MethodNotFound, TypeNotFound,
-    // Function / Property / Field / Method (1006-1011)
-    FunctionNotDefined, PropertyOrFieldNotReadableOnNull, PropertyOrFieldNotReadable,
-    PropertyOrFieldNotWritableOnNull, PropertyOrFieldNotWritable,
-    MethodCallOnNullObjectNotAllowed,
-    // Index / Selector (1012-1019)
-    CannotIndexIntoNullValue, NotComparable, IncorrectNumberOfArgumentsToFunction,
-    InvalidTypeForSelection, ResultOfSelectionCriteriaIsNotBoolean,
-    BetweenRightOperandMustBeTwoElementList, InvalidPattern, ProjectionNotSupportedOnType,
-    // Misc Evaluation (1020-1034)
-    ArgListShouldNotBeEvaluated, ExceptionDuringPropertyRead, ...
-    // Numeric literals (1035-1040)
-    NotAnInteger, NotALong, InvalidFirstOperandForMatchesOperator, ...
-    // Parser-side (1041-1069)
-    MoreInput, RightOperandProblem, NotExpectedToken, Ood, ...
-    // Bean / Array construction (1057-1064)
-    NoBeanResolverRegistered, ExceptionDuringBeanResolution, ...
-    // Misc (1065-1085)
-    UnexpectedEscapeChar, OperandNotIncrementable, ...
-    // Compile / limits (1072-1079)
-    ExceptionRunningCompiledExpression, FlawedPattern, ...
-    // Internal
-    InternalError,  // 9999
-}
-```
+86 个变体，按 Spring 源码顺序定义。每个变体携带错误码（`code()` 方法）和默认消息模板。
 
-**消息格式**：`EL{code}E: <插值后的消息模板>`
-- 占位符 `{n}` 替换为 `inserts[n]`
-- `format_message(&[&str])` 渲染完整消息
-- `format_message_display(&[D])` 泛型版本
+**消息格式**：`EL{code}E: <插值后的消息模板>`，占位符 `{n}` 替换为 `inserts[n]`。提供 `format_message(&[&str])` 和泛型版本 `format_message_display(&[D])`。
 
-**分类**：
-- 1001-1005：类型/转换/构造
-- 1006-1011：函数/属性/字段/方法
-- 1012-1019：索引/选择器
-- 1020-1034：杂项求值
-- 1035-1040：数字字面量
-- 1041-1069：解析器侧
-- 1052-1056：集合增长
-- 1057-1064：Bean/数组构造
-- 1065-1085：杂项/限制
-- 9999：内部错误
+**错误码范围**：1001-1005 类型/转换/构造；1006-1011 函数/属性/方法；1012-1019 索引/选择器；1020-1034 杂项求值；1035-1040 数字字面量；1041-1069 解析器侧；1052-1056 集合增长；1057-1064 Bean/数组构造；1065-1085 杂项/限制；9999 内部错误。
 
-#### 6.8.2 SpelParseException
+#### 6.8.2 SpelParseException / SpelEvaluationException
 
-**文件**：`spel/spel_parse_exception.rs`（136 行）
-**对标**：`org.springframework.expression.spel.SpelParseException`
+**文件**：`spel/spel_parse_exception.rs`（136 行）/ `spel/spel_evaluation_exception.rs`（114 行）
+**对标**：Spring `SpelParseException` / `SpelEvaluationException`
+
+两者结构相同，均使用 `thiserror` 派生 `std::error::Error`：
 
 ```rust
+// SpelParseException
 pub struct SpelParseException {
     pub code: SpelMessage,
     pub inserts: Vec<String>,
@@ -882,25 +811,9 @@ pub struct SpelParseException {
 - `at_unknown(code, inserts)` — 无位置
 - `detailed_message()` — `Expression [{expr}] @{pos}: {simple}`
 
-#### 6.8.3 SpelEvaluationException
+`SpelEvaluationException` 结构相同（去掉 `expression_string`），额外提供 `set_position()` 后置设置位置。
 
-**文件**：`spel/spel_evaluation_exception.rs`（114 行）
-**对标**：`org.springframework.expression.spel.SpelEvaluationException`
-
-```rust
-pub struct SpelEvaluationException {
-    pub code: SpelMessage,
-    pub inserts: Vec<String>,
-    pub position: Option<usize>,
-    message: String,
-}
-```
-
-- `new(code, inserts)` — 无位置
-- `at(code, position, inserts)` — 带位置
-- `set_position(position)` — 后置设置位置
-
-#### 6.8.4 其他异常
+#### 6.8.3 其他异常
 
 `ParseException`（`parse_exception.rs`）、`EvaluationException`（`evaluation_exception.rs`）、`ExpressionException`（`expression_exception.rs`）、`AccessException`（`access_exception.rs`）、`ExpressionInvocationTargetException`（`expression_invocation_target_exception.rs`）、`InternalParseException`（`spel/internal_parse_exception.rs`，包装 `SpelParseException`）。
 

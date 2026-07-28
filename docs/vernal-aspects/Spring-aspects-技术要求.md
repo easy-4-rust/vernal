@@ -432,80 +432,19 @@ pub struct AopBridge;
 
 ### 4.1 TransactionalAspect
 
-```rust
-// 文件：transactional_aspect.rs
-pub struct TransactionalAspect {
-    config: TransactionConfig,
-}
-
-impl Interceptor for TransactionalAspect {
-    fn intercept<'a>(&'a self, invocation: Arc<Invocation>, next: Next<'a>) -> InvocationFuture<'a> {
-        Box::pin(async move {
-            // TODO: 集成 vernal-tx 的 PlatformTransactionManager
-            let result = next.run(invocation).await;
-            // TODO: 根据 config.rollback_for 和 result 决定是否回滚
-            result
-        })
-    }
-}
-```
-
-Builder 模式配置：`with_propagation()` / `with_isolation()` / `with_read_only()` / `with_timeout()`。
+`TransactionalAspect { config: TransactionConfig }` 实现 `Interceptor` trait。Builder 模式配置：`with_propagation()` / `with_isolation()` / `with_read_only()` / `with_timeout()`。`intercept()` 中 TODO：集成 `vernal-tx` 的 `PlatformTransactionManager`，根据 `config.rollback_for` 和结果决定回滚。
 
 ### 4.2 CacheableAspect
 
-```rust
-// 文件：cacheable_aspect.rs
-pub struct CacheableAspect {
-    config: CacheConfig,
-}
-
-impl Interceptor for CacheableAspect {
-    fn intercept<'a>(&'a self, invocation: Arc<Invocation>, next: Next<'a>) -> InvocationFuture<'a> {
-        Box::pin(async move {
-            // TODO: 集成 vernal-cache 的 CacheManager
-            next.run(invocation).await
-        })
-    }
-}
-```
+`CacheableAspect { config: CacheConfig }` 实现 `Interceptor` trait。`intercept()` 中 TODO：集成 `vernal-cache` 的 `CacheManager`，按 `config.operation` 分发 Cacheable/CachePut/CacheEvict 逻辑。
 
 ### 4.3 AsyncAspect
 
-```rust
-// 文件：async_aspect.rs
-pub struct AsyncAspect {
-    config: AsyncConfig,
-}
-
-impl Interceptor for AsyncAspect {
-    fn intercept<'a>(&'a self, invocation: Arc<Invocation>, next: Next<'a>) -> InvocationFuture<'a> {
-        Box::pin(async move {
-            // TODO: 集成 vernal-async 的 AsyncTaskExecutor
-            // 完整实现：将目标方法提交到 tokio::spawn
-            next.run(invocation).await
-        })
-    }
-}
-```
+`AsyncAspect { config: AsyncConfig }` 实现 `Interceptor` trait。`intercept()` 中 TODO：集成 `vernal-async` 的 `AsyncTaskExecutor`，将目标方法提交到 `tokio::spawn`。
 
 ### 4.4 ScheduledAspect
 
-```rust
-// 文件：scheduled_aspect.rs
-pub struct ScheduledAspect {
-    config: ScheduleConfig,  // cron / fixed_delay / fixed_rate / initial_delay
-}
-
-impl Interceptor for ScheduledAspect {
-    fn intercept<'a>(&'a self, invocation: Arc<Invocation>, next: Next<'a>) -> InvocationFuture<'a> {
-        Box::pin(async move {
-            // TODO: 集成 vernal-context 的 ScheduledTask
-            next.run(invocation).await
-        })
-    }
-}
-```
+`ScheduledAspect { config: ScheduleConfig }` 实现 `Interceptor` trait。`ScheduleConfig` 包含 `cron` / `fixed_delay_ms` / `fixed_rate_ms` / `initial_delay_ms` 四个调度参数。`intercept()` 中 TODO：集成 `vernal-context` 的 `ScheduledTask`。
 
 ---
 
@@ -548,32 +487,11 @@ linkme 分布式 slice 注册到全局注册表。
 
 ### 5.4 Send + Sync + 'static 约束
 
-所有核心 trait 均要求 `Send + Sync + 'static`：
-
-```rust
-pub trait TransactionAttributeSource: Send + Sync + 'static { ... }
-pub trait TransactionManager: Send + Sync + 'static { ... }
-pub trait CacheManager: Send + Sync + 'static { ... }
-pub trait Cache: Send + Sync + 'static { ... }
-pub trait AsyncTaskExecutor: Send + Sync + 'static { ... }
-pub trait AsyncUncaughtExceptionHandler: Send + Sync + 'static { ... }
-pub trait ConfigurableObject: Send + Sync + 'static { ... }
-```
-
-确保所有切面组件可以在 Tokio 多线程运行时中安全使用。
+所有核心 trait 均要求 `Send + Sync + 'static`：`TransactionAttributeSource`、`TransactionManager`、`CacheManager`、`Cache`、`AsyncTaskExecutor`、`AsyncUncaughtExceptionHandler`、`ConfigurableObject`。确保所有切面组件可以在 Tokio 多线程运行时中安全使用。
 
 ### 5.5 泛型参数化
 
-事务和缓存切面使用泛型参数化属性源：
-
-```rust
-pub struct TransactionAspectSupport<S: TransactionAttributeSource> { ... }
-pub struct AnnotationTransactionAspect<S: TransactionAttributeSource> { ... }
-pub struct CacheAspectSupport<S: CacheOperationSource> { ... }
-pub struct AnnotationCacheAspect<S: CacheOperationSource> { ... }
-```
-
-允许不同的属性源实现（注解驱动、XML 配置、编程式注册等）。
+事务和缓存切面使用泛型参数化属性源（`TransactionAspectSupport<S>`、`AnnotationTransactionAspect<S>`、`CacheAspectSupport<S>`、`AnnotationCacheAspect<S>`），允许不同的属性源实现（注解驱动、XML 配置、编程式注册等）。
 
 ---
 

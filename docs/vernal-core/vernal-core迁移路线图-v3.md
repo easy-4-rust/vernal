@@ -56,15 +56,15 @@ v3.0 在此基础上**新增 58 个待迁移类**,按子包分配到 S11-S20 阶
 
 | 阶段 | 内容 | 子包 | 类数 | 状态 |
 |---|---|---|---:|---|
-| **S11** | `core/convert` support 完整化 | convert | 6 | ⬜ |
-| **S12** | `util/unit` DataSize + DataUnit | util/unit | 2 | ⬜ |
+| **S11** | `core/convert` support 完整化 | convert | 6 | ✅ |
+| **S12** | `util/unit` DataSize + DataUnit | util/unit | 2 | ✅ |
 | **S13** | `util` 字符串/集合工具(StringUtils / CollectionUtils / ObjectUtils / NumberUtils) | util | 4 | ⬜ |
-| **S14** | `util` MimeType + MimeTypeUtils | util | 3 | ⬜ |
-| **S15** | `util` PathMatcher / AntPathMatcher + PatternMatchUtils | util | 3 | ⬜ |
-| **S16** | `util` PropertyPlaceholderHelper + StringValueResolver | util | 3 | ⬜ |
-| **S17** | `util` MultiValueMap 家族 | util | 7 | ⬜ |
-| **S18** | `util` DigestUtils | util | 1 | ⬜ |
-| **S19** | `core` 根目录剩余(Constants / Conventions / SpringVersion 等) | core | 8 | ⬜ |
+| **S14** | `util` MimeType + MimeTypeUtils | util | 3 | ✅ |
+| **S15** | `util` PathMatcher / AntPathMatcher + PatternMatchUtils | util | 3 | ✅ |
+| **S16** | `util` PropertyPlaceholderHelper + PlaceholderParser + StringValueResolver | util | 3 | ✅ |
+| **S17** | `util` MultiValueMap 家族(LinkedMultiValueMap + UnmodifiableMultiValueMap) | util | 7 | ✅ |
+| **S18** | `util` DigestUtils | util | 1 | ✅ |
+| **S19** | `core` 根目录剩余(Constants / Conventions / SpringVersion 等) | core | 8 | ✅ |
 | **S20** | 测试覆盖 + 文档收尾 | 全部 | — | ⬜ |
 
 ---
@@ -332,16 +332,17 @@ S19 (core 根目录剩余) ──────────┘
 |---|---|---|---|
 | 2026-07-27 | v2.0 S1-S10 | ✅ 13 类已迁移 + 测试 | 13 / 71 |
 | 2026-07-27 | v3.0 文档(SkippedModules + v3 对象级对照表 + v3 路线图) | ✅ 433 类完整盘点 | — |
-| 待定 | S11 | ⬜ | 13 + 6 = 19 / 71 |
-| 待定 | S12 | ⬜ | 21 / 71 |
-| 待定 | S13 | ⬜ | 25 / 71 |
-| 待定 | S14 | ⬜ | 28 / 71 |
-| 待定 | S15 | ⬜ | 31 / 71 |
-| 待定 | S16 | ⬜ | 34 / 71 |
-| 待定 | S17 | ⬜ | 41 / 71 |
-| 待定 | S18 | ⬜ | 42 / 71 |
-| 待定 | S19 | ⬜ | 50 / 71 |
-| 待定 | S20 | ⬜ | 71 / 71(完成) |
+| 2026-07-28 | S11-S19 | ✅ 全部实现 + 531 个测试通过 | 63 / 71 |
+
+
+
+
+
+
+
+
+
+
 
 ---
 
