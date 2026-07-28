@@ -124,11 +124,13 @@ fn between_parse_only() {
 // ══════════════════════════════════════════════════════════════════════════════
 
 #[test]
-fn instanceof_without_type_locator_errors() {
+fn instanceof_without_type_locator_fallback() {
     let parser = SpelExpressionParser::new();
     let parsed = parser.parse_expression("'hello' instanceof T(String)").unwrap();
     let ctx = StandardEvaluationContext::new(TypedValue::null());
-    assert!(parsed.get_value_with_context(&ctx).is_err());
+    // TypeLocator 未配置时回退到 ExpressionValue 变体匹配
+    let result = parsed.get_value_with_context(&ctx).unwrap();
+    assert_eq!(*result.value(), ExpressionValue::Boolean(true));
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
