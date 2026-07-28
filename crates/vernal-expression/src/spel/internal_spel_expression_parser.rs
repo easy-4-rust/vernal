@@ -24,6 +24,7 @@ use super::ast::op_ne::OpNe;
 use super::ast::op_or::OpOr;
 use super::ast::op_plus::OpPlus;
 use super::ast::real_literal::RealLiteral;
+use super::ast::boolean_literal::BooleanLiteral;
 use super::ast::spel_node::SpelNode;
 use super::ast::string_literal::StringLiteral;
 use super::ast::ternary::Ternary;
@@ -426,7 +427,11 @@ impl InternalSpelExpressionParser {
             TokenKind::LiteralHexInt | TokenKind::LiteralHexLong => {
                 let t = self.next_token().unwrap();
                 let raw = t.string_value();
-                let s = raw.trim_start_matches("0x").trim_start_matches("0X");
+                let s = raw
+                    .trim_start_matches("0x")
+                    .trim_start_matches("0X")
+                    .trim_end_matches('L')
+                    .trim_end_matches('l');
                 let val = i64::from_str_radix(s, 16).unwrap_or(0);
                 Some(Box::new(IntLiteral::new(val, raw)))
             }
@@ -438,11 +443,10 @@ impl InternalSpelExpressionParser {
                 let name = t.string_value();
                 if name == "true" || name == "TRUE" {
                     self.next_token();
-                    // Phase F: BooleanLiteral 节点
-                    Some(Box::new(IntLiteral::new(1, "true".to_string())))
+                    Some(Box::new(BooleanLiteral::new(true)))
                 } else if name == "false" || name == "FALSE" {
                     self.next_token();
-                    Some(Box::new(IntLiteral::new(0, "false".to_string())))
+                    Some(Box::new(BooleanLiteral::new(false)))
                 } else {
                     None
                 }
