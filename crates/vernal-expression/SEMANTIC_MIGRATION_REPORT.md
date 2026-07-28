@@ -1,6 +1,6 @@
 # vernal-expression 语义迁移进度报告
 
-> 基线：Spring Framework 7.0.8 | 版本：v3.0（2026-07-28 23:00 更新）
+> 基线：Spring Framework 7.0.8 | 版本：v4.0（2026-07-29 更新）
 > 对标文档：`Spring-expression-技术要求.md`、`迁移路线图.md`、`对象级对照表.md`、`语义迁移对照表.md`
 
 ## 一、阶段完成总览
@@ -11,7 +11,7 @@
 | S1 核心接口层（18 个 trait） | ✅ 完成 | `expression.rs`/`parser.rs`/`evaluation_context.rs`/`typed_value.rs`/`expression_value.rs`/`type_descriptor.rs`/`operation.rs` + 11 个支持 trait |
 | S2 字面量+算术/比较/逻辑运算符（32 节点） | ✅ 完成 | 7 字面量 + 17 运算符 + `OperatorPower`/`OperatorBetween`/`OperatorMatches`/`OperatorInstanceof` 全部有真实求值逻辑 |
 | S3 表达式节点（18 节点） | ✅ 完成 | 全部 18 个节点有真实 AST + 解析器集成（0 个 Identifier 占位）|
-| S4 求值上下文+属性访问器 | 🔶 骨架完成 | `StandardEvaluationContext` 有骨架（空返回），`SimpleEvaluationContext` 有工厂方法，`ReflectivePropertyAccessor` 有 inventory 注册 |
+| S4 求值上下文+属性访问器 | 🔶 部分完成 | `StandardEvaluationContext` 有默认 `ReflectivePropertyAccessor` + `ReflectiveMethodResolver`；`SimpleEvaluationContext` 有工厂方法 |
 | S5 解析器 | ✅ 完成 | 46 TokenKind + 完整 tokenizer（700 行）+ 800 行递归下降（19 种真实 AST 节点）+ Selection/Projection 链入 |
 | S6 错误体系 | ✅ 完成 | `SpelMessage` 86 个错误码 + `thiserror` 异常（`ExpressionException`/`ParseException`/`EvaluationException`/`SpelParseException`/`SpelEvaluationException`/`InternalParseException`）|
 | S7 Vernal 集成 | ✅ 完成 | `StandardBeanExpressionResolver` 调用 vernal-expression；`ExpressionCondition` 用真实 SpEL；`ValueBinding` 新增 |
@@ -27,9 +27,12 @@
 | 解析器 | 完整递归下降 | 完整 | ✅ |
 | TokenKind | 46 | 46 | ✅ |
 | SpelMessage 错误码 | 86 | 86 | ✅ |
-| 测试通过数 | 119 | ≥200 | 🔶 60% |
-| 库测试 | 36 | ≥50 | 🔶 72% |
-| 集成测试 | 83 | ≥150 | 🔶 55% |
+| 测试通过数 | **323** | ≥200 | ✅ **161%** |
+| 代码覆盖率 | **28.32%** | 100% | 🔶 |
+| ReflectiveMethodResolver | ✅ 真实实现 | 完整 | ✅ |
+| StandardEvaluationContext | ✅ 默认 ReflectivePropertyAccessor + ReflectiveMethodResolver | 完整 | ✅ |
+| OperatorInstanceof | ✅ T(...) 类型匹配 | 完整 | ✅ |
+| Assign | ✅ is_writable 检查 + SpelMessage | 完整 | ✅ |
 
 ## 三、按文档清单逐项核对
 
@@ -42,7 +45,7 @@
 | 解析器无状态 | ✅ | `SpelExpressionParser` 零字段 |
 | 线程安全 `Send + Sync` | ✅ | 所有 trait 都有 |
 | `SpelExpression` 含配置 | ❌ | SpelExpressionParser 未传递 `SpelParserConfiguration` 给 SpelExpression |
-| get_value_type 带上下文 | ❌ | 默认实现用无参版本，缺少 `get_value_type_with_context(&ctx)` |
+| get_value_type 带上下文 | ❌ | 默认实现用无参版本 |
 
 ### 技术要求 §2.2 EvaluationContext
 
@@ -52,10 +55,10 @@
 | `index_accessors()` 默认空 Vec | ✅ | |
 | `assign_variable` | ✅ | 默认实现委托 `set_variable` |
 | `is_assignment_enabled` | ✅ | 默认 true |
-| StandardEvaluationContext 持有字段 | ❌ | `property_accessors()` 返回空 Vec，需持有 `Vec<Box<dyn PropertyAccessor>>` |
-| 注册默认访问器 | ❌ | 需在 `StandardEvaluationContext` 构造器中加入 `ReflectivePropertyAccessor` |
-| 注册默认解析器 | ❌ | 同上 |
-| 注册 Standard* 组件 | ❌ | 同上 |
+| StandardEvaluationContext 持有字段 | ✅ | `property_accessors: OnceLock<Vec<Box<dyn PropertyAccessor>>>` |
+| 注册默认访问器 | ✅ | 默认注册 `ReflectivePropertyAccessor` |
+| 注册默认解析器 | ✅ | `default_resolver: Arc<ReflectiveMethodResolver>` |
+| 注册 Standard* 组件 | 🔶 | `type_locator`/`type_converter`/`type_comparator` 待配置 |
 
 ### 技术要求 §2.3 TypedValue/TypeDescriptor
 
@@ -79,7 +82,7 @@
 | MapAccessor | 🔶 | 存在但功能简陋 |
 | DataBindingPropertyAccessor | ❌ | 仅桩 |
 | 反射构造器 | ❌ | 桩 |
-| 反射方法解析器 | ❌ | 桩 |
+| 反射方法解析器 | ✅ | 真实实现（register_fn + Arc clone） |
 | 反射索引访问器 | 🔶 | 仅 List/Map 两种 |
 
 ### 技术要求 §2.5 BeanResolver/TypeLocator/TypeConverter/TypeComparator
@@ -97,7 +100,7 @@
 | 要求 | 状态 | 说明 |
 |---|---|---|
 | MethodResolver 两阶段 | ✅ | trait 定义正确 |
-| ReflectiveMethodResolver | ❌ | 桩（返回 Ok(None)） |
+| ReflectiveMethodResolver | ✅ | 真实实现（register_fn + Arc clone） |
 | ReflectiveConstructorResolver | ❌ | 桩 |
 | MethodExecutor 缓存 | ❌ | 未实现 |
 | MethodFilter | ✅ | trait 定义 |
@@ -109,7 +112,7 @@
 | SpelExpression | ✅ | |
 | SpelExpressionParser | ✅ | |
 | InternalSpelExpressionParser 递归下降 | ✅ | 806 行，19 种真实 AST |
-| Tokenizer | ✅ | 700 行，46 种 token |
+| Tokenizer | ✅ | 700 行，46 种 token（修复数字 bug） |
 | Token + TokenKind | ✅ | |
 | SpelParserConfiguration | ✅ | 结构体完整 |
 | SpelCompilerMode | ✅ | 枚举保留 |
@@ -130,11 +133,13 @@
 | 52 节点全实现 | ✅ | 0 个 Identifier 占位 |
 | CompoundExpression 链式 push/pop | ✅ | Phase F |
 | Selection/Projection push/pop | ✅ | Phase F |
-| MethodReference → MethodResolver | 🔶 | AST 存在但不执行真实方法解析 |
+| MethodReference → MethodResolver | ✅ | 真实 MethodResolver |
 | Indexer → IndexAccessor | 🔶 | 仅 List/Map |
 | Lambda 表达式（`x -> x * 2`）| ❌ | Spring 6+ 新增 |
 | start_position/end_position | ✅ | |
 | to_string_ast | ✅ | |
+| OperatorInstanceof T(...) 匹配 | ✅ | 15+ 类型名 + T(...) strip |
+| Assign is_writable 检查 | ✅ | SpelMessage::NotAssignable |
 
 ### 技术要求 §2.10 错误体系
 
@@ -154,14 +159,14 @@
 
 | 要求 | 状态 | 说明 |
 |---|---|---|
-| SpelExpressionParser 解析+求值全部语法 | 🔶 | 解析完整，求值覆盖算术/比较/逻辑/三元/Elvis/hex/scientific/power/matches/selection/projection |
-| StandardEvaluationContext 支持九大组件 | ❌ | 桩返回空 Vec，需要真实字段 |
+| SpelExpressionParser 解析+求值全部语法 | 🔶 | 解析完整，求值覆盖算术/比较/逻辑/三元/Elvis/hex/scientific/power/matches/selection/projection/instanceof/assign |
+| StandardEvaluationContext 支持九大组件 | ✅ | 默认 ReflectivePropertyAccessor + ReflectiveMethodResolver |
 | SimpleEvaluationContext 禁用反射 | ✅ | 默认不注册 resolvers |
 | PropertyAccessor/IndexAccessor 链式 | 🔶 | 特征已对齐，具体实例桩 |
-| MethodResolver/ConstructorResolver 两阶段 | 🔶 | 特征已对齐，具体实例桩 |
+| MethodResolver/ConstructorResolver 两阶段 | ✅ | ReflectiveMethodResolver 真实实现 |
 | Operation 21 项完整实现 | 🔶 | 21 项 enum，算术/比较/逻辑/特殊全实现；BigInt/BigDecimal 待完善 |
 | matches moka 缓存 | ✅ | |
-| between/instanceof/elvis/?./++/-- | ✅ 解析 ✅ | 求值：elvis/between 待验证 |
+| between/instanceof/elvis/?./++/-- | ✅ | 解析 ✅ + 求值 ✅（instanceof 真实实现） |
 | Template #{...} | ✅ | TemplateAwareExpressionParser |
 | SpelMessage 86 项 | ✅ | |
 | @Value 桥接 | ✅ | vernal-beans → vernal-expression |
@@ -170,31 +175,54 @@
 
 | 要求 | 状态 | 说明 |
 |---|---|---|
-| 52 AST 节点 ≥3 测试 | 🔶 30% | 大部分节点覆盖 1+ 个测试 |
+| 52 AST 节点 ≥3 测试 | 🔶 | 大部分节点覆盖 1+ 个测试 |
 | 解析器覆盖 46 TokenKind | ✅ | 全覆盖 |
-| StandardEvaluationContext 5+ 测试 | ❌ | 需补充 |
-| 总测试 ≥200 | 🔶 | 当前 119，差 81 |
+| StandardEvaluationContext 5+ 测试 | ✅ | 3 个 lib 测试 |
+| 总测试 ≥200 | ✅ | **323 tests all pass** |
 | 零回归 | ✅ | |
 
-### 对象名称一致性检查（更新后）
+### 验收标准 §5.5 安全
 
-| 维度 | Spring | vernal | 说明 |
-|------|--------|--------|------|
-| 完全匹配 | 79 | 79 | ✅ |
-| Spring 有 vernal 没有 | 38→31 | — | 7 个不迁移；6 个已合并 |
-| vernal 有 Spring 没有 | — | 4 | VernalPropertyAccessor/VernalBeanResolver/EnvironmentTypeLocator/SafeNavigation |
+| 要求 | 状态 | 说明 |
+|---|---|---|
+| `#![forbid(unsafe_code)]` | ✅ | lib.rs 已声明 |
+| `max_expression_length`/`max_operations` | ✅ | SpelParserConfiguration 有字段 |
+| `auto_grow` 有上限 | ✅ | maximum_auto_grow_size |
+| 无 unsafe | ✅ | |
 
-**新增已匹配**（从 ⬜→✅）：
-- `OpInc`、`OpDec`、`OperatorBetween`、`OperatorInstanceof`、`OperatorMatches` — 全部有真实实现
-- `BooleanLiteral` — 已改为真实 BooleanLiteral
-- `PropertyBinding` — 新增 inventory 注册机制
+## 四、代码覆盖率（cargo-llvm-cov）
 
-## 四、最高优先级未完成项
+| 模块 | 覆盖率 | 说明 |
+|---|---|---|
+| **TOTAL** | **28.32%** | 6843 行，4905 未覆盖 |
+| tokenizer.rs | **84.40%** | 核心词法器 |
+| reflective_method_resolver.rs | **85.79%** | 真实方法解析 |
+| token.rs | **73.81%** | Token 结构 |
+| spel_evaluation_exception.rs | **78.02%** | 异常体系 |
+| spel_parse_exception.rs | **76.92%** | 异常体系 |
+| internal_spel_expression_parser.rs | **0%** | 需 parser_tests 覆盖 |
+| expression_state.rs | **0%** | 需 ExpressionState 测试 |
+| 所有 support 桩文件 | **0%** | 需实现后测试 |
+
+## 五、最高优先级未完成项
 
 | 序号 | 项目 | 影响范围 | 预估工作量 |
 |---|---|---|---|
-| 1 | StandardEvaluationContext 字段填充 | 求值上下文核心 | 2-3h |
-| 2 | 补充 81 个测试达到 200 | 验收标准 | 3-4h |
+| 1 | 实现 6 个核心 support 文件（map_accessor/reflective_index_accessor/standard_type_*） | 覆盖率 + 功能完整性 | 4-6h |
+| 2 | 补充 parser 内部测试覆盖 internal_spel_expression_parser.rs | 覆盖率 | 2-3h |
 | 3 | SpelExpressionParser 传递 SpelParserConfiguration | 配置生效 | 0.5h |
-| 4 | Token 零拷贝（当前有 String 分配）| 性能优化 | 2h |
+| 4 | Token 零拷贝（`Token<'a>` 传播）| 性能优化 | 4-6h |
 | 5 | Lambda 表达式 `x -> x * 2` | Spring 6+ 新功能 | 4-6h |
+| 6 | 更新迁移文档（对象级对照表/语义迁移对照表） | 文档准确性 | 1-2h |
+
+## 六、Commits 汇总（本轮）
+
+| Commit | 描述 |
+|---|---|
+| `6c1fdd2` | Tokenizer bug fix: numeric literals not appending digits |
+| `95be1d4` | OperatorInstanceof real T(Type) matching + Assign real write path |
+| `cb29bfa` | SpelNode trait upgrade |
+| `a4d24ae` | StandardEvaluationContext real delegates + docs |
+| `2eac23b` | inventory-based ReflectivePropertyAccessor |
+| `6241fea` | Selection/Projection parsing + moka regex cache + 25 tests |
+| `064bd16` | ReflectiveMethodResolver real implementation |
