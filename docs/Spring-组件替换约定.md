@@ -88,8 +88,9 @@ vernal 直接封装一个 Rust crate，提供 Spring 语义的 API。
 
 ```
 vernal-cache  → moka（封装 moka::sync::Cache 提供 Spring Cache 语义）
-vernal-rbdc   → 通用数据库抽象层（对标 spring-jdbc JdbcTemplate，基于 rbdc 4.9.10）
-vernal-db     → sqlx（底层连接池实现，vernal-rbdc 的底层连接池来源之一）
+vernal-rbdc   → 通用数据库抽象层（对标 spring-jdbc JdbcTemplate，基于 sqlx）
+vernal-rbatis → rbatis + rbdc 4.9.10 独立整合（rbatis 专属，不作为 vernal-rbdc 底层）
+vernal-db     → sqlx（底层连接池实现，vernal-rbdc 的底层）
 vernal-log    → tracing（封装 tracing 提供 SLF4J 语义）
 ```
 
@@ -246,11 +247,11 @@ JMS 不单独建 crate，JMS 语义融入 `vernal-messaging` 2.11 节（点对�
 
 | 对标 Spring / Java | vernal crate | 上游 crate | 说明 |
 |:---|:---|:---|:---|
-| `spring-jdbc` / `JdbcTemplate` | `vernal-rbdc` | `rbdc` + `rbatis` | **通用数据库抽象层**，rbdc 对标 JdbcTemplate 语义（非 rbatis 专属）|
+| `spring-jdbc` / `JdbcTemplate` | `vernal-rbdc` | `sqlx` | **通用数据库抽象层**，sqlx 对标 JdbcTemplate 语义（rbdc 4.9.10 仅作 vernal-rbatis 独立整合）|
 | `MyBatis` / `MyBatis-Plus` | `vernal-rbatis`（已有） | `rbatis` | ORM 替代方案，rbatis 对标 MyBatis |
-| 数据库驱动 | — | `rbdc` | 数据库连接驱动抽象 |
+| 数据库驱动 | — | `sqlx` | 数据库连接驱动抽象（vernal-rbdc 底层）；`rbdc` 仅用于 vernal-rbatis |
 
-### 6.4 数据库驱动（通过 rbdc / sqlx）
+### 6.4 数据库驱动（通过 sqlx；rbdc 仅限 vernal-rbatis）
 
 | 数据库 | 驱动 crate | 说明 |
 |:---|:---|:---|
@@ -552,7 +553,7 @@ JMS 不单独建 crate，JMS 语义融入 `vernal-messaging` 2.11 节（点对�
 | `vernal-messaging` | spring-messaging / spring-jms | tokio | `[已确认]` |
 | `vernal-websocket` | spring-websocket | tokio-websockets 0.12.0, vernal-messaging | `[已确认]` |
 | `vernal-cache` | spring-cache | thiserror | `[已确认]` |
-| `vernal-rbdc` | spring-jdbc | vernal-core | `[骨架]` **通用数据库抽象层**（rbdc 4.9.10，非 rbatis 专属）|
+| `vernal-rbdc` | spring-jdbc | vernal-core | `[骨架]` **通用数据库抽象层**（基于 sqlx，非 rbatis 专属）|
 | `vernal-db` | （通用数据库抽象）| vernal-core | `[骨架]` sqlx 连接池 |
 | `vernal-tx` | spring-tx | vernal-core | `[骨架]` |
 | `vernal-orm` | spring-orm / spring-data-jpa | toasty（待集成） | `[待集成]` |

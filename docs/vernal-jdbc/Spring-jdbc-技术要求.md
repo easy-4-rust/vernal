@@ -2,7 +2,8 @@
 
 > **版本**：v2.0（2026-07-28）｜修正：spring-jdbc 对应 **vernal-rbdc**（通用数据库抽象层，非 rbatis 专属）
 > **定位**：vernal-rbdc crate 技术交接文档，对标 Spring Framework 7.0.8 spring-jdbc。
-> **选型**：**rbdc 4.9.10** 为实现主线（通用数据库抽象层），对标 Spring JdbcTemplate 语义。
+> **选型**：**sqlx** 为实现主线（通用数据库抽象层），对标 Spring JdbcTemplate 语义。
+> **备注**：rbdc 4.9.10 为 rbatis 专属驱动，仅用于 vernal-rbatis 独立整合，**不作为 vernal-rbdc 底层**。
 > **现状**：vernal-rbdc 为待建 crate，edition 2024 / rustc 1.88。
 > **引用约定**：crate 选型依据见《Spring 组件替换约定》6.2 节（JDBC/R2DBC）。
 
@@ -14,7 +15,10 @@
 
 vernal-rbdc 是 Vernal Framework 的 **通用数据库抽象层**（对标 spring-jdbc），
 提供 Driver/Connection/ConnectionPool/Statement/ResultSet 等数据库访问基础设施抽象。
-基于 rbdc 4.9.10 实现，**不绑定 rbatis**（可由 sqlx/rbatis/sea-orm 等任意 ORM 驱动）。
+基于 **sqlx** 实现，**不绑定 rbatis**。
+
+> **边界说明**：rbdc 4.9.10 是 rbatis 实现的驱动抽象，仅用于 `vernal-rbatis` 的独立整合，
+> **不作为 vernal-rbdc 的底层**。vernal-rbdc 通过 sqlx 提供通用数据库访问能力。
 对标 spring-jdbc 模块，提供统一的 JDBC 风格数据库操作抽象。
 
 **核心范式转换**：Java 同步 JDBC → Rust 异步 sqlx。
