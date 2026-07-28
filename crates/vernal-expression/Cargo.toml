@@ -4,11 +4,37 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
-description = "Vernal 简化版表达式语言（对标 spring-expression SpEL 子集）"
+description = "Vernal 表达式语言（对标 spring-expression SpEL 子集，100% 语义迁移）"
 publish = false
 
 [dependencies]
-vernal-core = { path = "../vernal-core" }
+# Vernal 内核
+vernal-core = { path = "../vernal-core", features = ["once-cell", "registry", "convert-chrono", "convert-regex", "error-derive"] }
+vernal-beans = { path = "../vernal-beans" }
+
+# 任意精度数字
+bigdecimal.workspace = true
+num-bigint.workspace = true
+
+# 时间
+chrono.workspace = true
+
+# 反射/集合/缓存
+inventory.workspace = true
+linkme.workspace = true
+dashmap.workspace = true
+moka.workspace = true
+regex.workspace = true
+once_cell.workspace = true
+
+# 错误/日志/同步
+thiserror.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
+serde.workspace = true
+serde_json.workspace = true
 
 [lints]
 workspace = true

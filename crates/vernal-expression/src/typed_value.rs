@@ -1,64 +1,26 @@
-//! 类型化值封装。
-//!
-//! 对标 Spring 的 `TypedValue`：封装一个值及其类型描述符。
+//! 类型化值封装（对标 Spring `TypedValue`）。
 
 use std::fmt;
 
-/// 类型化值。
+use crate::expression_value::ExpressionValue;
+use crate::type_descriptor::{PrimitiveKind, TypeDescriptor};
+
+/// 类型化值（值 + 类型描述符）。
 ///
-/// 封装一个值及其 [`TypeDescriptor`]，用于在表达式求值过程中
-/// 传递类型安全的值。
-///
-/// 对标 Spring 的 `org.springframework.expression.TypedValue`。
-#[derive(Debug, Clone, PartialEq)]
+/// 对标 Spring `org.springframework.expression.TypedValue`。
+#[derive(Debug, Clone)]
 pub struct TypedValue {
-    /// 值（类型擦除）
+    /// 当前值。
     value: ExpressionValue,
-    /// 类型描述符
+    /// 类型描述符。
     type_descriptor: TypeDescriptor,
 }
 
-/// 表达式值枚举。
-#[derive(Debug, Clone)]
-pub enum ExpressionValue {
-    /// 空值
-    Null,
-    /// 布尔值
-    Boolean(bool),
-    /// 整数值
-    Int(i64),
-    /// 浮点值
-    Float(f64),
-    /// 字符串值
-    String(String),
-    /// 列表值
-    List(Vec<TypedValue>),
-    /// 映射值
-    Map(Vec<(TypedValue, TypedValue)>),
-}
-
-impl PartialEq for ExpressionValue {
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Self::Null, Self::Null) => true,
-            (Self::Boolean(a), Self::Boolean(b)) => a == b,
-            (Self::Int(a), Self::Int(b)) => a == b,
-            (Self::Float(a), Self::Float(b)) => (a - b).abs() < f64::EPSILON,
-            (Self::String(a), Self::String(b)) => a == b,
-            (Self::List(a), Self::List(b)) => a == b,
-            (Self::Map(a), Self::Map(b)) => a == b,
-            _ => false,
-        }
-    }
-}
-
-impl Eq for ExpressionValue {}
-
 impl TypedValue {
     /// 空值单例。
-    pub const NULL: TypedValue = TypedValue {
+    pub const NULL: Self = Self {
         value: ExpressionValue::Null,
-        type_descriptor: TypeDescriptor::OBJECT,
+        type_descriptor: TypeDescriptor::NULL,
     };
 
     /// 创建类型化值。
@@ -68,6 +30,13 @@ impl TypedValue {
             value,
             type_descriptor,
         }
+    }
+
+    /// 通过值构造，类型描述符自动从值推导。
+    #[must_use]
+    pub fn of(value: ExpressionValue) -> Self {
+        let td = value.type_descriptor();
+        Self::new(value, td)
     }
 
     /// 创建空值。
@@ -82,6 +51,12 @@ impl TypedValue {
         &self.value
     }
 
+    /// 获取值所有权。
+    #[must_use]
+    pub fn into_value(self) -> ExpressionValue {
+        self.value
+    }
+
     /// 获取类型描述符。
     #[must_use]
     pub fn type_descriptor(&self) -> &TypeDescriptor {
@@ -91,46 +66,106 @@ impl TypedValue {
     /// 是否为空值。
     #[must_use]
     pub fn is_null(&self) -> bool {
-        matches!(self.value, ExpressionValue::Null)
+        self.value.is_null()
     }
-}
 
-/// 类型描述符。
-///
-/// 对标 Spring 的 `TypeDescriptor`。
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct TypeDescriptor {
-    /// 类型名称
-    name: &'static str,
-}
-
-impl TypeDescriptor {
-    /// Object 类型
-    pub const OBJECT: TypeDescriptor = TypeDescriptor { name: "object" };
-    /// Boolean 类型
-    pub const BOOLEAN: TypeDescriptor = TypeDescriptor { name: "boolean" };
-    /// Int 类型
-    pub const INT: TypeDescriptor = TypeDescriptor { name: "int" };
-    /// Float 类型
-    pub const FLOAT: TypeDescriptor = TypeDescriptor { name: "float" };
-    /// String 类型
-    pub const STRING: TypeDescriptor = TypeDescriptor { name: "string" };
-
-    /// 创建类型描述符。
+    /// 创建 boolean `true`。
     #[must_use]
-    pub const fn new(name: &'static str) -> Self {
-        Self { name }
+    pub fn bool_true() -> Self {
+        Self::new(
+            ExpressionValue::Boolean(true),
+            TypeDescriptor::Primitive(PrimitiveKind::Boolean),
+        )
     }
 
-    /// 获取类型名称。
+    /// 创建 boolean `false`。
     #[must_use]
-    pub fn name(&self) -> &'static str {
-        self.name
+    pub fn bool_false() -> Self {
+        Self::new(
+            ExpressionValue::Boolean(false),
+            TypeDescriptor::Primitive(PrimitiveKind::Boolean),
+        )
+    }
+
+    /// 转换为布尔值（Spring `ExpressionUtils.toBoolean`）。
+    #[must_use]
+    pub fn as_bool(&self) -> Option<bool> {
+        match &self.value {
+            ExpressionValue::Boolean(b) => Some(*b),
+            ExpressionValue::Int(i) => Some(*i != 0),
+            ExpressionValue::Long(l) => Some(*l != 0),
+            ExpressionValue::Double(d) => Some(*d != 0.0),
+            ExpressionValue::Float(f) => Some(*f != 0.0),
+            _ => None,
+        }
     }
 }
 
-impl fmt::Display for TypeDescriptor {
+impl Default for TypedValue {
+    fn default() -> Self {
+        Self::NULL
+    }
+}
+
+impl PartialEq for TypedValue {
+    fn eq(&self, other: &Self) -> bool {
+        self.value == other.value
+    }
+}
+
+impl fmt::Display for TypedValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.name)
+        match &self.value {
+            ExpressionValue::Null => f.write_str("null"),
+            ExpressionValue::String(s) => write!(f, "{s}"),
+            ExpressionValue::Int(i) => write!(f, "{i}"),
+            ExpressionValue::Long(l) => write!(f, "{l}"),
+            ExpressionValue::Float(x) => write!(f, "{x}"),
+            ExpressionValue::Double(x) => write!(f, "{x}"),
+            ExpressionValue::Boolean(b) => write!(f, "{b}"),
+            ExpressionValue::Char(c) => write!(f, "'{c}'"),
+            ExpressionValue::BigInt(b) => write!(f, "{b}"),
+            ExpressionValue::Decimal(d) => write!(f, "{d}"),
+            ExpressionValue::List(l) => {
+                f.write_str("[")?;
+                for (i, v) in l.iter().enumerate() {
+                    if i > 0 {
+                        f.write_str(", ")?;
+                    }
+                    write!(f, "{v}")?;
+                }
+                f.write_str("]")
+            }
+            ExpressionValue::Map(m) => {
+                f.write_str("{")?;
+                for (i, (k, v)) in m.iter().enumerate() {
+                    if i > 0 {
+                        f.write_str(", ")?;
+                    }
+                    write!(f, "{k}: {v}")?;
+                }
+                f.write_str("}")
+            }
+            ExpressionValue::DateTime(dt) => write!(f, "{dt}"),
+            ExpressionValue::Duration(d) => write!(f, "{d}"),
+            ExpressionValue::Object(_) => f.write_str("<object>"),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn null_singleton() {
+        assert_eq!(TypedValue::NULL, TypedValue::null());
+        assert!(TypedValue::NULL.is_null());
+    }
+
+    #[test]
+    fn auto_descriptor() {
+        let v = TypedValue::of(ExpressionValue::Int(42));
+        assert_eq!(v.type_descriptor().primitive_kind(), Some(PrimitiveKind::Int));
     }
 }
