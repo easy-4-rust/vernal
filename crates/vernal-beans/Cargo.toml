@@ -13,6 +13,7 @@ serde_json.workspace = true
 tokio = { workspace = true, features = ["rt", "sync", "time"] }
 tokio-util.workspace = true
 vernal-core = { path = "../vernal-core" }
+vernal-expression = { path = "../vernal-expression" }
 
 [dev-dependencies]
 tokio.workspace = true

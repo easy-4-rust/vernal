@@ -1,21 +1,20 @@
-//! 表达式条件（对标 Spring 的 @ConditionalOnExpression）。
+//! 表达式条件（对标 Spring `@ConditionalOnExpression`）。
 //!
-//! 通过 `vernal-expression` 的表达式求值实现条件装配。
-//! 表达式可以引用 `ApplicationEnvironment` 中的属性。
+//! 通过 `vernal-expression` 的 SpEL 求值器实现条件装配。
 //!
 //! # 设计来源
 //!
 //! 对标 Spring 的 `@ConditionalOnExpression("'${app.mode}' == 'production'")`。
-//! 使用 vernal-expression 的简化 SpEL 子集进行求值。
+//! 使用 vernal-expression 的递归下降解析器执行真实 SpEL 表达式求值。
 
 use vernal_core::BoxError;
-use vernal_expression::ExpressionParser;
+use vernal_expression::{ExpressionParser, EvaluationContext};
 
 use crate::{ApplicationEnvironment, component_condition::ComponentCondition};
 
 /// 表达式条件。
 ///
-/// 通过表达式求值决定组件是否进入 IoC 依赖图。
+/// 通过 SpEL 表达式求值决定组件是否进入 IoC 依赖图。
 /// 表达式可以引用环境属性（如 `${app.mode}`）。
 ///
 /// # 使用方式
@@ -25,9 +24,6 @@ use crate::{ApplicationEnvironment, component_condition::ComponentCondition};
 ///
 /// // 当 app.mode == "production" 时启用组件
 /// let condition = ExpressionCondition::new("'${app.mode}' == 'production'");
-///
-/// // 当 app.debug == true 时启用组件
-/// let condition = ExpressionCondition::new("${app.debug} == true");
 /// ```
 pub struct ExpressionCondition {
     /// 表达式字符串
@@ -36,9 +32,6 @@ pub struct ExpressionCondition {
 
 impl ExpressionCondition {
     /// 创建表达式条件。
-    ///
-    /// # 参数
-    /// - `expression`：表达式字符串，支持 `${key}` 引用环境属性
     #[must_use]
     pub fn new(expression: impl Into<String>) -> Self {
         Self {
@@ -90,66 +83,39 @@ impl ComponentCondition for ExpressionCondition {
         // 解析表达式中的环境属性引用
         let resolved = self.resolve_expression(environment)?;
 
-        // 简单的表达式求值：支持 ==、!=、true、false
-        // 完整 SpEL 求值由 vernal-expression 提供
-        let result = evaluate_simple_expression(&resolved)?;
-        Ok(result)
+        // 用 vernal-expression 的 SpEL 解析器求值
+        let parser = vernal_expression::spel::spel_expression_parser::SpelExpressionParser::new();
+        let ctx = vernal_expression::spel::support::standard_evaluation_context::StandardEvaluationContext::new(
+            vernal_expression::TypedValue::null(),
+        );
+
+        let expr = parser
+            .parse_expression(&resolved)
+            .map_err(|e| -> BoxError {
+                Box::new(std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    format!("SpEL 解析失败: {e}"),
+                ))
+            })?;
+
+        let result = expr
+            .get_value_with_context(&ctx)
+            .map_err(|e| -> BoxError {
+                Box::new(std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    format!("SpEL 求值失败: {e}"),
+                ))
+            })?;
+
+        match result.value() {
+            vernal_expression::ExpressionValue::Boolean(b) => Ok(*b),
+            vernal_expression::ExpressionValue::Null => Ok(false),
+            vernal_expression::ExpressionValue::Int(i) => Ok(*i != 0),
+            vernal_expression::ExpressionValue::Long(l) => Ok(*l != 0),
+            vernal_expression::ExpressionValue::Double(d) => Ok(*d != 0.0),
+            vernal_expression::ExpressionValue::Float(f) => Ok(*f != 0.0),
+            vernal_expression::ExpressionValue::String(s) => Ok(!s.is_empty()),
+            _ => Ok(true),
+        }
     }
-}
-
-/// 简单表达式求值。
-///
-/// 支持的表达式：
-/// - `true` / `false` 字面量
-/// - `"value1" == "value2"` 字符串相等
-/// - `"value1" != "value2"` 字符串不等
-/// - `number == number` 数字相等
-/// - `number != number` 数字不等
-fn evaluate_simple_expression(expr: &str) -> Result<bool, BoxError> {
-    let trimmed = expr.trim();
-
-    // 布尔字面量
-    if trimmed == "true" {
-        return Ok(true);
-    }
-    if trimmed == "false" {
-        return Ok(false);
-    }
-
-    // 字符串相等比较："value1" == "value2"
-    if let Some(pos) = trimmed.find(" == ") {
-        let left = trimmed[..pos].trim();
-        let right = trimmed[pos + 4..].trim();
-        return Ok(compare_values(left, right));
-    }
-
-    // 字符串不等比较："value1" != "value2"
-    if let Some(pos) = trimmed.find(" != ") {
-        let left = trimmed[..pos].trim();
-        let right = trimmed[pos + 4..].trim();
-        return Ok(!compare_values(left, right));
-    }
-
-    // 无法解析的表达式，尝试作为布尔值
-    Err(Box::new(std::io::Error::new(
-        std::io::ErrorKind::InvalidData,
-        format!("无法解析表达式: {}", trimmed),
-    )))
-}
-
-/// 比较两个值是否相等。
-///
-/// 支持字符串（带引号）和数字比较。
-fn compare_values(left: &str, right: &str) -> bool {
-    // 去除引号
-    let left_clean = left.trim_matches('"');
-    let right_clean = right.trim_matches('"');
-
-    // 尝试数字比较
-    if let (Ok(l), Ok(r)) = (left_clean.parse::<f64>(), right_clean.parse::<f64>()) {
-        return (l - r).abs() < f64::EPSILON;
-    }
-
-    // 字符串比较
-    left_clean == right_clean
 }

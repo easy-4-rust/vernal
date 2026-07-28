@@ -49,6 +49,8 @@ mod event_listener_error;
 mod event_listener_registration;
 mod event_listener_registrar;
 mod expression_condition;
+/// Spring `@Value` 注解的 Rust 等价物。
+pub mod value_binding;
 mod lifecycle_execution_policy;
 mod lifecycle_future;
 mod lifecycle_phase;

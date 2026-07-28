@@ -10,7 +10,6 @@ publish = false
 [dependencies]
 # Vernal 内核
 vernal-core = { path = "../vernal-core", features = ["once-cell", "registry", "convert-chrono", "convert-regex", "error-derive"] }
-vernal-beans = { path = "../vernal-beans" }
 
 # 任意精度数字
 bigdecimal.workspace = true
