@@ -47,6 +47,21 @@ Topcoat 全栈主线均依赖 `vernal-web` 作为公共契约。
 3. **Tokio 原生**：可使用 `tokio::sync`、`tokio_util::sync::CancellationToken` 等。
 4. **Send + Sync**：所有公共类型满足跨线程边界。
 5. **零分配路由元数据**：`RouteMetadata` 使用 `Arc<str>` 避免运行时分配。
+6. **`async_trait` 兼容**：异步 trait 方法使用 `Pin<Box<dyn Future>>` 而非
+   `async_trait` 宏，减少过程宏依赖。
+7. **最小公共 API**：只暴露 Adapter 和下游消费方必需的类型，内部实现不公开。
+
+### 1.4 与 spring-web 的不继承项
+
+| spring-web 概念 | 不继承原因 |
+|:---|:---|
+| `Servlet` / `Filter` / `FilterChain` | Rust 无 Servlet 模型，由 Tower Layer 替代 |
+| `HttpMessageConverter` | `serde` + `http-body` 已覆盖序列化需求 |
+| `MultipartResolver` | 各框架原生 multipart 更成熟 |
+| `RestTemplate` / `WebClient` | 出站 HTTP 客户端，由 `reqwest` 负责 |
+| `@ControllerAdvice` | 由 vernal-aop 全局拦截器替代 |
+| `@ModelAttribute` | Topcoat 提取器直接处理 |
+| `@InitBinder` | Rust 类型系统 + `serde` 已足够 |
 
 ---
 
@@ -147,6 +162,33 @@ Topcoat 0.5 提供三个层次的 API，vernal-web 对应集成：
 | `actix-web` | 具体框架，在 `vernal-actix-web` 中引入 |
 | `warp` | 具体框架，在 `vernal-warp` 中引入 |
 | `serde_json` | 可选依赖，不在核心合同中强制 |
+| `mime` | HTTP Content-Type 类型，使用 `http` crate 的 HeaderValue 替代 |
+| `url` | URL 解析，由各 Adapter 自行处理 |
+
+### 3.5 Feature Flags
+
+```toml
+[features]
+default = []
+# 启用 serde 序列化支持
+serde = ["dep:serde", "dep:serde_json"]
+# 启用 tracing 诊断
+tracing = ["dep:tracing"]
+# 启用 Topcoat 集成（轨道一）
+topcoat = ["dep:topcoat"]
+```
+
+### 3.6 Cargo.lock 版本锁定策略
+
+vernal-web 作为公共合同 crate，其依赖版本遵循以下策略：
+
+| 策略 | 说明 |
+|:---|:---|
+| `http` 精确版本 | `=1.4.0`，避免 minor 升级导致类型不兼容 |
+| `http-body` 精确版本 | `=1.0.1`，Body trait 签名敏感 |
+| `tower` 最低版本 | `>=0.5.3`，Layer/Service trait 稳定 |
+| `tokio` 最低版本 | `>=1.52.4`，与 workspace 一致 |
+| `thiserror` 最低版本 | `>=2.0`，derive 宏语义 |
 
 ---
 
@@ -275,6 +317,97 @@ pub struct SecurityPrincipal {
 Bridge 在认证完成后通过 `RequestContext::set_principal()` 写入，Handler 和后续
 拦截器通过 `RequestContext::principal()` 读取。
 
+### 4.7 IntegrationDescriptor
+
+`IntegrationDescriptor` 描述 Adapter 的能力和诊断信息：
+
+```rust
+pub struct IntegrationDescriptor {
+    name: String,           // Adapter 名称，如 "axum"、"actix-web"
+    version: String,        // 上游框架版本
+    transport: TransportKind, // HTTP / gRPC / WebSocket
+    capabilities: Vec<String>, // 支持的能力列表
+}
+```
+
+用于运行时诊断和合同测试，不在请求处理热路径上使用。
+
+### 4.8 TransportKind
+
+```rust
+pub enum TransportKind {
+    Http,
+    Grpc,
+    WebSocket,
+}
+```
+
+### 4.9 WebFailure
+
+`WebFailure` 是 vernal-web 的统一错误类型，各 Adapter 将其映射为框架原生响应：
+
+```rust
+pub enum WebFailure {
+    /// 基础设施错误（Context 缺失/已关闭）。
+    Infrastructure(String),
+    /// 组件解析错误。
+    Resolution(ResolveError),
+    /// 客户端输入错误。
+    ClientInput(String),
+    /// 安全策略拒绝。
+    PolicyDenied { status: u16, reason: String },
+    /// Handler 业务错误。
+    Application(Box<dyn std::error::Error + Send + Sync>),
+    /// 传输层错误。
+    Transport(Box<dyn std::error::Error + Send + Sync>),
+}
+```
+
+### 4.10 请求执行主链
+
+vernal-web 定义的请求执行主链适用于所有 Adapter：
+
+```text
+框架原生请求到达
+  │
+  ▼
+Adapter 提取 Arc<ApplicationContext>
+  │
+  ▼
+创建 WebRequestScope（from_application_context）
+  │
+  ▼
+构建 RequestContext（RouteMetadata + CancellationToken）
+  │
+  ▼
+AOP 拦截链
+  ├── before: 安全检查（Sa-Token-Rust）
+  ├── before: 事务开始
+  ├── around: Handler 执行
+  │     ├── resolve::<T>() 解析组件
+  │     ├── 调用业务方法
+  │     └── 返回 Result / Future / Stream
+  ├── after: 事务提交/回滚
+  └── after: 审计记录
+  │
+  ▼
+Adapter 映射为框架原生响应
+  │
+  ▼
+WebRequestScope::close()（成功、错误、取消均执行）
+  │
+  ▼
+框架原生响应返回
+```
+
+约束：
+
+1. `ApplicationContext` 必须通过应用 State、Extension 或显式构造传入。
+2. Adapter 不允许从进程全局变量猜测当前 Context。
+3. `before` 阶段拒绝时，不执行 Handler，但已创建的 Scope 仍必须关闭。
+4. `after`/Around 阶段应观察成功、业务错误、传输错误和取消。
+5. 框架原生 Body/Stream 不能为了统一接口而被无条件缓冲。
+
 ---
 
 ## 五、Topcoat AppContext 桥接 vernal-beans Container
@@ -398,7 +531,66 @@ vernal-web 作为公共合同 crate，需要满足以下测试覆盖：
 | 编译测试 | `#![forbid(unsafe_code)]` 保证无 unsafe |
 | 文档测试 | 公共 API 的示例代码可编译运行 |
 
-### 6.5 后续演进
+### 6.5 错误分类与映射
+
+vernal-web 定义了六个错误分类，覆盖 Web 层全部失败点。每个 Adapter 负责将
+`WebFailure` 映射为框架原生响应：
+
+| WebFailure 分类 | 含义 | HTTP 状态码 | Adapter 映射 |
+|:---|:---|:---|:---|
+| `Infrastructure` | Context 缺失/已关闭 | 500 | Axum: `StatusCode::INTERNAL_SERVER_ERROR` |
+| `Resolution` | 组件缺失或歧义 | 500 | Actix: `HttpResponse::InternalServerError` |
+| `ClientInput` | 参数提取/校验失败 | 400 | Rocket: `Status::BadRequest` |
+| `PolicyDenied` | 认证/授权拒绝 | 401/403 | Salvo: `StatusCode::FORBIDDEN` |
+| `Application` | Handler 业务错误 | 用户定义 | Poem: `IntoResponse` |
+| `Transport` | Body/Stream 失败 | 502 | Warp: `Rejection` |
+
+**日志脱敏规则**：
+
+- 默认日志不记录 Token、Cookie、Authorization Header 或组件 Secret。
+- Trace/Metric 标签禁止使用无限基数的原始路径或用户 ID。
+- 诊断报告只公开 Adapter、版本、状态、Scope 计数和静态脱敏告警代码。
+- Scope 清理失败统一使用 `web.request-scope.cleanup-failed`，不记录关闭钩子
+  错误正文。
+
+### 6.6 Scope 关闭语义详解
+
+`WebRequestScope::close()` 的执行流程：
+
+```text
+close() 调用
+  │
+  ├── 1. 取消请求 CancellationToken
+  │
+  ├── 2. 等待正在进行的组件构造完成
+  │
+  ├── 3. 逆序执行关闭钩子（on_close 注册的）
+  │      ├── 钩子 1（最后注册的先执行）
+  │      ├── 钩子 2
+  │      └── 钩子 N（最先注册的最后执行）
+  │
+  ├── 4. 如果有超时：在限定时间内等待
+  │      ├── 超时 → 记录告警，后台继续
+  │      └── 完成 → 正常返回
+  │
+  └── 5. 进入 Closed 状态
+```
+
+**超时行为**：
+
+- 应用绑定 Scope 使用 `ScopeCleanupPolicy` 的超时设置（默认 30 秒）。
+- 等待超时**不会**取消后台关闭任务，只结束 Adapter 当前等待。
+- 共享 Tokio 清理协调器仍在后台运行，后续调用者可以等待同一结果且不会重复
+  执行钩子。
+- 超时后向 `ApplicationContext` 写入 `web.request-scope.cleanup-failed` 告警。
+
+**幂等保证**：
+
+- `close()` 多次调用安全，第二次及之后的调用立即返回。
+- 关闭钩子不会重复执行。
+- 取消令牌已取消时，`close()` 仍会执行关闭钩子。
+
+### 6.7 后续演进
 
 | 阶段 | 内容 | 前置条件 |
 |:---|:---|:---|

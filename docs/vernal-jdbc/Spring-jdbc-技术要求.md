@@ -407,19 +407,14 @@ let result = builder.build().execute(&pool).await?;
 pub enum DbError {
     #[error("连接错误: {0}")]
     Connection(String),
-
     #[error("查询错误: {0}")]
     Query(String),
-
     #[error("映射错误: {0}")]
     Mapping(String),
-
     #[error("事务错误: {0}")]
     Transaction(String),
-
     #[error("无结果")]
     NotFound,
-
     #[error("多结果（期望单行）")]
     MultipleResults,
 }
@@ -607,27 +602,11 @@ pub struct SimpleJdbcInsert {
 
 impl SimpleJdbcInsert {
     pub fn new(pool: Arc<dyn AnyPool>, table_name: impl Into<String>) -> Self;
-
     pub fn with_columns(mut self, columns: &[&str]) -> Self;
     pub fn with_generated_key_columns(mut self, columns: &[&str]) -> Self;
-
-    /// 执行插入。
-    pub async fn execute(
-        &self,
-        values: &HashMap<String, SqlValue>,
-    ) -> Result<InsertResult, DbError>;
-
-    /// 执行批量插入。
-    pub async fn execute_batch(
-        &self,
-        batch: &[HashMap<String, SqlValue>],
-    ) -> Result<Vec<InsertResult>, DbError>;
-
-    /// 使用结构体执行插入。
-    pub async fn execute_with_row<T: sqlx::Encode<'_, DB>>(
-        &self,
-        row: &T,
-    ) -> Result<InsertResult, DbError>;
+    pub async fn execute(&self, values: &HashMap<String, SqlValue>) -> Result<InsertResult, DbError>;
+    pub async fn execute_batch(&self, batch: &[HashMap<String, SqlValue>]) -> Result<Vec<InsertResult>, DbError>;
+    pub async fn execute_with_row<T: sqlx::Encode<'_, DB>>(&self, row: &T) -> Result<InsertResult, DbError>;
 }
 
 /// 插入结果。
@@ -640,16 +619,11 @@ pub struct InsertResult {
 #### 使用示例
 
 ```rust
-// 对标 Spring SimpleJdbcInsert 用法
-let insert = SimpleJdbcInsert::new(pool.clone(), "users")
-    .with_columns(&["name", "email"]);
-
+let insert = SimpleJdbcInsert::new(pool.clone(), "users").with_columns(&["name", "email"]);
 let mut values = HashMap::new();
-values.insert("name".to_string(), SqlValue::Text("Alice".to_string()));
-values.insert("email".to_string(), SqlValue::Text("alice@example.com".to_string()));
-
+values.insert("name".into(), SqlValue::Text("Alice".into()));
+values.insert("email".into(), SqlValue::Text("alice@example.com".into()));
 let result = insert.execute(&values).await?;
-println!("Generated ID: {:?}", result.generated_keys);
 ```
 
 ---
@@ -668,15 +642,9 @@ pub struct SimpleJdbcCall {
 
 impl SimpleJdbcCall {
     pub fn new(pool: Arc<dyn AnyPool>, function_name: impl Into<String>) -> Self;
-
     pub fn with_catalog_name(mut self, catalog: impl Into<String>) -> Self;
     pub fn with_schema_name(mut self, schema: impl Into<String>) -> Self;
-
-    /// 执行存储过程。
-    pub async fn execute(
-        &self,
-        params: &HashMap<String, SqlValue>,
-    ) -> Result<CallResult, DbError>;
+    pub async fn execute(&self, params: &HashMap<String, SqlValue>) -> Result<CallResult, DbError>;
 }
 
 /// 调用结果。
@@ -693,27 +661,12 @@ pub struct CallResult {
 ```rust
 /// 批量更新工具。
 /// 对标 spring-jdbc JdbcTemplate.batchUpdate()。
-pub struct BatchUpdater {
-    pool: Arc<dyn AnyPool>,
-}
+pub struct BatchUpdater { pool: Arc<dyn AnyPool> }
 
 impl BatchUpdater {
     pub fn new(pool: Arc<dyn AnyPool>) -> Self;
-
-    /// 批量执行相同 SQL（不同参数）。
-    pub async fn batch_update(
-        &self,
-        sql: &str,
-        batch: Vec<Vec<Box<dyn sqlx::Encode<'_, DB>>>>,
-    ) -> Result<Vec<u64>, DbError>;
-
-    /// 使用 QueryBuilder 批量插入。
-    pub async fn batch_insert(
-        &self,
-        table: &str,
-        columns: &[&str],
-        rows: Vec<Vec<SqlValue>>,
-    ) -> Result<u64, DbError>;
+    pub async fn batch_update(&self, sql: &str, batch: Vec<Vec<Box<dyn sqlx::Encode<'_, DB>>>>) -> Result<Vec<u64>, DbError>;
+    pub async fn batch_insert(&self, table: &str, columns: &[&str], rows: Vec<Vec<SqlValue>>) -> Result<u64, DbError>;
 }
 ```
 
@@ -726,9 +679,6 @@ impl BatchUpdater {
 | 依赖 | 版本 | 说明 |
 |:---|:---|:---|
 | `sqlx` | `0.9` | 核心异步 SQL 库 |
-| `sqlx-postgres` | `0.9` | PostgreSQL 驱动 |
-| `sqlx-mysql` | `0.9` | MySQL 驱动 |
-| `sqlx-sqlite` | `0.9` | SQLite 驱动 |
 | `tokio` | `1.x` | async 运行时 |
 | `thiserror` | `2.x` | 错误类型派生 |
 | `chrono` | `0.4` | 日期时间类型 |
@@ -751,20 +701,12 @@ chrono = "0.4"
 
 ```rust
 // 方式 1：编译期校验（推荐，需要 DATABASE_URL 环境变量）
-let user = sqlx::query_as!(User,
-    "SELECT id, name, email FROM users WHERE id = $1",
-    user_id
-)
-.fetch_one(&pool)
-.await?;
+let user = sqlx::query_as!(User, "SELECT id, name, email FROM users WHERE id = $1", user_id)
+    .fetch_one(&pool).await?;
 
 // 方式 2：运行时查询（灵活，无编译期依赖）
-let user = sqlx::query_as::<_, User>(
-    "SELECT * FROM users WHERE id = $1"
-)
-.bind(user_id)
-.fetch_one(&pool)
-.await?;
+let user = sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = $1")
+    .bind(user_id).fetch_one(&pool).await?;
 ```
 
 #### 编译期校验约束
@@ -784,22 +726,13 @@ let user = sqlx::query_as::<_, User>(
 // 集成示例：vernal-jdbc 使用 vernal-tx 事务管理
 use vernal_tx::{PlatformTransactionManager, TransactionDefinition, Propagation};
 
-// 创建事务管理器
 let manager = DataSourceTransactionManager::new(pool.clone(), "main");
-
-// 编程式事务
 let template = TransactionTemplate::new(Arc::new(manager));
 let result = template
-    .with_definition(TransactionDefinition {
-        propagation: Propagation::Required,
-        ..Default::default()
-    })
+    .with_definition(TransactionDefinition { propagation: Propagation::Required, ..Default::default() })
     .execute(|_status| Box::pin(async {
-        // 在事务中执行数据库操作
         let user = JdbcTemplate::new(pool.clone())
-            .query_for_object("SELECT * FROM users WHERE id = $1", |row| {
-                Ok(User::from_row(row))
-            })
+            .query_for_object("SELECT * FROM users WHERE id = $1", |row| Ok(User::from_row(row)))
             .await?;
         Ok(user)
     }))
@@ -816,24 +749,6 @@ let result = template
 | 集成测试 | 真实数据库 CRUD | `sqlx::test` + 测试容器 |
 | 事务测试 | DataSourceTransactionManager | `vernal-test` + 内存 SQLite |
 | 编译期测试 | `query!` 宏 SQL 校验 | `trybuild` |
-
-#### sqlx::test 宏
-
-```rust
-/// sqlx 内建测试宏，自动创建/回滚事务。
-#[sqlx::test]
-async fn test_insert_user(pool: sqlx::PgPool) {
-    let insert = SimpleJdbcInsert::new(Arc::new(pool), "users")
-        .with_columns(&["name", "email"]);
-
-    let mut values = HashMap::new();
-    values.insert("name".into(), SqlValue::Text("Alice".into()));
-    values.insert("email".into(), SqlValue::Text("alice@test.com".into()));
-
-    let result = insert.execute(&values).await.unwrap();
-    assert!(result.rows_affected > 0);
-}
-```
 
 ---
 

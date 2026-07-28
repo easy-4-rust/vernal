@@ -547,7 +547,84 @@ vernal-webmvc **不替代**轨道二的 10 个 API 后端适配器。两者的�
 | Maud | `maud` | `[待验证]` | Rust 原生 HTML 模板 |
 | 直接 JSON | `serde_json` | `[已确认]` | API 后端默认响应格式 |
 
-### 6.6 后续演进
+### 6.6 响应类型体系
+
+vernal-webmvc 提供类型安全的响应构建器，对标 Spring MVC 的各种 `HttpEntity`
+变体：
+
+| 响应类型 | Spring 对标 | 说明 |
+|:---|:---|:---|
+| `JsonResult<T>` | `@ResponseBody` + `ResponseEntity<T>` | JSON 响应 |
+| `ViewResult` | `ModelAndView` | 视图渲染响应 |
+| `SseResult<T>` | `SseEmitter` | SSE 流式响应 |
+| `RedirectResult` | `RedirectView` | 302 重定向 |
+| `StatusResult` | `ResponseEntity<Void>` | 纯状态码响应 |
+| `BinaryResult` | `ResponseEntity<byte[]>` | 二进制下载 |
+| `StreamResult<T>` | `StreamingResponseBody` | 流式 Body |
+
+```rust
+/// JSON 响应构建器。
+pub struct JsonResult<T> {
+    data: T,
+    status: http::StatusCode,
+    headers: http::HeaderMap,
+}
+
+impl<T: Serialize> JsonResult<T> {
+    pub fn ok(data: T) -> Self { /* 200 */ }
+    pub fn created(data: T) -> Self { /* 201 */ }
+    pub fn no_content() -> JsonResult<()> { /* 204 */ }
+    pub fn status(mut self, status: http::StatusCode) -> Self { self.status = status; self }
+}
+
+/// 视图渲染响应。
+pub struct ViewResult {
+    context: ViewContext,
+}
+
+impl ViewResult {
+    pub fn view(name: &str) -> Self { /* 设置逻辑视图名 */ }
+    pub fn attribute(self, key: &str, value: impl Any + Send + Sync) -> Self { /* 添加模型 */ }
+    pub fn status(mut self, status: http::StatusCode) -> Self { /* 设置状态码 */ }
+}
+```
+
+### 6.7 请求生命周期详解
+
+vernal-webmvc 处理一个完整 MVC 请求的详细生命周期：
+
+```text
+1. HTTP 请求到达 Topcoat
+2. Topcoat Router 匹配路由
+3. Vernal MVC 中间件启动
+   ├── 3.1 从 Topcoat AppContext 提取 Arc<ApplicationContext>
+   ├── 3.2 创建 WebRequestScope（from_application_context）
+   ├── 3.3 从路由信息构建 RouteMetadata
+   ├── 3.4 创建 RequestContext
+   └── 3.5 注入到 Request Extensions
+4. AOP 拦截链执行
+   ├── 4.1 安全拦截器（Sa-Token-Rust 认证/授权）
+   ├── 4.2 事务拦截器（@Transactional）
+   ├── 4.3 审计拦截器
+   └── 4.4 可观测性拦截器（tracing span）
+5. Handler 方法调用
+   ├── 5.1 参数提取（Path / Query / Json / Header）
+   ├── 5.2 参数校验（validator crate）
+   ├── 5.3 业务逻辑执行
+   └── 5.4 返回 JsonResult / ViewResult
+6. 视图解析（如果返回 ViewResult）
+   ├── 6.1 ViewResolver 解析逻辑视图名
+   ├── 6.2 ViewEngine 渲染模板
+   └── 6.3 生成 HTML Body
+7. 响应发送
+   └── Topcoat 发送 HTTP 响应
+8. WebRequestScope 关闭
+   ├── 8.1 取消请求令牌
+   ├── 8.2 执行关闭钩子
+   └── 8.3 记录诊断信息
+```
+
+### 6.8 后续演进
 
 | 阶段 | 内容 | 前置条件 |
 |:---|:---|:---|

@@ -243,19 +243,10 @@ pub struct ExampleMatcher {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum StringMatcher {
-    Exact,
-    StartingWith,
-    EndingWith,
-    Containing,
-    IgnoreCase,
-}
+pub enum StringMatcher { Exact, StartingWith, EndingWith, Containing, IgnoreCase }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum NullHandling {
-    Include,
-    Exclude,
-}
+pub enum NullHandling { Include, Exclude }
 ```
 
 ---
@@ -350,13 +341,10 @@ pub trait Model: Send + Sync + Clone + 'static {
 pub struct User {
     #[model(primary_key, auto_increment)]
     pub id: i64,
-
     #[model(column = "name", not_null)]
     pub name: String,
-
     #[model(column = "email", unique)]
     pub email: String,
-
     #[model(column = "created_at", default = "now()")]
     pub created_at: chrono::NaiveDateTime,
 }
@@ -426,10 +414,6 @@ impl<T: Model> QueryBuilder<T> {
 public class JpaTransactionManager extends AbstractPlatformTransactionManager
         implements ResourceTransactionManager {
     public JpaTransactionManager(EntityManagerFactory emf) { ... }
-    protected Object doGetTransaction() { ... }
-    protected void doBegin(Object transaction, TransactionDefinition def) { ... }
-    protected void doCommit(DefaultTransactionStatus status) { ... }
-    protected void doRollback(DefaultTransactionStatus status) { ... }
 }
 ```
 
@@ -465,29 +449,16 @@ pub enum FlushMode {
 }
 
 impl PlatformTransactionManager for JpaTransactionManager {
-    fn get_transaction(
-        &self,
-        definition: &TransactionDefinition,
-    ) -> Result<TransactionStatus, TransactionError> {
-        // 1. 根据 Propagation 决定行为
-        // 2. 获取连接
-        // 3. 关闭 auto_commit
-        // 4. 设置 flush_mode
-        // 5. 开始事务
+    fn get_transaction(&self, definition: &TransactionDefinition) -> Result<TransactionStatus, TransactionError> {
+        // 根据 Propagation 决定行为 → 获取连接 → 关闭 auto_commit → 开始事务
         todo!()
     }
-
     fn commit(&self, status: TransactionStatus) -> Result<(), TransactionError> {
-        // 1. flush 所有变更
-        // 2. 提交事务
-        // 3. 释放连接
+        // flush 所有变更 → 提交事务 → 释放连接
         todo!()
     }
-
     fn rollback(&self, status: TransactionStatus) -> Result<(), TransactionError> {
-        // 1. 回滚事务
-        // 2. 清除持久化上下文
-        // 3. 释放连接
+        // 回滚事务 → 清除持久化上下文 → 释放连接
         todo!()
     }
 }
@@ -600,12 +571,9 @@ impl RepositoryRegistry {
 pub struct User {
     #[model(primary_key)]
     pub id: Id<User>,
-
     #[model(unique)]
     pub email: String,
-
     pub name: String,
-
     #[model(has_many)]
     pub posts: HasMany<Post>,
 }
@@ -614,22 +582,15 @@ pub struct User {
 pub struct Post {
     #[model(primary_key)]
     pub id: Id<Post>,
-
     pub title: String,
-
     pub body: String,
-
     #[model(belongs_to)]
     pub user: BelongsTo<User>,
 }
 
 // toasty 生成的查询 API（编译期类型安全）
 let user = User::find_by_id(&id).get(&mut db).await?;
-let posts = User::find_by_id(&id)
-    .posts()
-    .all()
-    .get(&mut db)
-    .await?;
+let posts = User::find_by_id(&id).posts().all().get(&mut db).await?;
 ```
 
 ---
@@ -672,9 +633,7 @@ pub enum Relation {
 }
 
 impl Related<super::post::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Posts.def()
-    }
+    fn to() -> RelationDef { Relation::Posts.def() }
 }
 ```
 
@@ -749,10 +708,9 @@ Toasty 过程宏解析
 // Rust 风格（显式加载，编译期确定）
 let user = User::find_by_id(&id).get(&mut db).await?;
 let posts = User::find_by_id(&id)
-    .posts()          // 显式声明关联
-    .all()            // 生成 JOIN 查询
-    .get(&mut db)
-    .await?;
+    .posts()    // 显式声明关联
+    .all()      // 生成 JOIN 查询
+    .get(&mut db).await?;
 ```
 
 ---
@@ -763,25 +721,12 @@ let posts = User::find_by_id(&id)
 /// 实体生命周期钩子。
 /// 对标 JPA EntityListener / @PrePersist / @PostPersist。
 pub trait ModelLifecycle: Model {
-    /// 持久化前调用（INSERT 前）。
     fn before_insert(&mut self) -> Result<(), OrmError> { Ok(()) }
-
-    /// 持久化后调用（INSERT 后）。
     fn after_insert(&self) -> Result<(), OrmError> { Ok(()) }
-
-    /// 更新前调用。
     fn before_update(&mut self) -> Result<(), OrmError> { Ok(()) }
-
-    /// 更新后调用。
     fn after_update(&self) -> Result<(), OrmError> { Ok(()) }
-
-    /// 删除前调用。
     fn before_delete(&mut self) -> Result<(), OrmError> { Ok(()) }
-
-    /// 删除后调用。
     fn after_delete(&self) -> Result<(), OrmError> { Ok(()) }
-
-    /// 加载后调用（从数据库读取后）。
     fn after_load(&mut self) -> Result<(), OrmError> { Ok(()) }
 }
 ```
@@ -796,22 +741,16 @@ pub trait ModelLifecycle: Model {
 pub enum OrmError {
     #[error("数据库错误: {0}")]
     Database(#[from] sqlx::Error),
-
     #[error("实体未找到: {0}")]
     NotFound(String),
-
     #[error("唯一约束冲突: {0}")]
     UniqueViolation(String),
-
     #[error("外键约束冲突: {0}")]
     ForeignKeyViolation(String),
-
     #[error("映射错误: {0}")]
     Mapping(String),
-
     #[error("查询错误: {0}")]
     Query(String),
-
     #[error("事务错误: {0}")]
     Transaction(String),
 }
