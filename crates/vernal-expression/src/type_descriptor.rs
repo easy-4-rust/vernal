@@ -146,7 +146,7 @@ impl TypeDescriptor {
     /// 通用对象类型（用于兜底）。
     pub const OBJECT: Self = Self::Named {
         type_id: None,
-        name: String::new(),
+        name: String::new(), // TODO: 需要 "object" 但 const 无法使用 String::from
         generics: Vec::new(),
         annotations: Vec::new(),
     };
@@ -266,19 +266,30 @@ impl TypeDescriptor {
     /// Spring `TypeDescriptor.isAssignableTo` 等价语义。
     #[must_use]
     pub fn is_assignable_from(&self, src: &TypeDescriptor) -> bool {
+        // Object 兜底：任何类型可赋给 object
+        // 对标 Spring: Object.class.isAssignableFrom(srcType) 总是 true
+        // 注：const 中无法使用 String::from，所以 OBJECT.name 为空字符串
+        if matches!(self, Self::Named { .. }) {
+            let name = match self {
+                Self::Named { name, .. } => name.as_str(),
+                _ => "",
+            };
+            if name.is_empty() || name == "object" {
+                return true;
+            }
+        }
+
         match (self, src) {
             // 同一类型
             (a, b) if a == b => true,
-            // Object 兜底：常量比较而非模式
-            _ if std::ptr::eq(self as *const _, &Self::OBJECT as *const _) => true,
             // 数字 widening
             (Self::Primitive(dp), Self::Primitive(sp)) => {
                 dp.numeric_width() >= sp.numeric_width()
                     || (*dp == PrimitiveKind::Double && sp.is_floating())
                     || (*dp == PrimitiveKind::Float && *sp == PrimitiveKind::Float)
             }
-            // 任何类型可赋给 String 表示 toString 转换存在
-            _ if std::ptr::eq(self as *const _, &Self::STRING as *const _) => true,
+            // 任何类型可赋给 String（toString 转换）
+            (Self::Primitive(PrimitiveKind::String), _) => true,
             // Map 兼容
             (Self::Map(ak, av), Self::Map(sk, sv)) => {
                 ak.is_assignable_from(sk) && av.is_assignable_from(sv)
@@ -450,7 +461,18 @@ mod tests {
     #[test]
     fn is_assignable_object() {
         let int_d = TypeDescriptor::INT;
-        assert!(TypeDescriptor::OBJECT.is_assignable_from(&int_d));
+        let obj = TypeDescriptor::OBJECT;
+        let result = obj.is_assignable_from(&int_d);
+        eprintln!("obj.name() = {}", obj.name());
+        eprintln!("int_d.name() = {}", int_d.name());
+        eprintln!("is_assignable_from = {result}");
+        // Debug: check the exact values
+        if let TypeDescriptor::Named { name, .. } = &obj {
+            eprintln!("obj.name == 'object' is {}", name == "object");
+        } else {
+            eprintln!("obj is NOT Named variant");
+        }
+        assert!(result);
     }
 
     #[test]
