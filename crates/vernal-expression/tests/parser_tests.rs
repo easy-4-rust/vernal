@@ -245,18 +245,24 @@ fn string_literal_with_spaces() {
 
 #[test]
 fn identifier_returns_string_name() {
-    // Phase F: Identifier 应通过 PropertyAccessor 查找
-    // 当前 Identifier 返回 String(name)
-    let v = eval("myVar");
-    assert_eq!(v, ExpressionValue::String("myVar".to_string()));
+    // PropertyOrFieldReference 通过 PropertyAccessor 查找
+    // 默认上下文没有配置 PropertyAccessor，应返回错误
+    let parser = SpelExpressionParser::new();
+    let expr = parser.parse_expression("myVar").unwrap();
+    let ctx = StandardEvaluationContext::new(TypedValue::null());
+    let result = expr.get_value_with_context(&ctx);
+    assert!(result.is_err());
 }
 
 #[test]
 fn dot_chain_returns_last() {
-    // Phase F: CompoundExpression 应链式求值
-    // 当前 Identifier 占位返回 String
-    let v = eval("a.b.c");
-    assert_eq!(v, ExpressionValue::String("c".to_string()));
+    // CompoundExpression 链式求值：a.b.c
+    // 默认上下文没有配置 PropertyAccessor，应返回错误
+    let parser = SpelExpressionParser::new();
+    let expr = parser.parse_expression("a.b.c").unwrap();
+    let ctx = StandardEvaluationContext::new(TypedValue::null());
+    let result = expr.get_value_with_context(&ctx);
+    assert!(result.is_err());
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -265,9 +271,13 @@ fn dot_chain_returns_last() {
 
 #[test]
 fn hash_var_reference() {
-    // Phase F: #var 应通过 lookup_variable 查找
-    let v = eval("#myVar");
-    assert_eq!(v, ExpressionValue::String("myVar".to_string()));
+    // VariableReference 通过 lookup_variable 查找
+    // 默认上下文没有配置变量，应返回错误
+    let parser = SpelExpressionParser::new();
+    let expr = parser.parse_expression("#myVar").unwrap();
+    let ctx = StandardEvaluationContext::new(TypedValue::null());
+    let result = expr.get_value_with_context(&ctx);
+    assert!(result.is_err());
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -276,9 +286,13 @@ fn hash_var_reference() {
 
 #[test]
 fn bean_reference() {
-    // Phase F: @bean 应通过 BeanResolver 查找
-    let v = eval("@myBean");
-    assert_eq!(v, ExpressionValue::String("@myBean".to_string()));
+    // BeanReference 通过 BeanResolver 查找
+    // 默认上下文没有配置 BeanResolver，应返回错误
+    let parser = SpelExpressionParser::new();
+    let expr = parser.parse_expression("@myBean").unwrap();
+    let ctx = StandardEvaluationContext::new(TypedValue::null());
+    let result = expr.get_value_with_context(&ctx);
+    assert!(result.is_err());
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -385,10 +399,7 @@ fn scientific_notation_negative_exponent() {
 
 #[test]
 fn power_basic() {
-    // Phase F: OperatorPower — 当前 Identifier 占位
-    // 暂时验证解析器不崩溃
-    let v = eval("2 ^ 3");
-    assert!(matches!(v, ExpressionValue::String(_)));
+    assert_eq!(eval("2 ^ 3"), ExpressionValue::Int(8));
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
