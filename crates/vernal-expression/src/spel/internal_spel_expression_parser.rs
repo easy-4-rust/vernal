@@ -56,6 +56,7 @@ use super::ast::op_or::OpOr;
 use super::ast::op_plus::OpPlus;
 use super::ast::operator_between::OperatorBetween;
 use super::ast::operator_instanceof::OperatorInstanceof;
+use super::ast::type_reference::TypeReference;
 use super::ast::operator_matches::OperatorMatches;
 use super::ast::operator_not::OperatorNot;
 use super::ast::operator_power::OperatorPower;
@@ -259,10 +260,13 @@ impl InternalSpelExpressionParser {
                 }
                 TokenKind::Between => {
                     // between 需要右操作数为两元素列表 [low, high]
-                    // 暂用 Identifier 占位（Phase F: 解析 inline list 作为 between 的右操作数）
-                    Box::new(Identifier::new(format!(
-                        "between({})", r.to_string_ast()
-                    )))
+                    // OperatorBetween::new(value, low, high) 期望 3 个参数
+                    // 暂用 OperatorBetween（低=0, 高=r），后续补全 inline list 解析
+                    Box::new(OperatorBetween::new(
+                        l,
+                        Box::new(IntLiteral::new(0, "0".to_string())),
+                        r,
+                    ))
                 }
                 _ => unreachable!(),
             };
@@ -489,7 +493,7 @@ impl InternalSpelExpressionParser {
                     self.next_token(); // consume type name
                     self.eat_token(TokenKind::RParen);
                     // Phase F: 使用 TypeReference 节点
-                    return Some(Box::new(Identifier::new(format!("T({type_name})"))));
+                    return Some(Box::new(TypeReference::new(type_name)));
                 }
             }
         }
