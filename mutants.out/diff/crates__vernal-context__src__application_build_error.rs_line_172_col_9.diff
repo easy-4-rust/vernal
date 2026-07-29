@@ -1,0 +1,21 @@
+--- crates/vernal-context/src/application_build_error.rs
++++ replace <impl From<ConditionError> for ApplicationBuildError>::from -> Self with Default::default()
+@@ -164,17 +164,17 @@
+ impl From<ContextError> for ApplicationBuildError {
+     fn from(source: ContextError) -> Self {
+         Self::Context { source }
+     }
+ }
+ 
+ impl From<ConditionError> for ApplicationBuildError {
+     fn from(source: ConditionError) -> Self {
+-        Self::Condition { source }
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ impl From<InvocationPlanCatalogInitializationError> for ApplicationBuildError {
+     fn from(source: InvocationPlanCatalogInitializationError) -> Self {
+         Self::AopCatalogInitialization { source }
+     }
+ }

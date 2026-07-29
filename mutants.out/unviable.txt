@@ -1,0 +1,12 @@
+crates/vernal-context/src/application_build_error.rs:137:9: replace <impl Error for ApplicationBuildError>::source -> Option<&(dyn Error +'static)> with Some(Box::leak(Box::new(Default::default())))
+crates/vernal-context/src/application_build_error.rs:154:9: replace <impl From<DefinitionError> for ApplicationBuildError>::from -> Self with Default::default()
+crates/vernal-context/src/application_build_error.rs:160:9: replace <impl From<GraphError> for ApplicationBuildError>::from -> Self with Default::default()
+crates/vernal-context/src/application_build_error.rs:166:9: replace <impl From<ContextError> for ApplicationBuildError>::from -> Self with Default::default()
+crates/vernal-context/src/application_build_error.rs:172:9: replace <impl From<ConditionError> for ApplicationBuildError>::from -> Self with Default::default()
+crates/vernal-context/src/application_build_error.rs:178:9: replace <impl From<InvocationPlanCatalogInitializationError> for ApplicationBuildError>::from -> Self with Default::default()
+crates/vernal-context/src/application_build_error.rs:184:9: replace <impl From<OperationMetadataConflictError> for ApplicationBuildError>::from -> Self with Default::default()
+crates/vernal-context/src/application_close_coordinator.rs:58:9: replace ApplicationCloseCoordinator::operation -> &Mutex<()> with Box::leak(Box::new(Mutex::new(())))
+crates/vernal-context/src/application_close_coordinator.rs:63:9: replace ApplicationCloseCoordinator::resources -> &ContextResources with Box::leak(Box::new(Default::default()))
+crates/vernal-context/src/application_close_coordinator.rs:73:9: replace ApplicationCloseCoordinator::components -> Vec<Arc<dyn Lifecycle>> with vec![Arc::new(Default::default())]
+crates/vernal-context/src/application_close_coordinator.rs:78:9: replace ApplicationCloseCoordinator::take_components -> Vec<Arc<dyn Lifecycle>> with vec![Arc::new(Default::default())]
+crates/vernal-context/src/application_close_coordinator.rs:100:9: replace ApplicationCloseCoordinator::startup_report -> StartupReport with Default::default()

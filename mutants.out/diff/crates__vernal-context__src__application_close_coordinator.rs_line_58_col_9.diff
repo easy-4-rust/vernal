@@ -1,0 +1,21 @@
+--- crates/vernal-context/src/application_close_coordinator.rs
++++ replace ApplicationCloseCoordinator::operation -> &Mutex<()> with Box::leak(Box::new(Mutex::new(())))
+@@ -50,17 +50,17 @@
+             diagnostics: Mutex::new(diagnostics),
+             close_started: AtomicBool::new(false),
+             close_result,
+         })
+     }
+ 
+     /// 返回串行化 refresh、start 与 close 的操作锁。
+     pub(crate) const fn operation(&self) -> &Mutex<()> {
+-        &self.operation
++        Box::leak(Box::new(Mutex::new(()))) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 返回 Context 独占的内建运行资源。
+     pub(crate) const fn resources(&self) -> &ContextResources {
+         &self.resources
+     }
+ 
+     /// 把已经解析、需要在失败或关闭时释放的组件压入共享栈。

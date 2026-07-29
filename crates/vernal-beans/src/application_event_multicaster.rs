@@ -1,9 +1,11 @@
-use crate::{application_event::ApplicationEvent, application_listener::ApplicationListener};
+//! ApplicationEventMulticaster trait — Spring 风格的事件广播器。
+use crate::application_listener::ApplicationListener;
+use std::any::Any;
 use std::sync::Arc;
 
+/// 事件广播器 trait。
 pub trait ApplicationEventMulticaster: Send + Sync {
-    fn multicast_event(&self, event: &dyn ApplicationEvent);
-    fn add_application_listener(&self, listener: Arc<dyn ApplicationListener>) -> u64;
-    fn remove_application_listener(&self, listener_id: u64) -> bool;
-    fn remove_all_listeners(&self);
+    fn add_application_listener(&mut self, listener: Arc<dyn ApplicationListener>);
+    fn remove_application_listener(&mut self, listener: Arc<dyn ApplicationListener>);
+    fn multicast_event(&self, event: Arc<dyn Any + Send + Sync>);
 }

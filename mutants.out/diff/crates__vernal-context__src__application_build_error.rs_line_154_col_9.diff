@@ -1,0 +1,21 @@
+--- crates/vernal-context/src/application_build_error.rs
++++ replace <impl From<DefinitionError> for ApplicationBuildError>::from -> Self with Default::default()
+@@ -146,17 +146,17 @@
+             Self::OperationMetadata { source } => Some(source),
+             Self::AopCatalogInitialization { source } => Some(source),
+         }
+     }
+ }
+ 
+ impl From<DefinitionError> for ApplicationBuildError {
+     fn from(source: DefinitionError) -> Self {
+-        Self::Definition { source }
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ impl From<GraphError> for ApplicationBuildError {
+     fn from(source: GraphError) -> Self {
+         Self::Graph { source }
+     }
+ }

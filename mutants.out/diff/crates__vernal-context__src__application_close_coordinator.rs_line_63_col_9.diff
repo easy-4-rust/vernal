@@ -1,0 +1,21 @@
+--- crates/vernal-context/src/application_close_coordinator.rs
++++ replace ApplicationCloseCoordinator::resources -> &ContextResources with Box::leak(Box::new(Default::default()))
+@@ -55,17 +55,17 @@
+ 
+     /// 返回串行化 refresh、start 与 close 的操作锁。
+     pub(crate) const fn operation(&self) -> &Mutex<()> {
+         &self.operation
+     }
+ 
+     /// 返回 Context 独占的内建运行资源。
+     pub(crate) const fn resources(&self) -> &ContextResources {
+-        &self.resources
++        Box::leak(Box::new(Default::default())) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 把已经解析、需要在失败或关闭时释放的组件压入共享栈。
+     pub(crate) async fn push_component(&self, component: Arc<dyn Lifecycle>) {
+         self.components.lock().await.push(component);
+     }
+ 
+     /// 克隆当前组件栈，使启动过程不跨用户 Future 持有组件锁。

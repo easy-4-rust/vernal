@@ -1,0 +1,30 @@
+--- crates/vernal-context/src/application_context.rs
++++ replace ApplicationContext::is_active -> bool with false
+@@ -332,26 +332,17 @@
+     }
+ 
+     /// 返回上下文是否仍处于活动状态（refreshing/started/refreshing->ready）。
+     ///
+     /// 对标 Spring `ConfigurableApplicationContext#isActive`：
+     /// 状态在 `Refreshing` 之后到 `Draining` 之前返回 `true`，`Closed`
+     /// 之后返回 `false`。
+     pub async fn is_active(&self) -> bool {
+-        matches!(
+-            self.state().await,
+-            ContextState::Refreshing
+-                | ContextState::Refreshed
+-                | ContextState::Starting
+-                | ContextState::Ready
+-                | ContextState::Pausing
+-                | ContextState::Paused
+-                | ContextState::RollingBack
+-        )
++        false /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 返回上下文是否已关闭（对标 Spring `ConfigurableApplicationContext#isClosed`）。
+     pub async fn is_closed(&self) -> bool {
+         matches!(self.state().await, ContextState::Closed)
+     }
+ 
+     /// 返回底层 `IoC` 容器（对标 `ConfigurableApplicationContext#getBeanFactory`）。

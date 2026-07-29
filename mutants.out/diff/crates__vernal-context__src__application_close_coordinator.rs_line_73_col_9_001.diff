@@ -1,0 +1,21 @@
+--- crates/vernal-context/src/application_close_coordinator.rs
++++ replace ApplicationCloseCoordinator::components -> Vec<Arc<dyn Lifecycle>> with vec![Arc::new(Default::default())]
+@@ -65,17 +65,17 @@
+ 
+     /// 把已经解析、需要在失败或关闭时释放的组件压入共享栈。
+     pub(crate) async fn push_component(&self, component: Arc<dyn Lifecycle>) {
+         self.components.lock().await.push(component);
+     }
+ 
+     /// 克隆当前组件栈，使启动过程不跨用户 Future 持有组件锁。
+     pub(crate) async fn components(&self) -> Vec<Arc<dyn Lifecycle>> {
+-        self.components.lock().await.clone()
++        vec![Arc::new(Default::default())] /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 取得组件栈所有权并清空共享位置，保证每个组件最多被一个回滚流程停止。
+     pub(crate) async fn take_components(&self) -> Vec<Arc<dyn Lifecycle>> {
+         mem::take(&mut *self.components.lock().await)
+     }
+ 
+     /// 返回当前生命周期状态快照。

@@ -1,9 +1,8 @@
-//! 契约验证测试 - VernalApplicationBuilder 未覆盖方法
+//! 契约验证测试 - 覆盖剩余未覆盖代码
 //!
-//! 这些测试验证 VernalApplicationBuilder 的核心契约：
-//! - configuration_properties: 类型安全配置绑定
-//! - register_all: 批量组件注册
-//! - qualified 方法: 限定符组件注册
+//! 这些测试验证：
+//! - VernalApplicationBuilder 的未覆盖方法
+//! - 条件装配的边界情况
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -84,7 +83,7 @@ impl vernal_context::ApplicationEventListener<TestEvent> for TestEventListener {
 }
 
 // ════════════════════════════════════════════════════════════════════
-// 测试: configuration_properties
+// 测试: 配置属性注册
 // ════════════════════════════════════════════════════════════════════
 
 /// 验证 configuration_properties 注册类型安全配置对象
@@ -96,7 +95,7 @@ async fn test_configuration_properties_registration() {
 }
 
 // ════════════════════════════════════════════════════════════════════
-// 测试: register_all
+// 测试: 批量注册
 // ════════════════════════════════════════════════════════════════════
 
 /// 验证 register_all 批量注册组件
@@ -118,7 +117,7 @@ async fn test_register_all_empty() {
 }
 
 // ════════════════════════════════════════════════════════════════════
-// 测试: lifecycle_qualified
+// 测试: 限定符组件注册
 // ════════════════════════════════════════════════════════════════════
 
 /// 验证 lifecycle_qualified 注册带限定符的生命周期组件
@@ -129,10 +128,6 @@ async fn test_lifecycle_qualified() {
     builder.lifecycle_qualified::<TestLifecycle>(q);
 }
 
-// ════════════════════════════════════════════════════════════════════
-// 测试: application_runner_qualified
-// ════════════════════════════════════════════════════════════════════
-
 /// 验证 application_runner_qualified 注册带限定符的 Runner
 #[tokio::test]
 async fn test_application_runner_qualified() {
@@ -141,10 +136,6 @@ async fn test_application_runner_qualified() {
     builder.application_runner_qualified::<TestRunner>(q);
 }
 
-// ════════════════════════════════════════════════════════════════════
-// 测试: scheduled_task_qualified
-// ════════════════════════════════════════════════════════════════════
-
 /// 验证 scheduled_task_qualified 注册带限定符的周期任务
 #[tokio::test]
 async fn test_scheduled_task_qualified() {
@@ -152,10 +143,6 @@ async fn test_scheduled_task_qualified() {
     let q = Qualifier::new("task-q").unwrap();
     builder.scheduled_task_qualified::<TestTask>(q);
 }
-
-// ════════════════════════════════════════════════════════════════════
-// 测试: event_listener_qualified
-// ════════════════════════════════════════════════════════════════════
 
 /// 验证 event_listener_qualified 注册带限定符的事件监听器
 #[tokio::test]
@@ -166,7 +153,7 @@ async fn test_event_listener_qualified() {
 }
 
 // ════════════════════════════════════════════════════════════════════
-// 测试: register_event_listener_component
+// 测试: 组件注册
 // ════════════════════════════════════════════════════════════════════
 
 /// 验证 register_event_listener_component 注册事件监听器组件
@@ -177,10 +164,6 @@ async fn test_register_event_listener_component() {
     assert!(result.is_ok(), "register_event_listener_component should succeed");
 }
 
-// ════════════════════════════════════════════════════════════════════
-// 测试: register_application_runner
-// ════════════════════════════════════════════════════════════════════
-
 /// 验证 register_application_runner 注册 Runner 组件
 #[tokio::test]
 async fn test_register_application_runner() {
@@ -188,10 +171,6 @@ async fn test_register_application_runner() {
     let result = builder.register_application_runner::<TestRunner>();
     assert!(result.is_ok(), "register_application_runner should succeed");
 }
-
-// ════════════════════════════════════════════════════════════════════
-// 测试: register_scheduled_task
-// ════════════════════════════════════════════════════════════════════
 
 /// 验证 register_scheduled_task 注册周期任务组件
 #[tokio::test]

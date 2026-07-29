@@ -1,0 +1,14 @@
+--- crates/vernal-context/src/lib.rs
++++ replace project_status -> &'static str with ""
+@@ -164,10 +164,10 @@
+ pub use task_schedule_error::TaskScheduleError;
+ pub use task_schedule_mode::TaskScheduleMode;
+ pub use task_shutdown_policy::TaskShutdownPolicy;
+ pub use vernal_application_builder::VernalApplicationBuilder;
+ 
+ /// 返回应用上下文当前成熟度状态。
+ #[must_use]
+ pub const fn project_status() -> &'static str {
+-    vernal_core::PROJECT_STATUS
++    "" /* ~ changed by cargo-mutants ~ */
+ }

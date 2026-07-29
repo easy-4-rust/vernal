@@ -1,0 +1,21 @@
+--- crates/vernal-context/src/application_build_error.rs
++++ replace <impl From<ContextError> for ApplicationBuildError>::from -> Self with Default::default()
+@@ -158,17 +158,17 @@
+ impl From<GraphError> for ApplicationBuildError {
+     fn from(source: GraphError) -> Self {
+         Self::Graph { source }
+     }
+ }
+ 
+ impl From<ContextError> for ApplicationBuildError {
+     fn from(source: ContextError) -> Self {
+-        Self::Context { source }
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ impl From<ConditionError> for ApplicationBuildError {
+     fn from(source: ConditionError) -> Self {
+         Self::Condition { source }
+     }
+ }

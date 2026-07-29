@@ -1,0 +1,25 @@
+--- crates/vernal-context/src/application_close_coordinator.rs
++++ replace ApplicationCloseCoordinator::set_state with ()
+@@ -80,21 +80,17 @@
+ 
+     /// 返回当前生命周期状态快照。
+     pub(crate) async fn state(&self) -> ContextState {
+         *self.state.read().await
+     }
+ 
+     /// 原子替换可观察状态，并同步更新脱敏诊断快照。
+     pub(crate) async fn set_state(&self, state: ContextState) {
+-        *self.state.write().await = state;
+-        self.diagnostics
+-            .lock()
+-            .await
+-            .set_context_state(state.as_str().to_owned());
++        () /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 返回调用时刻拥有自身数据的诊断报告快照。
+     ///
+     /// `unused_definitions` 来自 Container 的同步解析追踪快照；这里只把它与同一
+     /// 时刻的生命周期诊断值组合，不在协调器中保存第二份组件使用状态。
+     pub(crate) async fn startup_report(&self, unused_definitions: Vec<String>) -> StartupReport {
+         let mut report = self.diagnostics.lock().await.clone();

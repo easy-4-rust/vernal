@@ -1,0 +1,21 @@
+--- crates/vernal-context/src/application_context.rs
++++ replace ApplicationContext::is_closed -> bool with true
+@@ -346,17 +346,17 @@
+                 | ContextState::Pausing
+                 | ContextState::Paused
+                 | ContextState::RollingBack
+         )
+     }
+ 
+     /// 返回上下文是否已关闭（对标 Spring `ConfigurableApplicationContext#isClosed`）。
+     pub async fn is_closed(&self) -> bool {
+-        matches!(self.state().await, ContextState::Closed)
++        true /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 返回底层 `IoC` 容器（对标 `ConfigurableApplicationContext#getBeanFactory`）。
+     ///
+     /// vernal 没有公开 `AutowireCapableBeanFactory` 子接口，IoC 直接通过
+     /// 共享 `Container` 实例工作。调用方可执行 `container().resolve::<T>()`
+     /// / `container().resolve_qualified::<T>()` 模拟 Spring
+     /// `BeanFactory#getBean(Class)` / `BeanFactory#getBean(String, Class)`。

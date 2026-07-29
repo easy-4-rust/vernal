@@ -1,18 +1,11 @@
-use crate::{
-    application_event_publisher::ApplicationEventPublisher, bean_factory::BeanFactory,
-    default_resource_loader::ResourceLoader, environment::Environment,
-};
+//! ApplicationContext trait — Spring 风格的应用上下文。
+use std::any::Any;
+use std::sync::Arc;
 
-pub trait ApplicationContext:
-    BeanFactory + Environment + ResourceLoader + ApplicationEventPublisher
-{
-    fn id(&self) -> &str;
-    fn application_name(&self) -> &str {
-        ""
-    }
-    fn display_name(&self) -> &str {
-        self.id()
-    }
-    fn startup_timestamp(&self) -> u128;
+/// 应用上下文 trait。
+pub trait ApplicationContext: Send + Sync + 'static {
+    fn get_bean(&self, name: &str) -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>>;
+    fn get_display_name(&self) -> &str;
+    fn get_startup_date(&self) -> u64;
     fn is_active(&self) -> bool;
 }

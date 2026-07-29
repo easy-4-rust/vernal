@@ -5,10 +5,17 @@ use std::sync::Arc;
 use vernal_beans::BeanScope;
 use vernal_beans::bean_expression_resolver::BeanExpressionResolver;
 
+fn lock_field_md() -> std::sync::MutexGuard<'static, ()> {
+    static LOCK: std::sync::OnceLock<std::sync::Mutex<()>> = std::sync::OnceLock::new();
+    LOCK.get_or_init(|| std::sync::Mutex::new(())).lock().unwrap()
+}
+
+
 // ── field_metadata 测试 ──────────────────────────────────────────────────
 
 #[test]
 fn field_metadata_register_and_query_all() {
+    let _guard = lock_field_md();
     use vernal_beans::field_metadata;
     field_metadata::clear_metadata();
 
@@ -39,6 +46,7 @@ fn field_metadata_register_and_query_all() {
 
 #[test]
 fn field_metadata_optional_and_qualifier() {
+    let _guard = lock_field_md();
     use vernal_beans::field_metadata;
     field_metadata::clear_metadata();
 
@@ -63,6 +71,7 @@ fn field_metadata_optional_and_qualifier() {
 
 #[test]
 fn field_metadata_empty() {
+    let _guard = lock_field_md();
     use vernal_beans::field_metadata;
     field_metadata::clear_metadata();
     assert!(field_metadata::get_all_metadata().is_empty());
@@ -74,6 +83,7 @@ fn field_metadata_empty() {
 
 #[test]
 fn field_metadata_multiple_types() {
+    let _guard = lock_field_md();
     use vernal_beans::field_metadata;
     field_metadata::clear_metadata();
 

@@ -1,14 +1,9 @@
-pub trait Lifecycle: Send + Sync {
-    fn start(&self) -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
-    fn stop(&self) -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
-    fn is_running(&self) -> bool;
-}
+//! Lifecycle trait — Spring 风格的生命周期。
+use std::fmt;
 
-pub trait LifecycleProcessor: Lifecycle {
-    fn on_refresh(&self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        self.start()
-    }
-    fn on_close(&self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        self.stop()
-    }
+/// 生命周期 trait。
+pub trait Lifecycle: Send + Sync + fmt::Debug {
+    fn start(&self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> { Ok(()) }
+    fn stop(&self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> { Ok(()) }
+    fn is_running(&self) -> bool { false }
 }

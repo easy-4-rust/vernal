@@ -1,12 +1,7 @@
-use std::collections::HashMap;
-pub trait MessageSource: Send + Sync {
-    fn get_message(&self, code: &str, args: &[&str], locale: &str) -> Option<String>;
+//! MessageSource trait — Spring 风格的消息源。
+use std::fmt;
+
+/// 消息源 trait。
+pub trait MessageSource: Send + Sync + fmt::Debug {
+    fn get_message(&self, code: &str, args: &[&str], default_message: Option<&str>) -> String;
 }
-pub fn interpolate_message(template: &str, args: &[&str]) -> String {
-    args.iter()
-        .enumerate()
-        .fold(template.to_owned(), |s, (i, arg)| {
-            s.replace(&format!("{{{i}}}"), arg)
-        })
-}
-pub type MessageMap = HashMap<String, HashMap<String, String>>;

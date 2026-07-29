@@ -1,0 +1,32 @@
+--- crates/vernal-context/src/application_build_error.rs
++++ replace <impl Error for ApplicationBuildError>::source -> Option<&(dyn Error +'static)> with Some(Box::leak(Box::new(Default::default())))
+@@ -129,28 +129,17 @@
+                 )
+             }
+         }
+     }
+ }
+ 
+ impl Error for ApplicationBuildError {
+     fn source(&self) -> Option<&(dyn Error + 'static)> {
+-        match self {
+-            Self::TokioRuntimeUnavailable { source } => Some(source),
+-            Self::Definition { source } => Some(source),
+-            Self::Graph { source } => Some(source),
+-            Self::Context { source } => Some(source),
+-            Self::Condition { source } => Some(source),
+-            Self::AdvisorResolution { source, .. }
+-            | Self::LocalAdvisorResolution { source, .. } => Some(source.as_ref()),
+-            Self::AdvisorScope { .. } => None,
+-            Self::OperationMetadata { source } => Some(source),
+-            Self::AopCatalogInitialization { source } => Some(source),
+-        }
++        Some(Box::leak(Box::new(Default::default()))) /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ impl From<DefinitionError> for ApplicationBuildError {
+     fn from(source: DefinitionError) -> Self {
+         Self::Definition { source }
+     }
+ }

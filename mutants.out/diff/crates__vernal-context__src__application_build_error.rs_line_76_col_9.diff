@@ -1,0 +1,76 @@
+--- crates/vernal-context/src/application_build_error.rs
++++ replace <impl fmt::Display for ApplicationBuildError>::fmt -> fmt::Result with Ok(Default::default())
+@@ -68,72 +68,17 @@
+     AopCatalogInitialization {
+         /// 目录返回的一次封存错误。
+         source: InvocationPlanCatalogInitializationError,
+     },
+ }
+ 
+ impl fmt::Display for ApplicationBuildError {
+     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+-        match self {
+-            Self::TokioRuntimeUnavailable { source } => {
+-                write!(formatter, "Tokio runtime is unavailable: {source}")
+-            }
+-            Self::Definition { source } => {
+-                write!(
+-                    formatter,
+-                    "application component definition is invalid: {source}"
+-                )
+-            }
+-            Self::Graph { source } => {
+-                write!(
+-                    formatter,
+-                    "application dependency graph is invalid: {source}"
+-                )
+-            }
+-            Self::Context { source } => {
+-                write!(formatter, "application context cannot be built: {source}")
+-            }
+-            Self::Condition { source } => {
+-                write!(
+-                    formatter,
+-                    "application conditional component assembly failed: {source}"
+-                )
+-            }
+-            Self::AdvisorResolution { component, source } => {
+-                write!(
+-                    formatter,
+-                    "application advisor component {component} cannot be resolved: {source}"
+-                )
+-            }
+-            Self::LocalAdvisorResolution { component, source } => {
+-                write!(
+-                    formatter,
+-                    "application local advisor component {component} cannot be resolved: {source}"
+-                )
+-            }
+-            Self::AdvisorScope { component, scope } => {
+-                write!(
+-                    formatter,
+-                    "application advisor component {component} must be singleton, not {scope}"
+-                )
+-            }
+-            Self::OperationMetadata { source } => {
+-                write!(
+-                    formatter,
+-                    "application operation metadata is inconsistent: {source}"
+-                )
+-            }
+-            Self::AopCatalogInitialization { source } => {
+-                write!(
+-                    formatter,
+-                    "application AOP catalog cannot be initialized: {source}"
+-                )
+-            }
+-        }
++        Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ impl Error for ApplicationBuildError {
+     fn source(&self) -> Option<&(dyn Error + 'static)> {
+         match self {
+             Self::TokioRuntimeUnavailable { source } => Some(source),
+             Self::Definition { source } => Some(source),

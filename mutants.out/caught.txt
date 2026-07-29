@@ -1,0 +1,9 @@
+crates/vernal-context/src/lib.rs:172:5: replace project_status -> &'static str with ""
+crates/vernal-context/src/application_build_error.rs:76:9: replace <impl fmt::Display for ApplicationBuildError>::fmt -> fmt::Result with Ok(Default::default())
+crates/vernal-context/src/application_build_error.rs:137:9: replace <impl Error for ApplicationBuildError>::source -> Option<&(dyn Error +'static)> with None
+crates/vernal-context/src/application_close_coordinator.rs:68:9: replace ApplicationCloseCoordinator::push_component with ()
+crates/vernal-context/src/application_close_coordinator.rs:73:9: replace ApplicationCloseCoordinator::components -> Vec<Arc<dyn Lifecycle>> with vec![]
+crates/vernal-context/src/application_close_coordinator.rs:78:9: replace ApplicationCloseCoordinator::take_components -> Vec<Arc<dyn Lifecycle>> with vec![]
+crates/vernal-context/src/application_close_coordinator.rs:83:9: replace ApplicationCloseCoordinator::state -> ContextState with Default::default()
+crates/vernal-context/src/application_close_coordinator.rs:88:9: replace ApplicationCloseCoordinator::set_state with ()
+crates/vernal-context/src/application_close_coordinator.rs:107:9: replace ApplicationCloseCoordinator::record_warning with ()

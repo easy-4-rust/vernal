@@ -1,15 +1,19 @@
+//! ApplicationEvent — Spring 风格的应用事件。
 use std::any::Any;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::fmt;
 
-pub trait ApplicationEvent: Send + Sync + Any {
-    fn get_timestamp(&self) -> u128;
-    fn get_source(&self) -> &(dyn Any + Send + Sync);
-    fn as_any(&self) -> &dyn Any;
+/// 应用事件 trait。
+pub trait ApplicationEvent: Send + Sync + fmt::Debug {
+    fn get_timestamp(&self) -> u64;
+    fn get_source(&self) -> &dyn Any;
 }
 
-pub fn current_timestamp_millis() -> u128 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_millis()
+/// 通用应用事件。
+#[derive(Clone, Debug)]
+pub struct GenericApplicationEvent {
+    pub timestamp: u64,
+    pub source_type: String,
+}
+impl GenericApplicationEvent {
+    pub fn new() -> Self { Self { timestamp: std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() as u64, source_type: String::new() } }
 }

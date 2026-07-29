@@ -1,0 +1,21 @@
+--- crates/vernal-context/src/application_close_coordinator.rs
++++ replace ApplicationCloseCoordinator::push_component with ()
+@@ -60,17 +60,17 @@
+ 
+     /// 返回 Context 独占的内建运行资源。
+     pub(crate) const fn resources(&self) -> &ContextResources {
+         &self.resources
+     }
+ 
+     /// 把已经解析、需要在失败或关闭时释放的组件压入共享栈。
+     pub(crate) async fn push_component(&self, component: Arc<dyn Lifecycle>) {
+-        self.components.lock().await.push(component);
++        () /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 克隆当前组件栈，使启动过程不跨用户 Future 持有组件锁。
+     pub(crate) async fn components(&self) -> Vec<Arc<dyn Lifecycle>> {
+         self.components.lock().await.clone()
+     }
+ 
+     /// 取得组件栈所有权并清空共享位置，保证每个组件最多被一个回滚流程停止。

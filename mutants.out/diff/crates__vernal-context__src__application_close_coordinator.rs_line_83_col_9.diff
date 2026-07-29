@@ -1,0 +1,21 @@
+--- crates/vernal-context/src/application_close_coordinator.rs
++++ replace ApplicationCloseCoordinator::state -> ContextState with Default::default()
+@@ -75,17 +75,17 @@
+ 
+     /// 取得组件栈所有权并清空共享位置，保证每个组件最多被一个回滚流程停止。
+     pub(crate) async fn take_components(&self) -> Vec<Arc<dyn Lifecycle>> {
+         mem::take(&mut *self.components.lock().await)
+     }
+ 
+     /// 返回当前生命周期状态快照。
+     pub(crate) async fn state(&self) -> ContextState {
+-        *self.state.read().await
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 原子替换可观察状态，并同步更新脱敏诊断快照。
+     pub(crate) async fn set_state(&self, state: ContextState) {
+         *self.state.write().await = state;
+         self.diagnostics
+             .lock()
+             .await

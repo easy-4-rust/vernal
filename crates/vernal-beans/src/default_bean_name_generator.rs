@@ -1,35 +1,20 @@
 //! DefaultBeanNameGenerator — Spring 风格的默认 Bean 名称生成器。
-//!
 //! 对应 Java 类：`org.springframework.beans.factory.support.DefaultBeanNameGenerator`。
-//!
-//! 使用 Bean 的类名（类型名）作为 Bean 名称。
-//! 当生成器检测到冲突时，追加唯一后缀。
-
 use crate::bean_definition::BeanDefinition;
-use crate::bean_name_generator::BeanNameGenerator;
 
 /// Spring 风格的默认 Bean 名称生成器。
-///
-/// 对应 Spring 的 `DefaultBeanNameGenerator`。
-///
-/// 使用 Bean 的类名作为默认 Bean 名称。
+#[derive(Clone, Debug, Default)]
 pub struct DefaultBeanNameGenerator;
 
 impl DefaultBeanNameGenerator {
-    /// 创建新的默认 Bean 名称生成器。
-    pub fn new() -> Self {
-        Self
+    pub fn generate_bean_name(&self, definition: &dyn BeanDefinition) -> String {
+        let class = definition.bean_class_name();
+        if class.is_empty() {
+            format!("bean_{}", rand_num())
+        } else {
+            class.split("::").last().unwrap_or(class).to_string()
+        }
     }
 }
 
-impl Default for DefaultBeanNameGenerator {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl BeanNameGenerator for DefaultBeanNameGenerator {
-    fn generate_bean_name(&self, definition: &dyn BeanDefinition) -> String {
-        definition.bean_class_name().to_string()
-    }
-}
+fn rand_num() -> u64 { use std::time::{SystemTime, UNIX_EPOCH}; SystemTime::now().duration_since(UNIX_EPOCH).unwrap().subsec_nanos() as u64 }
