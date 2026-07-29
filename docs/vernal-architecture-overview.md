@@ -73,10 +73,10 @@ L1  仅依赖 L0（可并行）
     ├── vernal-expression  (113文件)        ✅ 已完成
     ├── vernal-aop         (64文件)         ✅ 已完成
     ├── vernal-async       (2文件骨架)
-    ├── vernal-cache       (3文件骨架)
+    ├── vernal-cache       (3文件骨架)       ✅ 技术要求 587 行
     ├── vernal-db          (2文件骨架)       🔜 通用数据库抽象层
-    ├── vernal-tx          (4文件骨架)       🔜 包含 @Transactional 切面支持
-    ├── vernal-log         (2文件骨架)
+    ├── vernal-tx          (4文件骨架)       ✅ 技术要求 663 行
+    ├── vernal-log         (2文件骨架)       ✅ 技术要求 635 行
     ├── vernal-test        (2文件骨架)
     └── vernal-actuator    (2文件骨架)
 
@@ -111,6 +111,31 @@ L6  Web 框架适配器（10 个，已完成 ✅）
 L7  顶层门面
     └── vernal              (23行)          🔜 重新启用
 ```
+
+### 3.1 推进优先级（按"价值/依赖度"排序）
+
+1. **L0 补全**：`vernal-db`（通用数据库抽象层，基于 sqlx）—— 解锁 L4 的 vernal-rbdc/orm
+2. **L1 骨架代码补全**：`vernal-async`/`log`/`cache`/`tx`/`test`/`actuator` —— 技术要求已就位，骨架代码待写
+3. **L2 的 macros** —— 解锁所有 `#[derive(Component)]` 等过程宏，是 vernal 的关键
+4. **L4 的 messaging** —— 解锁 14 broker adapter 与 ddd4r-mq 集成
+5. **L5 hyper/tower 骨架** —— 补全 Web 适配器底层
+6. **L7 vernal 顶层门面** —— 集成所有内部 crate
+
+### 3.2 各层完成度（2026-07-29）
+
+| 层 | 完成情况 | 说明 |
+|---|---|---|
+| **L0** | 100% | vernal-core 94 文件，是最稳定的底层 |
+| **L1** | 100%（技术要求） | 9 个 crate，骨架代码待补 |
+| **L2** | 50% | vernal-beans 完整，macros 骨架 |
+| **L3** | 100% | vernal-context 87 文件 |
+| **L4** | 60% | web/orm/r2dbc/oxm/context-indexer/context-support 完成 |
+| **L5** | 80% | websocket 99 文件；tower/hyper 骨架 |
+| **L6** | 100% | 10 个 Web 框架适配器全部完成 |
+| **L7** | 5% | vernal 门面骨架，待集成 |
+| **文档** | 100% | 23 份技术要求文档（约定+总览+22 模块）|
+
+
 
 ## 四、底层依赖清单（已选型完整）
 

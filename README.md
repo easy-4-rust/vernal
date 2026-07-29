@@ -752,6 +752,81 @@ flowchart LR
 - **Web frameworks** retain ownership of routing, request/response types,
   transport limits, and server lifecycle.
 
+## 7a. Module topology and completion order
+
+vernal is a 34-crate workspace with a strict dependency DAG. New
+contributors must follow the topological order below — each layer can be
+built only after the layer it depends on has been completed.
+
+```
+L0  Zero-dependency core contract
+    └── vernal-core                                 ✅ 94 files, done
+
+L1  Layer 1 — depends only on L0 (parallelise)
+    ├── vernal-expression  (113 files)            ✅ done
+    ├── vernal-aop         (64 files)             ✅ done
+    ├── vernal-async       (skeleton)              docs done
+    ├── vernal-cache       (skeleton)              docs done
+    ├── vernal-db          (skeleton)              next-up
+    ├── vernal-tx          (skeleton)              docs done
+    ├── vernal-log         (skeleton)              docs done
+    ├── vernal-test        (skeleton)
+    └── vernal-actuator    (skeleton)
+
+L2  Depends on L1 (parallelise)
+    ├── vernal-beans       (117 files)            ✅ done
+    └── vernal-macros      (12 files, skeleton)   next-up
+
+L3  Depends on L2
+    └── vernal-context     (87 files)             ✅ done
+
+L4  Depends on L3 (parallelise)
+    ├── vernal-web         (26 files)             ✅ done
+    ├── vernal-http        (7 files)
+    ├── vernal-context-indexer (11 files)         ✅ done
+    ├── vernal-context-support (68 files)         ✅ done
+    ├── vernal-messaging   (6 files, skeleton)    next-up
+    ├── vernal-orm         (Toasty-locked)        ✅ done
+    └── vernal-rbdc        (skeleton)              next-up
+
+L5  Depends on L4
+    ├── vernal-web-testkit (10 files)
+    ├── vernal-tower       (22 files)
+    ├── vernal-hyper       (2 files)
+    ├── vernal-websocket   (99 files)             ✅ done
+    ├── vernal-oxm         ✅ done
+    └── vernal-r2dbc       ✅ done
+
+L6  Web framework adapters (depends on L4 + L5, parallelise)  ✅ all done
+    ├── vernal-axum / actix-web / poem / salvo / rocket / warp / ntex / gotham / tide
+    └── vernal-tonic (gRPC)
+
+L7  Top-level facade
+    └── vernal              (re-enable pending)
+```
+
+**Push order (highest value/dep-density first):**
+
+1. Complete `vernal-db` (L1) — the general sqlx data-abstraction
+   layer. Unblocks `vernal-rbdc` and the `vernal-orm` repository.
+2. Backfill the remaining L1 skeleton code (async / log / cache / tx
+   / test / actuator). The technical requirement documents are
+   already in place.
+3. Land `vernal-macros` (L2) — enables `#[derive(Component)]`,
+   `#[transactional]`, `#[message_listener]` and the rest of the
+   process-macro surface.
+4. Backfill `vernal-messaging` (L4) — unlocks the 14 broker
+   adapters that integrate with `ddd4r-mq`.
+5. Finish `vernal-tower` and `vernal-hyper` (L5) — the transport
+   layer used by all 10 web framework adapters.
+6. Re-enable the top-level `vernal` facade (L7) once the lower
+   layers are stable.
+
+Progress (2026-07-29): all 23 documentation files (`Spring-组件替换约定`
++ `模块技术交接总览` + 22 `Spring-*-技术要求`) are committed;
+~80% of the *code* crates have their skeleton in place, but the
+skeleton code in L1/L2/L4 still needs real implementations.
+
 ## 8. Local development
 
 Prerequisites:
