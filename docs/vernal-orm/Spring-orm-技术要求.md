@@ -63,6 +63,139 @@ vernal-orm 是 Vernal Framework 的 **Tokio-first 异步 ORM 抽象内核**，
 | 实体继承 | 🚫 不支持 | Rust 无类继承，用 trait 组合替代 |
 | 缓存 | 外部 vernal-cache | L1 用 HashMap，L2 用 Redis/moka |
 
+### 1.3.0 Toasty 生态定位分析（vernal-orm 选型依据）
+
+#### 核心判断：Toasty 不会成为"Rust 生态标准 ORM"，但会成为"tokio 生态事实默认 ORM"
+
+**三个关键事实**：
+
+1. **Toasty 不是标准，是 ORM**：它没有像 `java.sql.Connection` 那样定义抽象接口
+   - 它直接定义自己的 `toasty::Model` derive 宏
+   - 没有 `Statement` / `PreparedStatement` / `ResultSet` 这种 JDBC 标准 API
+   - 它的 driver 抽象是私有的（`toasty-driver-*`），不像 `java.sql.Driver` 那样有 ServiceLoader 机制
+2. **Tokio 影响力 ≠ 标准制定**：Java 标准是 JSR 专家组（`javax.persistence`、`java.sql`）制定的
+   - Rust 生态没有类似机构，**事实标准**由社区采用率决定
+   - Tokio 团队影响力大，但 Toasty 仍需经社区验证
+3. **Toasty 的真正定位是"tokio 系 ORM"**：
+   - 与 Axum（HTTP 路由）形成组合拳
+   - 与 Topcoat（全栈 Web）形成 Axum + Toasty + Topcoat 的 tokio-rs 全家桶
+   - 这套组合在 **tokio 生态内部** 是默认推荐
+
+#### 与 Java 对比
+
+| Java 标准 | Rust 现状 | Toasty 角色 |
+|---|---|---|
+| `javax.persistence`（JPA 标准）| 无对等标准 | Toasty 不是标准 |
+| `java.sql`（JDBC 标准）| 无对等标准 | sqlx 是事实 JDBC |
+| `JPA Providers`：Hibernate / EclipseLink | 无 Provider 模式 | toasty 是单一实现 |
+| `JDBC Drivers`：MySQL/PostgreSQL 各自 | sqlx 支持多 dialect | toasty-driver-* 是 toasty 专属 |
+
+**结论**：Toasty **没有制定 Rust ORM 标准**，它只是 tokio 系一个高质量 ORM 实现。就像 Hibernate 是 Java ORM 标杆，但 Hibernate 也不是 JPA 标准的制定者。
+
+#### 对 vernal-orm 的影响
+
+| 维度 | 影响 | vernal-orm 应对 |
+|---|---|---|
+| **tokio 生态** | 正向——vernal 全栈基于 tokio，与 Toasty 同源天然整合 | 维持 Toasty 锁定主线 |
+| **Dialect 支持** | Toasty 已支持 SQLite/Turso/PostgreSQL/MySQL/DynamoDB | vernal-orm 通过 Toasty 间接获得这 5 种方言 |
+| **Async 原生** | Toasty 完全 async-first（tokio 系）| vernal-orm 完美契合 |
+| **编译期 codegen** | Toasty 强项，零反射 | vernal-orm 同样受益于零反射 |
+| **社区采用** | Axum + Toasty 组合可能成为 tokio 系默认 ORM | vernal 受益于生态普及 |
+| **MyBatis 用户迁移** | MyBatis 习惯用户可能更倾向 rbatis 而非 Toasty | vernal-rbatis 仍需保留 |
+
+#### vernal-orm 当前定位（不变）
+
+```
+spring-orm (Java)   →  vernal-orm (Rust)
+   ↓                       ↓
+Hibernate (JPA 实现)   →  Toasty (tokio-rs ORM 标杆)
+   ↓                       ↓
+JPA 标准 (javax)     →  无对等标准（Toasty 是实现，不是标准）
+   ↓                       ↓
+多 Provider 切换     →  多 dialect 切换（但需 toasty-sql 中转）
+```
+
+#### 4 条优化指导
+
+**指导 1：vernal-orm 选型不变，锁定 Toasty**
+
+理由：
+- Toasty 与 vernal 全栈（tokio 系）同源
+- 编译期 codegen 对标 Hibernate（JPA 主实现）
+- 已规划在 `vernal-orm/Spring-orm-技术要求.md` 中
+
+```toml
+# vernal-orm/Cargo.toml（规划）
+[dependencies]
+toasty = "0.9"           # ORM 主线
+toasty-sql = "0.9"       # SQL dialect
+toasty-driver-postgres = "0.9"
+toasty-driver-mysql = "0.9"
+toasty-driver-sqlite = "0.9"
+```
+
+**指导 2：抽象层设计——vernal-orm 包装 Toasty，不泄漏到 public API**
+
+```rust
+// ❌ 直接暴露 toasty 类型（强耦合）
+pub fn save_user(user: &toasty::Model) -> Result<(), toasty::Error> { ... }
+
+// ✅ vernal-orm 抽象层（解耦）
+pub trait Repository<E: Entity> {
+    async fn save(&self, entity: &E) -> Result<(), OrmError>;
+    async fn find_by_id(&self, id: &EntityId) -> Result<Option<E>, OrmError>;
+    // ... 抽象方法
+}
+
+// vernal-orm-toasty 内部实现
+struct ToastyRepositoryImpl { ... }
+impl<E: ToastyModel> Repository<E> for ToastyRepositoryImpl { ... }
+```
+
+**指导 3：多 ORM 共存——保留 rbatis 作为迁移路径**
+
+```rust
+// 业务层用 vernal-orm 抽象
+use vernal_orm::Repository;
+
+#[derive(Repository)]
+#[repository(impl = "toasty")]   // 编译期选择
+pub struct UserRepo;
+
+// 也支持：
+// #[repository(impl = "rbatis")]  // 旧 MyBatis 习惯
+// #[repository(impl = "sqlx")]    // 需要 SQL 控制的场景
+```
+
+**指导 4：与 Toasty 生态同步的版本策略**
+
+| Toasty 版本 | vernal 应对 |
+|---|---|
+| 0.x 阶段 | vernal-orm 跟踪 minor 版本，major 升级时做 breaking change review |
+| 1.0 GA | 锁定 1.0.x，**正式纳入 vernal 发布** |
+| 2.0+ | 评估迁移成本，保留旧版本兼容层（参考 rbatis 4.x→5.x 升级策略） |
+
+#### 与 Topcoat 的协同价值
+
+```
+tokio-rs 全家桶（2026-07 发布节奏）
+├── Tokio（异步运行时）           ← vernal 全栈基础
+├── Axum（HTTP 路由）            ← vernal-web 10 适配器之一
+├── tracing（日志）              ← vernal-log 底层
+├── Toasty（ORM）                ← vernal-orm 锁定主线
+└── Topcoat（全栈 Web 框架）    ← vernal-web/webmvc/webflux 整合
+```
+
+**vernal 的位置**：把"tokio-rs 全家桶"用 vernal 中间层 API 统一封装，提供给业务层使用。
+
+#### 结论
+
+1. **Toasty 不会成为 Rust 生态的标准 ORM**——它没有制定标准，只是实现
+2. **Toasty 会成为 tokio 系的事实默认 ORM**——凭借 tokio-rs 的影响力和与 Axum/Topcoat 的协同
+3. **vernal-orm 锁定 Toasty 是正确选择**——与 vernal 全栈的 tokio 血统一致
+4. **vernal-orm 关键设计是抽象层包装**——不直接暴露 toasty 类型，保留切换 rbatis/sqlx 的能力
+5. **生态护城河**——vernal 的价值不在 ORM 本身（sqlx/rbatis/Toasty 各有优势），而在 **34 crate 一站式整合** + **10 Web 框架适配** + **23 份完整文档**
+
 ### 1.3.1 Toasty 生态完整地址（ORM 主线 crate）
 
 | crate | 版本 | crates.io | docs.rs | GitHub |
