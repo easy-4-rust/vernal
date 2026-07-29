@@ -1,6 +1,6 @@
 # vernal-tx 技术要求（对标 spring-tx）
 
-> **版本**：v2.0（2026-07-28）
+> **版本**：v3.0（2026-07-28）
 > **定位**：vernal-tx crate 技术交接文档，对标 Spring Framework 7.0.8 spring-tx。
 > **现状**：4 文件 / 128 行骨架，edition 2024 / rustc 1.88。
 > **引用约定**：crate 选型依据见《Spring 组件替换约定》6.5 节（事务）。
@@ -18,17 +18,19 @@ vernal-tx 是 Vernal Framework 的 **Tokio-first 异步事务抽象内核**，
 |:---|:---|:---|:---|
 | 语言 | Java（ThreadLocal + 反射） | Rust（task_local + trait） | 无反射，编译期静态分发 |
 | 异步 | 同步 JDBC 事务 | Tokio-first async | 原生异步，无阻塞线程池 |
-| 线程模型 | ThreadLocal 绑定 Connection | tokio::task::task_local 绑定 | 1:1 对应，语义等价 |
+| 线程模型 | ThreadLocal 绑定 Connection | `tokio::task::task_local!` 绑定 | 1:1 对应，语义等价 |
 | 声明式 | `@Transactional` 注解 + AOP 代理 | `#[transactional]` 过程宏 + vernal-aop | 编译期织入 |
 | JTA | 支持（javax.transaction） | **不支持**（🚫） | Rust 生态无 JTA 等价物 |
 | 隔离级别 | 5 级（DEFAULT + 4 标准） | 5 级（同） | 完全对齐 |
 | 传播行为 | 7 种 | 7 种（同） | 完全对齐 |
+| Savepoint | 支持（嵌套事务） | 支持（待补齐） | `Nested` 传播行为依赖 |
+| 事务同步 | `TransactionSynchronizationManager` | 同名 trait + task_local（待补齐） | before/after_commit 回调 |
 
 ### 1.2 架构分层
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│  声明式层：#[transactional] 过程宏                    │
+│  声明式层：#[transactional] 过程宏（vernal-aspects） │
 │  → 解析属性 → 生成 TransactionTemplate 调用           │
 ├─────────────────────────────────────────────────────┤
 │  模板层：TransactionTemplate                          │
@@ -53,19 +55,33 @@ vernal-tx 是 Vernal Framework 的 **Tokio-first 异步事务抽象内核**，
 | 项 | 决策 | 理由 |
 |:---|:---|:---|
 | 线程模型 | `tokio::task::task_local!` | Tokio 1:N 调度，task_local 等价 ThreadLocal |
-| JTA | 🚫 不支持 | Rust 生态无 JTA/XA 标准，分布式事务用 Saga 模式替代 |
-| 事务同步 | `TransactionSynchronization` trait | 与 Spring 对齐，支持 before_commit / after_commit 回调 |
-| 声明式 | `#[transactional]` 过程宏 | 编译期织入，无运行时代理开销 |
+| JTA | 🚫 不支持 | Rust 生态无 JTA/XA 标准，分布式事务用 Saga 模式替代（vernal-context 提供） |
+| 事务同步 | `TransactionSynchronization` trait | 与 Spring 对齐，支持 before_commit / after_commit / after_completion 回调 |
+| 声明式 | `#[transactional]` 过程宏（vernal-aspects） | 编译期织入，无运行时代理开销 |
 | Savepoint | 支持（嵌套事务） | `Nested` 传播行为依赖 Savepoint |
+| 错误模型 | `TransactionError`（thiserror） | 后续可拆分为 `TransactionException` / `UnexpectedRollbackException` 等 |
+| 资源绑定 | `TransactionResource` trait | 让 sqlx::Transaction / rbatis::Tx 都能绑定到当前 task_local |
+| Rollback 规则 | `RollbackRule` 默认 RuntimeException → rollback | 与 Spring 一致；checked error 不触发 |
 
 ### 1.4 当前骨架文件
 
 | 文件 | 行数 | 内容 |
 |:---|:---|:---|
-| `lib.rs` | 10 | 模块声明 + re-export |
+| `lib.rs` | 10 | 模块声明 + re-export（Isolation / Propagation / TransactionDefinition / PlatformTransactionManager / TransactionStatus） |
 | `definition.rs` | 43 | `Propagation`(7) + `Isolation`(4) + `TransactionDefinition` |
-| `manager.rs` | 34 | `PlatformTransactionManager` trait + `TransactionError` |
-| `status.rs` | 41 | `TransactionStatus`（read_only / completed / rollback_only） |
+| `manager.rs` | 34 | `PlatformTransactionManager` trait（3 方法）+ `TransactionError` |
+| `status.rs` | 41 | `TransactionStatus`（read_only / completed / rollback_only + 3 方法） |
+
+### 1.5 与其他 crate 的边界
+
+| crate | 关系 | 说明 |
+|:---|:---|:---|
+| `vernal-core` | 依赖 | 基础 `BoxError`（当前未实际引用，预留） |
+| `vernal-aspects` | 上层增强 | `#[transactional]` 过程宏织入 |
+| `vernal-jdbc` | 下游实现 | `DataSourceTransactionManager` 基于 sqlx |
+| `vernal-orm` | 下游实现 | `JpaTransactionManager` 基于 rbatis |
+| `vernal-context` | 同级独立 | 提供 `@Transactional` AOP 装配 |
+| `vernal-r2dbc` | 后续接入 | 响应式事务管理器（待评估） |
 
 ---
 
@@ -79,7 +95,6 @@ vernal-tx 是 Vernal Framework 的 **Tokio-first 异步事务抽象内核**，
 #### Spring API（Java）
 
 ```java
-// spring-tx 核心事务管理器接口
 public interface PlatformTransactionManager {
     TransactionStatus getTransaction(TransactionDefinition definition)
         throws TransactionException;
@@ -91,8 +106,6 @@ public interface PlatformTransactionManager {
 #### Rust trait（已有）
 
 ```rust
-/// 平台事务管理器 trait。
-/// 对标 Spring 的 PlatformTransactionManager。
 pub trait PlatformTransactionManager: Send + Sync {
     fn get_transaction(
         &self,
@@ -109,20 +122,22 @@ pub trait PlatformTransactionManager: Send + Sync {
 |:---|:---|:---|
 | `Send + Sync` | 必须 | 跨 Tokio task 共享，可存入 Arc |
 | `get_transaction` | 语义传播 | 根据 Propagation 决定新建/加入/挂起 |
-| `commit` | 消费 `TransactionStatus` | 按值移动，防止重复提交 |
-| `rollback` | 消费 `TransactionStatus` | 按值移动，防止重复回滚 |
+| `commit` | **消费 `TransactionStatus`** | 按值移动，防止重复提交 |
+| `rollback` | **消费 `TransactionStatus`** | 按值移动，防止重复回滚 |
 
 #### 待补齐
 
 - [x] `PlatformTransactionManager` trait 定义
+- [ ] `AbstractPlatformTransactionManager`（提供事务边界检查逻辑）
 - [ ] `DataSourceTransactionManager`（vernal-jdbc 实现）
 - [ ] `JpaTransactionManager`（vernal-orm 实现）
+- [ ] `ResourcelessTransactionManager`（测试用）
 
 ---
 
 ### 2.2 TransactionDefinition —— 事务元数据
 
-**现状**：已定义完整结构体。
+**现状**：已定义完整结构体（4 字段 + Default）。
 **语义参照**：spring-tx `TransactionDefinition`。
 
 #### Spring API（Java）
@@ -133,13 +148,13 @@ public interface TransactionDefinition {
     int getIsolationLevel();
     int getTimeout();
     boolean isReadOnly();
+    String getName();  // 4.2+
 }
 ```
 
 #### Rust 结构体（已有）
 
 ```rust
-/// 事务定义。
 #[derive(Debug, Clone)]
 pub struct TransactionDefinition {
     pub propagation: Propagation,
@@ -160,30 +175,105 @@ impl Default for TransactionDefinition {
 }
 ```
 
-#### 构建器模式（待实现）
+#### 待补齐
 
-```rust
-/// 事务定义构建器。
-pub struct TransactionDefinitionBuilder {
-    inner: TransactionDefinition,
-}
-
-impl TransactionDefinitionBuilder {
-    pub fn new() -> Self;
-    pub fn propagation(mut self, p: Propagation) -> Self;
-    pub fn isolation(mut self, i: Isolation) -> Self;
-    pub fn read_only(mut self, ro: bool) -> Self;
-    pub fn timeout(mut self, secs: u64) -> Self;
-    pub fn build(self) -> TransactionDefinition;
-}
-```
+- [x] `TransactionDefinition` 结构体
+- [x] `Default` 实现（`Required` + `Default` 隔离 + 写 + 不超时）
+- [ ] `TransactionDefinitionBuilder`（链式 API）
+- [ ] `name: Option<String>` 字段（事务名称，用于日志 / 监控）
 
 ---
 
-### 2.3 TransactionStatus —— 事务运行时状态
+### 2.3 Isolation —— 隔离级别
 
-**现状**：已定义基本结构体（3 字段）。
-**语义参照**：spring-tx `TransactionStatus`。
+**现状**：已定义枚举（5 变体）。
+**语义参照**：spring-tx `TransactionDefinition.ISOLATION_*`。
+
+#### 完整对照
+
+| Spring 常量 | vernal-tx 变体 | 说明 |
+|:---|:---|:---|
+| `ISOLATION_DEFAULT` | `Isolation::Default` | 使用数据库默认 |
+| `ISOLATION_READ_UNCOMMITTED` | `Isolation::ReadUncommitted` | 读未提交 |
+| `ISOLATION_READ_COMMITTED` | `Isolation::ReadCommitted` | 读已提交（多数 DB 默认） |
+| `ISOLATION_REPEATABLE_READ` | `Isolation::RepeatableRead` | 可重复读（MySQL InnoDB 默认） |
+| `ISOLATION_SERIALIZABLE` | `Isolation::Serializable` | 串行化 |
+
+#### Spring API vs Rust 命名风格
+
+| 项 | Spring | vernal-tx |
+|:---|:---|:---|
+| 命名 | `int` 常量（1-8） | enum 变体 |
+| 类型安全 | ❌ 任意 int | ✅ 编译期 |
+| 默认值 | `ISOLATION_DEFAULT = -1` | `Isolation::Default` |
+
+#### 当前实现
+
+```rust
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Isolation {
+    Default,
+    ReadUncommitted,
+    ReadCommitted,
+    RepeatableRead,
+    Serializable,
+}
+```
+
+✅ 完全对齐 Spring。
+
+---
+
+### 2.4 Propagation —— 传播行为
+
+**现状**：已定义枚举（7 变体）。
+**语义参照**：spring-tx `TransactionDefinition.PROPAGATION_*`。
+
+#### 完整对照
+
+| Spring 常量 | vernal-tx 变体 | 行为 |
+|:---|:---|:---|
+| `PROPAGATION_REQUIRED` | `Propagation::Required` | 有则加入，无则新建（**默认**） |
+| `PROPAGATION_SUPPORTS` | `Propagation::Supports` | 有则加入，无则非事务执行 |
+| `PROPAGATION_MANDATORY` | `Propagation::Mandatory` | 有则加入，无则抛异常 |
+| `PROPAGATION_REQUIRES_NEW` | `Propagation::RequiresNew` | 始终新建，挂起当前事务 |
+| `PROPAGATION_NOT_SUPPORTED` | `Propagation::NotSupported` | 非事务执行，挂起当前事务 |
+| `PROPAGATION_NEVER` | `Propagation::Never` | 非事务执行，当前有事务则抛异常 |
+| `PROPAGATION_NESTED` | `Propagation::Nested` | 有则嵌套（Savepoint），无则新建 |
+
+#### 当前实现
+
+```rust
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Propagation {
+    Required,
+    RequiresNew,
+    Mandatory,
+    Nested,
+    Supports,
+    NotSupported,
+    Never,
+}
+```
+
+✅ 完全对齐 Spring（7 种全覆盖）。
+
+#### 行为矩阵（待补齐文档）
+
+| 当前已有事务 \ Propagation | Required | Supports | Mandatory | RequiresNew | NotSupported | Never | Nested |
+|:---|:---|:---|:---|:---|:---|:---|:---|
+| 无 | 新建 | 非事务 | 抛异常 | 新建 | 非事务 | 非事务 | 新建 |
+| 有 | 加入 | 加入 | 加入 | 挂起+新建 | 挂起 | 抛异常 | 嵌套（Savepoint） |
+
+> 实现位于 `AbstractPlatformTransactionManager::handleExistingTransaction`，
+> 需要在 `get_transaction` 中根据当前 task_local 是否已绑定事务来分支。
+
+---
+
+### 2.5 TransactionStatus —— 事务运行时状态
+
+**现状**：已定义结构体（3 字段 + 3 方法）。
+**语义参照**：spring-tx `TransactionStatus` + `SavepointManager`。
 
 #### Spring API（Java）
 
@@ -195,538 +285,380 @@ public interface TransactionStatus extends SavepointManager {
     boolean isRollbackOnly();
     boolean isCompleted();
 }
+
+public interface SavepointManager {
+    Object createSavepoint() throws TransactionException;
+    void rollbackToSavepoint(Object savepoint) throws TransactionException;
+    void releaseSavepoint(Object savepoint) throws TransactionException;
+}
 ```
 
 #### Rust 结构体（已有 + 待扩展）
 
 ```rust
-/// 事务状态。
 #[derive(Debug)]
 pub struct TransactionStatus {
     pub read_only: bool,
     pub completed: bool,
     pub rollback_only: bool,
-    // --- 待扩展字段 ---
-    // pub savepoint: Option<Savepoint>,       // 嵌套事务 Savepoint
-    // pub new_transaction: bool,               // 是否新建事务
-    // pub suspended_resources: Option<SuspendedResources>, // 挂起的资源
 }
 ```
 
-#### 待补齐
+#### 待补齐字段
 
-- [x] `TransactionStatus` 基本字段
-- [ ] `Savepoint` 支持（嵌套事务）
-- [ ] `SuspendedResources`（传播行为挂起/恢复）
-- [ ] `new_transaction` 标志
+| 字段 | 类型 | 用途 |
+|:---|:---|:---|
+| `is_new_transaction` | `bool` | 区分 `Required` 加入 vs 新建 |
+| `savepoint` | `Option<Savepoint>` | 支持 `Nested` 传播 |
+| `suspended_resources` | `Option<Box<dyn Any>>` | 挂起的事务资源（RequiresNew / NotSupported） |
+| `transaction_name` | `Option<String>` | 日志 / 监控关联 |
 
----
-
-## 三、隔离级别与传播行为
-
-### 3.1 Isolation —— 4 种隔离级别
-
-**现状**：已定义 enum（5 变体，含 Default）。
-**语义参照**：spring-tx `Isolation`。
-
-#### Spring API（Java）
-
-```java
-public abstract class Isolation {
-    public static final int DEFAULT = -1;
-    public static final int READ_UNCOMMITTED = Connection.TRANSACTION_READ_UNCOMMITTED;
-    public static final int READ_COMMITTED = Connection.TRANSACTION_READ_COMMITTED;
-    public static final int REPEATABLE_READ = Connection.TRANSACTION_REPEATABLE_READ;
-    public static final int SERIALIZABLE = Connection.TRANSACTION_SERIALIZABLE;
-}
-```
-
-#### Rust enum（已有）
+#### 当前方法
 
 ```rust
-/// 事务隔离级别。
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Isolation {
-    Default,           // 使用数据库默认隔离级别
-    ReadUncommitted,   // 脏读
-    ReadCommitted,     // 不可重复读
-    RepeatableRead,    // 幻读（MySQL 默认）
-    Serializable,      // 最高隔离，性能最低
+impl TransactionStatus {
+    pub fn new(read_only: bool) -> Self;
+    pub fn set_rollback_only(&mut self);
+    pub fn is_rollback_only(&self) -> bool;
+    pub fn is_completed(&self) -> bool;
 }
 ```
 
-#### 数据库映射
-
-| Isolation 变体 | PostgreSQL | MySQL | SQLite |
-|:---|:---|:---|:---|
-| `Default` | READ COMMITTED | REPEATABLE READ | SERIALIZABLE |
-| `ReadUncommitted` | READ UNCOMMITTED | READ UNCOMMITTED | （忽略，始终 SERIALIZABLE） |
-| `ReadCommitted` | READ COMMITTED | READ COMMITTED | （忽略） |
-| `RepeatableRead` | REPEATABLE READ | REPEATABLE READ | （忽略） |
-| `Serializable` | SERIALIZABLE | SERIALIZABLE | SERIALIZABLE |
-
-#### 待补齐
-
-- [x] `Isolation` enum 定义
-- [ ] `to_sql_string()` 方法（生成 SET TRANSACTION ISOLATION LEVEL SQL）
-- [ ] 各数据库驱动适配
+✅ 基础方法完整。
 
 ---
 
-### 3.2 Propagation —— 7 种传播行为
+### 2.6 TransactionError —— 异常模型
 
-**现状**：已定义 enum（7 变体）。
-**语义参照**：spring-tx `Propagation`。
+**现状**：已定义简单结构体（1 字段，`message: String`）。
 
-#### Spring API（Java）
+**待重构**：对齐 Spring 异常层级，改为 enum + thiserror derive，包含 `UnexpectedRollback` / `HeuristicCompletion` / `IllegalState` / `InvalidIsolation` / `InvalidPropagation` / `NoTransaction` / `SuspensionUnsupported` / `Other` 共 8 个变体。
 
-```java
-public enum Propagation {
-    REQUIRED(TransactionDefinition.PROPAGATION_REQUIRED),
-    SUPPORTS(TransactionDefinition.PROPAGATION_SUPPORTS),
-    MANDATORY(TransactionDefinition.PROPAGATION_MANDATORY),
-    REQUIRES_NEW(TransactionDefinition.PROPAGATION_REQUIRES_NEW),
-    NOT_SUPPORTED(TransactionDefinition.PROPAGATION_NOT_SUPPORTED),
-    NEVER(TransactionDefinition.PROPAGATION_NEVER),
-    NESTED(TransactionDefinition.PROPAGATION_NESTED);
-}
-```
+---
 
-#### Rust enum（已有）
+## 三、待补齐：抽象基类与模板
+
+### 3.1 AbstractPlatformTransactionManager
+
+**目标**：对标 Spring `AbstractPlatformTransactionManager`，提供事务边界处理骨架。
+Spring 在抽象基类中实现：
+- `get_transaction`：根据 Propagation 决定新建/加入/挂起；
+- `commit`：rollback_only 检查 → before_commit → doCommit → after_commit；
+- `rollback`：before_completion → doRollback → after_completion。
+
+#### Rust 设计（trait 继承）
 
 ```rust
-/// 事务传播行为。
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Propagation {
-    Required,       // 有则加入，无则新建（默认）
-    RequiresNew,    // 总是新建，挂起当前
-    Mandatory,      // 有则加入，无则抛错
-    Nested,         // 嵌套事务（Savepoint）
-    Supports,       // 有则加入，无则非事务
-    NotSupported,   // 总是非事务，挂起当前
-    Never,          // 总是非事务，有则抛错
-}
-```
-
-#### 传播行为语义表
-
-| Propagation | 当前有事务 | 当前无事务 | 对应 Spring 行为 |
-|:---|:---|:---|:---|
-| `Required` | 加入 | 新建 | `PROPAGATION_REQUIRED` |
-| `RequiresNew` | 挂起 → 新建 | 新建 | `PROPAGATION_REQUIRES_NEW` |
-| `Mandatory` | 加入 | 抛 `TransactionRequiredException` | `PROPAGATION_MANDATORY` |
-| `Nested` | 创建 Savepoint | 新建 | `PROPAGATION_NESTED` |
-| `Supports` | 加入 | 非事务运行 | `PROPAGATION_SUPPORTS` |
-| `NotSupported` | 挂起 → 非事务 | 非事务运行 | `PROPAGATION_NOT_SUPPORTED` |
-| `Never` | 抛异常 | 非事务运行 | `PROPAGATION_NEVER` |
-
-#### 传播行为实现状态
-
-| Propagation | 实现复杂度 | 状态 | 说明 |
-|:---|:---|:---|:---|
-| `Required` | 低 | ⬜ 待实现 | 加入或新建，最常用 |
-| `RequiresNew` | 高 | ⬜ 待实现 | 需要挂起/恢复资源 |
-| `Mandatory` | 低 | ⬜ 待实现 | 仅检查是否存在 |
-| `Nested` | 中 | ⬜ 待实现 | 依赖 Savepoint |
-| `Supports` | 低 | ⬜ 待实现 | 条件分支 |
-| `NotSupported` | 高 | ⬜ 待实现 | 需要挂起资源 |
-| `Never` | 低 | ⬜ 待实现 | 仅检查是否不存在 |
-
----
-
-## 四、TransactionTemplate —— 编程式事务门面
-
-### 4.1 TransactionTemplate
-
-**现状**：⬜ 待实现。
-**语义参照**：spring-tx `TransactionTemplate`。
-
-#### Spring API（Java）
-
-```java
-// spring-tx 编程式事务模板
-public class TransactionTemplate extends DefaultTransactionDefinition
-        implements TransactionOperations {
-    public <T> T execute(TransactionCallback<T> action) throws TransactionException {
-        TransactionStatus status = transactionManager.getTransaction(this);
-        T result;
-        try {
-            result = action.doInTransaction(status);
-        } catch (RuntimeException ex) {
-            transactionManager.rollback(status);
-            throw ex;
+#[async_trait]
+pub trait AbstractPlatformTransactionManager: PlatformTransactionManager {
+    /// 模板方法：包含传播行为处理
+    async fn get_transaction_template(
+        &self,
+        definition: &TransactionDefinition,
+    ) -> Result<TransactionStatus, TransactionError> {
+        // 1. 检查当前 task_local 是否有事务
+        if let Some(existing) = TransactionSynchronizationManager::current_transaction() {
+            return self.handle_existing_transaction(definition, existing).await;
         }
-        transactionManager.commit(status);
-        return result;
+        self.handle_propagation(definition).await
     }
+
+    async fn commit_template(&self, mut status: TransactionStatus)
+        -> Result<(), TransactionError> {
+        if status.is_rollback_only() {
+            // 触发 rollback on commit exception
+            self.rollback(status).await?;
+            return Err(TransactionError::UnexpectedRollback(...));
+        }
+        // 触发 before_commit
+        TransactionSynchronizationManager::trigger_before_commit().await?;
+        self.commit(status).await?;
+        TransactionSynchronizationManager::trigger_after_commit().await?;
+        Ok(())
+    }
+
+    async fn rollback_template(&self, mut status: TransactionStatus)
+        -> Result<(), TransactionError> {
+        if status.is_completed() { return Ok(()); }
+        TransactionSynchronizationManager::trigger_before_completion(false).await?;
+        self.rollback(status).await?;
+        TransactionSynchronizationManager::trigger_after_completion(false).await?;
+        Ok(())
+    }
+
+    /// 子类实现
+    async fn do_begin(&self, definition: &TransactionDefinition)
+        -> Result<TransactionStatus, TransactionError>;
+    async fn do_commit(&self, status: TransactionStatus)
+        -> Result<(), TransactionError>;
+    async fn do_rollback(&self, status: TransactionStatus)
+        -> Result<(), TransactionError>;
 }
 ```
 
-#### Rust 目标设计
+---
+
+### 3.2 TransactionTemplate —— 编程式事务入口
+
+**目标**：对标 Spring `TransactionTemplate`。
 
 ```rust
-/// 编程式事务模板。
-/// 对标 Spring TransactionTemplate，提供 execute 闭包模式。
-pub struct TransactionTemplate<M: PlatformTransactionManager> {
-    manager: Arc<M>,
+pub struct TransactionTemplate {
+    manager: Arc<dyn PlatformTransactionManager>,
     definition: TransactionDefinition,
 }
 
-impl<M: PlatformTransactionManager> TransactionTemplate<M> {
-    pub fn new(manager: Arc<M>) -> Self;
-    pub fn with_definition(manager: Arc<M>, definition: TransactionDefinition) -> Self;
+impl TransactionTemplate {
+    pub fn new(manager: Arc<dyn PlatformTransactionManager>) -> Self;
+    pub fn with_definition(mut self, def: TransactionDefinition) -> Self;
 
-    /// 执行事务回调。
-    /// 自动 begin → callback → commit/rollback。
-    pub async fn execute<F, T, E>(&self, f: F) -> Result<T, TransactionError>
+    /// 同步执行回调
+    pub fn execute<F, T>(&self, callback: F) -> Result<T, TransactionError>
     where
-        F: FnOnce(TransactionStatus) -> Pin<Box<dyn Future<Output = Result<T, E>> + Send>>,
-        E: Into<TransactionError>;
-}
+        F: FnOnce(TransactionStatus) -> Result<T, TransactionError>;
 
-/// 事务操作 trait（便于 mock 测试）。
-pub trait TransactionOperations: Send + Sync {
-    fn execute<F, T, E>(&self, f: F) -> Pin<Box<dyn Future<Output = Result<T, TransactionError>> + Send>>
+    /// 异步执行回调（Tokio-first）
+    pub async fn execute_async<F, Fut, T>(&self, callback: F)
+        -> Result<T, TransactionError>
     where
-        F: FnOnce(TransactionStatus) -> Pin<Box<dyn Future<Output = Result<T, E>> + Send>> + Send,
-        E: Into<TransactionError>;
+        F: FnOnce(TransactionStatus) -> Fut,
+        Fut: Future<Output = Result<T, TransactionError>>;
 }
 ```
 
-#### 与 Spring 的关键差异
-
-| 维度 | Spring TransactionTemplate | Rust TransactionTemplate |
-|:---|:---|:---|
-| 回调签名 | `TransactionCallback<T>.doInTransaction(status)` | `FnOnce(TransactionStatus) -> Future<Result<T, E>>` |
-| 异步 | 同步阻塞 | async + Pin<Box<dyn Future>> |
-| 错误处理 | RuntimeException → rollback | `Result::Err` → rollback |
-| 类型擦除 | 泛型 + 接口 | 泛型 + trait object |
-
----
-
-### 4.2 TransactionCallback
-
-**语义参照**：spring-tx `TransactionCallback<T>`。
+#### 使用示例
 
 ```rust
-/// 事务回调 trait。
-/// 对标 Spring TransactionCallback<T>。
-pub trait TransactionCallback<T>: Send {
-    fn do_in_transaction(
-        self,
-        status: &mut TransactionStatus,
-    ) -> Pin<Box<dyn Future<Output = Result<T, TransactionError>> + Send>>;
-}
-
-/// 为闭包自动实现 TransactionCallback。
-impl<T, F> TransactionCallback<T> for F
-where
-    F: FnOnce(&mut TransactionStatus) -> Pin<Box<dyn Future<Output = Result<T, TransactionError>> + Send>>
-        + Send,
-{
-    fn do_in_transaction(
-        self,
-        status: &mut TransactionStatus,
-    ) -> Pin<Box<dyn Future<Output = Result<T, TransactionError>> + Send>> {
-        (self)(status)
-    }
-}
+let tmpl = TransactionTemplate::new(tx_manager);
+let result = tmpl.execute_async(|status| async move {
+    user_repo.save(&user).await?;
+    order_repo.save(&order).await?;
+    Ok(())
+}).await?;
 ```
 
 ---
 
-## 五、TransactionSynchronizationManager —— 任务级资源绑定
+### 3.3 TransactionSynchronizationManager —— 事务同步
 
-### 5.1 task_local 资源管理
-
-**现状**：⬜ 待实现。
-**语义参照**：spring-tx `TransactionSynchronizationManager`（ThreadLocal 版）。
-
-#### Spring API（Java）
-
-```java
-// spring-tx ThreadLocal 资源管理器
-public abstract class TransactionSynchronizationManager {
-    private static final ThreadLocal<Map<Object, Object>> resources = new ThreadLocal<>();
-    private static final ThreadLocal<Set<TransactionSynchronization>> synchronizations = new ThreadLocal<>();
-    private static final ThreadLocal<String> currentTransactionName = new ThreadLocal<>();
-    private static final ThreadLocal<Boolean> currentTransactionReadOnly = new ThreadLocal<>();
-    private static final ThreadLocal<Integer> currentTransactionIsolationLevel = new ThreadLocal<>();
-
-    public static Object getResource(Object key);
-    public static void bindResource(Object key, Object value);
-    public static Object unbindResource(Object key);
-    public static boolean hasResource(Object key);
-}
-```
-
-#### Rust 目标设计
+**目标**：对标 Spring `TransactionSynchronizationManager`，
+使用 `task_local!` 替代 ThreadLocal。
 
 ```rust
-use std::collections::HashMap;
-use std::sync::Arc;
-use tokio::sync::Mutex;
+tokio::task_local! {
+    static TX_CONTEXT: RefCell<Option<TxContext>>;
+}
 
-/// 事务资源键（通常是 DataSource 或 ConnectionPool 的标识）。
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
-pub struct ResourceKey(String);
+pub struct TxContext {
+    pub status: TransactionStatus,
+    pub synchronizations: Vec<Box<dyn TransactionSynchronization>>,
+}
 
-/// 任务级事务资源管理器。
-/// 使用 tokio::task::task_local! 替代 ThreadLocal。
-///
-/// 注意：task_local 要求值实现 Send，且在 task 生命周期内有效。
 pub struct TransactionSynchronizationManager;
 
-// task_local 存储
-tokio::task::task_local! {
-    static RESOURCES: Mutex<HashMap<ResourceKey, Arc<dyn Any + Send + Sync>>>;
-    static SYNCHRONIZATIONS: Mutex<Vec<Box<dyn TransactionSynchronization>>>;
-    static CURRENT_TRANSACTION_NAME: Mutex<Option<String>>;
-    static CURRENT_TRANSACTION_READ_ONLY: Mutex<bool>;
-    static CURRENT_TRANSACTION_ISOLATION: Mutex<Option<Isolation>>;
-}
-
 impl TransactionSynchronizationManager {
-    /// 获取当前事务绑定的资源。
-    pub async fn get_resource(key: &ResourceKey) -> Option<Arc<dyn Any + Send + Sync>>;
+    pub fn is_active() -> bool;
+    pub fn is_current_transaction_read_only() -> bool;
+    pub fn current_transaction_name() -> Option<String>;
+    pub fn current_transaction_status() -> Option<TransactionStatus>;
 
-    /// 绑定资源到当前事务。
-    pub async fn bind_resource(key: ResourceKey, value: Arc<dyn Any + Send + Sync>);
+    pub async fn init_synchronization() -> Result<(), TransactionError>;
+    pub fn register_synchronization(sync: Box<dyn TransactionSynchronization>);
 
-    /// 解绑当前事务的资源。
-    pub async fn unbind_resource(key: &ResourceKey) -> Option<Arc<dyn Any + Send + Sync>>;
+    pub async fn trigger_before_commit() -> Result<(), TransactionError>;
+    pub async fn trigger_before_completion(commit: bool) -> Result<(), TransactionError>;
+    pub async fn trigger_after_commit() -> Result<(), TransactionError>;
+    pub async fn trigger_after_completion(commit: bool) -> Result<(), TransactionError>;
+}
 
-    /// 当前任务是否绑定指定资源。
-    pub async fn has_resource(key: &ResourceKey) -> bool;
-
-    /// 注册事务同步回调。
-    pub async fn register_synchronization(sync: Box<dyn TransactionSynchronization>);
-
-    /// 触发所有同步回调（before_commit / after_commit 等）。
-    pub async fn trigger_synchronization(phase: SyncPhase);
-
-    /// 清理当前任务的所有事务资源（事务完成后调用）。
-    pub async fn clear();
+#[async_trait]
+pub trait TransactionSynchronization: Send + Sync {
+    async fn before_commit(&self) -> Result<(), TransactionError> { Ok(()) }
+    async fn before_completion(&self) -> Result<(), TransactionError> { Ok(()) }
+    async fn after_commit(&self) -> Result<(), TransactionError> { Ok(()) }
+    async fn after_completion(&self, commit: bool) -> Result<(), TransactionError> { Ok(()) }
 }
 ```
 
 ---
 
-### 5.2 TransactionSynchronization —— 同步回调
+### 3.4 SavepointManager
 
-**语义参照**：spring-tx `TransactionSynchronization`。
-
-#### Spring API（Java）
-
-```java
-public interface TransactionSynchronization extends Flushable {
-    int STATUS_COMMITTED = 0;
-    int STATUS_ROLLED_BACK = 1;
-    int STATUS_UNKNOWN = 2;
-
-    default void suspend() {}
-    default void resume() {}
-    default void flush() {}
-    default void beforeCommit(boolean readOnly) {}
-    default void beforeCompletion() {}
-    default void afterCommit() {}
-    default void afterCompletion(int status) {}
-}
-```
-
-#### Rust trait
+**目标**：对标 Spring `SavepointManager`，支持 `Nested` 传播。
 
 ```rust
-/// 同步回调阶段。
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SyncPhase {
-    BeforeCommit,
-    BeforeCompletion,
-    AfterCommit,
-    AfterCompletion(CompletionStatus),
-    Suspend,
-    Resume,
-    Flush,
+pub trait SavepointManager: Send + Sync {
+    fn create_savepoint(&self) -> Result<Savepoint, TransactionError>;
+    fn rollback_to_savepoint(&self, savepoint: Savepoint) -> Result<(), TransactionError>;
+    fn release_savepoint(&self, savepoint: Savepoint) -> Result<(), TransactionError>;
 }
 
-/// 完成状态。
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CompletionStatus {
-    Committed,
-    RolledBack,
-    Unknown,
-}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Savepoint(String);
 
-/// 事务同步回调 trait。
-/// 对标 Spring TransactionSynchronization。
-pub trait TransactionSynchronization: Send + Sync + 'static {
-    fn before_commit(&mut self, _read_only: bool) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
-        Box::pin(async {})
-    }
-    fn before_completion(&mut self) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
-        Box::pin(async {})
-    }
-    fn after_commit(&mut self) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
-        Box::pin(async {})
-    }
-    fn after_completion(&mut self, _status: CompletionStatus) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
-        Box::pin(async {})
-    }
-    fn suspend(&mut self) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
-        Box::pin(async {})
-    }
-    fn resume(&mut self) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
-        Box::pin(async {})
-    }
-    fn flush(&mut self) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
-        Box::pin(async {})
-    }
+impl Savepoint {
+    pub fn new(name: impl Into<String>) -> Self;
+    pub fn name(&self) -> &str;
 }
 ```
 
 ---
 
-### 5.3 SuspendedResources —— 资源挂起/恢复
+## 四、声明式集成：vernal-aspects
 
-```rust
-/// 挂起的事务资源。
-/// 在 RequiresNew / NotSupported 传播行为时使用。
-pub struct SuspendedResources {
-    key: ResourceKey,
-    resource: Arc<dyn Any + Send + Sync>,
-    synchronizations: Vec<Box<dyn TransactionSynchronization>>,
-}
+### 4.1 注解清单
 
-impl SuspendedResources {
-    /// 挂起当前事务资源。
-    pub async fn suspend(key: &ResourceKey) -> Option<Self>;
-    /// 恢复挂起的资源。
-    pub async fn resume(self);
-}
-```
-
----
-
-## 六、集成约束与路线图
-
-### 6.1 JTA 不支持决策
-
-| 维度 | 说明 |
-|:---|:---|
-| 决策 | 🚫 **不支持 JTA（Java Transaction API）** |
-| 原因 | Rust 生态无 JTA/XA 标准等价物 |
-| 替代方案 | 分布式事务使用 Saga 模式（编排 / 协同） |
-| 影响范围 | `UserTransaction` / `TransactionManager`（javax）不移植 |
-
-#### JTA 概念替代方案
-
-| JTA 概念 | Rust 替代 | 说明 |
+| Spring 注解 | vernal 过程宏 | 引入版本 |
 |:---|:---|:---|
-| `UserTransaction.begin()` | `TransactionTemplate.execute()` | 编程式事务 |
-| `@Transactional` | `#[transactional]` 过程宏 | 声明式事务 |
-| XA DataSource | 单库事务 + Saga 跨库 | 无 XA 支持 |
-| `TransactionSynchronization` | `TransactionSynchronization` trait | 直接对标 |
+| `@Transactional` | `#[transactional]` | Java 1.0+ |
+| `@TransactionalEventListener` | `#[tx_event_listener]` | Java 4.2+ |
+| `@Propagation` / `@Isolation` | 宏参数 | Java 1.0+ |
 
----
-
-### 6.2 声明式事务宏（待实现）
+### 4.2 `#[transactional]` 过程宏形态
 
 ```rust
-/// 声明式事务宏。
-/// 对标 Spring @Transactional 注解。
 #[transactional(
-    propagation = Propagation::Required,
-    isolation = Isolation::Default,
+    propagation = Propagation::RequiresNew,
+    isolation = Isolation::ReadCommitted,
     read_only = false,
-    timeout = 30,
-    rollback_for = [AppError],
-    no_rollback_for = [NotFoundError],
+    timeout_secs = 30,
+    rollback_for = ["MyError"],   // 自定义异常触发 rollback
+    no_rollback_for = ["NotFoundError"],
 )]
-async fn save_user(user: &User) -> Result<User, AppError> {
-    // 业务逻辑
+pub async fn create_user(&self, name: String) -> Result<User, BoxError> {
+    self.user_repo.save(&User::new(name)).await
 }
 ```
 
-#### 宏展开伪代码
+### 4.3 织入位置
+
+均在 `vernal-aspects` crate 的 `transaction.rs` 中实现，
+通过 `vernal-aop` 的 `Advice` trait + 编译期宏织入。
 
 ```rust
-// 展开后的等价代码
-async fn save_user(user: &User) -> Result<User, AppError> {
-    let template = TransactionTemplate::new(current_manager());
-    let def = TransactionDefinition {
-        propagation: Propagation::Required,
-        isolation: Isolation::Default,
-        read_only: false,
-        timeout_secs: 30,
-    };
-    template
-        .with_definition(def)
-        .execute(|_status| Box::pin(async { /* 业务逻辑 */ }))
-        .await
-        .map_err(|e| AppError::from(e))
+// vernal-aspects/src/transaction.rs（伪代码）
+pub struct TransactionalAdvice {
+    manager: Arc<dyn PlatformTransactionManager>,
+    definition: TransactionDefinition,
+}
+
+#[async_trait]
+impl Advice for TransactionalAdvice {
+    async fn around(&self, ctx: &mut AdviceCtx) -> Result<Arc<dyn Any + Send + Sync>, BoxError> {
+        let status = self.manager.get_transaction(&self.definition)?;
+        match ctx.proceed().await {
+            Ok(result) => {
+                self.manager.commit(status)?;
+                Ok(result)
+            }
+            Err(e) => {
+                self.manager.rollback(status)?;
+                Err(e)
+            }
+        }
+    }
 }
 ```
 
+### 4.4 Rollback 规则
+
+默认对 `BoxError`（任意错误）触发 rollback；
+可通过 `rollback_for` / `no_rollback_for` 精细控制；
+业务代码可调用 `TransactionStatus::set_rollback_only()` 强制 rollback。
+
 ---
 
-### 6.3 Async 适配约束
+## 五、测试与验证
 
-| 约束项 | 要求 | 说明 |
+### 5.1 单元测试（待补齐）
+
+| 测试项 | 目标 |
+|:---|:---|
+| `propagation_required_join` | 嵌套调用 `Required` 加入已有事务 |
+| `propagation_requires_new_suspend` | `RequiresNew` 挂起外层事务 |
+| `propagation_mandatory_no_tx` | `Mandatory` 在无事务时返回 `NoTransaction` |
+| `propagation_never_with_tx` | `Never` 在有事务时返回 `IllegalState` |
+| `propagation_nested_savepoint` | `Nested` 创建 savepoint，rollback 部分不影响外层 |
+| `isolation_default_passthrough` | `Default` 不向 DB 传隔离级别 |
+| `rollback_only_propagation` | 内层 `setRollbackOnly` 导致外层 commit 失败 |
+| `transaction_synchronization_order` | before/after commit 回调顺序正确 |
+| `transaction_template_async_execute` | `execute_async` 自动 begin/commit |
+| `transaction_template_async_rollback_on_error` | 回调错误自动 rollback |
+
+### 5.2 集成测试（待补齐）
+
+```rust
+// crates/vernal-tx/tests/integration.rs（待创建）
+#[tokio::test(flavor = "multi_thread")]
+async fn test_required_propagation_with_sqlx() {
+    // 1. 启动 sqlx 连接池
+    // 2. 创建 DataSourceTransactionManager
+    // 3. 嵌套调用两次 save()
+    // 4. 验证外层 rollback 时内层也被 rollback
+}
+```
+
+### 5.3 性能基准（待补齐）
+
+| 基准 | 目标 |
+|:---|:---|
+| `bench_simple_commit` | 单事务 commit 延迟 < 100µs |
+| `bench_nested_required` | 嵌套 10 层 `Required` 无显著开销 |
+| `bench_synchronization_overhead` | 10 个 sync 回调 < 50µs 开销 |
+
+### 5.4 编译期验证
+
+`cargo check` / `cargo clippy -D warnings` / `cargo test` 必须全部通过。
+
+---
+
+## 六、迁移路线
+
+| 阶段 | 版本 | 任务 |
 |:---|:---|:---|
-| 运行时 | Tokio | `task_local!` 依赖 Tokio 运行时 |
-| Future 类型 | `Pin<Box<dyn Future + Send>>` | 避免 `async-trait` 依赖 |
-| 所有权 | `TransactionStatus` 按值移动 | 防止重复 commit/rollback |
-| 连接获取 | async `acquire()` | 连接池异步获取 |
+| P0 骨架 | v0.1 | ✅ Propagation / Isolation / TransactionDefinition / TransactionStatus / PlatformTransactionManager；⏳ TransactionError 重构为 enum |
+| P1 抽象 | v0.2 | `AbstractPlatformTransactionManager` + `TransactionSynchronizationManager`（task_local）+ `TransactionSynchronization` + `TransactionTemplate` |
+| P2 集成 | v0.3 | `DataSourceTransactionManager`（vernal-jdbc）+ `JpaTransactionManager`（vernal-orm）+ `SavepointManager` 实现 |
+| P3 声明 | v0.4 | `#[transactional]` 宏（vernal-aspects）+ SpEL 解析 `#root` / `#result` + rollback 规则 |
+| P4 发布 | v1.0 | 完整文档 + `cargo doc` + 性能基准 + 100% 测试覆盖 |
 
 ---
 
-### 6.4 测试策略
+## 附录 A：与 Spring TX 的完整 API 对照
 
-| 测试类型 | 内容 | 工具 |
+| Spring 接口 | vernal-tx 类型 | 状态 |
 |:---|:---|:---|
-| 单元测试 | Propagation / Isolation 语义 | `#[test]` |
-| 集成测试 | 事务 begin/commit/rollback 流程 | `vernal-test` + 内存数据库 |
-| 传播行为测试 | 7 种传播行为组合 | mock `PlatformTransactionManager` |
-| 宏测试 | `#[transactional]` 展开 | `trybuild` |
+| `PlatformTransactionManager` | `PlatformTransactionManager` trait | ✅ |
+| `AbstractPlatformTransactionManager` | `AbstractPlatformTransactionManager` trait | ⏳ |
+| `TransactionDefinition` | `TransactionDefinition` struct | ✅ |
+| `TransactionStatus` | `TransactionStatus` struct | ✅ |
+| `SavepointManager` | `SavepointManager` trait | ⏳ |
+| `TransactionTemplate` | `TransactionTemplate` struct | ⏳ |
+| `TransactionSynchronizationManager` | `TransactionSynchronizationManager` struct | ⏳ |
+| `TransactionSynchronization` | `TransactionSynchronization` trait | ⏳ |
+| `Isolation`（5 级） | `Isolation` enum（5 变体） | ✅ |
+| `Propagation`（7 种） | `Propagation` enum（7 变体） | ✅ |
+| `UnexpectedRollbackException` | `TransactionError::UnexpectedRollback` | ⏳ |
+| `HeuristicCompletionException` | `TransactionError::HeuristicCompletion` | ⏳ |
+| `IllegalTransactionStateException` | `TransactionError::IllegalState` | ⏳ |
+| `NoTransactionException` | `TransactionError::NoTransaction` | ⏳ |
+| `InvalidPropagationException` | `TransactionError::InvalidPropagation` | ⏳ |
+| `JtaTransactionManager` | 🚫 不支持 | ✅（决策） |
 
----
+## 附录 B：依赖清单
 
-### 6.5 待补齐工作路线图
-
-| 阶段 | 内容 | 优先级 | 预估工作量 |
-|:---|:---|:---|:---|
-| S1 | `TransactionTemplate` + `TransactionCallback` | P0 | 1 天 |
-| S2 | `TransactionSynchronizationManager`（task_local） | P0 | 1.5 天 |
-| S3 | `TransactionSynchronization` 回调 | P1 | 1 天 |
-| S4 | `DataSourceTransactionManager`（vernal-jdbc） | P0 | 1 天 |
-| S5 | `#[transactional]` 过程宏 | P1 | 1.5 天 |
-| S6 | 7 种传播行为完整实现 | P1 | 2 天 |
-| S7 | Savepoint（嵌套事务） | P2 | 1 天 |
-
----
-
-### 6.6 成熟度状态
-
-| 维度 | 当前 | 目标 |
+| 依赖 | 版本 | 用途 |
 |:---|:---|:---|
-| 文件数 | 4 | 12+ |
-| 行数 | 128 | 800+ |
-| 核心 trait | 3（Manager / Definition / Status） | 5+（+ Template / Synchronization） |
-| 隔离级别 | 4（已定义） | 4 |
-| 传播行为 | 7（已定义） | 7（全部实现） |
-| 事务模板 | 0 | 1（TransactionTemplate） |
-| 声明式宏 | 0 | 1（#[transactional]） |
-| 与 spring-tx 语义对标度 | ~30% | 85%+ |
+| `vernal-core` | path = `../vernal-core` | 基础错误类型（BoxError，预留） |
+| `thiserror` | workspace（**待集成**） | `TransactionError` derive |
+| `async-trait` | 0.1（**待集成**） | `AbstractPlatformTransactionManager` 异步 trait |
+| `tokio` | 1.52.4（**待集成**） | `task_local!` 运行时 |
+| `vernal-aspects` | path（**待集成**） | `#[transactional]` 过程宏 |
 
----
+## 附录 C：向后兼容与弃用策略
 
-## 附录：spring-tx 语义覆盖全景
-
-| spring-tx 包 | 类数 | vernal-tx 状态 | 说明 |
-|:---|:---|:---|:---|
-| 根包（PlatformTransactionManager） | 15 | ✅ 已定义 trait | 骨架完成 |
-| support（TransactionSynchronizationManager） | 12 | ⬜ 待实现 | task_local 版 |
-| transaction（TransactionDefinition/Status） | 8 | ✅ 已定义 | 骨架完成 |
-| interceptor（TransactionInterceptor） | 5 | ⬜ 待实现 | 过程宏替代 |
-| jta（JtaTransactionManager） | 8 | 🚫 不支持 | Rust 无 JTA |
-| document（JtaTransactionManager XML） | 3 | 🚫 不支持 | Rust 无 XML |
+- 本 crate 处于 v0.x 阶段，**允许 breaking change**。
+- `Propagation` / `Isolation` 是 enum，新增变体是 minor change（不影响 match 穷尽性之外的代码）。
+- `TransactionDefinition` 字段如需扩展，使用 `#[non_exhaustive]` + builder 模式。
+- `PlatformTransactionManager` 新增方法必须提供默认实现。
+- JTA 永远不会被支持；如有需求，使用 Saga 模式（vernal-context 提供）。
