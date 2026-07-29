@@ -166,6 +166,7 @@ Tower 生态兼容、异步优先。vernal-web 已有的 trait 抽象可直接�
 | HTTP 传输 | `hyper` 1.9.0 | `vernal-hyper` 的底层传输 |
 | 中间件 | `tower` 0.5.3 | `vernal-tower` 的底层 Service/Layer 抽象 |
 | 异步运行时 | `tokio` 1.52.4 | 全局异步运行时 |
+| MIME 检测 | `mime` 0.3.17（hyperium 官方）| vernal-core 已使用；**`mime-type` 和 `mimetype-detector` 不推荐**（570 格式但零依赖文档少）|
 
 ### 4.5 WebSocket
 
@@ -417,6 +418,21 @@ JMS 不单独建 crate，JMS 语义融入 `vernal-messaging` 2.11 节（点对�
 
 > **[暂缓]** AI 集成节点（9.8 节）暂缓实施，后续**全量对齐 Spring AI 2.0**。  
 > 恢复条件：Spring AI 2.0 GA 发布后，评估 Rust 生态对应 crate 的成熟度。
+
+### 9.1.1 跨语言 FFI（UniFFI，新增）
+
+| Java/Swift/Python 组件 | Rust crate | 状态 | 选型理由 |
+|---|---|---|---|
+| JNI / GraalVM 互操作 | **`uniffi`** | 🔵 | Mozilla 官方，Kotlin/Java/Swift/Python ↔ Rust 跨语言 FFI |
+
+**适用场景**：
+- vernal 的 Rust 内核被 Kotlin/Java 业务层调用
+- Android/iOS/macOS 客户端通过 UniFFI 调用 vernal 业务逻辑
+- 现有 Java 工具（hutool 等）通过 UniFFI bridge 复用 vernal 服务
+
+**集成方式**：
+- 模式 B（直接封装）：`vernal-uniffi` crate 暴露 vernal 核心 API 给外部语言
+- 不影响 vernal 内部架构，作为独立可选 crate
 
 ### 9.2 加密
 
@@ -799,6 +815,7 @@ JMS 不单独建 crate，JMS 语义融入 `vernal-messaging` 2.11 节（点对�
 | `rsa` | [crates.io/crates/rsa](https://crates.io/crates/rsa) | [docs.rs/rsa](https://docs.rs/rsa) | [RustCrypto/RSA](https://github.com/RustCrypto/RSA) |
 | `ed25519-dalek` | [crates.io/crates/ed25519-dalek](https://crates.io/crates/ed25519-dalek) | [docs.rs/ed25519-dalek](https://docs.rs/ed25519-dalek) | [dalek-cryptography/curve25519-dalek](https://github.com/dalek-cryptography/curve25519-dalek) |
 | `sha2` | [crates.io/crates/sha2](https://crates.io/crates/sha2) | [docs.rs/sha2](https://docs.rs/sha2) | [RustCrypto/hashes](https://github.com/RustCrypto/hashes) |
+| **`uniffi`** | [crates.io/crates/uniffi](https://crates.io/crates/uniffi) | [Mozilla 文档](https://mozilla.github.io/uniffi-rs/latest/) | [mozilla/uniffi-rs](https://github.com/mozilla/uniffi-rs) |
 | `sha3` | [crates.io/crates/sha3](https://crates.io/crates/sha3) | [docs.rs/sha3](https://docs.rs/sha3) | [RustCrypto/hashes](https://github.com/RustCrypto/hashes) |
 | `blake2` | [crates.io/crates/blake2](https://crates.io/crates/blake2) | [docs.rs/blake2](https://docs.rs/blake2) | [RustCrypto/hashes](https://github.com/RustCrypto/hashes) |
 | `blake3` | [crates.io/crates/blake3](https://crates.io/crates/blake3) | [docs.rs/blake3](https://docs.rs/blake3) | [BLAKE3-team/BLAKE3](https://github.com/BLAKE3-team/BLAKE3) |
