@@ -83,6 +83,37 @@ pub mod uri_editor;
 pub mod uuid_editor;
 pub mod zone_id_editor;
 
+pub mod application_context;
+pub mod configurable_application_context;
+pub mod abstract_application_context;
+pub mod annotation_config_application_context;
+pub mod generic_application_context;
+pub mod static_application_context;
+pub mod application_event;
+pub mod application_event_multicaster;
+pub mod abstract_application_event_multicaster;
+pub mod simple_application_event_multicaster;
+pub mod application_listener;
+pub mod application_event_publisher;
+pub mod lifecycle;
+pub mod smart_lifecycle;
+pub mod lifecycle_processor;
+pub mod phased;
+pub mod lifecycle_group;
+pub mod message_source;
+pub mod hierarchical_message_source;
+pub mod reloadable_message_source;
+pub mod delegating_message_source;
+pub mod passport;
+pub mod serializable_type_wrapper;
+pub mod bean_metadata_element_stub;
+pub mod attribute_accessor_support;
+pub mod lifecycle_event;
+pub mod embedded_value_resolver_impl;
+pub mod bean_factory_extensions;
+pub mod resource_loader_extensions;
+pub mod scope_configurer;
+
 // ── 原有 vernal-beans 模块 ─────────────────────────────────────────────
 
 mod bean_desc_cache;
@@ -196,6 +227,38 @@ pub use trait_binding_snapshot::TraitBindingSnapshot;
 pub use trait_key::TraitKey;
 pub use trait_provider::TraitProvider;
 pub use transient_tracker::TransientTracker;
+// New types from latest batch
+pub use application_context::ApplicationContext;
+pub use configurable_application_context::ConfigurableApplicationContext;
+pub use abstract_application_context::AbstractApplicationContext;
+pub use annotation_config_application_context::AnnotationConfigApplicationContext;
+pub use generic_application_context::GenericApplicationContext;
+pub use static_application_context::StaticApplicationContext;
+pub use application_event::ApplicationEvent;
+pub use application_event_multicaster::ApplicationEventMulticaster;
+pub use abstract_application_event_multicaster::AbstractApplicationEventMulticaster;
+pub use simple_application_event_multicaster::SimpleApplicationEventMulticaster;
+pub use application_listener::ApplicationListener;
+pub use application_event_publisher::ApplicationEventPublisher;
+pub use lifecycle::Lifecycle;
+pub use smart_lifecycle::SmartLifecycle;
+pub use lifecycle_processor::LifecycleProcessor;
+pub use phased::Phased;
+pub use lifecycle_group::LifecycleGroup;
+pub use message_source::MessageSource;
+pub use hierarchical_message_source::HierarchicalMessageSource;
+pub use reloadable_message_source::ReloadableMessageSource;
+pub use delegating_message_source::DelegatingMessageSource;
+pub use passport::Passport;
+pub use serializable_type_wrapper::SerializableTypeWrapper;
+pub use bean_metadata_element_stub::BeanMetadataElement;
+pub use attribute_accessor_support::AttributeAccessorSupport;
+pub use lifecycle_event::LifecycleEvent;
+pub use embedded_value_resolver_impl::EmbeddedValueResolver;
+pub use bean_factory_extensions::BeanFactoryExtensions;
+pub use resource_loader_extensions::ResourceLoaderExtensions;
+pub use scope_configurer::ScopeConfigurer;
+
 
 /// 返回当前 `IoC` 内核的成熟度状态。
 #[must_use]
