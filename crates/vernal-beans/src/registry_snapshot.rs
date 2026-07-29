@@ -18,7 +18,7 @@ pub struct RegistrySnapshot {
 
 impl RegistrySnapshot {
     /// 由注册表生成完整诊断值对象。
-    pub(crate) fn new(
+    pub fn new(
         summary: RegistrySummary,
         components: Vec<ComponentSnapshot>,
         trait_bindings: Vec<TraitBindingSnapshot>,

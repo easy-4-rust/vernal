@@ -369,7 +369,7 @@ impl ApplicationModuleRegistrar {
     }
 
     /// 消费 Registrar 并返回等待原子提交的命名贡献集合。
-    pub(crate) fn into_parts(self) -> ApplicationModuleParts {
+    pub fn into_parts(self) -> ApplicationModuleParts {
         ApplicationModuleParts {
             definitions: self.definitions,
             bindings: self.bindings,

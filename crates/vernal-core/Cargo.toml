@@ -37,10 +37,25 @@ web-time = { version = "1.1", optional = true, default-features = false }
 sha2 = { version = "0.10", optional = true, default-features = false }
 
 # ─── Spring Core 依赖对应的 Rust crate ─────────────────────────
-# 对标 reactor-core / rxjava（响应式编程）
-tokio = { workspace = true, optional = true, features = ["rt", "sync", "time"] }
 # 对标 commons-logging（日志门面）
 tracing = { workspace = true, optional = true }
+# 对标 jackson-databind（JSON 序列化）
+serde_json = { version = "1.0", optional = true }
+# 对标 woodstox-core（XML 解析）
+quick-xml = { version = "0.41", optional = true, features = ["serialize"] }
+# 对标 reactor-core / rxjava（响应式编程）
+tokio = { workspace = true, optional = true, features = ["rt", "sync", "time"] }
+tokio-stream = { version = "0.1", optional = true }
+# 对标 jopt-simple（命令行解析）
+clap = { version = "4.5", optional = true, features = ["derive"] }
+# 对标 jetty-io（Web 服务器）
+hyper = { version = "1.9", optional = true, features = ["http1", "http2", "server"] }
+# 对标 mockito-core（Mock 框架）
+mockall = { version = "0.13", optional = true }
+# 对标 json-schema-validator（JSON Schema）
+jsonschema = { version = "0.30", optional = true }
+# 对标 reactor-test（异步测试）
+tokio-test = { version = "0.4", optional = true }
 [features]
 default = []
 
@@ -88,10 +103,23 @@ time-web = ["dep:web-time"]
 
 # ─── Spring Core 依赖对应的 feature flags ───────────────────────
 # 日志门面(对标 commons-logging)
-# 异步运行时(对标 reactor-core / rxjava)
-async-runtime = ["dep:tokio"]
-# 日志门面(对标 commons-logging)
 tracing = ["dep:tracing"]
+# JSON 序列化(对标 jackson-databind)
+json = ["dep:serde", "dep:serde_json"]
+# XML 解析(对标 woodstox-core)
+xml = ["dep:quick-xml", "dep:serde"]
+# 异步运行时(对标 reactor-core / rxjava)
+async-runtime = ["dep:tokio", "dep:tokio-stream"]
+# 命令行解析(对标 jopt-simple)
+cli = ["dep:clap"]
+# Web 服务器(对标 jetty-io)
+web = ["dep:hyper"]
+# Mock 框架(对标 mockito-core)
+test-mock = ["dep:mockall"]
+# JSON Schema 验证(对标 json-schema-validator)
+json-schema = ["dep:jsonschema"]
+# 异步测试(对标 reactor-test)
+test-async = ["dep:tokio-test"]
 
 [lints]
 workspace = true

@@ -16,7 +16,7 @@ pub struct EnvironmentSnapshot {
 
 impl EnvironmentSnapshot {
     /// 由冻结环境生成已经拥有全部字符串的诊断快照。
-    pub(crate) fn new(
+    pub fn new(
         property_sources: Vec<String>,
         active_profiles: Vec<String>,
         default_profiles: Vec<String>,

@@ -16,23 +16,23 @@ use crate::{
 ///
 /// 该对象只在 `register_module` 调用栈内存在，不进入运行期 Context。使用命名字段
 /// 而不是大型元组，确保后续增加贡献种类时不会误换提交顺序。
-pub(crate) struct ApplicationModuleParts {
-    pub(crate) definitions: Vec<ComponentDefinition>,
-    pub(crate) bindings: Vec<TraitBinding>,
-    pub(crate) lifecycle_registrars: Vec<Box<LifecycleRegistrar>>,
-    pub(crate) event_listener_registrars: Vec<Box<EventListenerRegistrar>>,
-    pub(crate) application_runner_registrars: Vec<Box<ApplicationRunnerRegistrar>>,
-    pub(crate) scheduled_task_registrars: Vec<Box<ScheduledTaskRegistrar>>,
-    pub(crate) advisor_registrations: Vec<AdvisorRegistration>,
-    pub(crate) local_advisor_registrations: Vec<LocalAdvisorRegistration>,
-    pub(crate) operations: Vec<Operation>,
-    pub(crate) environment_contributions: Vec<ModuleEnvironmentContribution>,
-    pub(crate) conditional_modules: Vec<ConditionalComponentModule>,
+pub struct ApplicationModuleParts {
+    pub definitions: Vec<ComponentDefinition>,
+    pub bindings: Vec<TraitBinding>,
+    pub lifecycle_registrars: Vec<Box<LifecycleRegistrar>>,
+    pub event_listener_registrars: Vec<Box<EventListenerRegistrar>>,
+    pub application_runner_registrars: Vec<Box<ApplicationRunnerRegistrar>>,
+    pub scheduled_task_registrars: Vec<Box<ScheduledTaskRegistrar>>,
+    pub advisor_registrations: Vec<AdvisorRegistration>,
+    pub local_advisor_registrations: Vec<LocalAdvisorRegistration>,
+    pub operations: Vec<Operation>,
+    pub environment_contributions: Vec<ModuleEnvironmentContribution>,
+    pub conditional_modules: Vec<ConditionalComponentModule>,
 }
 
 impl ApplicationModuleParts {
     /// 返回模块是否没有声明任何贡献。
-    pub(crate) fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.definitions.is_empty()
             && self.bindings.is_empty()
             && self.lifecycle_registrars.is_empty()

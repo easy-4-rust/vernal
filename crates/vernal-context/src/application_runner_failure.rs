@@ -18,7 +18,7 @@ pub struct ApplicationRunnerFailure {
 impl ApplicationRunnerFailure {
     /// 创建保留原始根因但默认脱敏的 Runner 失败。
     #[must_use]
-    pub(crate) const fn new(runner: &'static str, source: SharedError) -> Self {
+    pub const fn new(runner: &'static str, source: SharedError) -> Self {
         Self { runner, source }
     }
 

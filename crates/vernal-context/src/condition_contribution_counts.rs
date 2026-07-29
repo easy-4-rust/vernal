@@ -5,7 +5,7 @@
 /// 使用命名字段代替位置数组，避免新增贡献种类时把诊断计数写错槽位。该对象只在
 /// 构建期快照创建过程中传递，不进入公开 API 或运行期状态。
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub(crate) struct ConditionContributionCounts {
+pub struct ConditionContributionCounts {
     trait_bindings: usize,
     lifecycles: usize,
     event_listeners: usize,
@@ -15,7 +15,7 @@ pub(crate) struct ConditionContributionCounts {
 
 impl ConditionContributionCounts {
     /// 创建一组命名贡献计数。
-    pub(crate) const fn new(
+    pub const fn new(
         trait_bindings: usize,
         lifecycles: usize,
         event_listeners: usize,
@@ -32,27 +32,27 @@ impl ConditionContributionCounts {
     }
 
     /// 返回 Trait Binding 数量。
-    pub(crate) const fn trait_bindings(self) -> usize {
+    pub const fn trait_bindings(self) -> usize {
         self.trait_bindings
     }
 
     /// 返回生命周期声明数量。
-    pub(crate) const fn lifecycles(self) -> usize {
+    pub const fn lifecycles(self) -> usize {
         self.lifecycles
     }
 
     /// 返回事件监听声明数量。
-    pub(crate) const fn event_listeners(self) -> usize {
+    pub const fn event_listeners(self) -> usize {
         self.event_listeners
     }
 
     /// 返回应用 Runner 声明数量。
-    pub(crate) const fn application_runners(self) -> usize {
+    pub const fn application_runners(self) -> usize {
         self.application_runners
     }
 
     /// 返回周期任务声明数量。
-    pub(crate) const fn scheduled_tasks(self) -> usize {
+    pub const fn scheduled_tasks(self) -> usize {
         self.scheduled_tasks
     }
 }

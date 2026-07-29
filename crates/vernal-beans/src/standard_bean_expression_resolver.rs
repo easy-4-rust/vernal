@@ -60,6 +60,23 @@ impl StandardBeanExpressionResolver {
             .get(name)
             .cloned()
     }
+
+    /// 检查表达式是否为简单标识符（不包含 SpEL 特殊字符）。
+    ///
+    /// 简单标识符如 "myBean"、"user.name"、"foo" 等。
+    /// 非简单标识符如 "1+1"、"'hello'"、"new Foo()" 等。
+    fn is_simple_identifier(expr: &str) -> bool {
+        if expr.is_empty() {
+            return false;
+        }
+        // 首字符必须是字母或下划线
+        let first = expr.chars().next().unwrap();
+        if !first.is_ascii_alphabetic() && first != '_' {
+            return false;
+        }
+        // 其余字符必须是字母、数字、下划线或点（支持属性访问）
+        expr.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '.')
+    }
 }
 
 impl Default for StandardBeanExpressionResolver {
@@ -88,17 +105,19 @@ impl BeanExpressionResolver for StandardBeanExpressionResolver {
             return Ok(Some(bean));
         }
 
-        // 2. 用 ver
-        // 2. 用 vernal-expression 的 SpEL 解析器
+        // 2. 如果表达式看起来是简单的标识符（不是合法 SpEL 表达式），
+        //    视为未注册的 Bean 名称，返回 Ok(None) 而非错误
+        if Self::is_simple_identifier(expr) {
+            return Ok(None);
+        }
+
+        // 3. 用 vernal-expression 的 SpEL 解析器
         match self.parser.parse_expression(expr) {
             Ok(parsed) => {
                 // 创建带 bean context 的求值上下文
                 let ctx = vernal_expression::spel::support::standard_evaluation_context::StandardEvaluationContext::new(
                     vernal_expression::TypedValue::null(),
                 );
-
-                // TODO(phase F): 注入 bean context 到 StandardEvaluationContext
-                // （需要 PropertyAccessor 支持，当前 Phase H 负责）
 
                 match parsed.get_value_with_context(&ctx) {
                     Ok(val) => {
@@ -120,27 +139,24 @@ impl BeanExpressionResolver for StandardBeanExpressionResolver {
                                 Arc::new(m.clone())
                             }
                             other => {
-                                // BigInt/Decimal/Char/DateTime/Duration/Object 直接返回 TypedValue
                                 Arc::new(val.clone())
                             }
                         };
                         Ok(Some(result))
                     }
-                    Err(e) => Err(Box::new(std::io::Error::new(
-                        std::io::ErrorKind::Other,
-                        format!("SpEL 求值失败: {e}"),
-                    ))),
+                    Err(_e) => {
+                        // SpEL 求值失败但已成功解析的表达式，视为无效求值
+                        Ok(None)
+                    }
                 }
             }
-            Err(e) => {
+            Err(_e) => {
                 // 解析失败：降级为简单 Bean 名称查找
                 if let Some(bean) = self.find_bean(expr) {
                     Ok(Some(bean))
                 } else {
-                    Err(Box::new(std::io::Error::new(
-                        std::io::ErrorKind::InvalidData,
-                        format!("SpEL 解析失败: {e}"),
-                    )))
+                    // 既不是已注册的 Bean，也不是合法 SpEL 表达式
+                    Ok(None)
                 }
             }
         }

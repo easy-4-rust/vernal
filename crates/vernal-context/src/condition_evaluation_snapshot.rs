@@ -23,7 +23,7 @@ pub struct ConditionEvaluationSnapshot {
 
 impl ConditionEvaluationSnapshot {
     /// 创建已经完成脱敏的条件评估快照。
-    pub(crate) fn new(
+    pub fn new(
         module: &'static str,
         condition: &'static str,
         matched: bool,

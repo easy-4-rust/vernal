@@ -17,7 +17,7 @@ pub struct ScheduledTaskFailure {
 impl ScheduledTaskFailure {
     /// 创建保留根因但默认脱敏的周期任务失败。
     #[must_use]
-    pub(crate) const fn new(task: &'static str, source: SharedError) -> Self {
+    pub const fn new(task: &'static str, source: SharedError) -> Self {
         Self { task, source }
     }
 

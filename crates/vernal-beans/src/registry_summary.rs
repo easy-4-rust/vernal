@@ -25,7 +25,7 @@ pub struct RegistrySummary {
 
 impl RegistrySummary {
     /// 创建一份完整注册表计数摘要。
-    pub(crate) const fn new(
+    pub const fn new(
         definition_count: usize,
         singleton_count: usize,
         transient_count: usize,

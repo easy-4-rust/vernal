@@ -48,7 +48,7 @@ impl ConditionalComponentModule {
 
     /// 使用已经共享的条件创建空模块。
     #[must_use]
-    pub fn shared(name: &'static str, condition: Arc<dyn ComponentCondition>) -> Self {
+    pub const fn shared(name: &'static str, condition: Arc<dyn ComponentCondition>) -> Self {
         Self {
             name,
             condition,
@@ -69,7 +69,7 @@ impl ConditionalComponentModule {
     /// 的 `@Conditional(REGISTER_BEAN)` 等价 —— 此时 vernal 由调用方负责延后评估
     /// 时机（当前架构下两者效果相同，因为 vernal 评估时机固定在 builder 阶段）。
     #[must_use]
-    pub fn with_phase(mut self, phase: ConfigurationPhase) -> Self {
+    pub const fn with_phase(mut self, phase: ConfigurationPhase) -> Self {
         self.phase = phase;
         self
     }
@@ -232,7 +232,7 @@ impl ConditionalComponentModule {
     }
 
     /// 校验静态诊断身份和模块内容。
-    pub(crate) fn validate(&self) -> Result<(), ConditionError> {
+    pub fn validate(&self) -> Result<(), ConditionError> {
         if self.name.is_empty()
             || self
                 .name
@@ -265,7 +265,7 @@ impl ConditionalComponentModule {
     }
 
     /// 在冻结环境中执行一次条件判断。
-    pub(crate) fn matches(
+    pub fn matches(
         &self,
         environment: &ApplicationEnvironment,
     ) -> Result<bool, ConditionError> {
@@ -275,7 +275,7 @@ impl ConditionalComponentModule {
     }
 
     /// 生成不包含配置键和值的评估快照。
-    pub(crate) fn snapshot(&self, matched: bool) -> ConditionEvaluationSnapshot {
+    pub fn snapshot(&self, matched: bool) -> ConditionEvaluationSnapshot {
         ConditionEvaluationSnapshot::new(
             self.name,
             self.condition.name(),
@@ -295,7 +295,7 @@ impl ConditionalComponentModule {
     }
 
     /// 消费模块并返回可原子提交的六类注册项。
-    pub(crate) fn into_parts(self) -> ConditionalComponentModuleParts {
+    pub fn into_parts(self) -> ConditionalComponentModuleParts {
         ConditionalComponentModuleParts {
             definitions: self.definitions,
             bindings: self.bindings,

@@ -6,8 +6,8 @@ use crate::{ConditionEvaluationSnapshot, SubsystemStatus};
 ///
 /// 该内部对象把 feature、Adapter、外部依赖、条件评估与告警代码作为一个原子值
 /// 传递，避免 Context 资源构造函数不断扩张。所有内容在应用构建后保持不可变。
-#[derive(Default)]
-pub(crate) struct DiagnosticConfiguration {
+#[derive(Default, Debug)]
+pub struct DiagnosticConfiguration {
     enabled_features: Vec<String>,
     adapters: Vec<SubsystemStatus>,
     external_dependencies: Vec<SubsystemStatus>,
@@ -17,7 +17,7 @@ pub(crate) struct DiagnosticConfiguration {
 
 impl DiagnosticConfiguration {
     /// 创建已经完成排序和去重的诊断配置。
-    pub(crate) fn new(
+    pub fn new(
         enabled_features: Vec<String>,
         adapters: Vec<SubsystemStatus>,
         external_dependencies: Vec<SubsystemStatus>,
@@ -34,27 +34,27 @@ impl DiagnosticConfiguration {
     }
 
     /// 返回应用显式声明的 feature 名称。
-    pub(crate) fn enabled_features(&self) -> &[String] {
+    pub fn enabled_features(&self) -> &[String] {
         &self.enabled_features
     }
 
     /// 返回 Web/RPC Adapter 的脱敏状态。
-    pub(crate) fn adapters(&self) -> &[SubsystemStatus] {
+    pub fn adapters(&self) -> &[SubsystemStatus] {
         &self.adapters
     }
 
     /// 返回外部依赖的脱敏状态。
-    pub(crate) fn external_dependencies(&self) -> &[SubsystemStatus] {
+    pub fn external_dependencies(&self) -> &[SubsystemStatus] {
         &self.external_dependencies
     }
 
     /// 返回构建期条件模块的脱敏评估结果。
-    pub(crate) fn condition_evaluations(&self) -> &[ConditionEvaluationSnapshot] {
+    pub fn condition_evaluations(&self) -> &[ConditionEvaluationSnapshot] {
         &self.condition_evaluations
     }
 
     /// 返回应用构建阶段登记的脱敏告警代码。
-    pub(crate) fn warnings(&self) -> &[String] {
+    pub fn warnings(&self) -> &[String] {
         &self.warnings
     }
 }

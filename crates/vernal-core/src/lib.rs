@@ -2,8 +2,11 @@
 #![doc = "Vernal 各独立内核共享的稳定基础合同。"]
 
 pub mod app_lifecycle_phase;
+pub mod async_runtime;
 pub mod constants;
+pub mod cli;
 pub mod convert;
+pub mod codec;
 pub mod conventions;
 pub mod diagnostics;
 pub mod error;
@@ -14,17 +17,32 @@ pub mod method_parameter;
 pub mod task;
 pub mod environment;
 pub mod ordered;
+pub mod serialization;
 pub mod sorted_properties;
 pub mod properties_file;
 pub mod version;
 pub mod time;
+pub mod web;
 pub mod util;
 
 pub use app_lifecycle_phase::AppLifecyclePhase;
+pub use async_runtime::RuntimeType;
+#[cfg(feature = "async-runtime")]
+pub use async_runtime::TokioRuntime;
 pub use method_parameter::MethodParameter;
 pub use properties_file::FrameworkProperties;
 pub use conventions::{Conventions, PLURAL_SUFFIX};
 pub use failure::{BoxError, SharedError};
+pub use cli::CliError;
+#[cfg(feature = "cli")]
+pub use cli::ClapParser;
+pub use codec::{ByteArrayDecoder, ByteArrayEncoder, CodecError, Decoder, Encoder, StringDecoder, StringEncoder};
+pub use serialization::SerializationError;
+#[cfg(feature = "json")]
+pub use serialization::JsonCodec;
+#[cfg(feature = "xml")]
+pub use serialization::XmlCodec;
+pub use web::HttpMethod;
 
 /// 当前 Vernal Workspace 发布版本。
 ///

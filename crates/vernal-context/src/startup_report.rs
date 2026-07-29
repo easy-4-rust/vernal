@@ -38,7 +38,7 @@ pub struct StartupReport {
 
 impl StartupReport {
     /// 创建尚未执行 refresh 的初始报告。
-    pub(crate) fn new(
+    pub fn new(
         context_state: String,
         environment: &ApplicationEnvironment,
         registry: RegistrySnapshot,
@@ -187,17 +187,17 @@ impl StartupReport {
     }
 
     /// 用调用时刻的 Container 解析快照替换未使用定义集合。
-    pub(crate) fn set_unused_definitions(&mut self, definitions: Vec<String>) {
+    pub fn set_unused_definitions(&mut self, definitions: Vec<String>) {
         self.unused_definitions = definitions;
     }
 
     /// 更新 Context 状态；只由 Context 状态机调用。
-    pub(crate) fn set_context_state(&mut self, state: String) {
+    pub fn set_context_state(&mut self, state: String) {
         self.context_state = state;
     }
 
     /// 追加一条完成后的脱敏观察记录。
-    pub(crate) fn record(&mut self, observation: StartupObservation) {
+    pub fn record(&mut self, observation: StartupObservation) {
         self.observations.push(observation);
     }
 
@@ -205,7 +205,7 @@ impl StartupReport {
     ///
     /// 使用二分查找而不是在读取报告时临时排序，使每次快照都直接反映 Context
     /// 内部的权威顺序；重复出现同类故障不会无限扩大诊断对象。
-    pub(crate) fn record_warning(&mut self, warning: &'static str) {
+    pub fn record_warning(&mut self, warning: &'static str) {
         match self
             .warnings
             .binary_search_by(|existing| existing.as_str().cmp(warning))

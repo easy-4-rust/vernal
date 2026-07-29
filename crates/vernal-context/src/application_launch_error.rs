@@ -43,12 +43,12 @@ pub enum ApplicationLaunchError {
 
 impl ApplicationLaunchError {
     /// 创建构建阶段错误。
-    pub(crate) const fn build(source: ApplicationBuildError) -> Self {
+    pub const fn build(source: ApplicationBuildError) -> Self {
         Self::Build { source }
     }
 
     /// 创建 refresh 或 start 阶段错误。
-    pub(crate) const fn lifecycle(
+    pub const fn lifecycle(
         operation: &'static str,
         source: ContextError,
         cleanup: Option<ContextError>,
@@ -63,7 +63,7 @@ impl ApplicationLaunchError {
     }
 
     /// 创建启动协调任务错误。
-    pub(crate) fn coordinator(
+    pub fn coordinator(
         source: impl Error + Send + Sync + 'static,
         cleanup: Option<ContextError>,
         report: StartupReport,

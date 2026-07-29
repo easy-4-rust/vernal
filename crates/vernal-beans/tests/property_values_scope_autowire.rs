@@ -341,9 +341,9 @@ fn field_metadata_multiple_types() {
         )],
     });
 
-    // 验证多个类型都已注册
+    // 验证至少有两个类型已注册（可能有其他测试注册的类型）
     let all = field_metadata::get_all_metadata();
-    assert_eq!(all.len(), 2);
+    assert!(all.len() >= 2);
 
     // 验证按类型查找
     let user_meta = field_metadata::get_metadata_for_type(std::any::TypeId::of::<UserService>());
@@ -366,6 +366,7 @@ fn field_metadata_multiple_types() {
 fn field_metadata_clear() {
     use vernal_beans::field_metadata;
 
+    // 清理后注册
     field_metadata::clear_metadata();
 
     field_metadata::register_type_metadata(TypeMetadata {
@@ -374,7 +375,8 @@ fn field_metadata_clear() {
         fields: vec![],
     });
 
-    assert!(field_metadata::get_all_metadata().len() > 0);
+    let count = field_metadata::get_all_metadata().len();
+    assert!(count >= 1, "Should have at least 1 metadata after registration");
 
     field_metadata::clear_metadata();
     assert!(field_metadata::get_all_metadata().is_empty());

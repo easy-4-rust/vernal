@@ -8,7 +8,7 @@ use crate::{ApplicationEnvironmentBuilder, EnvironmentError, PropertySource};
 ///
 /// 贡献先应用到当前 Environment Builder 的隔离克隆；全部成功后才与组件模块一同
 /// 提交，避免属性来源冲突时已经写入 Definition 或 Advisor。
-pub(crate) enum ModuleEnvironmentContribution {
+pub enum ModuleEnvironmentContribution {
     /// 在最高优先级加入属性来源。
     First(Arc<dyn PropertySource>),
     /// 在最低优先级加入属性来源。
@@ -21,7 +21,7 @@ pub(crate) enum ModuleEnvironmentContribution {
 
 impl ModuleEnvironmentContribution {
     /// 把单项贡献应用到隔离环境建造器。
-    pub(crate) fn apply(
+    pub fn apply(
         self,
         environment: &mut ApplicationEnvironmentBuilder,
     ) -> Result<(), EnvironmentError> {
