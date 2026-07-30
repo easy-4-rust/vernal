@@ -1,8 +1,18 @@
 //! 投影运算符节点。
 //!
-//! 对标 Spring `Projection`：`![]`
+//! 对标 Spring `Projection`：`![expression]`。
+//!
+//! # Spring 求值语义
+//!
+//! Spring 的 `Projection` 对集合中每个元素执行表达式，收集结果。
+//! 每个元素被 push 到 `ExpressionState.activeContextObject` 栈，
+//! 使表达式中的 `#this` 引用当前元素。
+//!
+//! 本实现通过 `get_value_state` 操作 `ExpressionState` 的 active context 栈，
+//! 实现与 Spring 完全一致的元素上下文替换。
 
 use super::spel_node::SpelNode;
+use super::super::expression_state::ExpressionState;
 use crate::evaluation_context::EvaluationContext;
 use crate::evaluation_exception::EvaluationException;
 use crate::typed_value::{ExpressionValue, TypeDescriptor, TypedValue};
@@ -14,10 +24,6 @@ pub struct Projection {
 
 impl Projection {
     /// 创建 Projection 节点。
-    ///
-    /// # 参数
-    ///
-    /// - `expression` — 对每个元素应用的表达式
     #[must_use]
     pub fn new(expression: Box<dyn SpelNode>) -> Self {
         Self { expression }
@@ -28,6 +34,66 @@ impl Projection {
     pub fn expression(&self) -> &dyn SpelNode {
         &*self.expression
     }
+
+    /// 对列表执行投影操作。
+    fn project_list(
+        &self,
+        items: &[TypedValue],
+        state: &mut ExpressionState,
+    ) -> Result<TypedValue, EvaluationException> {
+        let mut results = Vec::with_capacity(items.len());
+
+        for item in items {
+            // 对标 Spring: push element as active context, enter scope
+            state.push_active_context_object(item.clone());
+            state.enter_scope();
+
+            // 在当前元素上下文中求值表达式
+            let result = self.expression.get_value_state(state)?;
+
+            // 对标 Spring: pop context, exit scope
+            state.exit_scope();
+            state.pop_active_context_object();
+
+            results.push(result);
+        }
+
+        Ok(TypedValue::new(
+            ExpressionValue::List(results),
+            TypeDescriptor::OBJECT,
+        ))
+    }
+
+    /// 对 Map 执行投影操作。
+    fn project_map(
+        &self,
+        entries: &[(TypedValue, TypedValue)],
+        state: &mut ExpressionState,
+    ) -> Result<TypedValue, EvaluationException> {
+        let mut results = Vec::with_capacity(entries.len());
+
+        for (key, value) in entries {
+            // 对标 Spring: push entry as active context
+            let entry = TypedValue::new(
+                ExpressionValue::Map(vec![(key.clone(), value.clone())]),
+                TypeDescriptor::from_type_name("Map"),
+            );
+            state.push_active_context_object(entry);
+            state.enter_scope();
+
+            let result = self.expression.get_value_state(state)?;
+
+            state.exit_scope();
+            state.pop_active_context_object();
+
+            results.push(result);
+        }
+
+        Ok(TypedValue::new(
+            ExpressionValue::List(results),
+            TypeDescriptor::OBJECT,
+        ))
+    }
 }
 
 impl SpelNode for Projection {
@@ -35,19 +101,19 @@ impl SpelNode for Projection {
         &self,
         context: &dyn EvaluationContext,
     ) -> Result<TypedValue, EvaluationException> {
-        let source = context.root_object().clone();
+        let mut state = ExpressionState::new(context);
+        self.get_value_state(&mut state)
+    }
+
+    fn get_value_state(
+        &self,
+        state: &mut ExpressionState,
+    ) -> Result<TypedValue, EvaluationException> {
+        let source = state.active_context_object().clone();
         match source.value() {
-            ExpressionValue::List(items) => {
-                let mut results = Vec::with_capacity(items.len());
-                for _item in items {
-                    results.push(self.expression.get_value(context)?);
-                }
-                Ok(TypedValue::new(
-                    ExpressionValue::List(results),
-                    TypeDescriptor::OBJECT,
-                ))
-            }
-            _ => Err(EvaluationException::new("", None, "投影运算需要列表操作数")),
+            ExpressionValue::List(items) => self.project_list(items, state),
+            ExpressionValue::Map(entries) => self.project_map(entries, state),
+            _ => Err(EvaluationException::new("", None, "投影运算需要列表或映射操作数")),
         }
     }
 

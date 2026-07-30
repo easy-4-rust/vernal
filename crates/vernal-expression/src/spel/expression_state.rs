@@ -9,13 +9,16 @@ const DEFAULT_MAX_OPERATIONS: u32 = 10_000;
 
 /// 求值状态（对标 Spring `ExpressionState`）。
 ///
-/// 维护每次表达式求值的活动上下文对象栈和操作计数。
+/// 维护每次表达式求值的活动上下文对象栈、scope 根对象栈和操作计数。
 /// 操作计数超过 `max_operations` 时抛出 `SpelEvaluationException`。
 pub struct ExpressionState<'a> {
     /// 求值上下文。
     context: &'a dyn EvaluationContext,
     /// 活动上下文对象栈（push/pop）。
     active_context: Vec<TypedValue>,
+    /// scope 根对象栈（enter_scope/exit_scope）。
+    /// 用于 Selection/Projection/Indexer 建立新的 #this 作用域。
+    scope_root_objects: Vec<TypedValue>,
     /// 局部变量。
     variables: HashMap<String, TypedValue>,
     /// 操作计数。
@@ -31,6 +34,7 @@ impl<'a> ExpressionState<'a> {
         Self {
             context,
             active_context: vec![context.root_object().clone()],
+            scope_root_objects: Vec::new(),
             variables: HashMap::new(),
             operation_count: 0,
             max_operations: DEFAULT_MAX_OPERATIONS,
@@ -43,6 +47,7 @@ impl<'a> ExpressionState<'a> {
         Self {
             context,
             active_context: vec![context.root_object().clone()],
+            scope_root_objects: Vec::new(),
             variables: HashMap::new(),
             operation_count: 0,
             max_operations,
@@ -110,6 +115,97 @@ impl<'a> ExpressionState<'a> {
     #[must_use]
     pub fn max_operations(&self) -> u32 {
         self.max_operations
+    }
+
+    // ── Scope 管理（对标 Spring ExpressionState enterScope/exitScope） ──
+
+    /// 进入新 scope（对标 Spring `ExpressionState.enterScope()`）。
+    ///
+    /// 将当前活动上下文对象压入 scope 根对象栈，
+    /// Selection/Projection/Indexer 使用此方法建立新的 #this 作用域。
+    pub fn enter_scope(&mut self) {
+        let current = self.active_context_object().clone();
+        self.scope_root_objects.push(current);
+    }
+
+    /// 退出 scope（对标 Spring `ExpressionState.exitScope()`）。
+    ///
+    /// 弹出 scope 根对象栈顶。
+    pub fn exit_scope(&mut self) {
+        self.scope_root_objects.pop();
+    }
+
+    /// 获取 scope 根上下文对象（对标 Spring `ExpressionState.getScopeRootContextObject()`）。
+    ///
+    /// 返回 scope 根对象栈顶，如果栈为空则返回根对象。
+    #[must_use]
+    pub fn scope_root_context_object(&self) -> &TypedValue {
+        self.scope_root_objects
+            .last()
+            .unwrap_or_else(|| self.context.root_object())
+    }
+
+    // ── 类型转换（对标 Spring ExpressionState.convertValue） ──
+
+    /// 转换值到目标类型（对标 Spring `ExpressionState.convertValue()`）。
+    ///
+    /// 委托给上下文的 TypeConverter。
+    pub fn convert_value(
+        &self,
+        value: &TypedValue,
+        target_type: &crate::TypeDescriptor,
+    ) -> Result<TypedValue, SpelEvaluationException> {
+        let converter = self.context.type_converter().ok_or_else(|| {
+            SpelEvaluationException::new(
+                SpelMessage::TypeConversionError,
+                &["No TypeConverter configured"],
+            )
+        })?;
+        converter.convert_value(value, target_type).map_err(|e| {
+            SpelEvaluationException::new(
+                SpelMessage::TypeConversionError,
+                &[
+                    &value.type_descriptor().name(),
+                    &target_type.name(),
+                    &e.to_string(),
+                ],
+            )
+        })
+    }
+
+    // ── 类型查找（对标 Spring ExpressionState.findType） ──
+
+    /// 查找类型（对标 Spring `ExpressionState.findType()`）。
+    pub fn find_type(
+        &self,
+        type_name: &str,
+    ) -> Result<std::any::TypeId, SpelEvaluationException> {
+        let locator = self.context.type_locator().ok_or_else(|| {
+            SpelEvaluationException::new(SpelMessage::TypeNotFound, &[type_name])
+        })?;
+        locator.find_type(type_name).map_err(|e| {
+            SpelEvaluationException::new(SpelMessage::TypeNotFound, &[type_name, &e.to_string()])
+        })
+    }
+
+    // ── 访问器（对标 Spring ExpressionState 的各种 getter） ──
+
+    /// 获取类型比较器。
+    #[must_use]
+    pub fn type_comparator(&self) -> Option<&dyn crate::TypeComparator> {
+        self.context.type_comparator()
+    }
+
+    /// 获取类型转换器。
+    #[must_use]
+    pub fn type_converter(&self) -> Option<&dyn crate::TypeConverter> {
+        self.context.type_converter()
+    }
+
+    /// 获取属性访问器列表。
+    #[must_use]
+    pub fn property_accessors(&self) -> Vec<&dyn crate::PropertyAccessor> {
+        self.context.property_accessors()
     }
 }
 

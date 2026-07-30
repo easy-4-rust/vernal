@@ -4,13 +4,36 @@ use crate::evaluation_context::EvaluationContext;
 use crate::evaluation_exception::EvaluationException;
 use crate::typed_value::TypedValue;
 
+use super::super::expression_state::ExpressionState;
+
 /// AST 节点 trait（对标 Spring `SpelNode`）。
+///
+/// Spring 的 `SpelNode.getValue(ExpressionState)` 是主要求值方法，
+/// 允许通过 ExpressionState 操作上下文栈（push/pop active context）。
+///
+/// Rust 中提供两个方法：
+/// - `get_value_state`：接收 `&mut ExpressionState`，支持上下文栈操作
+/// - `get_value`：便捷方法，创建临时 ExpressionState 并委托
 pub trait SpelNode: Send + Sync {
     /// 在给定上下文中求值（对标 Java `SpelNode.getValue(EvaluationContext)`）。
+    ///
+    /// 大多数节点实现此方法。需要操作上下文栈的节点
+    /// （Selection/Projection/Indexer）应同时重写 `get_value_state`。
     fn get_value(
         &self,
         context: &dyn EvaluationContext,
     ) -> Result<TypedValue, EvaluationException>;
+
+    /// 在 ExpressionState 中求值（对标 Java `SpelNode.getValue(ExpressionState)`）。
+    ///
+    /// Selection/Projection/Indexer 等节点重写此方法以操作 active context 栈。
+    /// 默认实现委托给 `get_value`。
+    fn get_value_state(
+        &self,
+        state: &mut ExpressionState,
+    ) -> Result<TypedValue, EvaluationException> {
+        self.get_value(state.evaluation_context())
+    }
 
     /// 子节点数量（默认 0，对标 `getChildCount`）。
     fn child_count(&self) -> usize {

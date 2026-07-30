@@ -3,6 +3,7 @@
 //! 对标 Spring 的 `SpelExpression`：已解析的 SpEL 表达式。
 
 use super::ast::spel_node::SpelNode;
+use super::expression_state::ExpressionState;
 use crate::evaluation_context::EvaluationContext;
 use crate::evaluation_exception::EvaluationException;
 use crate::expression::Expression;
@@ -41,7 +42,6 @@ impl Expression for SpelExpression {
     }
 
     fn get_value(&self) -> Result<TypedValue, EvaluationException> {
-        // 使用默认上下文求值
         Err(EvaluationException::new(
             &self.expression_string,
             None,
@@ -53,14 +53,17 @@ impl Expression for SpelExpression {
         &self,
         context: &dyn EvaluationContext,
     ) -> Result<TypedValue, EvaluationException> {
-        self.ast.get_value(context)
+        let mut state = ExpressionState::new(context);
+        self.ast.get_value_state(&mut state)
     }
 
     fn get_value_with_root(
         &self,
         context: &dyn EvaluationContext,
-        _root: &TypedValue,
+        root: &TypedValue,
     ) -> Result<TypedValue, EvaluationException> {
-        self.ast.get_value(context)
+        let mut state = ExpressionState::new(context);
+        state.push_active_context_object(root.clone());
+        self.ast.get_value_state(&mut state)
     }
 }

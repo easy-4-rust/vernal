@@ -6,15 +6,16 @@
 //!
 //! Spring 的 `Selection` 对 root context 中的集合求值，把每个元素 push 到
 //! `ExpressionState.activeContextObject` 栈，让 criteria 在每个元素上下文中求值。
+//! 这使得 `#this` 在 criteria 中引用当前元素。
 //!
-//! 本实现通过在求值期间直接遍历集合并把每个 element 用作 criteria 的
-//! 求值根（借助 `EvaluationContext` 的 root_object 替换模式不直接，所以
-//! 这里采用：`Selection::get_value` 接受内部调用，传入 `EvaluationContext`，
-//! 但通过 `ExpressionState` 间接实现 root 切换。
+//! 本实现通过 `get_value_state` 操作 `ExpressionState` 的 active context 栈，
+//! 实现与 Spring 完全一致的元素上下文替换。
 
 use super::spel_node::SpelNode;
+use super::super::expression_state::ExpressionState;
 use crate::evaluation_context::EvaluationContext;
 use crate::evaluation_exception::EvaluationException;
+use crate::spel::spel_message::SpelMessage;
 use crate::typed_value::{ExpressionValue, TypeDescriptor, TypedValue};
 
 /// 选择变体（对标 Spring `SELECT` / `SELECT_FIRST` / `SELECT_LAST`）。
@@ -52,6 +53,119 @@ impl Selection {
     pub fn variant(&self) -> SelectionVariant {
         self.variant
     }
+
+    /// 对列表执行选择操作（对标 Spring Selection 对 List 的处理）。
+    fn select_list(
+        &self,
+        items: &[TypedValue],
+        state: &mut ExpressionState,
+    ) -> Result<TypedValue, EvaluationException> {
+        let mut results = Vec::new();
+
+        for item in items {
+            // 对标 Spring: push element as active context, enter scope
+            state.push_active_context_object(item.clone());
+            state.enter_scope();
+
+            // 在当前元素上下文中求值 criteria
+            let matches = self.criteria.get_value_state(state)?;
+
+            // 对标 Spring: 验证 criteria 结果必须是 Boolean
+            let is_match = match matches.value() {
+                ExpressionValue::Boolean(b) => *b,
+                _ => {
+                    return Err(EvaluationException::new(
+                        "",
+                        None,
+                        "选择条件的结果必须是布尔类型",
+                    ));
+                }
+            };
+
+            // 对标 Spring: pop context, exit scope
+            state.exit_scope();
+            state.pop_active_context_object();
+
+            if is_match {
+                results.push(item.clone());
+            }
+        }
+
+        match self.variant {
+            SelectionVariant::All => Ok(TypedValue::new(
+                ExpressionValue::List(results),
+                TypeDescriptor::OBJECT,
+            )),
+            SelectionVariant::First => Ok(results.into_iter().next().unwrap_or(TypedValue::null())),
+            SelectionVariant::Last => Ok(results.into_iter().last().unwrap_or(TypedValue::null())),
+        }
+    }
+
+    /// 对 Map 执行选择操作（对标 Spring Selection 对 Map 的处理）。
+    fn select_map(
+        &self,
+        entries: &[(TypedValue, TypedValue)],
+        state: &mut ExpressionState,
+    ) -> Result<TypedValue, EvaluationException> {
+        let mut results = Vec::new();
+
+        for (key, value) in entries {
+            // 对标 Spring: push entry as active context
+            let entry = TypedValue::new(
+                ExpressionValue::Map(vec![(key.clone(), value.clone())]),
+                TypeDescriptor::from_type_name("Map"),
+            );
+            state.push_active_context_object(entry);
+            state.enter_scope();
+
+            let matches = self.criteria.get_value_state(state)?;
+
+            let is_match = match matches.value() {
+                ExpressionValue::Boolean(b) => *b,
+                _ => {
+                    return Err(EvaluationException::new(
+                        "",
+                        None,
+                        "选择条件的结果必须是布尔类型",
+                    ));
+                }
+            };
+
+            state.exit_scope();
+            state.pop_active_context_object();
+
+            if is_match {
+                results.push((key.clone(), value.clone()));
+            }
+        }
+
+        match self.variant {
+            SelectionVariant::All => Ok(TypedValue::new(
+                ExpressionValue::Map(results),
+                TypeDescriptor::from_type_name("Map"),
+            )),
+            SelectionVariant::First => Ok(results
+                .into_iter()
+                .next()
+                .map(|(k, v)| {
+                    TypedValue::new(
+                        ExpressionValue::Map(vec![(k, v)]),
+                        TypeDescriptor::from_type_name("Map"),
+                    )
+                })
+                .unwrap_or(TypedValue::null())),
+            SelectionVariant::Last => Ok(results
+                .into_iter()
+                .last()
+                .map(|(k, v)| {
+                    TypedValue::new(
+                        ExpressionValue::Map(vec![(k, v)]),
+                        TypeDescriptor::from_type_name("Map"),
+                    )
+                })
+                .unwrap_or(TypedValue::null())),
+        }
+    }
 }
 
 impl SpelNode for Selection {
@@ -59,32 +173,23 @@ impl SpelNode for Selection {
         &self,
         context: &dyn EvaluationContext,
     ) -> Result<TypedValue, EvaluationException> {
-        let source = context.root_object().clone();
+        let mut state = ExpressionState::new(context);
+        self.get_value_state(&mut state)
+    }
+
+    fn get_value_state(
+        &self,
+        state: &mut ExpressionState,
+    ) -> Result<TypedValue, EvaluationException> {
+        let source = state.active_context_object().clone();
         match source.value() {
-            ExpressionValue::List(items) => {
-                let mut results = Vec::new();
-                // 注：当前实现不支持 push active context（需要 ExpressionState 链路）
-                // Phase F: 完整实现应通过 ExpressionState.push/pop
-                for item in items {
-                    let matches = self.criteria.get_value(context)?;
-                    if matches!(matches.value(), ExpressionValue::Boolean(true)) {
-                        results.push(item.clone());
-                    }
-                }
-                match self.variant {
-                    SelectionVariant::All => Ok(TypedValue::new(
-                        ExpressionValue::List(results),
-                        TypeDescriptor::OBJECT,
-                    )),
-                    SelectionVariant::First => {
-                        Ok(results.into_iter().next().unwrap_or(TypedValue::null()))
-                    }
-                    SelectionVariant::Last => {
-                        Ok(results.into_iter().last().unwrap_or(TypedValue::null()))
-                    }
-                }
-            }
-            _ => Err(EvaluationException::new("", None, "选择运算需要列表操作数")),
+            ExpressionValue::List(items) => self.select_list(items, state),
+            ExpressionValue::Map(entries) => self.select_map(entries, state),
+            _ => Err(EvaluationException::new(
+                "",
+                None,
+                "选择运算需要列表或映射操作数",
+            )),
         }
     }
 
