@@ -88,3 +88,8 @@ pub use type_converter::TypeConverter;
 pub use type_descriptor::{PrimitiveKind, TypeDescriptor};
 pub use type_locator::TypeLocator;
 pub use typed_value::TypedValue;
+
+// SpEL 异常类型重导出
+pub use spel::spel_evaluation_exception::SpelEvaluationException;
+pub use spel::spel_message::SpelMessage;
+pub use spel::spel_parse_exception::SpelParseException;
