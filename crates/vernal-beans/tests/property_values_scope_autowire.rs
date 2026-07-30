@@ -4,6 +4,11 @@ use std::any::Any;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
+fn lock_field_md() -> std::sync::MutexGuard<'static, ()> {
+    static LOCK: std::sync::OnceLock<std::sync::Mutex<()>> = std::sync::OnceLock::new();
+    LOCK.get_or_init(|| std::sync::Mutex::new(())).lock().unwrap()
+}
+
 use vernal_beans::ComponentDefinition;
 use vernal_beans::ComponentKey;
 use vernal_beans::RegistryBuilder;
@@ -249,6 +254,7 @@ fn scope_destruction_callback_execution() {
 /// 验证 field_metadata 注册和查询。
 #[test]
 fn field_metadata_register_and_query() {
+    let _guard = lock_field_md();
     use vernal_beans::field_metadata;
 
     // 清理之前的元数据
@@ -286,6 +292,7 @@ fn field_metadata_register_and_query() {
 /// 验证 field_metadata 可选字段和限定符。
 #[test]
 fn field_metadata_optional_and_qualifier() {
+    let _guard = lock_field_md();
     use vernal_beans::field_metadata;
 
     field_metadata::clear_metadata();
@@ -316,6 +323,7 @@ fn field_metadata_optional_and_qualifier() {
 /// 验证 field_metadata 多类型注册。
 #[test]
 fn field_metadata_multiple_types() {
+    let _guard = lock_field_md();
     use vernal_beans::field_metadata;
 
     field_metadata::clear_metadata();

@@ -11,6 +11,11 @@ use vernal_beans::bean_definition::BeanDefinition;
 use vernal_beans::bean_definition_registry::BeanDefinitionRegistry;
 use vernal_beans::field_metadata::{FieldDescriptor, TypeMetadata};
 
+fn lock_field_md() -> std::sync::MutexGuard<'static, ()> {
+    static LOCK: std::sync::OnceLock<std::sync::Mutex<()>> = std::sync::OnceLock::new();
+    LOCK.get_or_init(|| std::sync::Mutex::new(())).lock().unwrap()
+}
+
 // ── 测试类型 ─────────────────────────────────────────────────────────────
 
 #[derive(Debug)]
@@ -266,6 +271,7 @@ fn type_metadata_basic() {
 /// 验证 field_metadata 存储初始化。
 #[test]
 fn field_metadata_store_init() {
+    let _guard = lock_field_md();
     vernal_beans::field_metadata::clear_metadata();
     let all = vernal_beans::field_metadata::get_all_metadata();
     // 初始为空
@@ -275,6 +281,7 @@ fn field_metadata_store_init() {
 /// 验证 find_fields_needing_type（空存储）。
 #[test]
 fn find_fields_needing_type_empty() {
+    let _guard = lock_field_md();
     vernal_beans::field_metadata::clear_metadata();
     let fields = vernal_beans::field_metadata::find_fields_needing_type(std::any::TypeId::of::<
         DatabasePool,
@@ -285,6 +292,7 @@ fn find_fields_needing_type_empty() {
 /// 验证 type_needs_injection（空存储）。
 #[test]
 fn type_needs_injection_empty() {
+    let _guard = lock_field_md();
     vernal_beans::field_metadata::clear_metadata();
     let needs =
         vernal_beans::field_metadata::type_needs_injection(std::any::TypeId::of::<DatabasePool>());
@@ -350,6 +358,7 @@ fn registry_remove_and_build_integration() {
 /// 验证 FieldMetadata 与 autowireBean 集成。
 #[test]
 fn field_metadata_with_autowire() {
+    let _guard = lock_field_md();
     use vernal_beans::AutowireCapableBeanFactory;
 
     // 手动创建元数据并验证结构

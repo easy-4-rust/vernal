@@ -3220,3 +3220,625 @@ async fn advised_invoke_type_mismatch_returns_error() {
         .unwrap();
     assert_eq!(result, 42);
 }
+
+// ============================================================================
+// Coverage Gap Tests - 覆盖率补充测试
+// ============================================================================
+
+// --- Aspect trait default implementations coverage ---
+
+#[tokio::test]
+async fn aspect_default_before_returns_ok() {
+    struct DefaultAspect;
+    impl Aspect for DefaultAspect {}
+    
+    let aspect = DefaultAspect;
+    let inv = Arc::new(Invocation::new(Operation::new("test", "test")));
+    let result = aspect.before(&inv).await;
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn aspect_default_after_is_noop() {
+    struct DefaultAspect;
+    impl Aspect for DefaultAspect {}
+    
+    let aspect = DefaultAspect;
+    let inv = Arc::new(Invocation::new(Operation::new("test", "test")));
+    let value: InvocationValue = Box::new(42i32);
+    aspect.after(&inv, &value).await;
+}
+
+#[tokio::test]
+async fn aspect_default_after_error_is_noop() {
+    struct DefaultAspect;
+    impl Aspect for DefaultAspect {}
+    
+    let aspect = DefaultAspect;
+    let inv = Arc::new(Invocation::new(Operation::new("test", "test")));
+    let error = InvocationError::Cancelled;
+    aspect.after_error(&inv, &error).await;
+}
+
+#[tokio::test]
+async fn aspect_default_around_calls_before_proceed_after() {
+    struct DefaultAspect;
+    impl Aspect for DefaultAspect {}
+    
+    let aspect = DefaultAspect;
+    let inv = Arc::new(Invocation::new(Operation::new("test", "test")));
+    let next = Next::new(&[], |inv| Box::pin(async move { 
+        Ok(Box::new(42i32) as InvocationValue) 
+    }));
+    let result = aspect.around(inv, next).await;
+    assert!(result.is_ok());
+    assert_eq!(*result.unwrap().downcast::<i32>().unwrap(), 42);
+}
+
+// --- AspectAdapter coverage ---
+
+#[tokio::test]
+async fn aspect_adapter_shared_constructor() {
+    struct DefaultAspect;
+    impl Aspect for DefaultAspect {}
+    
+    let aspect = Arc::new(DefaultAspect);
+    let adapter = AspectAdapter::shared(Arc::clone(&aspect));
+    assert!(std::ptr::eq(adapter.aspect(), aspect.as_ref()));
+}
+
+#[tokio::test]
+async fn aspect_adapter_aspect_accessor() {
+    struct DefaultAspect;
+    impl Aspect for DefaultAspect {}
+    
+    let adapter = AspectAdapter::new(DefaultAspect);
+    let _aspect = adapter.aspect();
+}
+
+// --- CachingAspect coverage ---
+
+#[tokio::test]
+async fn caching_aspect_intercept_executes_target() {
+    let aspect = CachingAspect::new();
+    let inv = Arc::new(Invocation::new(Operation::new("test", "test")));
+    let next = Next::new(&[], |inv| Box::pin(async move {
+        Ok(Box::new(42i32) as InvocationValue)
+    }));
+    let result = aspect.intercept(inv, next).await;
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn caching_aspect_with_ttl() {
+    let aspect = CachingAspect::new().with_ttl(Duration::from_secs(60));
+    assert_eq!(aspect.ttl, Some(Duration::from_secs(60)));
+}
+
+#[tokio::test]
+async fn caching_aspect_with_max_size() {
+    let aspect = CachingAspect::new().with_max_size(100);
+    assert_eq!(aspect.max_size, 100);
+}
+
+#[tokio::test]
+async fn caching_aspect_size() {
+    let aspect = CachingAspect::new();
+    assert_eq!(aspect.size().await, 0);
+}
+
+// --- CircuitBreakerAspect coverage ---
+
+#[tokio::test]
+async fn circuitbreaker_closed_state_allows_calls() {
+    let aspect = CircuitBreakerAspect::new(3, Duration::from_secs(60));
+    assert!(matches!(aspect.state().await, CircuitState::Closed));
+    
+    let inv = Arc::new(Invocation::new(Operation::new("test", "test")));
+    let next = Next::new(&[], |inv| Box::pin(async move {
+        Ok(Box::new(42i32) as InvocationValue)
+    }));
+    let result = aspect.intercept(inv, next).await;
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn circuitbreaker_open_state_rejects_calls() {
+    let aspect = CircuitBreakerAspect::new(1, Duration::from_secs(60));
+    
+    // Trigger failure to open circuit
+    let inv = Arc::new(Invocation::new(Operation::new("test", "test")));
+    let next = Next::new(&[], |inv| Box::pin(async move {
+        Err(InvocationError::Cancelled)
+    }));
+    let _ = aspect.intercept(inv, next).await;
+    
+    assert!(matches!(aspect.state().await, CircuitState::Open { .. }));
+    
+    // Next call should be rejected
+    let inv = Arc::new(Invocation::new(Operation::new("test", "test")));
+    let next = Next::new(&[], |inv| Box::pin(async move {
+        Ok(Box::new(42i32) as InvocationValue)
+    }));
+    let result = aspect.intercept(inv, next).await;
+    assert!(result.is_err());
+}
+
+#[tokio::test]
+async fn circuitbreaker_half_open_state() {
+    let aspect = CircuitBreakerAspect::new(1, Duration::from_millis(100));
+    
+    // Open circuit
+    let inv = Arc::new(Invocation::new(Operation::new("test", "test")));
+    let next = Next::new(&[], |inv| Box::pin(async move {
+        Err(InvocationError::Cancelled)
+    }));
+    let _ = aspect.intercept(inv, next).await;
+    
+    // Wait for timeout
+    tokio::time::sleep(Duration::from_millis(150)).await;
+    
+    // Should transition to half-open
+    let inv = Arc::new(Invocation::new(Operation::new("test", "test")));
+    let next = Next::new(&[], |inv| Box::pin(async move {
+        Ok(Box::new(42i32) as InvocationValue)
+    }));
+    let result = aspect.intercept(inv, next).await;
+    assert!(result.is_ok());
+    assert!(matches!(aspect.state().await, CircuitState::Closed));
+}
+
+#[tokio::test]
+async fn circuitbreaker_reset() {
+    let aspect = CircuitBreakerAspect::new(1, Duration::from_secs(60));
+    
+    // Open circuit
+    let inv = Arc::new(Invocation::new(Operation::new("test", "test")));
+    let next = Next::new(&[], |inv| Box::pin(async move {
+        Err(InvocationError::Cancelled)
+    }));
+    let _ = aspect.intercept(inv, next).await;
+    assert!(matches!(aspect.state().await, CircuitState::Open { .. }));
+    
+    // Reset
+    aspect.reset().await;
+    assert!(matches!(aspect.state().await, CircuitState::Closed));
+}
+
+#[tokio::test]
+async fn circuitbreaker_half_open_failure_reopens() {
+    let aspect = CircuitBreakerAspect::new(1, Duration::from_millis(100));
+    
+    // Open circuit
+    let inv = Arc::new(Invocation::new(Operation::new("test", "test")));
+    let next = Next::new(&[], |inv| Box::pin(async move {
+        Err(InvocationError::Cancelled)
+    }));
+    let _ = aspect.intercept(inv, next).await;
+    
+    // Wait for timeout to half-open
+    tokio::time::sleep(Duration::from_millis(150)).await;
+    
+    // Fail in half-open state
+    let inv = Arc::new(Invocation::new(Operation::new("test", "test")));
+    let next = Next::new(&[], |inv| Box::pin(async move {
+        Err(InvocationError::Cancelled)
+    }));
+    let _ = aspect.intercept(inv, next).await;
+    
+    // Should be open again
+    assert!(matches!(aspect.state().await, CircuitState::Open { .. }));
+}
+
+// --- ValidationAspect coverage ---
+
+#[tokio::test]
+async fn validation_aspect_passes_when_rules_pass() {
+    let aspect = ValidationAspect::new()
+        .add_rule(Box::new(CustomValidator::new("test", |_op| Ok(()))));
+    
+    let inv = Arc::new(Invocation::new(Operation::new("test", "test")));
+    let next = Next::new(&[], |inv| Box::pin(async move {
+        Ok(Box::new(42i32) as InvocationValue)
+    }));
+    let result = aspect.intercept(inv, next).await;
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn validation_aspect_fails_when_rule_fails() {
+    let aspect = ValidationAspect::new()
+        .add_rule(Box::new(CustomValidator::new("test", |_op| {
+            Err("validation failed".to_string())
+        })));
+    
+    let inv = Arc::new(Invocation::new(Operation::new("test", "test")));
+    let next = Next::new(&[], |inv| Box::pin(async move {
+        Ok(Box::new(42i32) as InvocationValue)
+    }));
+    let result = aspect.intercept(inv, next).await;
+    assert!(result.is_err());
+}
+
+// --- DefaultPointcutAdvisor coverage ---
+
+#[test]
+fn default_pointcut_advisor_new() {
+    let advisor = DefaultPointcutAdvisor::new(
+        AnyPointcut::new(),
+        CountingInterceptor { count: Arc::new(AtomicUsize::new(0)) },
+    );
+    assert!(advisor.pointcut().matches(&Operation::new("any", "any")));
+    assert_eq!(advisor.order(), 0);
+}
+
+#[test]
+fn default_pointcut_advisor_with_order() {
+    let advisor = DefaultPointcutAdvisor::with_order(
+        AnyPointcut::new(),
+        CountingInterceptor { count: Arc::new(AtomicUsize::new(0)) },
+        10,
+    );
+    assert_eq!(advisor.order(), 10);
+}
+
+// --- InvocationPlan coverage ---
+
+#[tokio::test]
+async fn invocation_plan_invoke_success() {
+    let plan = InvocationPlanBuilder::new()
+        .build(Operation::new("test", "test"));
+    
+    let inv = Arc::new(Invocation::new(Operation::new("test", "test")));
+    let target: Arc<vernal_aop::InvocationTarget> = Arc::new(|inv| {
+        Box::pin(async move { Ok(Box::new(42i32) as InvocationValue) })
+    });
+    let result = plan.invoke(inv, target).await;
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn invocation_plan_invoke_with_interceptor() {
+    let count = Arc::new(AtomicUsize::new(0));
+    let count_clone = Arc::clone(&count);
+    
+    let mut builder = InvocationPlanBuilder::new();
+    builder.register(Advisor::new(
+        AnyPointcut::new(),
+        CountingInterceptor { count: count_clone },
+        0,
+    ));
+    let plan = builder.build(Operation::new("test", "test"));
+    
+    let inv = Arc::new(Invocation::new(Operation::new("test", "test")));
+    let target: Arc<vernal_aop::InvocationTarget> = Arc::new(|inv| {
+        Box::pin(async move { Ok(Box::new(42i32) as InvocationValue) })
+    });
+    let result = plan.invoke(inv, target).await;
+    assert!(result.is_ok());
+    assert_eq!(count.load(Ordering::Relaxed), 1);
+}
+
+// --- InvocationContext coverage ---
+
+#[tokio::test]
+async fn invocation_context_insert_and_get() {
+    let ctx = vernal_aop::InvocationContext::new();
+    ctx.insert(String::from("hello")).await;
+    let value: Option<String> = ctx.get().await;
+    assert_eq!(value, Some(String::from("hello")));
+}
+
+#[tokio::test]
+async fn invocation_context_remove() {
+    let ctx = vernal_aop::InvocationContext::new();
+    ctx.insert(42i32).await;
+    let removed: Option<i32> = ctx.remove().await;
+    assert_eq!(removed, Some(42));
+    let value: Option<i32> = ctx.get().await;
+    assert_eq!(value, None);
+}
+
+#[tokio::test]
+async fn invocation_context_contains() {
+    let ctx = vernal_aop::InvocationContext::new();
+    assert!(!ctx.contains::<i32>().await);
+    ctx.insert(42i32).await;
+    assert!(ctx.contains::<i32>().await);
+}
+
+// --- InvocationPlanCatalog coverage ---
+
+#[test]
+fn invocation_plan_catalog_deferred() {
+    let catalog = vernal_aop::InvocationPlanCatalog::deferred();
+    assert!(catalog.is_empty());
+    assert_eq!(catalog.len(), 0);
+}
+
+#[test]
+fn invocation_plan_catalog_initialize() {
+    let catalog = vernal_aop::InvocationPlanCatalog::deferred();
+    let plan = InvocationPlanBuilder::new()
+        .build(Operation::new("test", "test"));
+    catalog.initialize(Operation::new("test", "test"), plan);
+    assert_eq!(catalog.len(), 1);
+}
+
+// --- InvocationPlanBuilder coverage ---
+
+#[test]
+fn invocation_plan_builder_register() {
+    let count = Arc::new(AtomicUsize::new(0));
+    let mut builder = InvocationPlanBuilder::new();
+    builder.register(Advisor::new(
+        AnyPointcut::new(),
+        CountingInterceptor { count },
+        0,
+    ));
+    let plan = builder.build(Operation::new("test", "test"));
+    assert_eq!(plan.len(), 1);
+}
+
+// --- LocalInvocationPlan coverage ---
+
+#[tokio::test]
+async fn local_invocation_plan_invoke() {
+    let plan = vernal_aop::LocalInvocationPlanBuilder::new()
+        .build(Operation::new("test", "test"));
+    
+    let inv = Arc::new(Invocation::new(Operation::new("test", "test")));
+    let result = plan.invoke(inv).await;
+    assert!(result.is_ok());
+}
+
+// --- LocalInvocationContext coverage ---
+
+#[test]
+fn local_invocation_context_new() {
+    let ctx = vernal_aop::LocalInvocationContext::new();
+    assert_eq!(ctx.method(), "unknown");
+}
+
+// --- Operation coverage ---
+
+#[test]
+fn operation_new() {
+    let op = Operation::new("component", "method");
+    assert_eq!(op.component(), "component");
+    assert_eq!(op.method(), "method");
+}
+
+#[test]
+fn operation_display() {
+    let op = Operation::new("component", "method");
+    assert_eq!(format!("{}", op), "component::method");
+}
+
+// --- OperationMetadata coverage ---
+
+#[test]
+fn operation_metadata_empty() {
+    let meta = OperationMetadata::empty();
+    assert!(meta.is_empty());
+    assert_eq!(meta.tags().len(), 0);
+    assert!(meta.qualifier().is_none());
+}
+
+#[test]
+fn operation_metadata_with_tag() {
+    let meta = OperationMetadata::empty()
+        .with_tag("test").unwrap();
+    assert!(!meta.is_empty());
+    assert!(meta.has_tag("test"));
+}
+
+#[test]
+fn operation_metadata_with_qualifier() {
+    let meta = OperationMetadata::empty()
+        .with_qualifier("primary").unwrap();
+    assert_eq!(meta.qualifier(), Some("primary"));
+}
+
+// --- InvocationError coverage ---
+
+#[test]
+fn invocation_error_cancelled_display() {
+    let err = InvocationError::Cancelled;
+    assert_eq!(format!("{}", err), "invocation cancelled");
+}
+
+#[test]
+fn invocation_error_plan_mismatch_display() {
+    let err = InvocationError::PlanMismatch {
+        expected: Operation::new("a", "b"),
+        actual: Operation::new("c", "d"),
+    };
+    assert!(format!("{}", err).contains("plan mismatch"));
+}
+
+#[test]
+fn invocation_error_plan_not_found_display() {
+    let err = InvocationError::PlanNotFound {
+        operation: Operation::new("a", "b"),
+    };
+    assert!(format!("{}", err).contains("plan not found"));
+}
+
+#[test]
+fn invocation_error_target_display() {
+    let err = InvocationError::Target {
+        source: Box::new(io::Error::new(io::ErrorKind::Other, "test")),
+    };
+    assert!(format!("{}", err).contains("target failed"));
+}
+
+// --- SimpleInterceptor coverage ---
+
+#[test]
+fn simple_interceptor_default_before() {
+    struct DefaultInterceptor;
+    impl SimpleInterceptor for DefaultInterceptor {}
+    
+    let interceptor = DefaultInterceptor;
+    let ctx = SimpleInvocationContext::new("test");
+    assert!(interceptor.before(&ctx).is_ok());
+}
+
+#[test]
+fn simple_interceptor_default_after() {
+    struct DefaultInterceptor;
+    impl SimpleInterceptor for DefaultInterceptor {}
+    
+    let interceptor = DefaultInterceptor;
+    let ctx = SimpleInvocationContext::new("test");
+    let result = SimpleCallResult::ok();
+    interceptor.after(&ctx, &result);
+}
+
+// --- SimpleCallResult coverage ---
+
+#[test]
+fn simple_call_result_ok() {
+    let result = SimpleCallResult::ok();
+    assert!(result.is_ok());
+    assert!(!result.is_err());
+    assert!(result.error().is_none());
+}
+
+#[test]
+fn simple_call_result_err() {
+    let result = SimpleCallResult::err(Box::new(io::Error::new(io::ErrorKind::Other, "test")));
+    assert!(!result.is_ok());
+    assert!(result.is_err());
+    assert!(result.error().is_some());
+}
+
+// --- SimpleInvocationContext coverage ---
+
+#[test]
+fn simple_invocation_context_method() {
+    let ctx = SimpleInvocationContext::new("test_method");
+    assert_eq!(ctx.method(), "test_method");
+}
+
+// --- SimpleInterceptorChain coverage ---
+
+#[test]
+fn simple_interceptor_chain_new() {
+    let chain = SimpleInterceptorChain::new();
+    assert!(chain.is_empty());
+    assert_eq!(chain.len(), 0);
+}
+
+#[test]
+fn simple_interceptor_chain_push() {
+    struct NopInterceptor;
+    impl SimpleInterceptor for NopInterceptor {}
+    
+    let mut chain = SimpleInterceptorChain::new();
+    chain.push(Arc::new(NopInterceptor));
+    assert_eq!(chain.len(), 1);
+}
+
+// --- BorrowedInvocationFutureTarget coverage ---
+
+#[test]
+fn borrowed_invocation_future_target_new() {
+    let target = vernal_aop::BorrowedInvocationFutureTarget::new(
+        Operation::new("test", "test"),
+        Box::new(|inv| Box::pin(async move { Ok(Box::new(42i32) as InvocationValue) })),
+    );
+    assert_eq!(target.operation().component(), "test");
+}
+
+// --- PointcutExt coverage ---
+
+#[test]
+fn pointcut_ext_and() {
+    let a = AnyPointcut::new();
+    let b = AnyPointcut::new();
+    let combined = a.and(b);
+    assert!(combined.matches(&Operation::new("any", "any")));
+}
+
+#[test]
+fn pointcut_ext_or() {
+    let a = AnyPointcut::new();
+    let b = AnyPointcut::new();
+    let combined = a.or(b);
+    assert!(combined.matches(&Operation::new("any", "any")));
+}
+
+#[test]
+fn pointcut_ext_not() {
+    let a = AnyPointcut::new();
+    let negated = a.not();
+    assert!(!negated.matches(&Operation::new("any", "any")));
+}
+
+// --- PointcutExpr DSL coverage ---
+
+use vernal_aop::pointcut::dsl::{PointcutExpr, parse_pointcut_expr, PointcutMatcher};
+
+#[test]
+fn pointcut_expr_parse_execution() {
+    let expr = parse_pointcut_expr("execution(pub fn save(..))").unwrap();
+    assert!(expr.matches_operation(&Operation::new("test", "save")));
+}
+
+#[test]
+fn pointcut_expr_parse_within() {
+    let expr = parse_pointcut_expr("within(crate::api)").unwrap();
+    assert!(expr.matches_operation(&Operation::new("crate::api", "test")));
+}
+
+#[test]
+fn pointcut_expr_parse_and() {
+    let expr = parse_pointcut_expr("execution(pub fn save(..)) && within(crate::api)").unwrap();
+    assert!(expr.matches_operation(&Operation::new("crate::api", "save")));
+}
+
+#[test]
+fn pointcut_expr_parse_or() {
+    let expr = parse_pointcut_expr("execution(pub fn save(..)) || execution(pub fn delete(..))").unwrap();
+    assert!(expr.matches_operation(&Operation::new("test", "save")));
+    assert!(expr.matches_operation(&Operation::new("test", "delete")));
+}
+
+#[test]
+fn pointcut_expr_parse_not() {
+    let expr = parse_pointcut_expr("!execution(pub fn save(..))").unwrap();
+    assert!(!expr.matches_operation(&Operation::new("test", "save")));
+    assert!(expr.matches_operation(&Operation::new("test", "delete")));
+}
+
+#[test]
+fn pointcut_expr_parse_tag() {
+    let expr = parse_pointcut_expr("tag(secured)").unwrap();
+    assert!(expr.matches_operation(&Operation::new("test", "test")));
+}
+
+#[test]
+fn pointcut_expr_parse_qualifier() {
+    let expr = parse_pointcut_expr("qualifier(primary)").unwrap();
+    assert!(expr.matches_operation(&Operation::new("test", "test")));
+}
+
+// --- InvocationId coverage ---
+
+#[test]
+fn invocation_id_next() {
+    let id1 = vernal_aop::InvocationId::next();
+    let id2 = vernal_aop::InvocationId::next();
+    assert!(id2 > id1);
+}
+
+// --- InvocationOutput coverage ---
+
+#[test]
+fn invocation_output_trait() {
+    fn assert_impl<T: vernal_aop::InvocationOutput>() {}
+    assert_impl::<i32>();
+    assert_impl::<String>();
+}
