@@ -1,8 +1,9 @@
 //! 属性/字段引用。
 //!
-//! 对标 Spring 的 `PropertyOrFieldReference`：`name`、`age`
+//! 对标 Spring 的 `PropertyOrFieldReference`：`name`、`age`、`?.name`
 
 use super::spel_node::SpelNode;
+use super::super::expression_state::ExpressionState;
 use crate::evaluation_context::EvaluationContext;
 use crate::evaluation_exception::EvaluationException;
 use crate::typed_value::TypedValue;
@@ -10,7 +11,7 @@ use crate::typed_value::TypedValue;
 /// 属性/字段引用节点。
 ///
 /// 通过 PropertyAccessor 读取目标对象的属性。
-/// 对标 Spring 的 `org.springframework.expression.spel.ast.PropertyOrFieldReference`。
+/// 支持 null-safe 访问（`?.name`）：目标为 null 时返回 null 而非报错。
 pub struct PropertyOrFieldReference {
     name: String,
     null_safe: bool,
@@ -26,6 +27,11 @@ impl PropertyOrFieldReference {
     pub fn name(&self) -> &str {
         &self.name
     }
+
+    #[must_use]
+    pub fn is_null_safe(&self) -> bool {
+        self.null_safe
+    }
 }
 
 impl SpelNode for PropertyOrFieldReference {
@@ -33,11 +39,25 @@ impl SpelNode for PropertyOrFieldReference {
         &self,
         context: &dyn EvaluationContext,
     ) -> Result<TypedValue, EvaluationException> {
-        let root = context.root_object().clone();
-        for accessor in context.property_accessors() {
-            if accessor.can_read(context, &root, &self.name) {
+        let mut state = ExpressionState::new(context);
+        self.get_value_state(&mut state)
+    }
+
+    fn get_value_state(
+        &self,
+        state: &mut ExpressionState,
+    ) -> Result<TypedValue, EvaluationException> {
+        let root = state.active_context_object().clone();
+
+        // null-safe 检查：目标为 null 时返回 null（对标 Spring PropertyOrFieldReference）
+        if self.null_safe && root.is_null() {
+            return Ok(TypedValue::null());
+        }
+
+        for accessor in state.property_accessors() {
+            if accessor.can_read(state.evaluation_context(), &root, &self.name) {
                 return accessor
-                    .read(context, &root, &self.name)
+                    .read(state.evaluation_context(), &root, &self.name)
                     .map_err(|e| EvaluationException::new(&self.name, None, e.to_string()));
             }
         }
@@ -48,14 +68,22 @@ impl SpelNode for PropertyOrFieldReference {
         ))
     }
 
+    fn is_null_safe(&self) -> bool {
+        self.null_safe
+    }
+
     fn is_writable(
         &self,
-        _context: &dyn crate::evaluation_context::EvaluationContext,
+        _context: &dyn EvaluationContext,
     ) -> bool {
         true
     }
 
     fn to_string_ast(&self) -> String {
-        self.name.clone()
+        if self.null_safe {
+            format!("?.{}", self.name)
+        } else {
+            self.name.clone()
+        }
     }
 }

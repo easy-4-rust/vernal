@@ -18,12 +18,19 @@ use crate::typed_value::{ExpressionValue, TypeDescriptor, TypedValue};
 /// 索引访问节点。
 pub struct Indexer {
     index: Box<dyn SpelNode>,
+    null_safe: bool,
 }
 
 impl Indexer {
     #[must_use]
     pub fn new(index: Box<dyn SpelNode>) -> Self {
-        Self { index }
+        Self { index, null_safe: false }
+    }
+
+    /// 创建 null-safe Indexer 节点。
+    #[must_use]
+    pub fn new_null_safe(index: Box<dyn SpelNode>) -> Self {
+        Self { index, null_safe: true }
     }
 }
 
@@ -36,12 +43,21 @@ impl SpelNode for Indexer {
         self.get_value_state(&mut state)
     }
 
+    fn is_null_safe(&self) -> bool {
+        self.null_safe
+    }
+
     fn get_value_state(
         &self,
         state: &mut ExpressionState,
     ) -> Result<TypedValue, EvaluationException> {
         let index = self.index.get_value_state(state)?;
         let target = state.active_context_object().clone();
+
+        // null-safe 检查（对标 Spring Indexer null-safe）
+        if self.null_safe && target.is_null() {
+            return Ok(TypedValue::null());
+        }
 
         match (target.value(), index.value()) {
             // List[Int] — 列表索引

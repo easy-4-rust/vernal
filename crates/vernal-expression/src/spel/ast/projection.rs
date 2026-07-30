@@ -20,13 +20,20 @@ use crate::typed_value::{ExpressionValue, TypeDescriptor, TypedValue};
 /// 投影运算符节点。
 pub struct Projection {
     expression: Box<dyn SpelNode>,
+    null_safe: bool,
 }
 
 impl Projection {
     /// 创建 Projection 节点。
     #[must_use]
     pub fn new(expression: Box<dyn SpelNode>) -> Self {
-        Self { expression }
+        Self { expression, null_safe: false }
+    }
+
+    /// 创建 null-safe Projection 节点。
+    #[must_use]
+    pub fn new_null_safe(expression: Box<dyn SpelNode>) -> Self {
+        Self { expression, null_safe: true }
     }
 
     /// 获取投影表达式引用。
@@ -105,11 +112,21 @@ impl SpelNode for Projection {
         self.get_value_state(&mut state)
     }
 
+    fn is_null_safe(&self) -> bool {
+        self.null_safe
+    }
+
     fn get_value_state(
         &self,
         state: &mut ExpressionState,
     ) -> Result<TypedValue, EvaluationException> {
         let source = state.active_context_object().clone();
+
+        // null-safe 检查（对标 Spring Projection null-safe）
+        if self.null_safe && source.is_null() {
+            return Ok(TypedValue::null());
+        }
+
         match source.value() {
             ExpressionValue::List(items) => self.project_list(items, state),
             ExpressionValue::Map(entries) => self.project_map(entries, state),

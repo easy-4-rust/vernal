@@ -33,13 +33,20 @@ pub enum SelectionVariant {
 pub struct Selection {
     criteria: Box<dyn SpelNode>,
     variant: SelectionVariant,
+    null_safe: bool,
 }
 
 impl Selection {
     /// 创建 Selection 节点。
     #[must_use]
     pub fn new(criteria: Box<dyn SpelNode>, variant: SelectionVariant) -> Self {
-        Self { criteria, variant }
+        Self { criteria, variant, null_safe: false }
+    }
+
+    /// 创建 null-safe Selection 节点。
+    #[must_use]
+    pub fn new_null_safe(criteria: Box<dyn SpelNode>, variant: SelectionVariant) -> Self {
+        Self { criteria, variant, null_safe: true }
     }
 
     /// 获取过滤条件引用。
@@ -177,11 +184,21 @@ impl SpelNode for Selection {
         self.get_value_state(&mut state)
     }
 
+    fn is_null_safe(&self) -> bool {
+        self.null_safe
+    }
+
     fn get_value_state(
         &self,
         state: &mut ExpressionState,
     ) -> Result<TypedValue, EvaluationException> {
         let source = state.active_context_object().clone();
+
+        // null-safe 检查（对标 Spring Selection null-safe）
+        if self.null_safe && source.is_null() {
+            return Ok(TypedValue::null());
+        }
+
         match source.value() {
             ExpressionValue::List(items) => self.select_list(items, state),
             ExpressionValue::Map(entries) => self.select_map(entries, state),
