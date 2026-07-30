@@ -208,3 +208,4 @@ pub mod scope_state;
 pub mod scope_close_failure;
 pub mod scope_future;
 pub use scope_state::ScopeState;
+pub use bean_descriptor::PropertyDescriptor;
