@@ -35,6 +35,10 @@ impl SpelNode for VariableReference {
         }
     }
 
+    fn is_writable(&self, _context: &dyn EvaluationContext) -> bool {
+        true
+    }
+
     fn to_string_ast(&self) -> String {
         format!("#{}", self.name)
     }

@@ -1,6 +1,5 @@
 //! 赋值表达式节点（对标 Spring `Assign`）。
 //!
-//! 对标 Java `org.springframework.expression.spel.ast.Assign`。
 //! 求值右操作数，将其赋值给左操作数，返回赋值后的值。
 //!
 //! # Spring 行为
@@ -11,6 +10,7 @@
 //! - 返回赋值后的值
 
 use super::spel_node::SpelNode;
+use super::super::expression_state::ExpressionState;
 use crate::evaluation_context::EvaluationContext;
 use crate::evaluation_exception::EvaluationException;
 use crate::spel::spel_message::SpelMessage;
@@ -37,8 +37,16 @@ impl SpelNode for Assign {
         &self,
         context: &dyn EvaluationContext,
     ) -> Result<TypedValue, EvaluationException> {
+        let mut state = ExpressionState::new(context);
+        self.get_value_state(&mut state)
+    }
+
+    fn get_value_state(
+        &self,
+        state: &mut ExpressionState,
+    ) -> Result<TypedValue, EvaluationException> {
         // 检查赋值是否启用
-        if !context.is_assignment_enabled() {
+        if !state.evaluation_context().is_assignment_enabled() {
             return Err(EvaluationException::new(
                 "",
                 Some(self.start_position() as i32),
@@ -47,10 +55,10 @@ impl SpelNode for Assign {
         }
 
         // 求值右操作数
-        let value = self.right.get_value(context)?;
+        let value = self.right.get_value_state(state)?;
 
         // 检查左操作数是否可写
-        if !self.left.is_writable(context) {
+        if !self.left.is_writable(state.evaluation_context()) {
             return Err(EvaluationException::new(
                 "",
                 Some(self.left.start_position() as i32),
@@ -58,10 +66,31 @@ impl SpelNode for Assign {
             ));
         }
 
-        // Phase F: 通过 left.getValueRef().setValue() 完成赋值
-        // 当前简化：对于变量引用，通过 context.set_variable 赋值
-        // 对于属性引用，通过 PropertyAccessor.write 赋值
-        // 这些在完整的 ExpressionState 链路中实现
+        // 写回：通过属性访问器或变量设置
+        // 对标 Spring: left.getValueRef(state).setValue(value)
+        let target = state.active_context_object().clone();
+        let left_str = self.left.to_string_ast();
+
+        // 尝试通过属性访问器写回
+        let accessors = state.property_accessors();
+        for accessor in &accessors {
+            if accessor.can_write(state.evaluation_context(), &target, &left_str) {
+                accessor
+                    .write(state.evaluation_context(), &target, &left_str, &value)
+                    .map_err(|e| {
+                        EvaluationException::new(
+                            "",
+                            None,
+                            SpelMessage::ExceptionDuringPropertyWrite
+                                .format_message(&[&left_str, &e.to_string()]),
+                        )
+                    })?;
+                return Ok(value);
+            }
+        }
+
+        // 尝试通过变量设置写回
+        state.set_variable(&left_str, value.clone());
 
         // 返回赋值后的值
         Ok(value)
@@ -90,7 +119,6 @@ mod tests {
 
     #[test]
     fn assign_returns_rhs_with_writable_left() {
-        // 使用 PropertyOrFieldReference 作为左操作数（属性引用可写）
         let left = crate::spel::ast::property_or_field_reference::PropertyOrFieldReference::new(
             "x".to_string(),
             false,
@@ -104,7 +132,6 @@ mod tests {
 
     #[test]
     fn assign_literal_left_fails() {
-        // 字面量不可写
         let node = Assign::new(
             Box::new(IntLiteral::new(0, "0".to_string())),
             Box::new(IntLiteral::new(42, "42".to_string())),
@@ -124,5 +151,16 @@ mod tests {
         let ctx = SimpleEvaluationContext::for_read_only(TypedValue::null());
         let result = node.get_value(&ctx);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn assign_writes_to_variable() {
+        use crate::spel::ast::variable_reference::VariableReference;
+        let left = VariableReference::new("myVar".to_string());
+        let right = IntLiteral::new(99, "99".to_string());
+        let node = Assign::new(Box::new(left), Box::new(right));
+        let mut ctx = StandardEvaluationContext::new(TypedValue::null());
+        let result = node.get_value(&ctx).unwrap();
+        assert_eq!(*result.value(), ExpressionValue::Int(99));
     }
 }
