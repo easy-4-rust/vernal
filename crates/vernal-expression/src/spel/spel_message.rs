@@ -468,39 +468,744 @@ pub enum MessageKind {
 mod tests {
     use super::*;
 
+    /// 验证所有 86 个变体都有有效 code 和非空 default_message。
     #[test]
-    fn every_variant_has_code() {
-        // Smoke test: ensure all 87 variants are reachable
-        let codes = [
+    fn all_variants_have_valid_code_and_message() {
+        let all = [
             SpelMessage::TypeConversionError,
             SpelMessage::ConstructorNotFound,
+            SpelMessage::ConstructorInvocationProblem,
             SpelMessage::MethodNotFound,
             SpelMessage::TypeNotFound,
+            SpelMessage::FunctionNotDefined,
+            SpelMessage::PropertyOrFieldNotReadableOnNull,
             SpelMessage::PropertyOrFieldNotReadable,
+            SpelMessage::PropertyOrFieldNotWritableOnNull,
+            SpelMessage::PropertyOrFieldNotWritable,
+            SpelMessage::MethodCallOnNullObjectNotAllowed,
+            SpelMessage::CannotIndexIntoNullValue,
+            SpelMessage::NotComparable,
+            SpelMessage::IncorrectNumberOfArgumentsToFunction,
+            SpelMessage::InvalidTypeForSelection,
+            SpelMessage::ResultOfSelectionCriteriaIsNotBoolean,
+            SpelMessage::BetweenRightOperandMustBeTwoElementList,
+            SpelMessage::InvalidPattern,
+            SpelMessage::ProjectionNotSupportedOnType,
+            SpelMessage::ArgListShouldNotBeEvaluated,
+            SpelMessage::ExceptionDuringPropertyRead,
+            SpelMessage::FunctionReferenceCannotBeInvoked,
+            SpelMessage::ExceptionDuringFunctionCall,
+            SpelMessage::ArrayIndexOutOfBounds,
+            SpelMessage::CollectionIndexOutOfBounds,
+            SpelMessage::StringIndexOutOfBounds,
+            SpelMessage::IndexingNotSupportedForType,
+            SpelMessage::InstanceOfOperatorNeedsClassOperand,
+            SpelMessage::ExceptionDuringMethodInvocation,
             SpelMessage::OperatorNotSupportedBetweenTypes,
+            SpelMessage::ProblemLocatingMethod,
+            SpelMessage::SetValueNotSupported,
+            SpelMessage::MultiplePossibleMethods,
+            SpelMessage::ExceptionDuringPropertyWrite,
+            SpelMessage::NotAnInteger,
+            SpelMessage::NotALong,
+            SpelMessage::InvalidFirstOperandForMatchesOperator,
+            SpelMessage::InvalidSecondOperandForMatchesOperator,
+            SpelMessage::FunctionMustBeStatic,
             SpelMessage::NotAReal,
+            SpelMessage::MoreInput,
+            SpelMessage::RightOperandProblem,
+            SpelMessage::NotExpectedToken,
             SpelMessage::Ood,
+            SpelMessage::NonTerminatingDoubleQuotedString,
+            SpelMessage::NonTerminatingQuotedString,
+            SpelMessage::MissingLeadingZeroForNumber,
+            SpelMessage::RealCannotBeLong,
+            SpelMessage::UnexpectedDataAfterDot,
+            SpelMessage::MissingConstructorArguments,
+            SpelMessage::RunOutOfArguments,
+            SpelMessage::UnableToGrowCollection,
+            SpelMessage::UnableToGrowCollectionUnknownElementType,
+            SpelMessage::UnableToCreateListForIndexing,
+            SpelMessage::UnableToCreateMapForIndexing,
+            SpelMessage::UnableToDynamicallyCreateObject,
+            SpelMessage::NoBeanResolverRegistered,
+            SpelMessage::ExceptionDuringBeanResolution,
+            SpelMessage::InvalidBeanReference,
+            SpelMessage::TypeNameExpectedForArrayConstruction,
+            SpelMessage::IncorrectElementTypeForArray,
+            SpelMessage::MultidimArrayInitializerNotSupported,
+            SpelMessage::MissingArrayDimension,
+            SpelMessage::InitializerLengthIncorrect,
+            SpelMessage::UnexpectedEscapeChar,
+            SpelMessage::OperandNotIncrementable,
+            SpelMessage::OperandNotDecrementable,
+            SpelMessage::NotAssignable,
+            SpelMessage::MissingCharacter,
+            SpelMessage::LeftOperandProblem,
+            SpelMessage::MissingSelectionExpression,
+            SpelMessage::ExceptionRunningCompiledExpression,
+            SpelMessage::FlawedPattern,
+            SpelMessage::ExceptionCompilingExpression,
+            SpelMessage::MaxArrayElementsThresholdExceeded,
+            SpelMessage::MaxRepeatedTextSizeExceeded,
+            SpelMessage::MaxRegexLengthExceeded,
+            SpelMessage::MaxConcatenatedStringLengthExceeded,
+            SpelMessage::MaxExpressionLengthExceeded,
+            SpelMessage::VariableAssignmentNotSupported,
+            SpelMessage::NegativeRepeatedTextCount,
             SpelMessage::UnsupportedCharacter,
+            SpelMessage::ExceptionDuringIndexRead,
+            SpelMessage::ExceptionDuringIndexWrite,
             SpelMessage::MaxOperationsExceeded,
             SpelMessage::InternalError,
         ];
-        for c in codes {
-            assert!(c.code() >= 1001, "code out of range for {c:?}");
-            assert!(!c.default_message().is_empty());
+        assert_eq!(all.len(), 86, "expected 86 SpelMessage variants");
+        for m in all {
+            assert!(m.code() >= 1001, "code out of range for {m:?}");
+            assert!(!m.default_message().is_empty(), "empty message for {m:?}");
+            assert_eq!(m.kind(), MessageKind::Error);
         }
     }
 
+    /// 验证 code 唯一性（无冲突）。
     #[test]
-    fn format_message_substitutes() {
-        let m = SpelMessage::TypeConversionError;
-        let s = m.format_message(&["int", "String"]);
+    fn codes_are_unique() {
+        let all_codes = [
+            SpelMessage::TypeConversionError.code(),
+            SpelMessage::ConstructorNotFound.code(),
+            SpelMessage::ConstructorInvocationProblem.code(),
+            SpelMessage::MethodNotFound.code(),
+            SpelMessage::TypeNotFound.code(),
+            SpelMessage::FunctionNotDefined.code(),
+            SpelMessage::PropertyOrFieldNotReadableOnNull.code(),
+            SpelMessage::PropertyOrFieldNotReadable.code(),
+            SpelMessage::PropertyOrFieldNotWritableOnNull.code(),
+            SpelMessage::PropertyOrFieldNotWritable.code(),
+            SpelMessage::MethodCallOnNullObjectNotAllowed.code(),
+            SpelMessage::CannotIndexIntoNullValue.code(),
+            SpelMessage::NotComparable.code(),
+            SpelMessage::IncorrectNumberOfArgumentsToFunction.code(),
+            SpelMessage::InvalidTypeForSelection.code(),
+            SpelMessage::ResultOfSelectionCriteriaIsNotBoolean.code(),
+            SpelMessage::BetweenRightOperandMustBeTwoElementList.code(),
+            SpelMessage::InvalidPattern.code(),
+            SpelMessage::ProjectionNotSupportedOnType.code(),
+            SpelMessage::ArgListShouldNotBeEvaluated.code(),
+            SpelMessage::ExceptionDuringPropertyRead.code(),
+            SpelMessage::FunctionReferenceCannotBeInvoked.code(),
+            SpelMessage::ExceptionDuringFunctionCall.code(),
+            SpelMessage::ArrayIndexOutOfBounds.code(),
+            SpelMessage::CollectionIndexOutOfBounds.code(),
+            SpelMessage::StringIndexOutOfBounds.code(),
+            SpelMessage::IndexingNotSupportedForType.code(),
+            SpelMessage::InstanceOfOperatorNeedsClassOperand.code(),
+            SpelMessage::ExceptionDuringMethodInvocation.code(),
+            SpelMessage::OperatorNotSupportedBetweenTypes.code(),
+            SpelMessage::ProblemLocatingMethod.code(),
+            SpelMessage::SetValueNotSupported.code(),
+            SpelMessage::MultiplePossibleMethods.code(),
+            SpelMessage::ExceptionDuringPropertyWrite.code(),
+            SpelMessage::NotAnInteger.code(),
+            SpelMessage::NotALong.code(),
+            SpelMessage::InvalidFirstOperandForMatchesOperator.code(),
+            SpelMessage::InvalidSecondOperandForMatchesOperator.code(),
+            SpelMessage::FunctionMustBeStatic.code(),
+            SpelMessage::NotAReal.code(),
+            SpelMessage::MoreInput.code(),
+            SpelMessage::RightOperandProblem.code(),
+            SpelMessage::NotExpectedToken.code(),
+            SpelMessage::Ood.code(),
+            SpelMessage::NonTerminatingDoubleQuotedString.code(),
+            SpelMessage::NonTerminatingQuotedString.code(),
+            SpelMessage::MissingLeadingZeroForNumber.code(),
+            SpelMessage::RealCannotBeLong.code(),
+            SpelMessage::UnexpectedDataAfterDot.code(),
+            SpelMessage::MissingConstructorArguments.code(),
+            SpelMessage::RunOutOfArguments.code(),
+            SpelMessage::UnableToGrowCollection.code(),
+            SpelMessage::UnableToGrowCollectionUnknownElementType.code(),
+            SpelMessage::UnableToCreateListForIndexing.code(),
+            SpelMessage::UnableToCreateMapForIndexing.code(),
+            SpelMessage::UnableToDynamicallyCreateObject.code(),
+            SpelMessage::NoBeanResolverRegistered.code(),
+            SpelMessage::ExceptionDuringBeanResolution.code(),
+            SpelMessage::InvalidBeanReference.code(),
+            SpelMessage::TypeNameExpectedForArrayConstruction.code(),
+            SpelMessage::IncorrectElementTypeForArray.code(),
+            SpelMessage::MultidimArrayInitializerNotSupported.code(),
+            SpelMessage::MissingArrayDimension.code(),
+            SpelMessage::InitializerLengthIncorrect.code(),
+            SpelMessage::UnexpectedEscapeChar.code(),
+            SpelMessage::OperandNotIncrementable.code(),
+            SpelMessage::OperandNotDecrementable.code(),
+            SpelMessage::NotAssignable.code(),
+            SpelMessage::MissingCharacter.code(),
+            SpelMessage::LeftOperandProblem.code(),
+            SpelMessage::MissingSelectionExpression.code(),
+            SpelMessage::ExceptionRunningCompiledExpression.code(),
+            SpelMessage::FlawedPattern.code(),
+            SpelMessage::ExceptionCompilingExpression.code(),
+            SpelMessage::MaxArrayElementsThresholdExceeded.code(),
+            SpelMessage::MaxRepeatedTextSizeExceeded.code(),
+            SpelMessage::MaxRegexLengthExceeded.code(),
+            SpelMessage::MaxConcatenatedStringLengthExceeded.code(),
+            SpelMessage::MaxExpressionLengthExceeded.code(),
+            SpelMessage::VariableAssignmentNotSupported.code(),
+            SpelMessage::NegativeRepeatedTextCount.code(),
+            SpelMessage::UnsupportedCharacter.code(),
+            SpelMessage::ExceptionDuringIndexRead.code(),
+            SpelMessage::ExceptionDuringIndexWrite.code(),
+            SpelMessage::MaxOperationsExceeded.code(),
+            SpelMessage::InternalError.code(),
+        ];
+        let mut sorted = all_codes.to_vec();
+        sorted.sort();
+        sorted.dedup();
+        assert_eq!(all_codes.len(), sorted.len(), "duplicate codes detected");
+    }
+
+    // ── format_message 测试 ──────────────────────────────────────────
+
+    #[test]
+    fn format_type_conversion_error() {
+        let s = SpelMessage::TypeConversionError.format_message(&["int", "String"]);
         assert_eq!(s, "EL1001E: Type conversion problem, cannot convert from int to String");
     }
 
     #[test]
-    fn format_message_no_inserts() {
-        let m = SpelMessage::Ood;
-        let s = m.format_message(&[]);
+    fn format_constructor_not_found() {
+        let s = SpelMessage::ConstructorNotFound.format_message(&["MyClass", "[String, int]"]);
+        assert!(s.starts_with("EL1002E:"));
+        assert!(s.contains("MyClass"));
+        assert!(s.contains("[String, int]"));
+    }
+
+    #[test]
+    fn format_method_not_found() {
+        let s = SpelMessage::MethodNotFound.format_message(&["foo", "Bar"]);
+        assert!(s.starts_with("EL1004E:"));
+        assert!(s.contains("foo"));
+        assert!(s.contains("Bar"));
+    }
+
+    #[test]
+    fn format_type_not_found() {
+        let s = SpelMessage::TypeNotFound.format_message(&["com.example.Missing"]);
+        assert!(s.starts_with("EL1005E:"));
+        assert!(s.contains("com.example.Missing"));
+    }
+
+    #[test]
+    fn format_function_not_defined() {
+        let s = SpelMessage::FunctionNotDefined.format_message(&["myFunc"]);
+        assert!(s.starts_with("EL1006E:"));
+        assert!(s.contains("myFunc"));
+    }
+
+    #[test]
+    fn format_property_on_null() {
+        let s = SpelMessage::PropertyOrFieldNotReadableOnNull.format_message(&["name"]);
+        assert!(s.starts_with("EL1007E:"));
+        assert!(s.contains("name"));
+    }
+
+    #[test]
+    fn format_property_not_readable() {
+        let s = SpelMessage::PropertyOrFieldNotReadable.format_message(&["age", "Person"]);
+        assert!(s.starts_with("EL1008E:"));
+        assert!(s.contains("age"));
+        assert!(s.contains("Person"));
+    }
+
+    #[test]
+    fn format_property_not_writable_on_null() {
+        let s = SpelMessage::PropertyOrFieldNotWritableOnNull.format_message(&["x"]);
+        assert!(s.starts_with("EL1009E:"));
+    }
+
+    #[test]
+    fn format_property_not_writable() {
+        let s = SpelMessage::PropertyOrFieldNotWritable.format_message(&["x", "Foo"]);
+        assert!(s.starts_with("EL1010E:"));
+    }
+
+    #[test]
+    fn format_method_call_on_null() {
+        let s = SpelMessage::MethodCallOnNullObjectNotAllowed.format_message(&["toString"]);
+        assert!(s.starts_with("EL1011E:"));
+    }
+
+    #[test]
+    fn format_not_comparable() {
+        let s = SpelMessage::NotComparable.format_message(&["String", "Integer"]);
+        assert!(s.starts_with("EL1013E:"));
+        assert!(s.contains("String"));
+        assert!(s.contains("Integer"));
+    }
+
+    #[test]
+    fn format_between_right_operand() {
+        let s = SpelMessage::BetweenRightOperandMustBeTwoElementList.format_message(&[]);
+        assert!(s.starts_with("EL1017E:"));
+        assert!(s.contains("two-element"));
+    }
+
+    #[test]
+    fn format_invalid_pattern() {
+        let s = SpelMessage::InvalidPattern.format_message(&["[invalid"]);
+        assert!(s.starts_with("EL1018E:"));
+        assert!(s.contains("[invalid"));
+    }
+
+    #[test]
+    fn format_array_index_out_of_bounds() {
+        let s = SpelMessage::ArrayIndexOutOfBounds.format_message(&["5", "10"]);
+        assert!(s.starts_with("EL1024E:"));
+        assert!(s.contains("5"));
+        assert!(s.contains("10"));
+    }
+
+    #[test]
+    fn format_collection_index_out_of_bounds() {
+        let s = SpelMessage::CollectionIndexOutOfBounds.format_message(&["3", "7"]);
+        assert!(s.starts_with("EL1025E:"));
+    }
+
+    #[test]
+    fn format_string_index_out_of_bounds() {
+        let s = SpelMessage::StringIndexOutOfBounds.format_message(&["4", "20"]);
+        assert!(s.starts_with("EL1026E:"));
+    }
+
+    #[test]
+    fn format_indexing_not_supported() {
+        let s = SpelMessage::IndexingNotSupportedForType.format_message(&["MyType"]);
+        assert!(s.starts_with("EL1027E:"));
+    }
+
+    #[test]
+    fn format_instanceof_needs_class() {
+        let s = SpelMessage::InstanceOfOperatorNeedsClassOperand.format_message(&["String"]);
+        assert!(s.starts_with("EL1028E:"));
+    }
+
+    #[test]
+    fn format_operator_not_supported() {
+        let s = SpelMessage::OperatorNotSupportedBetweenTypes.format_message(&["+", "String", "Boolean"]);
+        assert!(s.starts_with("EL1030E:"));
+        assert!(s.contains("+"));
+    }
+
+    #[test]
+    fn format_not_an_integer() {
+        let s = SpelMessage::NotAnInteger.format_message(&["abc"]);
+        assert!(s.starts_with("EL1035E:"));
+        assert!(s.contains("abc"));
+    }
+
+    #[test]
+    fn format_not_a_long() {
+        let s = SpelMessage::NotALong.format_message(&["xyz"]);
+        assert!(s.starts_with("EL1036E:"));
+    }
+
+    #[test]
+    fn format_not_a_real() {
+        let s = SpelMessage::NotAReal.format_message(&["abc"]);
+        assert!(s.starts_with("EL1040E:"));
+    }
+
+    #[test]
+    fn format_more_input() {
+        let s = SpelMessage::MoreInput.format_message(&["extra stuff"]);
+        assert!(s.starts_with("EL1041E:"));
+        assert!(s.contains("extra stuff"));
+    }
+
+    #[test]
+    fn format_not_expected_token() {
+        let s = SpelMessage::NotExpectedToken.format_message(&["'+'", "'*'"]);
+        assert!(s.starts_with("EL1043E:"));
+        assert!(s.contains("'+''"));
+    }
+
+    #[test]
+    fn format_ood() {
+        let s = SpelMessage::Ood.format_message(&[]);
         assert_eq!(s, "EL1044E: Unexpectedly ran out of input");
+    }
+
+    #[test]
+    fn format_non_terminating_double_quoted() {
+        let s = SpelMessage::NonTerminatingDoubleQuotedString.format_message(&[]);
+        assert!(s.starts_with("EL1045E:"));
+    }
+
+    #[test]
+    fn format_non_terminating_quoted() {
+        let s = SpelMessage::NonTerminatingQuotedString.format_message(&[]);
+        assert!(s.starts_with("EL1046E:"));
+    }
+
+    #[test]
+    fn format_missing_leading_zero() {
+        let s = SpelMessage::MissingLeadingZeroForNumber.format_message(&[]);
+        assert!(s.starts_with("EL1047E:"));
+    }
+
+    #[test]
+    fn format_real_cannot_be_long() {
+        let s = SpelMessage::RealCannotBeLong.format_message(&[]);
+        assert!(s.starts_with("EL1048E:"));
+    }
+
+    #[test]
+    fn format_unexpected_data_after_dot() {
+        let s = SpelMessage::UnexpectedDataAfterDot.format_message(&["abc"]);
+        assert!(s.starts_with("EL1049E:"));
+    }
+
+    #[test]
+    fn format_no_bean_resolver() {
+        let s = SpelMessage::NoBeanResolverRegistered.format_message(&["myBean"]);
+        assert!(s.starts_with("EL1057E:"));
+        assert!(s.contains("myBean"));
+    }
+
+    #[test]
+    fn format_operand_not_incrementable() {
+        let s = SpelMessage::OperandNotIncrementable.format_message(&["literal"]);
+        assert!(s.starts_with("EL1066E:"));
+    }
+
+    #[test]
+    fn format_operand_not_decrementable() {
+        let s = SpelMessage::OperandNotDecrementable.format_message(&["literal"]);
+        assert!(s.starts_with("EL1067E:"));
+    }
+
+    #[test]
+    fn format_not_assignable() {
+        let s = SpelMessage::NotAssignable.format_message(&["constant"]);
+        assert!(s.starts_with("EL1068E:"));
+    }
+
+    #[test]
+    fn format_missing_character() {
+        let s = SpelMessage::MissingCharacter.format_message(&["')'"]);
+        assert!(s.starts_with("EL1069E:"));
+    }
+
+    #[test]
+    fn format_flawed_pattern() {
+        let s = SpelMessage::FlawedPattern.format_message(&["(a+)+b"]);
+        assert!(s.starts_with("EL1073E:"));
+    }
+
+    #[test]
+    fn format_max_operations_exceeded() {
+        let s = SpelMessage::MaxOperationsExceeded.format_message(&["10000"]);
+        assert!(s.starts_with("EL1085E:"));
+        assert!(s.contains("10000"));
+    }
+
+    #[test]
+    fn format_internal_error() {
+        let s = SpelMessage::InternalError.format_message(&[]);
+        assert_eq!(s, "EL9999E: Internal error");
+    }
+
+    #[test]
+    fn format_message_display_variant() {
+        let s = SpelMessage::TypeConversionError.format_message_display(&["42", "String"]);
+        assert!(s.contains("42"));
+        assert!(s.contains("String"));
+    }
+
+    #[test]
+    fn format_message_with_missing_insert_preserves_placeholder() {
+        let s = SpelMessage::TypeConversionError.format_message(&["int"]);
+        // {1} not provided → kept as {1}
+        assert!(s.contains("{1}"));
+    }
+
+    #[test]
+    fn format_variable_assignment_not_supported() {
+        let s = SpelMessage::VariableAssignmentNotSupported.format_message(&["x"]);
+        assert!(s.starts_with("EL1080E:"));
+    }
+
+    #[test]
+    fn format_unsupported_character() {
+        let s = SpelMessage::UnsupportedCharacter.format_message(&["@", "0x40"]);
+        assert!(s.starts_with("EL1082E:"));
+    }
+
+    #[test]
+    fn format_exception_during_index_read() {
+        let s = SpelMessage::ExceptionDuringIndexRead.format_message(&["0", "list"]);
+        assert!(s.starts_with("EL1083E:"));
+    }
+
+    #[test]
+    fn format_exception_during_index_write() {
+        let s = SpelMessage::ExceptionDuringIndexWrite.format_message(&["0", "list"]);
+        assert!(s.starts_with("EL1084E:"));
+    }
+
+    #[test]
+    fn format_incorrect_number_of_arguments() {
+        let s = SpelMessage::IncorrectNumberOfArgumentsToFunction.format_message(&["foo", "2", "3"]);
+        assert!(s.starts_with("EL1014E:"));
+    }
+
+    #[test]
+    fn format_invalid_type_for_selection() {
+        let s = SpelMessage::InvalidTypeForSelection.format_message(&["Integer"]);
+        assert!(s.starts_with("EL1015E:"));
+    }
+
+    #[test]
+    fn format_result_of_selection_not_boolean() {
+        let s = SpelMessage::ResultOfSelectionCriteriaIsNotBoolean.format_message(&[]);
+        assert!(s.starts_with("EL1016E:"));
+    }
+
+    #[test]
+    fn format_projection_not_supported() {
+        let s = SpelMessage::ProjectionNotSupportedOnType.format_message(&["Integer"]);
+        assert!(s.starts_with("EL1019E:"));
+    }
+
+    #[test]
+    fn format_exception_during_property_read() {
+        let s = SpelMessage::ExceptionDuringPropertyRead.format_message(&["name", "NPE"]);
+        assert!(s.starts_with("EL1021E:"));
+    }
+
+    #[test]
+    fn format_function_reference_cannot_be_invoked() {
+        let s = SpelMessage::FunctionReferenceCannotBeInvoked.format_message(&["foo", "String"]);
+        assert!(s.starts_with("EL1022E:"));
+    }
+
+    #[test]
+    fn format_exception_during_function_call() {
+        let s = SpelMessage::ExceptionDuringFunctionCall.format_message(&["foo", "error"]);
+        assert!(s.starts_with("EL1023E:"));
+    }
+
+    #[test]
+    fn format_exception_during_method_invocation() {
+        let s = SpelMessage::ExceptionDuringMethodInvocation.format_message(&["foo", "Bar", "NPE"]);
+        assert!(s.starts_with("EL1029E:"));
+    }
+
+    #[test]
+    fn format_problem_locating_method() {
+        let s = SpelMessage::ProblemLocatingMethod.format_message(&["foo", "Bar"]);
+        assert!(s.starts_with("EL1031E:"));
+    }
+
+    #[test]
+    fn format_set_value_not_supported() {
+        let s = SpelMessage::SetValueNotSupported.format_message(&["Indexer"]);
+        assert!(s.starts_with("EL1032E:"));
+    }
+
+    #[test]
+    fn format_multiple_possible_methods() {
+        let s = SpelMessage::MultiplePossibleMethods.format_message(&["foo"]);
+        assert!(s.starts_with("EL1033E:"));
+    }
+
+    #[test]
+    fn format_exception_during_property_write() {
+        let s = SpelMessage::ExceptionDuringPropertyWrite.format_message(&["name", "read-only"]);
+        assert!(s.starts_with("EL1034E:"));
+    }
+
+    #[test]
+    fn format_invalid_first_operand_for_matches() {
+        let s = SpelMessage::InvalidFirstOperandForMatchesOperator.format_message(&["42"]);
+        assert!(s.starts_with("EL1037E:"));
+    }
+
+    #[test]
+    fn format_invalid_second_operand_for_matches() {
+        let s = SpelMessage::InvalidSecondOperandForMatchesOperator.format_message(&["42"]);
+        assert!(s.starts_with("EL1038E:"));
+    }
+
+    #[test]
+    fn format_function_must_be_static() {
+        let s = SpelMessage::FunctionMustBeStatic.format_message(&["foo", "bar"]);
+        assert!(s.starts_with("EL1039E:"));
+    }
+
+    #[test]
+    fn format_right_operand_problem() {
+        let s = SpelMessage::RightOperandProblem.format_message(&[]);
+        assert!(s.starts_with("EL1042E:"));
+    }
+
+    #[test]
+    fn format_missing_constructor_arguments() {
+        let s = SpelMessage::MissingConstructorArguments.format_message(&[]);
+        assert!(s.starts_with("EL1050E:"));
+    }
+
+    #[test]
+    fn format_run_out_of_arguments() {
+        let s = SpelMessage::RunOutOfArguments.format_message(&[]);
+        assert!(s.starts_with("EL1051E:"));
+    }
+
+    #[test]
+    fn format_unable_to_grow_collection() {
+        let s = SpelMessage::UnableToGrowCollection.format_message(&[]);
+        assert!(s.starts_with("EL1052E:"));
+    }
+
+    #[test]
+    fn format_unable_to_grow_collection_unknown_element() {
+        let s = SpelMessage::UnableToGrowCollectionUnknownElementType.format_message(&[]);
+        assert!(s.starts_with("EL1053E:"));
+    }
+
+    #[test]
+    fn format_unable_to_create_list() {
+        let s = SpelMessage::UnableToCreateListForIndexing.format_message(&[]);
+        assert!(s.starts_with("EL1054E:"));
+    }
+
+    #[test]
+    fn format_unable_to_create_map() {
+        let s = SpelMessage::UnableToCreateMapForIndexing.format_message(&[]);
+        assert!(s.starts_with("EL1055E:"));
+    }
+
+    #[test]
+    fn format_unable_to_dynamically_create_object() {
+        let s = SpelMessage::UnableToDynamicallyCreateObject.format_message(&["Foo"]);
+        assert!(s.starts_with("EL1056E:"));
+    }
+
+    #[test]
+    fn format_exception_during_bean_resolution() {
+        let s = SpelMessage::ExceptionDuringBeanResolution.format_message(&["myBean", "not found"]);
+        assert!(s.starts_with("EL1058E:"));
+    }
+
+    #[test]
+    fn format_invalid_bean_reference() {
+        let s = SpelMessage::InvalidBeanReference.format_message(&[]);
+        assert!(s.starts_with("EL1059E:"));
+    }
+
+    #[test]
+    fn format_type_name_expected_for_array() {
+        let s = SpelMessage::TypeNameExpectedForArrayConstruction.format_message(&["null"]);
+        assert!(s.starts_with("EL1060E:"));
+    }
+
+    #[test]
+    fn format_incorrect_element_type_for_array() {
+        let s = SpelMessage::IncorrectElementTypeForArray.format_message(&["int[]", "String"]);
+        assert!(s.starts_with("EL1061E:"));
+    }
+
+    #[test]
+    fn format_multidim_array_not_supported() {
+        let s = SpelMessage::MultidimArrayInitializerNotSupported.format_message(&[]);
+        assert!(s.starts_with("EL1062E:"));
+    }
+
+    #[test]
+    fn format_missing_array_dimension() {
+        let s = SpelMessage::MissingArrayDimension.format_message(&[]);
+        assert!(s.starts_with("EL1063E:"));
+    }
+
+    #[test]
+    fn format_initializer_length_incorrect() {
+        let s = SpelMessage::InitializerLengthIncorrect.format_message(&[]);
+        assert!(s.starts_with("EL1064E:"));
+    }
+
+    #[test]
+    fn format_unexpected_escape_char() {
+        let s = SpelMessage::UnexpectedEscapeChar.format_message(&[]);
+        assert!(s.starts_with("EL1065E:"));
+    }
+
+    #[test]
+    fn format_missing_selection_expression() {
+        let s = SpelMessage::MissingSelectionExpression.format_message(&[]);
+        assert!(s.starts_with("EL1071E:"));
+    }
+
+    #[test]
+    fn format_max_array_elements() {
+        let s = SpelMessage::MaxArrayElementsThresholdExceeded.format_message(&["1000"]);
+        assert!(s.starts_with("EL1075E:"));
+    }
+
+    #[test]
+    fn format_max_repeated_text_size() {
+        let s = SpelMessage::MaxRepeatedTextSizeExceeded.format_message(&["10000"]);
+        assert!(s.starts_with("EL1076E:"));
+    }
+
+    #[test]
+    fn format_max_regex_length() {
+        let s = SpelMessage::MaxRegexLengthExceeded.format_message(&["5000"]);
+        assert!(s.starts_with("EL1077E:"));
+    }
+
+    #[test]
+    fn format_max_concatenated_string_length() {
+        let s = SpelMessage::MaxConcatenatedStringLengthExceeded.format_message(&["10000"]);
+        assert!(s.starts_with("EL1078E:"));
+    }
+
+    #[test]
+    fn format_max_expression_length() {
+        let s = SpelMessage::MaxExpressionLengthExceeded.format_message(&["10000"]);
+        assert!(s.starts_with("EL1079E:"));
+    }
+
+    #[test]
+    fn format_negative_repeated_text_count() {
+        let s = SpelMessage::NegativeRepeatedTextCount.format_message(&["-5"]);
+        assert!(s.starts_with("EL1081E:"));
+    }
+
+    // ── Debug / Copy / Clone / PartialEq ──────────────────────────────
+
+    #[test]
+    fn debug_format() {
+        assert_eq!(format!("{:?}", SpelMessage::Ood), "Ood");
+    }
+
+    #[test]
+    fn copy_clone() {
+        let m = SpelMessage::TypeConversionError;
+        let m2 = m;
+        let m3 = m.clone();
+        assert_eq!(m, m2);
+        assert_eq!(m, m3);
+    }
+
+    #[test]
+    fn partial_eq() {
+        assert_eq!(SpelMessage::Ood, SpelMessage::Ood);
+        assert_ne!(SpelMessage::Ood, SpelMessage::InternalError);
+    }
+
+    #[test]
+    fn message_kind_is_error() {
+        assert_eq!(SpelMessage::TypeConversionError.kind(), MessageKind::Error);
+        assert_eq!(SpelMessage::InternalError.kind(), MessageKind::Error);
     }
 }

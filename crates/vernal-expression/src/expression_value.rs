@@ -222,3 +222,523 @@ impl TypeDescriptor {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ── type_descriptor() ─────────────────────────────────────────────
+
+    #[test]
+    fn type_descriptor_null() {
+        assert_eq!(ExpressionValue::Null.type_descriptor(), TypeDescriptor::NULL);
+    }
+
+    #[test]
+    fn type_descriptor_boolean() {
+        assert_eq!(
+            ExpressionValue::Boolean(true).type_descriptor(),
+            TypeDescriptor::BOOLEAN
+        );
+    }
+
+    #[test]
+    fn type_descriptor_int() {
+        assert_eq!(ExpressionValue::Int(42).type_descriptor(), TypeDescriptor::INT);
+    }
+
+    #[test]
+    fn type_descriptor_long() {
+        assert_eq!(
+            ExpressionValue::Long(100).type_descriptor(),
+            TypeDescriptor::LONG
+        );
+    }
+
+    #[test]
+    fn type_descriptor_float() {
+        assert_eq!(
+            ExpressionValue::Float(1.5).type_descriptor(),
+            TypeDescriptor::FLOAT
+        );
+    }
+
+    #[test]
+    fn type_descriptor_double() {
+        assert_eq!(
+            ExpressionValue::Double(2.5).type_descriptor(),
+            TypeDescriptor::DOUBLE
+        );
+    }
+
+    #[test]
+    fn type_descriptor_bigint() {
+        let td = ExpressionValue::BigInt(BigInt::from(123)).type_descriptor();
+        assert_eq!(td, TypeDescriptor::Primitive(PrimitiveKind::BigInt));
+    }
+
+    #[test]
+    fn type_descriptor_decimal() {
+        let td = ExpressionValue::Decimal(BigDecimal::from(456)).type_descriptor();
+        assert_eq!(td, TypeDescriptor::Primitive(PrimitiveKind::BigDecimal));
+    }
+
+    #[test]
+    fn type_descriptor_char() {
+        let td = ExpressionValue::Char('x').type_descriptor();
+        assert_eq!(td, TypeDescriptor::Primitive(PrimitiveKind::Char));
+    }
+
+    #[test]
+    fn type_descriptor_string() {
+        assert_eq!(
+            ExpressionValue::String("hi".into()).type_descriptor(),
+            TypeDescriptor::STRING
+        );
+    }
+
+    #[test]
+    fn type_descriptor_datetime() {
+        let td = ExpressionValue::DateTime(Utc::now()).type_descriptor();
+        assert_eq!(td, TypeDescriptor::Primitive(PrimitiveKind::DateTime));
+    }
+
+    #[test]
+    fn type_descriptor_duration() {
+        let td = ExpressionValue::Duration(ChronoDuration::seconds(10)).type_descriptor();
+        assert_eq!(td, TypeDescriptor::Primitive(PrimitiveKind::Duration));
+    }
+
+    #[test]
+    fn type_descriptor_list() {
+        let td = ExpressionValue::List(vec![]).type_descriptor();
+        assert!(matches!(td, TypeDescriptor::Named { name, .. } if name == "java.util.List"));
+    }
+
+    #[test]
+    fn type_descriptor_map() {
+        let td = ExpressionValue::Map(vec![]).type_descriptor();
+        assert!(matches!(td, TypeDescriptor::Map(_, _)));
+    }
+
+    #[test]
+    fn type_descriptor_object() {
+        let td = ExpressionValue::object(42_i32).type_descriptor();
+        assert!(matches!(td, TypeDescriptor::Named { type_id: Some(_), .. }));
+    }
+
+    // ── is_null() ─────────────────────────────────────────────────────
+
+    #[test]
+    fn is_null_true() {
+        assert!(ExpressionValue::Null.is_null());
+    }
+
+    #[test]
+    fn is_null_false_for_values() {
+        assert!(!ExpressionValue::Int(0).is_null());
+        assert!(!ExpressionValue::Boolean(false).is_null());
+        assert!(!ExpressionValue::String(String::new()).is_null());
+    }
+
+    // ── is_truthy() ───────────────────────────────────────────────────
+
+    #[test]
+    fn truthy_null() {
+        assert!(!ExpressionValue::Null.is_truthy());
+    }
+
+    #[test]
+    fn truthy_boolean() {
+        assert!(ExpressionValue::Boolean(true).is_truthy());
+        assert!(!ExpressionValue::Boolean(false).is_truthy());
+    }
+
+    #[test]
+    fn truthy_int() {
+        assert!(ExpressionValue::Int(1).is_truthy());
+        assert!(!ExpressionValue::Int(0).is_truthy());
+        assert!(ExpressionValue::Int(-1).is_truthy());
+    }
+
+    #[test]
+    fn truthy_long() {
+        assert!(ExpressionValue::Long(1).is_truthy());
+        assert!(!ExpressionValue::Long(0).is_truthy());
+    }
+
+    #[test]
+    fn truthy_float() {
+        assert!(ExpressionValue::Float(1.0).is_truthy());
+        assert!(!ExpressionValue::Float(0.0).is_truthy());
+    }
+
+    #[test]
+    fn truthy_double() {
+        assert!(ExpressionValue::Double(1.0).is_truthy());
+        assert!(!ExpressionValue::Double(0.0).is_truthy());
+    }
+
+    #[test]
+    fn truthy_bigint() {
+        assert!(ExpressionValue::BigInt(BigInt::from(1)).is_truthy());
+        assert!(!ExpressionValue::BigInt(BigInt::from(0)).is_truthy());
+    }
+
+    #[test]
+    fn truthy_decimal() {
+        assert!(ExpressionValue::Decimal(BigDecimal::from(1)).is_truthy());
+        assert!(!ExpressionValue::Decimal(BigDecimal::from(0)).is_truthy());
+    }
+
+    #[test]
+    fn truthy_char() {
+        assert!(ExpressionValue::Char('a').is_truthy());
+        assert!(!ExpressionValue::Char('\0').is_truthy());
+    }
+
+    #[test]
+    fn truthy_string() {
+        assert!(ExpressionValue::String("hello".into()).is_truthy());
+        assert!(!ExpressionValue::String(String::new()).is_truthy());
+    }
+
+    #[test]
+    fn truthy_list() {
+        assert!(ExpressionValue::List(vec![TypedValue::null()]).is_truthy());
+    }
+
+    #[test]
+    fn truthy_map() {
+        assert!(ExpressionValue::Map(vec![]).is_truthy());
+    }
+
+    #[test]
+    fn truthy_datetime() {
+        assert!(ExpressionValue::DateTime(Utc::now()).is_truthy());
+    }
+
+    #[test]
+    fn truthy_duration() {
+        assert!(ExpressionValue::Duration(ChronoDuration::seconds(1)).is_truthy());
+    }
+
+    // ── as_any() ──────────────────────────────────────────────────────
+
+    #[test]
+    fn as_any_string() {
+        let v = ExpressionValue::String("test".into());
+        let any = v.as_any().unwrap();
+        assert!(any.is::<String>());
+    }
+
+    #[test]
+    fn as_any_int() {
+        let v = ExpressionValue::Int(42);
+        let any = v.as_any().unwrap();
+        assert!(any.is::<i64>());
+    }
+
+    #[test]
+    fn as_any_long() {
+        let v = ExpressionValue::Long(42);
+        assert!(v.as_any().unwrap().is::<i64>());
+    }
+
+    #[test]
+    fn as_any_boolean() {
+        let v = ExpressionValue::Boolean(true);
+        assert!(v.as_any().unwrap().is::<bool>());
+    }
+
+    #[test]
+    fn as_any_double() {
+        let v = ExpressionValue::Double(1.5);
+        assert!(v.as_any().unwrap().is::<f64>());
+    }
+
+    #[test]
+    fn as_any_float() {
+        let v = ExpressionValue::Float(1.5);
+        assert!(v.as_any().unwrap().is::<f64>());
+    }
+
+    #[test]
+    fn as_any_char() {
+        let v = ExpressionValue::Char('x');
+        assert!(v.as_any().unwrap().is::<char>());
+    }
+
+    #[test]
+    fn as_any_none_for_complex_types() {
+        assert!(ExpressionValue::Null.as_any().is_none());
+        assert!(ExpressionValue::BigInt(BigInt::from(1)).as_any().is_none());
+        assert!(ExpressionValue::Decimal(BigDecimal::from(1)).as_any().is_none());
+        assert!(ExpressionValue::List(vec![]).as_any().is_none());
+        assert!(ExpressionValue::Map(vec![]).as_any().is_none());
+        assert!(ExpressionValue::DateTime(Utc::now()).as_any().is_none());
+        assert!(ExpressionValue::Duration(ChronoDuration::seconds(1)).as_any().is_none());
+        assert!(ExpressionValue::object(42_i32).as_any().is_none());
+    }
+
+    // ── type_id() ─────────────────────────────────────────────────────
+
+    #[test]
+    fn type_id_string() {
+        assert_eq!(
+            ExpressionValue::String("x".into()).type_id(),
+            std::any::TypeId::of::<String>()
+        );
+    }
+
+    #[test]
+    fn type_id_int() {
+        assert_eq!(
+            ExpressionValue::Int(0).type_id(),
+            std::any::TypeId::of::<i64>()
+        );
+    }
+
+    #[test]
+    fn type_id_long() {
+        assert_eq!(
+            ExpressionValue::Long(0).type_id(),
+            std::any::TypeId::of::<i64>()
+        );
+    }
+
+    #[test]
+    fn type_id_boolean() {
+        assert_eq!(
+            ExpressionValue::Boolean(false).type_id(),
+            std::any::TypeId::of::<bool>()
+        );
+    }
+
+    #[test]
+    fn type_id_float() {
+        assert_eq!(
+            ExpressionValue::Float(0.0).type_id(),
+            std::any::TypeId::of::<f64>()
+        );
+    }
+
+    #[test]
+    fn type_id_double() {
+        assert_eq!(
+            ExpressionValue::Double(0.0).type_id(),
+            std::any::TypeId::of::<f64>()
+        );
+    }
+
+    #[test]
+    fn type_id_bigint() {
+        assert_eq!(
+            ExpressionValue::BigInt(BigInt::from(0)).type_id(),
+            std::any::TypeId::of::<BigInt>()
+        );
+    }
+
+    #[test]
+    fn type_id_decimal() {
+        assert_eq!(
+            ExpressionValue::Decimal(BigDecimal::from(0)).type_id(),
+            std::any::TypeId::of::<BigDecimal>()
+        );
+    }
+
+    #[test]
+    fn type_id_char() {
+        assert_eq!(
+            ExpressionValue::Char('\0').type_id(),
+            std::any::TypeId::of::<char>()
+        );
+    }
+
+    #[test]
+    fn type_id_null() {
+        assert_eq!(
+            ExpressionValue::Null.type_id(),
+            std::any::TypeId::of::<()>()
+        );
+    }
+
+    #[test]
+    fn type_id_list() {
+        assert_eq!(
+            ExpressionValue::List(vec![]).type_id(),
+            std::any::TypeId::of::<Vec<TypedValue>>()
+        );
+    }
+
+    #[test]
+    fn type_id_map() {
+        assert_eq!(
+            ExpressionValue::Map(vec![]).type_id(),
+            std::any::TypeId::of::<Vec<(TypedValue, TypedValue)>>()
+        );
+    }
+
+    #[test]
+    fn type_id_datetime() {
+        let v = ExpressionValue::DateTime(Utc::now());
+        assert_eq!(v.type_id(), std::any::TypeId::of::<DateTime<Utc>>());
+    }
+
+    #[test]
+    fn type_id_duration() {
+        let v = ExpressionValue::Duration(ChronoDuration::seconds(1));
+        assert_eq!(v.type_id(), std::any::TypeId::of::<ChronoDuration>());
+    }
+
+    #[test]
+    fn type_id_object() {
+        let v = ExpressionValue::object(42_i32);
+        assert_eq!(v.type_id(), std::any::TypeId::of::<i32>());
+    }
+
+    // ── object() 工厂 ─────────────────────────────────────────────────
+
+    #[test]
+    fn object_factory() {
+        let v = ExpressionValue::object(String::from("hello"));
+        assert!(matches!(v, ExpressionValue::Object(_)));
+        assert_eq!(v.type_id(), std::any::TypeId::of::<String>());
+    }
+
+    // ── PartialEq ─────────────────────────────────────────────────────
+
+    #[test]
+    fn partial_eq_null() {
+        assert_eq!(ExpressionValue::Null, ExpressionValue::Null);
+    }
+
+    #[test]
+    fn partial_eq_boolean() {
+        assert_eq!(ExpressionValue::Boolean(true), ExpressionValue::Boolean(true));
+        assert_ne!(ExpressionValue::Boolean(true), ExpressionValue::Boolean(false));
+    }
+
+    #[test]
+    fn partial_eq_int() {
+        assert_eq!(ExpressionValue::Int(42), ExpressionValue::Int(42));
+        assert_ne!(ExpressionValue::Int(1), ExpressionValue::Int(2));
+    }
+
+    #[test]
+    fn partial_eq_long() {
+        assert_eq!(ExpressionValue::Long(42), ExpressionValue::Long(42));
+        assert_ne!(ExpressionValue::Long(1), ExpressionValue::Long(2));
+    }
+
+    #[test]
+    fn partial_eq_float() {
+        assert_eq!(ExpressionValue::Float(1.5), ExpressionValue::Float(1.5));
+        assert_ne!(ExpressionValue::Float(1.0), ExpressionValue::Float(2.0));
+    }
+
+    #[test]
+    fn partial_eq_double() {
+        assert_eq!(ExpressionValue::Double(1.5), ExpressionValue::Double(1.5));
+    }
+
+    #[test]
+    fn partial_eq_bigint() {
+        assert_eq!(
+            ExpressionValue::BigInt(BigInt::from(100)),
+            ExpressionValue::BigInt(BigInt::from(100))
+        );
+    }
+
+    #[test]
+    fn partial_eq_decimal() {
+        assert_eq!(
+            ExpressionValue::Decimal(BigDecimal::from(100)),
+            ExpressionValue::Decimal(BigDecimal::from(100))
+        );
+    }
+
+    #[test]
+    fn partial_eq_char() {
+        assert_eq!(ExpressionValue::Char('a'), ExpressionValue::Char('a'));
+        assert_ne!(ExpressionValue::Char('a'), ExpressionValue::Char('b'));
+    }
+
+    #[test]
+    fn partial_eq_string() {
+        assert_eq!(
+            ExpressionValue::String("hello".into()),
+            ExpressionValue::String("hello".into())
+        );
+    }
+
+    #[test]
+    fn partial_eq_datetime() {
+        let now = Utc::now();
+        assert_eq!(ExpressionValue::DateTime(now), ExpressionValue::DateTime(now));
+    }
+
+    #[test]
+    fn partial_eq_duration() {
+        let d = ChronoDuration::seconds(10);
+        assert_eq!(ExpressionValue::Duration(d), ExpressionValue::Duration(d));
+    }
+
+    #[test]
+    fn partial_eq_map_same_len() {
+        let m1 = ExpressionValue::Map(vec![]);
+        let m2 = ExpressionValue::Map(vec![]);
+        assert_eq!(m1, m2);
+    }
+
+    #[test]
+    fn partial_eq_different_types_not_equal() {
+        assert_ne!(ExpressionValue::Null, ExpressionValue::Int(0));
+        assert_ne!(ExpressionValue::Int(1), ExpressionValue::Long(1));
+        assert_ne!(ExpressionValue::Boolean(true), ExpressionValue::Int(1));
+        assert_ne!(ExpressionValue::String("1".into()), ExpressionValue::Int(1));
+    }
+
+    #[test]
+    fn partial_eq_object_same_type() {
+        let a = ExpressionValue::object(42_i32);
+        let b = ExpressionValue::object(99_i32);
+        // Object PartialEq compares TypeId only
+        assert_eq!(a, b);
+    }
+
+    // ── Clone / Debug ─────────────────────────────────────────────────
+
+    #[test]
+    fn clone_works() {
+        let v = ExpressionValue::String("hello".into());
+        let v2 = v.clone();
+        assert_eq!(v, v2);
+    }
+
+    #[test]
+    fn debug_format() {
+        assert_eq!(format!("{:?}", ExpressionValue::Null), "Null");
+        assert_eq!(format!("{:?}", ExpressionValue::Int(42)), "Int(42)");
+        assert_eq!(
+            format!("{:?}", ExpressionValue::Boolean(true)),
+            "Boolean(true)"
+        );
+    }
+
+    // ── from_type_id_dyn ──────────────────────────────────────────────
+
+    #[test]
+    fn from_type_id_dyn_string() {
+        let s = String::from("hello");
+        let td = TypeDescriptor::from_type_id_dyn(&s);
+        assert!(matches!(td, TypeDescriptor::Named { type_id: Some(_), .. }));
+    }
+
+    #[test]
+    fn from_type_id_dyn_i32() {
+        let i = 42_i32;
+        let td = TypeDescriptor::from_type_id_dyn(&i);
+        assert!(td.type_id().is_some());
+    }
+}
