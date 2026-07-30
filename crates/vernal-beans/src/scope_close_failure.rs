@@ -1,15 +1,12 @@
-//! 自定义作用域后台关闭失败对象。
+//! 作用域关闭失败类型。
 
-use vernal_core::SharedError;
+use std::sync::Arc;
 
-/// 在取消安全的后台关闭任务中保存可克隆失败原因。
-///
-/// 多个并发 `close()` 调用者会等待同一个关闭结果，因此内部错误必须能够安全
-/// 克隆。该对象只在 `IoC` 内核中传播，公开边界仍返回结构化 [`crate::ScopeError`]。
-#[derive(Clone)]
-pub(crate) enum ScopeCloseFailure {
-    /// 用户注册的异步关闭钩子返回错误。
-    Hook(SharedError),
-    /// 承载关闭钩子的 Tokio 子任务发生 panic 或被 Runtime 取消。
-    Task(SharedError),
+/// 作用域关闭过程中发生的失败。
+#[derive(Debug, Clone)]
+pub enum ScopeCloseFailure {
+    /// 关闭钩子执行失败。
+    Hook(Arc<dyn std::error::Error + Send + Sync>),
+    /// 异步任务执行失败。
+    Task(Arc<dyn std::error::Error + Send + Sync>),
 }
