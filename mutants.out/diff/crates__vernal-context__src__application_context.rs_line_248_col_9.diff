@@ -1,0 +1,21 @@
+--- crates/vernal-context/src/application_context.rs
++++ replace ApplicationContext::state -> ContextState with Default::default()
+@@ -240,17 +240,17 @@
+     ) -> Result<(), ContextError> {
+         let _delivered = self.events().publish(signal).await;
+         self.cancellation_token().cancel();
+         self.close().await
+     }
+ 
+     /// 返回当前状态快照。
+     pub async fn state(&self) -> ContextState {
+-        self.lifecycle().state().await
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     // ── Spring ApplicationContext metadata methods ─────────────────────
+ 
+     /// 返回上下文唯一 ID。
+     ///
+     /// 对标 Spring `ApplicationContext#getId()`：Spring 7.0+ 标记 "never null"。
+     /// vernal 默认值是 `vernal-context-{epoch_millis}`，可通过

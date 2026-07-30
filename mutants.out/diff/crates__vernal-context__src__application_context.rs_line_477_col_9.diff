@@ -1,0 +1,21 @@
+--- crates/vernal-context/src/application_context.rs
++++ replace ApplicationContext::environment -> &ApplicationEnvironment with Box::leak(Box::new(Default::default()))
+@@ -469,17 +469,17 @@
+ 
+     /// 返回当前 Context 冻结的应用环境。
+     ///
+     /// 高层建造器把同一 [`ApplicationEnvironment`] 注册为普通 `IoC` Singleton；
+     /// 配置组件可以在同步构造阶段读取类型化属性，生命周期组件和 Adapter 也可以
+     /// 通过 Context 门面读取相同的 `PropertySource` 顺序与 Profile。
+     #[must_use]
+     pub fn environment(&self) -> &ApplicationEnvironment {
+-        self.lifecycle().resources().environment()
++        Box::leak(Box::new(Default::default())) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 返回当前 Context 独占的类型化事件总线。
+     #[must_use]
+     pub fn events(&self) -> &EventBus {
+         self.lifecycle().resources().events()
+     }
+ 

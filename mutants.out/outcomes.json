@@ -8,7 +8,7 @@
       "phase_results": [
         {
           "phase": "Build",
-          "duration": 31.673251375,
+          "duration": 26.660957667,
           "process_status": "Success",
           "argv": [
             "/opt/homebrew/bin/cargo",
@@ -20,7 +20,7 @@
         },
         {
           "phase": "Test",
-          "duration": 63.917544416,
+          "duration": 14.567571709,
           "process_status": "Success",
           "argv": [
             "/opt/homebrew/bin/cargo",
@@ -71,7 +71,7 @@
       "phase_results": [
         {
           "phase": "Build",
-          "duration": 6.7836855830000005,
+          "duration": 4.910464125,
           "process_status": "Success",
           "argv": [
             "/opt/homebrew/bin/cargo",
@@ -83,7 +83,7 @@
         },
         {
           "phase": "Test",
-          "duration": 41.147556292,
+          "duration": 13.793324917,
           "process_status": {
             "Failure": 101
           },
@@ -136,7 +136,7 @@
       "phase_results": [
         {
           "phase": "Build",
-          "duration": 5.362183542,
+          "duration": 5.041217417,
           "process_status": "Success",
           "argv": [
             "/opt/homebrew/bin/cargo",
@@ -148,7 +148,7 @@
         },
         {
           "phase": "Test",
-          "duration": 56.91815625,
+          "duration": 14.872837208,
           "process_status": "Success",
           "argv": [
             "/opt/homebrew/bin/cargo",
@@ -199,7 +199,7 @@
       "phase_results": [
         {
           "phase": "Build",
-          "duration": 5.545692959,
+          "duration": 5.579192667,
           "process_status": "Success",
           "argv": [
             "/opt/homebrew/bin/cargo",
@@ -211,7 +211,7 @@
         },
         {
           "phase": "Test",
-          "duration": 23.6010655,
+          "duration": 12.229152583,
           "process_status": {
             "Failure": 101
           },
@@ -264,7 +264,7 @@
       "phase_results": [
         {
           "phase": "Build",
-          "duration": 8.426600583,
+          "duration": 5.884566083,
           "process_status": "Success",
           "argv": [
             "/opt/homebrew/bin/cargo",
@@ -276,7 +276,7 @@
         },
         {
           "phase": "Test",
-          "duration": 19.905011375,
+          "duration": 6.429385166,
           "process_status": {
             "Failure": 101
           },
@@ -329,7 +329,7 @@
       "phase_results": [
         {
           "phase": "Build",
-          "duration": 0.638210125,
+          "duration": 0.550313375,
           "process_status": {
             "Failure": 101
           },
@@ -383,7 +383,7 @@
       "phase_results": [
         {
           "phase": "Build",
-          "duration": 0.434372583,
+          "duration": 0.488305667,
           "process_status": {
             "Failure": 101
           },
@@ -437,7 +437,7 @@
       "phase_results": [
         {
           "phase": "Build",
-          "duration": 0.430319708,
+          "duration": 0.506873,
           "process_status": {
             "Failure": 101
           },
@@ -491,7 +491,7 @@
       "phase_results": [
         {
           "phase": "Build",
-          "duration": 0.434319625,
+          "duration": 0.559741667,
           "process_status": {
             "Failure": 101
           },
@@ -545,7 +545,7 @@
       "phase_results": [
         {
           "phase": "Build",
-          "duration": 0.437013334,
+          "duration": 0.544053042,
           "process_status": {
             "Failure": 101
           },
@@ -599,7 +599,7 @@
       "phase_results": [
         {
           "phase": "Build",
-          "duration": 0.375401208,
+          "duration": 0.550603417,
           "process_status": {
             "Failure": 101
           },
@@ -653,7 +653,7 @@
       "phase_results": [
         {
           "phase": "Build",
-          "duration": 0.4867825,
+          "duration": 0.549383333,
           "process_status": {
             "Failure": 101
           },
@@ -707,7 +707,7 @@
       "phase_results": [
         {
           "phase": "Build",
-          "duration": 0.544535709,
+          "duration": 0.496884791,
           "process_status": {
             "Failure": 101
           },
@@ -761,7 +761,7 @@
       "phase_results": [
         {
           "phase": "Build",
-          "duration": 0.430467083,
+          "duration": 0.4895175,
           "process_status": {
             "Failure": 101
           },
@@ -815,7 +815,7 @@
       "phase_results": [
         {
           "phase": "Build",
-          "duration": 6.783368416,
+          "duration": 8.642571042,
           "process_status": "Success",
           "argv": [
             "/opt/homebrew/bin/cargo",
@@ -827,7 +827,7 @@
         },
         {
           "phase": "Test",
-          "duration": 13.501451708,
+          "duration": 6.167677875,
           "process_status": {
             "Failure": 101
           },
@@ -880,7 +880,7 @@
       "phase_results": [
         {
           "phase": "Build",
-          "duration": 6.987120791,
+          "duration": 9.451107499999999,
           "process_status": "Success",
           "argv": [
             "/opt/homebrew/bin/cargo",
@@ -892,7 +892,7 @@
         },
         {
           "phase": "Test",
-          "duration": 6.631980167,
+          "duration": 3.646888416,
           "process_status": {
             "Failure": 101
           },
@@ -945,7 +945,7 @@
       "phase_results": [
         {
           "phase": "Build",
-          "duration": 1.55971875,
+          "duration": 0.744450917,
           "process_status": {
             "Failure": 101
           },
@@ -999,7 +999,7 @@
       "phase_results": [
         {
           "phase": "Build",
-          "duration": 11.066201834,
+          "duration": 9.979519917,
           "process_status": "Success",
           "argv": [
             "/opt/homebrew/bin/cargo",
@@ -1011,7 +1011,7 @@
         },
         {
           "phase": "Test",
-          "duration": 18.786471875,
+          "duration": 5.965317959,
           "process_status": {
             "Failure": 101
           },
@@ -1064,7 +1064,7 @@
       "phase_results": [
         {
           "phase": "Build",
-          "duration": 1.348223833,
+          "duration": 0.83246125,
           "process_status": {
             "Failure": 101
           },
@@ -1118,7 +1118,7 @@
       "phase_results": [
         {
           "phase": "Build",
-          "duration": 7.812638166,
+          "duration": 10.481040709,
           "process_status": "Success",
           "argv": [
             "/opt/homebrew/bin/cargo",
@@ -1130,7 +1130,7 @@
         },
         {
           "phase": "Test",
-          "duration": 15.796180834,
+          "duration": 4.177812209,
           "process_status": {
             "Failure": 101
           },
@@ -1183,7 +1183,7 @@
       "phase_results": [
         {
           "phase": "Build",
-          "duration": 7.73724875,
+          "duration": 9.733934834,
           "process_status": "Success",
           "argv": [
             "/opt/homebrew/bin/cargo",
@@ -1195,7 +1195,7 @@
         },
         {
           "phase": "Test",
-          "duration": 8.348405666,
+          "duration": 3.933237042,
           "process_status": {
             "Failure": 101
           },
@@ -1248,7 +1248,7 @@
       "phase_results": [
         {
           "phase": "Build",
-          "duration": 0.697454375,
+          "duration": 0.711262167,
           "process_status": {
             "Failure": 101
           },
@@ -1302,7 +1302,7 @@
       "phase_results": [
         {
           "phase": "Build",
-          "duration": 11.7970195,
+          "duration": 10.648251917,
           "process_status": "Success",
           "argv": [
             "/opt/homebrew/bin/cargo",
@@ -1314,7 +1314,7 @@
         },
         {
           "phase": "Test",
-          "duration": 13.528023292,
+          "duration": 6.476143083,
           "process_status": {
             "Failure": 101
           },
@@ -1326,15 +1326,3961 @@
           ]
         }
       ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_close_coordinator.rs:112:9: replace ApplicationCloseCoordinator::record_lifecycle_warning with ()",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_close_coordinator.rs",
+          "function": {
+            "function_name": "ApplicationCloseCoordinator::record_lifecycle_warning",
+            "return_type": "",
+            "span": {
+              "start": {
+                "line": 110,
+                "column": 5
+              },
+              "end": {
+                "line": 119,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 112,
+              "column": 9
+            },
+            "end": {
+              "line": 118,
+              "column": 10
+            }
+          },
+          "replacement": "()",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__vernal-context__src__application_close_coordinator.rs_line_112_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_close_coordinator.rs_line_112_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 8.971441417,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 14.427013042,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_close_coordinator.rs:114:16: delete ! in ApplicationCloseCoordinator::record_lifecycle_warning",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_close_coordinator.rs",
+          "function": {
+            "function_name": "ApplicationCloseCoordinator::record_lifecycle_warning",
+            "return_type": "",
+            "span": {
+              "start": {
+                "line": 110,
+                "column": 5
+              },
+              "end": {
+                "line": 119,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 114,
+              "column": 16
+            },
+            "end": {
+              "line": 114,
+              "column": 17
+            }
+          },
+          "replacement": "",
+          "genre": "UnaryOperator"
+        }
+      },
+      "summary": "Unviable",
+      "log_path": "log/crates__vernal-context__src__application_close_coordinator.rs_line_114_col_16.log",
+      "diff_path": "diff/crates__vernal-context__src__application_close_coordinator.rs_line_114_col_16.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.775496834,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_close_coordinator.rs:129:9: replace ApplicationCloseCoordinator::record_observation with ()",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_close_coordinator.rs",
+          "function": {
+            "function_name": "ApplicationCloseCoordinator::record_observation",
+            "return_type": "",
+            "span": {
+              "start": {
+                "line": 121,
+                "column": 5
+              },
+              "end": {
+                "line": 139,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 129,
+              "column": 9
+            },
+            "end": {
+              "line": 138,
+              "column": 16
+            }
+          },
+          "replacement": "()",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__vernal-context__src__application_close_coordinator.rs_line_129_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_close_coordinator.rs_line_129_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 9.028373333,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 7.022736625,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_close_coordinator.rs:143:9: replace ApplicationCloseCoordinator::shutdown_managed_tasks -> Option<ManagedTaskError> with None",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_close_coordinator.rs",
+          "function": {
+            "function_name": "ApplicationCloseCoordinator::shutdown_managed_tasks",
+            "return_type": "-> Option<ManagedTaskError>",
+            "span": {
+              "start": {
+                "line": 141,
+                "column": 5
+              },
+              "end": {
+                "line": 153,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 143,
+              "column": 9
+            },
+            "end": {
+              "line": 152,
+              "column": 14
+            }
+          },
+          "replacement": "None",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__vernal-context__src__application_close_coordinator.rs_line_143_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_close_coordinator.rs_line_143_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 9.820250291,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.170611917,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_close_coordinator.rs:143:9: replace ApplicationCloseCoordinator::shutdown_managed_tasks -> Option<ManagedTaskError> with Some(Default::default())",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_close_coordinator.rs",
+          "function": {
+            "function_name": "ApplicationCloseCoordinator::shutdown_managed_tasks",
+            "return_type": "-> Option<ManagedTaskError>",
+            "span": {
+              "start": {
+                "line": 141,
+                "column": 5
+              },
+              "end": {
+                "line": 153,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 143,
+              "column": 9
+            },
+            "end": {
+              "line": 152,
+              "column": 14
+            }
+          },
+          "replacement": "Some(Default::default())",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "Unviable",
+      "log_path": "log/crates__vernal-context__src__application_close_coordinator.rs_line_143_col_9_001.log",
+      "diff_path": "diff/crates__vernal-context__src__application_close_coordinator.rs_line_143_col_9_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.740062083,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_close_coordinator.rs:163:9: replace ApplicationCloseCoordinator::stop_component -> Result<(), ContextError> with Ok(())",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_close_coordinator.rs",
+          "function": {
+            "function_name": "ApplicationCloseCoordinator::stop_component",
+            "return_type": "-> Result<(), ContextError>",
+            "span": {
+              "start": {
+                "line": 155,
+                "column": 5
+              },
+              "end": {
+                "line": 187,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 163,
+              "column": 9
+            },
+            "end": {
+              "line": 186,
+              "column": 15
+            }
+          },
+          "replacement": "Ok(())",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__vernal-context__src__application_close_coordinator.rs_line_163_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_close_coordinator.rs_line_163_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 10.984378167,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 6.907713459,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_close_coordinator.rs:191:9: replace ApplicationCloseCoordinator::stop_all -> Option<ContextError> with None",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_close_coordinator.rs",
+          "function": {
+            "function_name": "ApplicationCloseCoordinator::stop_all",
+            "return_type": "-> Option<ContextError>",
+            "span": {
+              "start": {
+                "line": 189,
+                "column": 5
+              },
+              "end": {
+                "line": 199,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 191,
+              "column": 9
+            },
+            "end": {
+              "line": 198,
+              "column": 20
+            }
+          },
+          "replacement": "None",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__vernal-context__src__application_close_coordinator.rs_line_191_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_close_coordinator.rs_line_191_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 9.76270725,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 6.983871291,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_close_coordinator.rs:191:9: replace ApplicationCloseCoordinator::stop_all -> Option<ContextError> with Some(Default::default())",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_close_coordinator.rs",
+          "function": {
+            "function_name": "ApplicationCloseCoordinator::stop_all",
+            "return_type": "-> Option<ContextError>",
+            "span": {
+              "start": {
+                "line": 189,
+                "column": 5
+              },
+              "end": {
+                "line": 199,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 191,
+              "column": 9
+            },
+            "end": {
+              "line": 198,
+              "column": 20
+            }
+          },
+          "replacement": "Some(Default::default())",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "Unviable",
+      "log_path": "log/crates__vernal-context__src__application_close_coordinator.rs_line_191_col_9_001.log",
+      "diff_path": "diff/crates__vernal-context__src__application_close_coordinator.rs_line_191_col_9_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.786094959,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_close_coordinator.rs:211:9: replace ApplicationCloseCoordinator::pause_component -> Result<(), ContextError> with Ok(())",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_close_coordinator.rs",
+          "function": {
+            "function_name": "ApplicationCloseCoordinator::pause_component",
+            "return_type": "-> Result<(), ContextError>",
+            "span": {
+              "start": {
+                "line": 201,
+                "column": 5
+              },
+              "end": {
+                "line": 235,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 211,
+              "column": 9
+            },
+            "end": {
+              "line": 234,
+              "column": 15
+            }
+          },
+          "replacement": "Ok(())",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__vernal-context__src__application_close_coordinator.rs_line_211_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_close_coordinator.rs_line_211_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 11.198238166,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 15.749359875,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_close_coordinator.rs:247:9: replace ApplicationCloseCoordinator::pause_all -> Option<ContextError> with None",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_close_coordinator.rs",
+          "function": {
+            "function_name": "ApplicationCloseCoordinator::pause_all",
+            "return_type": "-> Option<ContextError>",
+            "span": {
+              "start": {
+                "line": 237,
+                "column": 5
+              },
+              "end": {
+                "line": 258,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 247,
+              "column": 9
+            },
+            "end": {
+              "line": 257,
+              "column": 20
+            }
+          },
+          "replacement": "None",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__vernal-context__src__application_close_coordinator.rs_line_247_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_close_coordinator.rs_line_247_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 8.047578708,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 16.626063916,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_close_coordinator.rs:247:9: replace ApplicationCloseCoordinator::pause_all -> Option<ContextError> with Some(Default::default())",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_close_coordinator.rs",
+          "function": {
+            "function_name": "ApplicationCloseCoordinator::pause_all",
+            "return_type": "-> Option<ContextError>",
+            "span": {
+              "start": {
+                "line": 237,
+                "column": 5
+              },
+              "end": {
+                "line": 258,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 247,
+              "column": 9
+            },
+            "end": {
+              "line": 257,
+              "column": 20
+            }
+          },
+          "replacement": "Some(Default::default())",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "Unviable",
+      "log_path": "log/crates__vernal-context__src__application_close_coordinator.rs_line_247_col_9_001.log",
+      "diff_path": "diff/crates__vernal-context__src__application_close_coordinator.rs_line_247_col_9_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.759097458,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_close_coordinator.rs:249:16: delete ! in ApplicationCloseCoordinator::pause_all",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_close_coordinator.rs",
+          "function": {
+            "function_name": "ApplicationCloseCoordinator::pause_all",
+            "return_type": "-> Option<ContextError>",
+            "span": {
+              "start": {
+                "line": 237,
+                "column": 5
+              },
+              "end": {
+                "line": 258,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 249,
+              "column": 16
+            },
+            "end": {
+              "line": 249,
+              "column": 17
+            }
+          },
+          "replacement": "",
+          "genre": "UnaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__vernal-context__src__application_close_coordinator.rs_line_249_col_16.log",
+      "diff_path": "diff/crates__vernal-context__src__application_close_coordinator.rs_line_249_col_16.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 8.658840792,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 17.216290709,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_close_coordinator.rs:265:9: replace ApplicationCloseCoordinator::close -> CloseResult with Default::default()",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_close_coordinator.rs",
+          "function": {
+            "function_name": "ApplicationCloseCoordinator::close",
+            "return_type": "-> CloseResult",
+            "span": {
+              "start": {
+                "line": 260,
+                "column": 5
+              },
+              "end": {
+                "line": 267,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 265,
+              "column": 9
+            },
+            "end": {
+              "line": 266,
+              "column": 36
+            }
+          },
+          "replacement": "Default::default()",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "Unviable",
+      "log_path": "log/crates__vernal-context__src__application_close_coordinator.rs_line_265_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_close_coordinator.rs_line_265_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.88499225,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_close_coordinator.rs:271:9: replace ApplicationCloseCoordinator::start_close -> CloseResult with Default::default()",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_close_coordinator.rs",
+          "function": {
+            "function_name": "ApplicationCloseCoordinator::start_close",
+            "return_type": "-> CloseResult",
+            "span": {
+              "start": {
+                "line": 269,
+                "column": 5
+              },
+              "end": {
+                "line": 317,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 271,
+              "column": 9
+            },
+            "end": {
+              "line": 316,
+              "column": 15
+            }
+          },
+          "replacement": "Default::default()",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "Unviable",
+      "log_path": "log/crates__vernal-context__src__application_close_coordinator.rs_line_271_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_close_coordinator.rs_line_271_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.678307375,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_close_coordinator.rs:321:9: replace ApplicationCloseCoordinator::finish_close -> CloseResult with Default::default()",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_close_coordinator.rs",
+          "function": {
+            "function_name": "ApplicationCloseCoordinator::finish_close",
+            "return_type": "-> CloseResult",
+            "span": {
+              "start": {
+                "line": 319,
+                "column": 5
+              },
+              "end": {
+                "line": 343,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 321,
+              "column": 9
+            },
+            "end": {
+              "line": 342,
+              "column": 33
+            }
+          },
+          "replacement": "Default::default()",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "Unviable",
+      "log_path": "log/crates__vernal-context__src__application_close_coordinator.rs_line_321_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_close_coordinator.rs_line_321_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.711440375,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_close_coordinator.rs:322:31: replace == with != in ApplicationCloseCoordinator::finish_close",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_close_coordinator.rs",
+          "function": {
+            "function_name": "ApplicationCloseCoordinator::finish_close",
+            "return_type": "-> CloseResult",
+            "span": {
+              "start": {
+                "line": 319,
+                "column": 5
+              },
+              "end": {
+                "line": 343,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 322,
+              "column": 31
+            },
+            "end": {
+              "line": 322,
+              "column": 33
+            }
+          },
+          "replacement": "!=",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__vernal-context__src__application_close_coordinator.rs_line_322_col_31.log",
+      "diff_path": "diff/crates__vernal-context__src__application_close_coordinator.rs_line_322_col_31.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 7.19204925,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.864512875,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_close_coordinator.rs:326:52: replace == with != in ApplicationCloseCoordinator::finish_close",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_close_coordinator.rs",
+          "function": {
+            "function_name": "ApplicationCloseCoordinator::finish_close",
+            "return_type": "-> CloseResult",
+            "span": {
+              "start": {
+                "line": 319,
+                "column": 5
+              },
+              "end": {
+                "line": 343,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 326,
+              "column": 52
+            },
+            "end": {
+              "line": 326,
+              "column": 54
+            }
+          },
+          "replacement": "!=",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__vernal-context__src__application_close_coordinator.rs_line_326_col_52.log",
+      "diff_path": "diff/crates__vernal-context__src__application_close_coordinator.rs_line_326_col_52.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 6.483549167,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 21.034981042,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_close_coordinator.rs:347:9: replace ApplicationCloseCoordinator::wait_for_close -> CloseResult with Default::default()",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_close_coordinator.rs",
+          "function": {
+            "function_name": "ApplicationCloseCoordinator::wait_for_close",
+            "return_type": "-> CloseResult",
+            "span": {
+              "start": {
+                "line": 345,
+                "column": 5
+              },
+              "end": {
+                "line": 359,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 347,
+              "column": 9
+            },
+            "end": {
+              "line": 358,
+              "column": 10
+            }
+          },
+          "replacement": "Default::default()",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "Unviable",
+      "log_path": "log/crates__vernal-context__src__application_close_coordinator.rs_line_347_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_close_coordinator.rs_line_347_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.787172625,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:111:9: replace ApplicationContext::refresh -> Result<(), ContextError> with Ok(())",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::refresh",
+            "return_type": "-> Result<(), ContextError>",
+            "span": {
+              "start": {
+                "line": 100,
+                "column": 5
+              },
+              "end": {
+                "line": 112,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 111,
+              "column": 9
+            },
+            "end": {
+              "line": 111,
+              "column": 49
+            }
+          },
+          "replacement": "Ok(())",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_111_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_111_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 9.34978475,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 6.192211666,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:124:9: replace ApplicationContext::start -> Result<(), ContextError> with Ok(())",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::start",
+            "return_type": "-> Result<(), ContextError>",
+            "span": {
+              "start": {
+                "line": 114,
+                "column": 5
+              },
+              "end": {
+                "line": 125,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 124,
+              "column": 9
+            },
+            "end": {
+              "line": 124,
+              "column": 47
+            }
+          },
+          "replacement": "Ok(())",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_124_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_124_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 9.748420084,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 6.46627,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:144:9: replace ApplicationContext::pause -> Result<(), ContextError> with Ok(())",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::pause",
+            "return_type": "-> Result<(), ContextError>",
+            "span": {
+              "start": {
+                "line": 127,
+                "column": 5
+              },
+              "end": {
+                "line": 145,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 144,
+              "column": 9
+            },
+            "end": {
+              "line": 144,
+              "column": 47
+            }
+          },
+          "replacement": "Ok(())",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_144_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_144_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 10.904487,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 20.034117959,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:163:9: replace ApplicationContext::restart -> Result<(), ContextError> with Ok(())",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::restart",
+            "return_type": "-> Result<(), ContextError>",
+            "span": {
+              "start": {
+                "line": 147,
+                "column": 5
+              },
+              "end": {
+                "line": 164,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 163,
+              "column": 9
+            },
+            "end": {
+              "line": 163,
+              "column": 49
+            }
+          },
+          "replacement": "Ok(())",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_163_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_163_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 7.996606041,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 20.116395542,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:174:9: replace ApplicationContext::close -> Result<(), ContextError> with Ok(())",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::close",
+            "return_type": "-> Result<(), ContextError>",
+            "span": {
+              "start": {
+                "line": 166,
+                "column": 5
+              },
+              "end": {
+                "line": 175,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 174,
+              "column": 9
+            },
+            "end": {
+              "line": 174,
+              "column": 39
+            }
+          },
+          "replacement": "Ok(())",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_174_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_174_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 8.892295042,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 4.386787875,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:187:9: replace ApplicationContext::run_until_cancelled -> Result<(), ContextError> with Ok(())",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::run_until_cancelled",
+            "return_type": "-> Result<(), ContextError>",
+            "span": {
+              "start": {
+                "line": 177,
+                "column": 5
+              },
+              "end": {
+                "line": 190,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 187,
+              "column": 9
+            },
+            "end": {
+              "line": 189,
+              "column": 27
+            }
+          },
+          "replacement": "Ok(())",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_187_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_187_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 9.288856792,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 25.443697875,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:204:9: replace ApplicationContext::run_until_shutdown_signal -> Result<(), ContextError> with Ok(())",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::run_until_shutdown_signal",
+            "return_type": "-> Result<(), ContextError>",
+            "span": {
+              "start": {
+                "line": 192,
+                "column": 5
+              },
+              "end": {
+                "line": 226,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 204,
+              "column": 9
+            },
+            "end": {
+              "line": 225,
+              "column": 10
+            }
+          },
+          "replacement": "Ok(())",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_204_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_204_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 8.286747291,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 29.986681792,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:241:9: replace ApplicationContext::shutdown_on_signal -> Result<(), ContextError> with Ok(())",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::shutdown_on_signal",
+            "return_type": "-> Result<(), ContextError>",
+            "span": {
+              "start": {
+                "line": 228,
+                "column": 5
+              },
+              "end": {
+                "line": 244,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 241,
+              "column": 9
+            },
+            "end": {
+              "line": 243,
+              "column": 27
+            }
+          },
+          "replacement": "Ok(())",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "Timeout",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_241_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_241_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 8.673422334,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 300.014851333,
+          "process_status": "Timeout",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:248:9: replace ApplicationContext::state -> ContextState with Default::default()",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::state",
+            "return_type": "-> ContextState",
+            "span": {
+              "start": {
+                "line": 246,
+                "column": 5
+              },
+              "end": {
+                "line": 249,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 248,
+              "column": 9
+            },
+            "end": {
+              "line": 248,
+              "column": 39
+            }
+          },
+          "replacement": "Default::default()",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_248_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_248_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 11.597086000000001,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 6.5306235,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:260:9: replace ApplicationContext::id -> String with String::new()",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::id",
+            "return_type": "-> String",
+            "span": {
+              "start": {
+                "line": 253,
+                "column": 5
+              },
+              "end": {
+                "line": 261,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 260,
+              "column": 9
+            },
+            "end": {
+              "line": 260,
+              "column": 59
+            }
+          },
+          "replacement": "String::new()",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "MissedMutant",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_260_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_260_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 7.221595,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 33.166856875,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:260:9: replace ApplicationContext::id -> String with \"xyzzy\".into()",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::id",
+            "return_type": "-> String",
+            "span": {
+              "start": {
+                "line": 253,
+                "column": 5
+              },
+              "end": {
+                "line": 261,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 260,
+              "column": 9
+            },
+            "end": {
+              "line": 260,
+              "column": 59
+            }
+          },
+          "replacement": "\"xyzzy\".into()",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "MissedMutant",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_260_col_9_001.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_260_col_9_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 6.364013,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 33.12626375,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:265:9: replace ApplicationContext::set_id with ()",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::set_id",
+            "return_type": "",
+            "span": {
+              "start": {
+                "line": 263,
+                "column": 5
+              },
+              "end": {
+                "line": 266,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 265,
+              "column": 9
+            },
+            "end": {
+              "line": 265,
+              "column": 65
+            }
+          },
+          "replacement": "()",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "MissedMutant",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_265_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_265_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 6.8156046660000005,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 33.789669166,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:274:9: replace ApplicationContext::application_name -> String with String::new()",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::application_name",
+            "return_type": "-> String",
+            "span": {
+              "start": {
+                "line": 268,
+                "column": 5
+              },
+              "end": {
+                "line": 278,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 274,
+              "column": 9
+            },
+            "end": {
+              "line": 277,
+              "column": 21
+            }
+          },
+          "replacement": "String::new()",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "MissedMutant",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_274_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_274_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 7.505804,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 34.885535792,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:274:9: replace ApplicationContext::application_name -> String with \"xyzzy\".into()",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::application_name",
+            "return_type": "-> String",
+            "span": {
+              "start": {
+                "line": 268,
+                "column": 5
+              },
+              "end": {
+                "line": 278,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 274,
+              "column": 9
+            },
+            "end": {
+              "line": 277,
+              "column": 21
+            }
+          },
+          "replacement": "\"xyzzy\".into()",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "MissedMutant",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_274_col_9_001.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_274_col_9_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 7.23984075,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 36.167933666,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:282:9: replace ApplicationContext::set_application_name with ()",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::set_application_name",
+            "return_type": "",
+            "span": {
+              "start": {
+                "line": 280,
+                "column": 5
+              },
+              "end": {
+                "line": 285,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 282,
+              "column": 9
+            },
+            "end": {
+              "line": 284,
+              "column": 70
+            }
+          },
+          "replacement": "()",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "MissedMutant",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_282_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_282_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 8.904894208,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 38.036627125,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:293:9: replace ApplicationContext::display_name -> String with String::new()",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::display_name",
+            "return_type": "-> String",
+            "span": {
+              "start": {
+                "line": 287,
+                "column": 5
+              },
+              "end": {
+                "line": 297,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 293,
+              "column": 9
+            },
+            "end": {
+              "line": 296,
+              "column": 21
+            }
+          },
+          "replacement": "String::new()",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "MissedMutant",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_293_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_293_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 8.983329209,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 37.969141917,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:293:9: replace ApplicationContext::display_name -> String with \"xyzzy\".into()",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::display_name",
+            "return_type": "-> String",
+            "span": {
+              "start": {
+                "line": 287,
+                "column": 5
+              },
+              "end": {
+                "line": 297,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 293,
+              "column": 9
+            },
+            "end": {
+              "line": 296,
+              "column": 21
+            }
+          },
+          "replacement": "\"xyzzy\".into()",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "MissedMutant",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_293_col_9_001.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_293_col_9_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 9.107950833,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 40.103164792,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:301:9: replace ApplicationContext::set_display_name with ()",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::set_display_name",
+            "return_type": "",
+            "span": {
+              "start": {
+                "line": 299,
+                "column": 5
+              },
+              "end": {
+                "line": 304,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 301,
+              "column": 9
+            },
+            "end": {
+              "line": 303,
+              "column": 66
+            }
+          },
+          "replacement": "()",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "MissedMutant",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_301_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_301_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 9.62545875,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 41.791353041,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:313:9: replace ApplicationContext::parent -> Option<Arc<ApplicationContext>> with None",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::parent",
+            "return_type": "-> Option<Arc<ApplicationContext>>",
+            "span": {
+              "start": {
+                "line": 306,
+                "column": 5
+              },
+              "end": {
+                "line": 317,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 313,
+              "column": 9
+            },
+            "end": {
+              "line": 316,
+              "column": 21
+            }
+          },
+          "replacement": "None",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "MissedMutant",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_313_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_313_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 10.424520167,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 45.433579167,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:313:9: replace ApplicationContext::parent -> Option<Arc<ApplicationContext>> with Some(Arc::new(Default::default()))",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::parent",
+            "return_type": "-> Option<Arc<ApplicationContext>>",
+            "span": {
+              "start": {
+                "line": 306,
+                "column": 5
+              },
+              "end": {
+                "line": 317,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 313,
+              "column": 9
+            },
+            "end": {
+              "line": 316,
+              "column": 21
+            }
+          },
+          "replacement": "Some(Arc::new(Default::default()))",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "Unviable",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_313_col_9_001.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_313_col_9_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.2343775830000001,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:321:9: replace ApplicationContext::set_parent with ()",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::set_parent",
+            "return_type": "",
+            "span": {
+              "start": {
+                "line": 319,
+                "column": 5
+              },
+              "end": {
+                "line": 324,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 321,
+              "column": 9
+            },
+            "end": {
+              "line": 323,
+              "column": 55
+            }
+          },
+          "replacement": "()",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "MissedMutant",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_321_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_321_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 13.41586575,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 45.563419209,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:331:9: replace ApplicationContext::startup_date -> u64 with 0",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::startup_date",
+            "return_type": "-> u64",
+            "span": {
+              "start": {
+                "line": 326,
+                "column": 5
+              },
+              "end": {
+                "line": 332,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 331,
+              "column": 9
+            },
+            "end": {
+              "line": 331,
+              "column": 57
+            }
+          },
+          "replacement": "0",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "MissedMutant",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_331_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_331_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 10.096474917,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 42.801507333,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:331:9: replace ApplicationContext::startup_date -> u64 with 1",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::startup_date",
+            "return_type": "-> u64",
+            "span": {
+              "start": {
+                "line": 326,
+                "column": 5
+              },
+              "end": {
+                "line": 332,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 331,
+              "column": 9
+            },
+            "end": {
+              "line": 331,
+              "column": 57
+            }
+          },
+          "replacement": "1",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "MissedMutant",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_331_col_9_001.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_331_col_9_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 9.034666292,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 43.881628083,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:340:9: replace ApplicationContext::is_active -> bool with true",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::is_active",
+            "return_type": "-> bool",
+            "span": {
+              "start": {
+                "line": 334,
+                "column": 5
+              },
+              "end": {
+                "line": 350,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 340,
+              "column": 9
+            },
+            "end": {
+              "line": 349,
+              "column": 10
+            }
+          },
+          "replacement": "true",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "MissedMutant",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_340_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_340_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 9.729264333,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 44.791613459,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:340:9: replace ApplicationContext::is_active -> bool with false",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::is_active",
+            "return_type": "-> bool",
+            "span": {
+              "start": {
+                "line": 334,
+                "column": 5
+              },
+              "end": {
+                "line": 350,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 340,
+              "column": 9
+            },
+            "end": {
+              "line": 349,
+              "column": 10
+            }
+          },
+          "replacement": "false",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "MissedMutant",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_340_col_9_001.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_340_col_9_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 8.998907875,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 48.573067667,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:354:9: replace ApplicationContext::is_closed -> bool with true",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::is_closed",
+            "return_type": "-> bool",
+            "span": {
+              "start": {
+                "line": 352,
+                "column": 5
+              },
+              "end": {
+                "line": 355,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 354,
+              "column": 9
+            },
+            "end": {
+              "line": 354,
+              "column": 59
+            }
+          },
+          "replacement": "true",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "MissedMutant",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_354_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_354_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 10.386212875,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 45.834363125,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:354:9: replace ApplicationContext::is_closed -> bool with false",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::is_closed",
+            "return_type": "-> bool",
+            "span": {
+              "start": {
+                "line": 352,
+                "column": 5
+              },
+              "end": {
+                "line": 355,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 354,
+              "column": 9
+            },
+            "end": {
+              "line": 354,
+              "column": 59
+            }
+          },
+          "replacement": "false",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "MissedMutant",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_354_col_9_001.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_354_col_9_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 9.488080292,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 47.374278583,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:365:9: replace ApplicationContext::bean_factory -> &Container with Box::leak(Box::new(Default::default()))",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::bean_factory",
+            "return_type": "-> &Container",
+            "span": {
+              "start": {
+                "line": 357,
+                "column": 5
+              },
+              "end": {
+                "line": 366,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 365,
+              "column": 9
+            },
+            "end": {
+              "line": 365,
+              "column": 45
+            }
+          },
+          "replacement": "Box::leak(Box::new(Default::default()))",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "Unviable",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_365_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_365_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.809892333,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:377:9: replace ApplicationContext::register_shutdown_hook with ()",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::register_shutdown_hook",
+            "return_type": "",
+            "span": {
+              "start": {
+                "line": 370,
+                "column": 5
+              },
+              "end": {
+                "line": 387,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 377,
+              "column": 9
+            },
+            "end": {
+              "line": 386,
+              "column": 58
+            }
+          },
+          "replacement": "()",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "MissedMutant",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_377_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_377_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 10.789363292,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 48.034021375,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:400:9: replace ApplicationContext::clone_for_hook -> Self with Default::default()",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::clone_for_hook",
+            "return_type": "-> Self",
+            "span": {
+              "start": {
+                "line": 389,
+                "column": 5
+              },
+              "end": {
+                "line": 410,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 400,
+              "column": 9
+            },
+            "end": {
+              "line": 409,
+              "column": 10
+            }
+          },
+          "replacement": "Default::default()",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "Unviable",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_400_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_400_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.819085375,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:415:9: replace ApplicationContext::container -> &Container with Box::leak(Box::new(Default::default()))",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::container",
+            "return_type": "-> &Container",
+            "span": {
+              "start": {
+                "line": 412,
+                "column": 5
+              },
+              "end": {
+                "line": 416,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 415,
+              "column": 9
+            },
+            "end": {
+              "line": 415,
+              "column": 45
+            }
+          },
+          "replacement": "Box::leak(Box::new(Default::default()))",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "Unviable",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_415_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_415_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.862468792,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:427:9: replace ApplicationContext::open_scope -> Arc<ScopeContext> with Arc::new(Default::default())",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::open_scope",
+            "return_type": "-> Arc<ScopeContext>",
+            "span": {
+              "start": {
+                "line": 418,
+                "column": 5
+              },
+              "end": {
+                "line": 430,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 427,
+              "column": 9
+            },
+            "end": {
+              "line": 429,
+              "column": 10
+            }
+          },
+          "replacement": "Arc::new(Default::default())",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "Unviable",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_427_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_427_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.9212075,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:435:9: replace ApplicationContext::cancellation_token -> CancellationToken with Default::default()",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::cancellation_token",
+            "return_type": "-> CancellationToken",
+            "span": {
+              "start": {
+                "line": 432,
+                "column": 5
+              },
+              "end": {
+                "line": 436,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 435,
+              "column": 9
+            },
+            "end": {
+              "line": 435,
+              "column": 60
+            }
+          },
+          "replacement": "Default::default()",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_435_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_435_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 11.114769167,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 8.561022916,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:444:9: replace ApplicationContext::managed_tasks -> Option<&Arc<ManagedTaskSupervisor>> with None",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::managed_tasks",
+            "return_type": "-> Option<&Arc<ManagedTaskSupervisor>>",
+            "span": {
+              "start": {
+                "line": 438,
+                "column": 5
+              },
+              "end": {
+                "line": 445,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 444,
+              "column": 9
+            },
+            "end": {
+              "line": 444,
+              "column": 53
+            }
+          },
+          "replacement": "None",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_444_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_444_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 9.377374042,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 7.378156584,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:444:9: replace ApplicationContext::managed_tasks -> Option<&Arc<ManagedTaskSupervisor>> with Some(Box::leak(Box::new(Arc::new(Default::default()))))",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::managed_tasks",
+            "return_type": "-> Option<&Arc<ManagedTaskSupervisor>>",
+            "span": {
+              "start": {
+                "line": 438,
+                "column": 5
+              },
+              "end": {
+                "line": 445,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 444,
+              "column": 9
+            },
+            "end": {
+              "line": 444,
+              "column": 53
+            }
+          },
+          "replacement": "Some(Box::leak(Box::new(Arc::new(Default::default()))))",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "Unviable",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_444_col_9_001.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_444_col_9_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.2103995,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:450:9: replace ApplicationContext::task_shutdown_policy -> &TaskShutdownPolicy with Box::leak(Box::new(Default::default()))",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::task_shutdown_policy",
+            "return_type": "-> &TaskShutdownPolicy",
+            "span": {
+              "start": {
+                "line": 447,
+                "column": 5
+              },
+              "end": {
+                "line": 451,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 450,
+              "column": 9
+            },
+            "end": {
+              "line": 450,
+              "column": 60
+            }
+          },
+          "replacement": "Box::leak(Box::new(Default::default()))",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_450_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_450_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 10.093448167,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 22.675260875,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:458:9: replace ApplicationContext::lifecycle_execution_policy -> &LifecycleExecutionPolicy with Box::leak(Box::new(Default::default()))",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::lifecycle_execution_policy",
+            "return_type": "-> &LifecycleExecutionPolicy",
+            "span": {
+              "start": {
+                "line": 453,
+                "column": 5
+              },
+              "end": {
+                "line": 459,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 458,
+              "column": 9
+            },
+            "end": {
+              "line": 458,
+              "column": 66
+            }
+          },
+          "replacement": "Box::leak(Box::new(Default::default()))",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_458_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_458_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 10.808786834,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 22.862897542,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:467:9: replace ApplicationContext::shutdown_signal_listener -> &SystemShutdownSignalListener with Box::leak(Box::new(Default::default()))",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::shutdown_signal_listener",
+            "return_type": "-> &SystemShutdownSignalListener",
+            "span": {
+              "start": {
+                "line": 461,
+                "column": 5
+              },
+              "end": {
+                "line": 468,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 467,
+              "column": 9
+            },
+            "end": {
+              "line": 467,
+              "column": 56
+            }
+          },
+          "replacement": "Box::leak(Box::new(Default::default()))",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_467_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_467_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 11.652883583,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 23.99290575,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:477:9: replace ApplicationContext::environment -> &ApplicationEnvironment with Box::leak(Box::new(Default::default()))",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::environment",
+            "return_type": "-> &ApplicationEnvironment",
+            "span": {
+              "start": {
+                "line": 470,
+                "column": 5
+              },
+              "end": {
+                "line": 478,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 477,
+              "column": 9
+            },
+            "end": {
+              "line": 477,
+              "column": 51
+            }
+          },
+          "replacement": "Box::leak(Box::new(Default::default()))",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_477_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_477_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 12.091483542,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 14.205241583,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:483:9: replace ApplicationContext::events -> &EventBus with Box::leak(Box::new(Default::default()))",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::events",
+            "return_type": "-> &EventBus",
+            "span": {
+              "start": {
+                "line": 480,
+                "column": 5
+              },
+              "end": {
+                "line": 484,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 483,
+              "column": 9
+            },
+            "end": {
+              "line": 483,
+              "column": 46
+            }
+          },
+          "replacement": "Box::leak(Box::new(Default::default()))",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_483_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_483_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 11.3344535,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 7.977950708,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:492:9: replace ApplicationContext::scope_cleanup_policy -> &crate::ScopeCleanupPolicy with Box::leak(Box::new(Default::default()))",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::scope_cleanup_policy",
+            "return_type": "-> &crate::ScopeCleanupPolicy",
+            "span": {
+              "start": {
+                "line": 486,
+                "column": 5
+              },
+              "end": {
+                "line": 493,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 492,
+              "column": 9
+            },
+            "end": {
+              "line": 492,
+              "column": 60
+            }
+          },
+          "replacement": "Box::leak(Box::new(Default::default()))",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_492_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_492_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 12.469666459,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 24.959921583,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:501:9: replace ApplicationContext::runtime_handle -> Option<&Handle> with None",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::runtime_handle",
+            "return_type": "-> Option<&Handle>",
+            "span": {
+              "start": {
+                "line": 495,
+                "column": 5
+              },
+              "end": {
+                "line": 502,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 501,
+              "column": 9
+            },
+            "end": {
+              "line": 501,
+              "column": 47
+            }
+          },
+          "replacement": "None",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_501_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_501_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 13.2057915,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 26.20913225,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:501:9: replace ApplicationContext::runtime_handle -> Option<&Handle> with Some(Box::leak(Box::new(Default::default())))",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::runtime_handle",
+            "return_type": "-> Option<&Handle>",
+            "span": {
+              "start": {
+                "line": 495,
+                "column": 5
+              },
+              "end": {
+                "line": 502,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 501,
+              "column": 9
+            },
+            "end": {
+              "line": 501,
+              "column": 47
+            }
+          },
+          "replacement": "Some(Box::leak(Box::new(Default::default())))",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "Unviable",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_501_col_9_001.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_501_col_9_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.3088227080000001,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:507:9: replace ApplicationContext::invocation_plans -> &InvocationPlanCatalog with Box::leak(Box::new(Default::default()))",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::invocation_plans",
+            "return_type": "-> &InvocationPlanCatalog",
+            "span": {
+              "start": {
+                "line": 504,
+                "column": 5
+              },
+              "end": {
+                "line": 508,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 507,
+              "column": 9
+            },
+            "end": {
+              "line": 507,
+              "column": 56
+            }
+          },
+          "replacement": "Box::leak(Box::new(Default::default()))",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_507_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_507_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 11.353647,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 15.450505167,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:513:9: replace ApplicationContext::local_invocation_plans -> &vernal_aop::LocalInvocationPlanCatalog with Box::leak(Box::new(Default::default()))",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::local_invocation_plans",
+            "return_type": "-> &vernal_aop::LocalInvocationPlanCatalog",
+            "span": {
+              "start": {
+                "line": 510,
+                "column": 5
+              },
+              "end": {
+                "line": 514,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 513,
+              "column": 9
+            },
+            "end": {
+              "line": 513,
+              "column": 62
+            }
+          },
+          "replacement": "Box::leak(Box::new(Default::default()))",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_513_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_513_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 11.938327167,
+          "process_status": "Success",
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 25.793964208,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/vernal-context/src/application_context.rs:521:9: replace ApplicationContext::startup_report -> StartupReport with Default::default()",
+          "package": "vernal-context",
+          "file": "crates/vernal-context/src/application_context.rs",
+          "function": {
+            "function_name": "ApplicationContext::startup_report",
+            "return_type": "-> StartupReport",
+            "span": {
+              "start": {
+                "line": 516,
+                "column": 5
+              },
+              "end": {
+                "line": 523,
+                "column": 6
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 521,
+              "column": 9
+            },
+            "end": {
+              "line": 522,
+              "column": 66
+            }
+          },
+          "replacement": "Default::default()",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "Unviable",
+      "log_path": "log/crates__vernal-context__src__application_context.rs_line_521_col_9.log",
+      "diff_path": "diff/crates__vernal-context__src__application_context.rs_line_521_col_9.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.257553167,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/opt/homebrew/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=vernal-context@0.0.0-dev"
+          ]
+        }
+      ]
     }
   ],
-  "total_mutants": 22,
-  "missed": 1,
-  "caught": 9,
-  "timeout": 0,
-  "unviable": 12,
+  "total_mutants": 86,
+  "missed": 19,
+  "caught": 38,
+  "timeout": 1,
+  "unviable": 28,
   "success": 0,
-  "start_time": "2026-07-29T16:27:00.98301Z",
+  "start_time": "2026-07-29T19:46:05.730943Z",
   "end_time": null,
   "cargo_mutants_version": "27.1.0"
 }

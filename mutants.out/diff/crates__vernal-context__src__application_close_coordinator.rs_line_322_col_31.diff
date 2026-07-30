@@ -1,0 +1,21 @@
+--- crates/vernal-context/src/application_close_coordinator.rs
++++ replace == with != in ApplicationCloseCoordinator::finish_close
+@@ -314,17 +314,17 @@
+             observer.close_result.send_replace(Some(result));
+         });
+         Ok(())
+     }
+ 
+     /// 在后台完成任务排空、组件逆序停止和 Closed 终态发布。
+     async fn finish_close(&self) -> CloseResult {
+         let _operation = self.operation.lock().await;
+-        if self.state().await == ContextState::Closed {
++        if self.state().await != /* ~ changed by cargo-mutants ~ */ ContextState::Closed {
+             return Ok(());
+         }
+ 
+         let draining_state = if self.state().await == ContextState::Ready {
+             ContextState::Draining
+         } else {
+             ContextState::RollingBack
+         };

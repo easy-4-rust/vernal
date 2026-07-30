@@ -1,0 +1,21 @@
+--- crates/vernal-context/src/application_context.rs
++++ replace ApplicationContext::cancellation_token -> CancellationToken with Default::default()
+@@ -427,17 +427,17 @@
+         self.container().open_scope_with_cancellation::<S>(
+             self.lifecycle().resources().cancellation().child_token(),
+         )
+     }
+ 
+     /// 返回供组件和适配器派生子令牌的取消令牌。
+     #[must_use]
+     pub fn cancellation_token(&self) -> CancellationToken {
+-        self.lifecycle().resources().cancellation().clone()
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 返回高层应用建造器创建的 Tokio 任务监督器。
+     ///
+     /// 低层 `ApplicationContextBuilder` 不捕获 Runtime，因此返回 `None`。高层
+     /// 路径返回的对象与注册到 `IoC` 的 `Arc<ManagedTaskSupervisor>` 是同一实例。
+     #[must_use]
+     pub fn managed_tasks(&self) -> Option<&Arc<ManagedTaskSupervisor>> {

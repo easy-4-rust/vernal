@@ -1,1 +1,19 @@
 crates/vernal-context/src/lib.rs:172:5: replace project_status -> &'static str with "xyzzy"
+crates/vernal-context/src/application_context.rs:260:9: replace ApplicationContext::id -> String with String::new()
+crates/vernal-context/src/application_context.rs:260:9: replace ApplicationContext::id -> String with "xyzzy".into()
+crates/vernal-context/src/application_context.rs:265:9: replace ApplicationContext::set_id with ()
+crates/vernal-context/src/application_context.rs:274:9: replace ApplicationContext::application_name -> String with String::new()
+crates/vernal-context/src/application_context.rs:274:9: replace ApplicationContext::application_name -> String with "xyzzy".into()
+crates/vernal-context/src/application_context.rs:282:9: replace ApplicationContext::set_application_name with ()
+crates/vernal-context/src/application_context.rs:293:9: replace ApplicationContext::display_name -> String with String::new()
+crates/vernal-context/src/application_context.rs:293:9: replace ApplicationContext::display_name -> String with "xyzzy".into()
+crates/vernal-context/src/application_context.rs:301:9: replace ApplicationContext::set_display_name with ()
+crates/vernal-context/src/application_context.rs:313:9: replace ApplicationContext::parent -> Option<Arc<ApplicationContext>> with None
+crates/vernal-context/src/application_context.rs:321:9: replace ApplicationContext::set_parent with ()
+crates/vernal-context/src/application_context.rs:331:9: replace ApplicationContext::startup_date -> u64 with 0
+crates/vernal-context/src/application_context.rs:331:9: replace ApplicationContext::startup_date -> u64 with 1
+crates/vernal-context/src/application_context.rs:340:9: replace ApplicationContext::is_active -> bool with true
+crates/vernal-context/src/application_context.rs:340:9: replace ApplicationContext::is_active -> bool with false
+crates/vernal-context/src/application_context.rs:354:9: replace ApplicationContext::is_closed -> bool with true
+crates/vernal-context/src/application_context.rs:354:9: replace ApplicationContext::is_closed -> bool with false
+crates/vernal-context/src/application_context.rs:377:9: replace ApplicationContext::register_shutdown_hook with ()

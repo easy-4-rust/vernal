@@ -1,0 +1,42 @@
+--- crates/vernal-context/src/application_close_coordinator.rs
++++ replace ApplicationCloseCoordinator::finish_close -> CloseResult with Default::default()
+@@ -313,38 +313,17 @@
+             };
+             observer.close_result.send_replace(Some(result));
+         });
+         Ok(())
+     }
+ 
+     /// 在后台完成任务排空、组件逆序停止和 Closed 终态发布。
+     async fn finish_close(&self) -> CloseResult {
+-        let _operation = self.operation.lock().await;
+-        if self.state().await == ContextState::Closed {
+-            return Ok(());
+-        }
+-
+-        let draining_state = if self.state().await == ContextState::Ready {
+-            ContextState::Draining
+-        } else {
+-            ContextState::RollingBack
+-        };
+-        self.set_state(draining_state).await;
+-
+-        // 长期任务可能正在使用生命周期组件提供的连接池、消费者或调度器。因此先
+-        // 取消并等待任务退出，再取得组件栈所有权并按依赖逆序执行 stop。
+-        let task_error = self.shutdown_managed_tasks().await;
+-        let components = self.take_components().await;
+-        let lifecycle_error = self.stop_all(&components).await;
+-        self.set_state(ContextState::Closed).await;
+-        task_error
+-            .map(|source| ContextError::ManagedTask { source })
+-            .or(lifecycle_error)
+-            .map_or(Ok(()), Err)
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 等待协调器发布可克隆结果；并发调用者不会重新执行关闭流程。
+     async fn wait_for_close(&self) -> CloseResult {
+         let mut receiver = self.close_result.subscribe();
+         loop {
+             if let Some(result) = receiver.borrow().clone() {
+                 return result;

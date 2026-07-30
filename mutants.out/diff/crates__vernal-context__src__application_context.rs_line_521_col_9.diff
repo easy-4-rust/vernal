@@ -1,0 +1,22 @@
+--- crates/vernal-context/src/application_context.rs
++++ replace ApplicationContext::startup_report -> StartupReport with Default::default()
+@@ -513,18 +513,17 @@
+         self.lifecycle().resources().local_invocation_plans()
+     }
+ 
+     /// 返回调用时刻的只读、可序列化、脱敏启动报告。
+     ///
+     /// 返回值是拥有自身数据的快照；后续 start/close 操作只更新 Context 内部
+     /// 报告，不会修改调用方已经取得的对象。
+     pub async fn startup_report(&self) -> StartupReport {
+-        let unused_definitions = self.container().unused_definitions();
+-        self.lifecycle().startup_report(unused_definitions).await
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 记录一条不携带运行时数据的 Context-local 脱敏告警代码。
+     ///
+     /// 该入口只接受静态字符串，从类型层阻止请求参数、凭证、数据库错误正文或其他
+     /// 敏感值进入可序列化诊断。相同代码自动去重，多个应用 Context 之间互不共享。
+     pub async fn record_runtime_warning(&self, warning: &'static str) {
+         self.lifecycle().record_warning(warning).await;

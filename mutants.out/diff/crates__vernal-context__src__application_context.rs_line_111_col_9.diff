@@ -1,0 +1,21 @@
+--- crates/vernal-context/src/application_context.rs
++++ replace ApplicationContext::refresh -> Result<(), ContextError> with Ok(())
+@@ -103,17 +103,17 @@
+     /// 或用户钩子 panic 时，观察任务仍会取消应用、逆序释放共享组件栈并进入确定
+     /// 终态。
+     ///
+     /// # Errors
+     ///
+     /// Runtime 不可用、状态非法、组件解析/初始化失败或协调任务异常时返回
+     /// [`ContextError`]。
+     pub async fn refresh(&self) -> Result<(), ContextError> {
+-        self.startup_coordinator.refresh().await
++        Ok(()) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 按依赖顺序启动组件、执行 Runner、激活周期任务并进入 Ready。
+     ///
+     /// 实际 start 链由独立 Tokio task 持有。当前等待者被取消只会丢弃一次性结果
+     /// 接收端；启动成功仍会提交 Ready，失败仍会完成逆序回滚。
+     ///
+     /// # Errors

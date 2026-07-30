@@ -1,0 +1,21 @@
+--- crates/vernal-context/src/application_context.rs
++++ replace ApplicationContext::pause -> Result<(), ContextError> with Ok(())
+@@ -136,17 +136,17 @@
+     /// 接收端，已暂停组件不会恢复。
+     ///
+     /// # Errors
+     ///
+     /// Runtime 不可用、当前状态不是 `Ready`，或任一可暂停组件的 `pause()` 钩子
+     /// 失败 / 超时 / panic 时返回 [`ContextError`]。失败会让 Context 进入完整
+     /// 关闭路径（`close()`）。
+     pub async fn pause(&self) -> Result<(), ContextError> {
+-        self.startup_coordinator.pause().await
++        Ok(()) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 从 `Paused` 状态恢复 —— 重新启动此前被暂停的组件。
+     ///
+     /// 对标 Spring 7.0 `ConfigurableApplicationContext#restart()` 与
+     /// `LifecycleProcessor#onRestart()`：Context 在 `Paused` 状态下调用本方法
+     /// 会重新调用可暂停组件的 `start()`，然后推回 `Ready` 状态，并重新发布
+     /// [`ApplicationReadyEvent`]。

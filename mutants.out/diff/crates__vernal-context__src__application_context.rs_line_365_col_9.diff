@@ -1,0 +1,21 @@
+--- crates/vernal-context/src/application_context.rs
++++ replace ApplicationContext::bean_factory -> &Container with Box::leak(Box::new(Default::default()))
+@@ -357,17 +357,17 @@
+     /// 返回底层 `IoC` 容器（对标 `ConfigurableApplicationContext#getBeanFactory`）。
+     ///
+     /// vernal 没有公开 `AutowireCapableBeanFactory` 子接口，IoC 直接通过
+     /// 共享 `Container` 实例工作。调用方可执行 `container().resolve::<T>()`
+     /// / `container().resolve_qualified::<T>()` 模拟 Spring
+     /// `BeanFactory#getBean(Class)` / `BeanFactory#getBean(String, Class)`。
+     #[must_use]
+     pub fn bean_factory(&self) -> &Container {
+-        self.startup_coordinator.container()
++        Box::leak(Box::new(Default::default())) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     // ── Spring ConfigurableApplicationContext mutator methods ────────────
+ 
+     /// 注册 JVM shutdown hook：在 JVM 退出时自动调用 [`Self::close`]。
+     ///
+     /// 对标 `ConfigurableApplicationContext#registerShutdownHook()`：
+     /// 调用可以多次，但只有第一次生效。Rust 端通过 `std::sync::at_exit` 实现，

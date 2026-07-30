@@ -1,0 +1,66 @@
+--- crates/vernal-context/src/application_close_coordinator.rs
++++ replace ApplicationCloseCoordinator::start_close -> CloseResult with Default::default()
+@@ -263,62 +263,17 @@
+     /// 会使用调用现场的 Tokio Handle；两者都不存在时返回结构化协调错误。
+     pub(crate) async fn close(self: &Arc<Self>) -> CloseResult {
+         self.start_close()?;
+         self.wait_for_close().await
+     }
+ 
+     /// 原子提交唯一关闭任务，并用第二个轻量观察任务隔离协调器自身的 panic。
+     fn start_close(self: &Arc<Self>) -> CloseResult {
+-        if self.close_started.load(Ordering::Acquire) {
+-            return Ok(());
+-        }
+-
+-        let handle = self
+-            .resources
+-            .runtime()
+-            .cloned()
+-            .or_else(|| Handle::try_current().ok())
+-            .ok_or_else(|| ContextError::LifecycleCoordinator {
+-                operation: "close",
+-                source: Arc::new(std::io::Error::other(
+-                    "Tokio runtime is unavailable for context close",
+-                )),
+-            })?;
+-        if self
+-            .close_started
+-            .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+-            .is_err()
+-        {
+-            return Ok(());
+-        }
+-
+-        // 先广播取消，再排队等待操作锁；这样并发运行的 start/refresh 能尽快观察到
+-        // 应用已经进入停机方向，同时关闭协调器仍负责最终的资源释放。
+-        self.resources.cancellation().cancel();
+-        let coordinator = Arc::clone(self);
+-        let close_task = handle.spawn(async move { coordinator.finish_close().await });
+-        let observer = Arc::clone(self);
+-        handle.spawn(async move {
+-            let result = match close_task.await {
+-                Ok(result) => result,
+-                Err(source) => {
+-                    observer
+-                        .record_warning("context.lifecycle-coordinator.failed")
+-                        .await;
+-                    observer.set_state(ContextState::Closed).await;
+-                    Err(ContextError::LifecycleCoordinator {
+-                        operation: "close",
+-                        source: Arc::new(source),
+-                    })
+-                }
+-            };
+-            observer.close_result.send_replace(Some(result));
+-        });
+-        Ok(())
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 在后台完成任务排空、组件逆序停止和 Closed 终态发布。
+     async fn finish_close(&self) -> CloseResult {
+         let _operation = self.operation.lock().await;
+         if self.state().await == ContextState::Closed {
+             return Ok(());
+         }

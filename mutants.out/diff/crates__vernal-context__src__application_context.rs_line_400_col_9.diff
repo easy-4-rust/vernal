@@ -1,0 +1,30 @@
+--- crates/vernal-context/src/application_context.rs
++++ replace ApplicationContext::clone_for_hook -> Self with Default::default()
+@@ -392,26 +392,17 @@
+     fn clone_for_hook(&self) -> Self {
+         // 通过共享 Arc 的克隆构造一个新的轻量 handle。这要求 `ApplicationContext`
+         // 暴露内部构造路径——但因为字段都为私有，最简单的方案是把 `close`
+         // 钩子放入 `ApplicationCloseCoordinator`，并仅通过 Arc<ApplicationContext>
+         // 传递。
+         //
+         // 由于 `Self` 字段包含 `std::sync::Mutex`，无法直接通过 derive Clone 克隆；
+         // 这里手动实现所需字段的克隆，调用方负责正确性。
+-        Self {
+-            startup_coordinator: Arc::clone(&self.startup_coordinator),
+-            id: std::sync::Mutex::new(self.id()),
+-            application_name: std::sync::Mutex::new(self.application_name()),
+-            display_name: std::sync::Mutex::new(self.display_name()),
+-            parent: std::sync::Mutex::new(self.parent()),
+-            startup_date_millis: AtomicU64::new(self.startup_date()),
+-            startup_instant: self.startup_instant,
+-            shutdown_hook_registered: AtomicBool::new(true),
+-        }
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 返回底层 `IoC` 容器。
+     #[must_use]
+     pub fn container(&self) -> &Container {
+         self.startup_coordinator.container()
+     }
+ 

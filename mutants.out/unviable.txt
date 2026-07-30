@@ -10,3 +10,19 @@ crates/vernal-context/src/application_close_coordinator.rs:63:9: replace Applica
 crates/vernal-context/src/application_close_coordinator.rs:73:9: replace ApplicationCloseCoordinator::components -> Vec<Arc<dyn Lifecycle>> with vec![Arc::new(Default::default())]
 crates/vernal-context/src/application_close_coordinator.rs:78:9: replace ApplicationCloseCoordinator::take_components -> Vec<Arc<dyn Lifecycle>> with vec![Arc::new(Default::default())]
 crates/vernal-context/src/application_close_coordinator.rs:100:9: replace ApplicationCloseCoordinator::startup_report -> StartupReport with Default::default()
+crates/vernal-context/src/application_close_coordinator.rs:114:16: delete ! in ApplicationCloseCoordinator::record_lifecycle_warning
+crates/vernal-context/src/application_close_coordinator.rs:143:9: replace ApplicationCloseCoordinator::shutdown_managed_tasks -> Option<ManagedTaskError> with Some(Default::default())
+crates/vernal-context/src/application_close_coordinator.rs:191:9: replace ApplicationCloseCoordinator::stop_all -> Option<ContextError> with Some(Default::default())
+crates/vernal-context/src/application_close_coordinator.rs:247:9: replace ApplicationCloseCoordinator::pause_all -> Option<ContextError> with Some(Default::default())
+crates/vernal-context/src/application_close_coordinator.rs:265:9: replace ApplicationCloseCoordinator::close -> CloseResult with Default::default()
+crates/vernal-context/src/application_close_coordinator.rs:271:9: replace ApplicationCloseCoordinator::start_close -> CloseResult with Default::default()
+crates/vernal-context/src/application_close_coordinator.rs:321:9: replace ApplicationCloseCoordinator::finish_close -> CloseResult with Default::default()
+crates/vernal-context/src/application_close_coordinator.rs:347:9: replace ApplicationCloseCoordinator::wait_for_close -> CloseResult with Default::default()
+crates/vernal-context/src/application_context.rs:313:9: replace ApplicationContext::parent -> Option<Arc<ApplicationContext>> with Some(Arc::new(Default::default()))
+crates/vernal-context/src/application_context.rs:365:9: replace ApplicationContext::bean_factory -> &Container with Box::leak(Box::new(Default::default()))
+crates/vernal-context/src/application_context.rs:400:9: replace ApplicationContext::clone_for_hook -> Self with Default::default()
+crates/vernal-context/src/application_context.rs:415:9: replace ApplicationContext::container -> &Container with Box::leak(Box::new(Default::default()))
+crates/vernal-context/src/application_context.rs:427:9: replace ApplicationContext::open_scope -> Arc<ScopeContext> with Arc::new(Default::default())
+crates/vernal-context/src/application_context.rs:444:9: replace ApplicationContext::managed_tasks -> Option<&Arc<ManagedTaskSupervisor>> with Some(Box::leak(Box::new(Arc::new(Default::default()))))
+crates/vernal-context/src/application_context.rs:501:9: replace ApplicationContext::runtime_handle -> Option<&Handle> with Some(Box::leak(Box::new(Default::default())))
+crates/vernal-context/src/application_context.rs:521:9: replace ApplicationContext::startup_report -> StartupReport with Default::default()

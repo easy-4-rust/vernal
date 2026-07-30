@@ -1,0 +1,23 @@
+--- crates/vernal-context/src/application_context.rs
++++ replace ApplicationContext::run_until_cancelled -> Result<(), ContextError> with Ok(())
+@@ -179,19 +179,17 @@
+     /// 受管任务返回错误、发生 panic 或被异常取消时会取消应用令牌，因此服务主函数
+     /// 可以在 `start()` 成功后等待本方法，把后台任务失败转换成 Context 关闭结果。
+     /// 外部信号处理器也可以调用 [`CancellationToken::cancel`] 复用同一条关闭路径。
+     ///
+     /// # Errors
+     ///
+     /// 返回 [`Self::close`] 的第一个受管任务、组件停止或协调器错误。
+     pub async fn run_until_cancelled(&self) -> Result<(), ContextError> {
+-        let cancellation = self.cancellation_token();
+-        cancellation.cancelled().await;
+-        self.close().await
++        Ok(()) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 等待应用内部取消或当前平台的第一个操作系统关闭信号，再完整关闭 Context。
+     ///
+     /// 受管任务失败可能先取消应用；Ctrl-C、Unix SIGTERM/SIGHUP 或 Windows
+     /// 控制台信号也可能先到达。两条路径使用同一个取消令牌和关闭协调器，因而不会
+     /// 重复 stop。操作系统信号会先作为 [`ApplicationShutdownSignal`] 发布到
+     /// Context-local [`EventBus`]，随后立即取消应用；事件订阅方不能延迟关闭。

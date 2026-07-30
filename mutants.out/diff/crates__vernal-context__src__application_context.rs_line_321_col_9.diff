@@ -1,0 +1,23 @@
+--- crates/vernal-context/src/application_context.rs
++++ replace ApplicationContext::set_parent with ()
+@@ -313,19 +313,17 @@
+         self.parent
+             .lock()
+             .expect("parent mutex poisoned")
+             .clone()
+     }
+ 
+     /// 设置父 Context 引用。
+     pub fn set_parent(&self, parent: Option<Arc<ApplicationContext>>) {
+-        *self.parent
+-            .lock()
+-            .expect("parent mutex poisoned") = parent;
++        () /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 返回构造时刻的 epoch 毫秒时间戳（对标 Spring `ApplicationContext#getStartupDate`）。
+     ///
+     /// Spring 返回 `long` epoch millis；vernal 为对齐 i64/u64 选择 `u64`。
+     #[must_use]
+     pub fn startup_date(&self) -> u64 {
+         self.startup_date_millis.load(Ordering::Acquire)

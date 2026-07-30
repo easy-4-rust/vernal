@@ -1,0 +1,21 @@
+--- crates/vernal-context/src/application_context.rs
++++ replace ApplicationContext::events -> &EventBus with Box::leak(Box::new(Default::default()))
+@@ -475,17 +475,17 @@
+     #[must_use]
+     pub fn environment(&self) -> &ApplicationEnvironment {
+         self.lifecycle().resources().environment()
+     }
+ 
+     /// 返回当前 Context 独占的类型化事件总线。
+     #[must_use]
+     pub fn events(&self) -> &EventBus {
+-        self.lifecycle().resources().events()
++        Box::leak(Box::new(Default::default())) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 返回应用作用域共用的异步清理策略。
+     ///
+     /// 高层建造器默认提供 30 秒上限；调用方可以在构建阶段显式改为其他上限或
+     /// 无界等待。返回借用保证运行期间策略不可漂移。
+     #[must_use]
+     pub fn scope_cleanup_policy(&self) -> &crate::ScopeCleanupPolicy {

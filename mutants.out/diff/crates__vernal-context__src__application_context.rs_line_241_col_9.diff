@@ -1,0 +1,23 @@
+--- crates/vernal-context/src/application_context.rs
++++ replace ApplicationContext::shutdown_on_signal -> Result<(), ContextError> with Ok(())
+@@ -233,19 +233,17 @@
+     ///
+     /// # Errors
+     ///
+     /// 返回 [`Self::close`] 的第一个受管任务、组件停止或协调器错误。
+     pub async fn shutdown_on_signal(
+         &self,
+         signal: ApplicationShutdownSignal,
+     ) -> Result<(), ContextError> {
+-        let _delivered = self.events().publish(signal).await;
+-        self.cancellation_token().cancel();
+-        self.close().await
++        Ok(()) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 返回当前状态快照。
+     pub async fn state(&self) -> ContextState {
+         self.lifecycle().state().await
+     }
+ 
+     // ── Spring ApplicationContext metadata methods ─────────────────────

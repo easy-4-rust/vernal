@@ -1,0 +1,21 @@
+--- crates/vernal-context/src/application_context.rs
++++ replace ApplicationContext::lifecycle_execution_policy -> &LifecycleExecutionPolicy with Box::leak(Box::new(Default::default()))
+@@ -450,17 +450,17 @@
+         self.lifecycle().resources().task_shutdown_policy()
+     }
+ 
+     /// 返回单个生命周期钩子的执行与 Tokio abort 收口预算。
+     ///
+     /// 高层建造器会把同一对象注册到 IoC；返回借用确保 Context 启动后策略不可漂移。
+     #[must_use]
+     pub fn lifecycle_execution_policy(&self) -> &LifecycleExecutionPolicy {
+-        self.lifecycle().resources().lifecycle_execution_policy()
++        Box::leak(Box::new(Default::default())) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 返回当前应用共享的 Tokio 操作系统关闭信号监听器。
+     ///
+     /// 高层建造器会把同一对象注册为普通 `IoC` 组件，基础设施服务可以显式注入并
+     /// 与 Context 共享跨平台信号语义。
+     #[must_use]
+     pub fn shutdown_signal_listener(&self) -> &SystemShutdownSignalListener {

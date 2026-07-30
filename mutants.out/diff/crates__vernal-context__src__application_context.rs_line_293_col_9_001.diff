@@ -1,0 +1,24 @@
+--- crates/vernal-context/src/application_context.rs
++++ replace ApplicationContext::display_name -> String with "xyzzy".into()
+@@ -285,20 +285,17 @@
+     }
+ 
+     /// 返回上下文人读显示名。
+     ///
+     /// 对标 Spring `ApplicationContext#getDisplayName()`："never null"。
+     /// vernal 默认值是 `vernal-context`，可通过 [`Self::set_display_name`] 修改。
+     #[must_use]
+     pub fn display_name(&self) -> String {
+-        self.display_name
+-            .lock()
+-            .expect("display_name mutex poisoned")
+-            .clone()
++        "xyzzy".into() /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 设置上下文显示名。
+     pub fn set_display_name(&self, name: impl Into<String>) {
+         *self.display_name
+             .lock()
+             .expect("display_name mutex poisoned") = name.into();
+     }

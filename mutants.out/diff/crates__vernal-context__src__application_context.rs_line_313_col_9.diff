@@ -1,0 +1,24 @@
+--- crates/vernal-context/src/application_context.rs
++++ replace ApplicationContext::parent -> Option<Arc<ApplicationContext>> with None
+@@ -305,20 +305,17 @@
+ 
+     /// 返回父上下文引用（对标 Spring `ApplicationContext#getParent`）。
+     ///
+     /// vernal 当前不支持父子嵌套 Context，所以默认返回 `None`。
+     /// [`Self::set_parent`] 仅记录引用，不会让当前 Context 在依赖图解析时回退
+     /// 到父 Context —— 这与 Spring `HierarchicalBeanFactory` 的合并语义不同。
+     #[must_use]
+     pub fn parent(&self) -> Option<Arc<ApplicationContext>> {
+-        self.parent
+-            .lock()
+-            .expect("parent mutex poisoned")
+-            .clone()
++        None /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 设置父 Context 引用。
+     pub fn set_parent(&self, parent: Option<Arc<ApplicationContext>>) {
+         *self.parent
+             .lock()
+             .expect("parent mutex poisoned") = parent;
+     }

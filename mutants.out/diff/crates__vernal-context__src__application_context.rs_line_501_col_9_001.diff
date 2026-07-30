@@ -1,0 +1,21 @@
+--- crates/vernal-context/src/application_context.rs
++++ replace ApplicationContext::runtime_handle -> Option<&Handle> with Some(Box::leak(Box::new(Default::default())))
+@@ -493,17 +493,17 @@
+     }
+ 
+     /// 返回高层应用建造器绑定的 Tokio Runtime Handle。
+     ///
+     /// 通过兼容性低层 API 创建的 Context 不隐式捕获 Runtime，因此返回
+     /// `None`；通过 [`crate::VernalApplicationBuilder`] 创建时始终为 `Some`。
+     #[must_use]
+     pub fn runtime_handle(&self) -> Option<&Handle> {
+-        self.lifecycle().resources().runtime()
++        Some(Box::leak(Box::new(Default::default()))) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 返回应用构建阶段预编译的 AOP 调用计划目录。
+     #[must_use]
+     pub fn invocation_plans(&self) -> &InvocationPlanCatalog {
+         self.lifecycle().resources().invocation_plans()
+     }
+ 

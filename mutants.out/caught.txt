@@ -7,3 +7,32 @@ crates/vernal-context/src/application_close_coordinator.rs:78:9: replace Applica
 crates/vernal-context/src/application_close_coordinator.rs:83:9: replace ApplicationCloseCoordinator::state -> ContextState with Default::default()
 crates/vernal-context/src/application_close_coordinator.rs:88:9: replace ApplicationCloseCoordinator::set_state with ()
 crates/vernal-context/src/application_close_coordinator.rs:107:9: replace ApplicationCloseCoordinator::record_warning with ()
+crates/vernal-context/src/application_close_coordinator.rs:112:9: replace ApplicationCloseCoordinator::record_lifecycle_warning with ()
+crates/vernal-context/src/application_close_coordinator.rs:129:9: replace ApplicationCloseCoordinator::record_observation with ()
+crates/vernal-context/src/application_close_coordinator.rs:143:9: replace ApplicationCloseCoordinator::shutdown_managed_tasks -> Option<ManagedTaskError> with None
+crates/vernal-context/src/application_close_coordinator.rs:163:9: replace ApplicationCloseCoordinator::stop_component -> Result<(), ContextError> with Ok(())
+crates/vernal-context/src/application_close_coordinator.rs:191:9: replace ApplicationCloseCoordinator::stop_all -> Option<ContextError> with None
+crates/vernal-context/src/application_close_coordinator.rs:211:9: replace ApplicationCloseCoordinator::pause_component -> Result<(), ContextError> with Ok(())
+crates/vernal-context/src/application_close_coordinator.rs:247:9: replace ApplicationCloseCoordinator::pause_all -> Option<ContextError> with None
+crates/vernal-context/src/application_close_coordinator.rs:249:16: delete ! in ApplicationCloseCoordinator::pause_all
+crates/vernal-context/src/application_close_coordinator.rs:322:31: replace == with != in ApplicationCloseCoordinator::finish_close
+crates/vernal-context/src/application_close_coordinator.rs:326:52: replace == with != in ApplicationCloseCoordinator::finish_close
+crates/vernal-context/src/application_context.rs:111:9: replace ApplicationContext::refresh -> Result<(), ContextError> with Ok(())
+crates/vernal-context/src/application_context.rs:124:9: replace ApplicationContext::start -> Result<(), ContextError> with Ok(())
+crates/vernal-context/src/application_context.rs:144:9: replace ApplicationContext::pause -> Result<(), ContextError> with Ok(())
+crates/vernal-context/src/application_context.rs:163:9: replace ApplicationContext::restart -> Result<(), ContextError> with Ok(())
+crates/vernal-context/src/application_context.rs:174:9: replace ApplicationContext::close -> Result<(), ContextError> with Ok(())
+crates/vernal-context/src/application_context.rs:187:9: replace ApplicationContext::run_until_cancelled -> Result<(), ContextError> with Ok(())
+crates/vernal-context/src/application_context.rs:204:9: replace ApplicationContext::run_until_shutdown_signal -> Result<(), ContextError> with Ok(())
+crates/vernal-context/src/application_context.rs:248:9: replace ApplicationContext::state -> ContextState with Default::default()
+crates/vernal-context/src/application_context.rs:435:9: replace ApplicationContext::cancellation_token -> CancellationToken with Default::default()
+crates/vernal-context/src/application_context.rs:444:9: replace ApplicationContext::managed_tasks -> Option<&Arc<ManagedTaskSupervisor>> with None
+crates/vernal-context/src/application_context.rs:450:9: replace ApplicationContext::task_shutdown_policy -> &TaskShutdownPolicy with Box::leak(Box::new(Default::default()))
+crates/vernal-context/src/application_context.rs:458:9: replace ApplicationContext::lifecycle_execution_policy -> &LifecycleExecutionPolicy with Box::leak(Box::new(Default::default()))
+crates/vernal-context/src/application_context.rs:467:9: replace ApplicationContext::shutdown_signal_listener -> &SystemShutdownSignalListener with Box::leak(Box::new(Default::default()))
+crates/vernal-context/src/application_context.rs:477:9: replace ApplicationContext::environment -> &ApplicationEnvironment with Box::leak(Box::new(Default::default()))
+crates/vernal-context/src/application_context.rs:483:9: replace ApplicationContext::events -> &EventBus with Box::leak(Box::new(Default::default()))
+crates/vernal-context/src/application_context.rs:492:9: replace ApplicationContext::scope_cleanup_policy -> &crate::ScopeCleanupPolicy with Box::leak(Box::new(Default::default()))
+crates/vernal-context/src/application_context.rs:501:9: replace ApplicationContext::runtime_handle -> Option<&Handle> with None
+crates/vernal-context/src/application_context.rs:507:9: replace ApplicationContext::invocation_plans -> &InvocationPlanCatalog with Box::leak(Box::new(Default::default()))
+crates/vernal-context/src/application_context.rs:513:9: replace ApplicationContext::local_invocation_plans -> &vernal_aop::LocalInvocationPlanCatalog with Box::leak(Box::new(Default::default()))

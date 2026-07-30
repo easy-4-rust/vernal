@@ -10,6 +10,7 @@ publish = false
 [dependencies]
 tokio.workspace = true
 tokio-util.workspace = true
+tracing.workspace = true
 vernal-core = { path = "../vernal-core" }
 
 [dev-dependencies]

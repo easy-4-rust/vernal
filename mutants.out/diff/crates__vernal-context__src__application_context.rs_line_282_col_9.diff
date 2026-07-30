@@ -1,0 +1,23 @@
+--- crates/vernal-context/src/application_context.rs
++++ replace ApplicationContext::set_application_name with ()
+@@ -274,19 +274,17 @@
+         self.application_name
+             .lock()
+             .expect("application_name mutex poisoned")
+             .clone()
+     }
+ 
+     /// 设置部署应用程序名称。
+     pub fn set_application_name(&self, name: impl Into<String>) {
+-        *self.application_name
+-            .lock()
+-            .expect("application_name mutex poisoned") = name.into();
++        () /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 返回上下文人读显示名。
+     ///
+     /// 对标 Spring `ApplicationContext#getDisplayName()`："never null"。
+     /// vernal 默认值是 `vernal-context`，可通过 [`Self::set_display_name`] 修改。
+     #[must_use]
+     pub fn display_name(&self) -> String {

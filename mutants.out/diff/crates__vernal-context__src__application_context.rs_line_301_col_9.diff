@@ -1,0 +1,23 @@
+--- crates/vernal-context/src/application_context.rs
++++ replace ApplicationContext::set_display_name with ()
+@@ -293,19 +293,17 @@
+         self.display_name
+             .lock()
+             .expect("display_name mutex poisoned")
+             .clone()
+     }
+ 
+     /// 设置上下文显示名。
+     pub fn set_display_name(&self, name: impl Into<String>) {
+-        *self.display_name
+-            .lock()
+-            .expect("display_name mutex poisoned") = name.into();
++        () /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 返回父上下文引用（对标 Spring `ApplicationContext#getParent`）。
+     ///
+     /// vernal 当前不支持父子嵌套 Context，所以默认返回 `None`。
+     /// [`Self::set_parent`] 仅记录引用，不会让当前 Context 在依赖图解析时回退
+     /// 到父 Context —— 这与 Spring `HierarchicalBeanFactory` 的合并语义不同。
+     #[must_use]

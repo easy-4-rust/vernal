@@ -27,6 +27,7 @@ use crate::configurable_listable_bean_factory::ConfigurableListableBeanFactory;
 /// 在 vernal 中，`@Configuration` / `@Bean` 由 `vernal-macros` 的
 /// `#[beantable]` / `#[bean]` 宏在编译期处理。`ConfigurationClassPostProcessor`
 /// 提供运行时的扩展点，允许动态注册配置类。
+#[derive(Debug)]
 pub struct ConfigurationClassPostProcessor {
     /// 已注册的配置类名称。
     registered_configurations: Vec<String>,

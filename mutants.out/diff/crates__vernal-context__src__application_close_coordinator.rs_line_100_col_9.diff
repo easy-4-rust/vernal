@@ -1,0 +1,23 @@
+--- crates/vernal-context/src/application_close_coordinator.rs
++++ replace ApplicationCloseCoordinator::startup_report -> StartupReport with Default::default()
+@@ -92,19 +92,17 @@
+             .set_context_state(state.as_str().to_owned());
+     }
+ 
+     /// 返回调用时刻拥有自身数据的诊断报告快照。
+     ///
+     /// `unused_definitions` 来自 Container 的同步解析追踪快照；这里只把它与同一
+     /// 时刻的生命周期诊断值组合，不在协调器中保存第二份组件使用状态。
+     pub(crate) async fn startup_report(&self, unused_definitions: Vec<String>) -> StartupReport {
+-        let mut report = self.diagnostics.lock().await.clone();
+-        report.set_unused_definitions(unused_definitions);
+-        report
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 记录一个低基数静态运行期告警代码。
+     pub(crate) async fn record_warning(&self, warning: &'static str) {
+         self.diagnostics.lock().await.record_warning(warning);
+     }
+ 
+     /// 将生命周期超时转换成低基数、无业务正文的运行期告警代码。

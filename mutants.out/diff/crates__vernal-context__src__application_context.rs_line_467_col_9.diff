@@ -1,0 +1,21 @@
+--- crates/vernal-context/src/application_context.rs
++++ replace ApplicationContext::shutdown_signal_listener -> &SystemShutdownSignalListener with Box::leak(Box::new(Default::default()))
+@@ -459,17 +459,17 @@
+     }
+ 
+     /// 返回当前应用共享的 Tokio 操作系统关闭信号监听器。
+     ///
+     /// 高层建造器会把同一对象注册为普通 `IoC` 组件，基础设施服务可以显式注入并
+     /// 与 Context 共享跨平台信号语义。
+     #[must_use]
+     pub fn shutdown_signal_listener(&self) -> &SystemShutdownSignalListener {
+-        self.lifecycle().resources().shutdown_signals()
++        Box::leak(Box::new(Default::default())) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 返回当前 Context 冻结的应用环境。
+     ///
+     /// 高层建造器把同一 [`ApplicationEnvironment`] 注册为普通 `IoC` Singleton；
+     /// 配置组件可以在同步构造阶段读取类型化属性，生命周期组件和 Adapter 也可以
+     /// 通过 Context 门面读取相同的 `PropertySource` 顺序与 Profile。
+     #[must_use]

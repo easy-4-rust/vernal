@@ -1,0 +1,21 @@
+--- crates/vernal-context/src/application_context.rs
++++ replace ApplicationContext::restart -> Result<(), ContextError> with Ok(())
+@@ -155,17 +155,17 @@
+     /// 结果接收端，未完成重启的组件不会被回滚到 Paused。
+     ///
+     /// # Errors
+     ///
+     /// Runtime 不可用、当前状态不是 `Paused`，或任一可暂停组件的 `start()` 钩子
+     /// 失败时返回 [`ContextError`]。失败会调用 `close()` 完成完整关闭，与启动
+     /// 期失败处理一致。
+     pub async fn restart(&self) -> Result<(), ContextError> {
+-        self.startup_coordinator.restart().await
++        Ok(()) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 幂等关闭上下文。
+     ///
+     /// # Errors
+     ///
+     /// 返回第一个受管任务或 stop 错误，但仍会尝试关闭其余组件并最终进入 Closed。
+     /// 关闭由唯一 Tokio 协调任务持有；丢弃当前调用者的 Future 不会中断资源释放，

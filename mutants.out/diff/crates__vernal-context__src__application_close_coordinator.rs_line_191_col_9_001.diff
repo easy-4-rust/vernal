@@ -1,0 +1,28 @@
+--- crates/vernal-context/src/application_close_coordinator.rs
++++ replace ApplicationCloseCoordinator::stop_all -> Option<ContextError> with Some(Default::default())
+@@ -183,24 +183,17 @@
+         if let Err(error) = &result {
+             self.record_lifecycle_warning(error).await;
+         }
+         result
+     }
+ 
+     /// 逆序停止全部组件、隔离每个钩子的 panic，并保留第一个错误。
+     pub(crate) async fn stop_all(&self, components: &[Arc<dyn Lifecycle>]) -> Option<ContextError> {
+-        let mut first_error = None;
+-        for component in components.iter().rev() {
+-            let stop_error = self.stop_component(component).await.err();
+-            if first_error.is_none() {
+-                first_error = stop_error;
+-            }
+-        }
+-        first_error
++        Some(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 在独立 Tokio task 中执行一个组件暂停钩子。
+     ///
+     /// 对标 Spring 7.0 `SmartLifecycle#isPauseable()`：调用方负责过滤
+     /// `is_pauseable() == false` 的组件；本方法只执行 `pause()` 并按
+     /// `LifecyclePhase::Pause` 阶段记录诊断。超时与 abort 行为与
+     /// [`Self::stop_component`] 完全一致，使暂停失败的诊断路径与 stop 失败一致。

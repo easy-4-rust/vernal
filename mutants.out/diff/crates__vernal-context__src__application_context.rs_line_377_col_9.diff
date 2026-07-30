@@ -1,0 +1,30 @@
+--- crates/vernal-context/src/application_context.rs
++++ replace ApplicationContext::register_shutdown_hook with ()
+@@ -369,26 +369,17 @@
+ 
+     /// 注册 JVM shutdown hook：在 JVM 退出时自动调用 [`Self::close`]。
+     ///
+     /// 对标 `ConfigurableApplicationContext#registerShutdownHook()`：
+     /// 调用可以多次，但只有第一次生效。Rust 端通过 `std::sync::at_exit` 实现，
+     /// 跨平台不可移植（Windows 注册 `ctrl_close` / `ctrl_break` 路径由 tokio
+     /// signal 模块管理）。
+     pub fn register_shutdown_hook(&self) {
+-        if self
+-            .shutdown_hook_registered
+-            .swap(true, Ordering::AcqRel)
+-        {
+-            return; // 已注册过
+-        }
+-        let context = Arc::new(self.clone_for_hook());
+-        // 真实注册由 ApplicationCloseCoordinator::register_shutdown_hook 处理；
+-        // 此处仅设置标志位以保证幂等语义。
+-        self.lifecycle().register_shutdown_hook(context);
++        () /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 内部克隆句柄，调用 [`Self::close`]。
+     ///
+     /// 公开因为它是 [`Self::register_shutdown_hook`] 的内部辅助。
+     fn clone_for_hook(&self) -> Self {
+         // 通过共享 Arc 的克隆构造一个新的轻量 handle。这要求 `ApplicationContext`
+         // 暴露内部构造路径——但因为字段都为私有，最简单的方案是把 `close`

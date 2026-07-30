@@ -1,0 +1,21 @@
+--- crates/vernal-context/src/application_context.rs
++++ replace ApplicationContext::invocation_plans -> &InvocationPlanCatalog with Box::leak(Box::new(Default::default()))
+@@ -499,17 +499,17 @@
+     #[must_use]
+     pub fn runtime_handle(&self) -> Option<&Handle> {
+         self.lifecycle().resources().runtime()
+     }
+ 
+     /// 返回应用构建阶段预编译的 AOP 调用计划目录。
+     #[must_use]
+     pub fn invocation_plans(&self) -> &InvocationPlanCatalog {
+-        self.lifecycle().resources().invocation_plans()
++        Box::leak(Box::new(Default::default())) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 返回应用构建阶段预编译的 Local-AOP 调用计划目录。
+     #[must_use]
+     pub fn local_invocation_plans(&self) -> &vernal_aop::LocalInvocationPlanCatalog {
+         self.lifecycle().resources().local_invocation_plans()
+     }
+ 

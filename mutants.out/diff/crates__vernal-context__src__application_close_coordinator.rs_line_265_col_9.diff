@@ -1,0 +1,22 @@
+--- crates/vernal-context/src/application_close_coordinator.rs
++++ replace ApplicationCloseCoordinator::close -> CloseResult with Default::default()
+@@ -257,18 +257,17 @@
+         first_error
+     }
+ 
+     /// 启动唯一关闭协调任务并等待共享结果。
+     ///
+     /// 当前等待者被取消不会影响后台协调器。低层 Context 没有预绑定 Runtime 时，
+     /// 会使用调用现场的 Tokio Handle；两者都不存在时返回结构化协调错误。
+     pub(crate) async fn close(self: &Arc<Self>) -> CloseResult {
+-        self.start_close()?;
+-        self.wait_for_close().await
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 原子提交唯一关闭任务，并用第二个轻量观察任务隔离协调器自身的 panic。
+     fn start_close(self: &Arc<Self>) -> CloseResult {
+         if self.close_started.load(Ordering::Acquire) {
+             return Ok(());
+         }
+ 

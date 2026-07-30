@@ -1,0 +1,21 @@
+--- crates/vernal-context/src/application_context.rs
++++ replace ApplicationContext::start -> Result<(), ContextError> with Ok(())
+@@ -116,17 +116,17 @@
+     /// 实际 start 链由独立 Tokio task 持有。当前等待者被取消只会丢弃一次性结果
+     /// 接收端；启动成功仍会提交 Ready，失败仍会完成逆序回滚。
+     ///
+     /// # Errors
+     ///
+     /// Runtime 不可用、状态非法、任一 start/Runner/周期任务激活失败，或协调任务
+     /// 异常时返回 [`ContextError`]。
+     pub async fn start(&self) -> Result<(), ContextError> {
+-        self.startup_coordinator.start().await
++        Ok(()) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 暂停 Context —— 只停止声明 `is_pauseable() == true` 的组件。
+     ///
+     /// 对标 Spring 7.0 `ConfigurableApplicationContext#pause()` 与
+     /// `LifecycleProcessor#onPause()`：Context 在 `Ready` 状态下调用本方法会
+     /// 让可暂停组件按依赖逆序 `pause()`，然后进入 `Paused` 状态，并发布
+     /// [`ApplicationPausedEvent`]。不可暂停组件保持运行；周期任务、事件

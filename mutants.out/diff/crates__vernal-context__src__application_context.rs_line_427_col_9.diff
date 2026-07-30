@@ -1,0 +1,23 @@
+--- crates/vernal-context/src/application_context.rs
++++ replace ApplicationContext::open_scope -> Arc<ScopeContext> with Arc::new(Default::default())
+@@ -419,19 +419,17 @@
+     ///
+     /// Scope 使用应用取消令牌的子令牌：应用关闭会立即阻止新组件解析，但 Scope
+     /// 所有者仍须显式调用 [`ScopeContext::close`] 执行自己的异步关闭钩子。
+     #[must_use]
+     pub fn open_scope<S>(&self) -> Arc<ScopeContext>
+     where
+         S: 'static,
+     {
+-        self.container().open_scope_with_cancellation::<S>(
+-            self.lifecycle().resources().cancellation().child_token(),
+-        )
++        Arc::new(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 返回供组件和适配器派生子令牌的取消令牌。
+     #[must_use]
+     pub fn cancellation_token(&self) -> CancellationToken {
+         self.lifecycle().resources().cancellation().clone()
+     }
+ 

@@ -1,0 +1,21 @@
+--- crates/vernal-context/src/application_context.rs
++++ replace ApplicationContext::id -> String with String::new()
+@@ -252,17 +252,17 @@
+ 
+     /// 返回上下文唯一 ID。
+     ///
+     /// 对标 Spring `ApplicationContext#getId()`：Spring 7.0+ 标记 "never null"。
+     /// vernal 默认值是 `vernal-context-{epoch_millis}`，可通过
+     /// [`Self::set_id`] 修改。
+     #[must_use]
+     pub fn id(&self) -> String {
+-        self.id.lock().expect("id mutex poisoned").clone()
++        String::new() /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 设置上下文唯一 ID（对标 `ConfigurableApplicationContext#setId`）。
+     pub fn set_id(&self, id: impl Into<String>) {
+         *self.id.lock().expect("id mutex poisoned") = id.into();
+     }
+ 
+     /// 返回部署该上下文的应用程序名称。

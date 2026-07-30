@@ -1,0 +1,24 @@
+--- crates/vernal-context/src/application_context.rs
++++ replace ApplicationContext::application_name -> String with String::new()
+@@ -266,20 +266,17 @@
+     }
+ 
+     /// 返回部署该上下文的应用程序名称。
+     ///
+     /// 对标 Spring `ApplicationContext#getApplicationName()`：默认空字符串，
+     /// 由部署环境通过 [`Self::set_application_name`] 设置。
+     #[must_use]
+     pub fn application_name(&self) -> String {
+-        self.application_name
+-            .lock()
+-            .expect("application_name mutex poisoned")
+-            .clone()
++        String::new() /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 设置部署应用程序名称。
+     pub fn set_application_name(&self, name: impl Into<String>) {
+         *self.application_name
+             .lock()
+             .expect("application_name mutex poisoned") = name.into();
+     }

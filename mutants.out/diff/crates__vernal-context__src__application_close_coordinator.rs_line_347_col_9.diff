@@ -1,0 +1,32 @@
+--- crates/vernal-context/src/application_close_coordinator.rs
++++ replace ApplicationCloseCoordinator::wait_for_close -> CloseResult with Default::default()
+@@ -339,28 +339,17 @@
+         task_error
+             .map(|source| ContextError::ManagedTask { source })
+             .or(lifecycle_error)
+             .map_or(Ok(()), Err)
+     }
+ 
+     /// 等待协调器发布可克隆结果；并发调用者不会重新执行关闭流程。
+     async fn wait_for_close(&self) -> CloseResult {
+-        let mut receiver = self.close_result.subscribe();
+-        loop {
+-            if let Some(result) = receiver.borrow().clone() {
+-                return result;
+-            }
+-            if let Err(source) = receiver.changed().await {
+-                return Err(ContextError::LifecycleCoordinator {
+-                    operation: "close",
+-                    source: Arc::new(source),
+-                });
+-            }
+-        }
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 注册 JVM shutdown hook：JVM 退出时自动调用 [`Self::close`]。
+     ///
+     /// 对标 Spring `ConfigurableApplicationContext#registerShutdownHook`：
+     /// 由 `ApplicationContext::register_shutdown_hook` 调用，调用方负责
+     /// 持有 `Arc<ApplicationContext>`。vernal 在第一次调用时启动 at_exit
+     /// 回调；后续重复调用均为 no-op。

@@ -1,0 +1,21 @@
+--- crates/vernal-context/src/application_close_coordinator.rs
++++ delete ! in ApplicationCloseCoordinator::pause_all
+@@ -241,17 +241,17 @@
+     /// [`Self::stop_all`] 一致（按依赖逆序），让可暂停组件能假定被它依赖的
+     /// 上游组件已经暂停。
+     pub(crate) async fn pause_all(
+         &self,
+         components: &[Arc<dyn Lifecycle>],
+     ) -> Option<ContextError> {
+         let mut first_error = None;
+         for component in components.iter().rev() {
+-            if !component.is_pauseable() {
++            if  /* ~ changed by cargo-mutants ~ */component.is_pauseable() {
+                 continue;
+             }
+             let pause_error = self.pause_component(component).await.err();
+             if first_error.is_none() {
+                 first_error = pause_error;
+             }
+         }
+         first_error

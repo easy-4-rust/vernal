@@ -1,0 +1,27 @@
+--- crates/vernal-context/src/application_close_coordinator.rs
++++ replace ApplicationCloseCoordinator::record_lifecycle_warning with ()
+@@ -104,23 +104,17 @@
+ 
+     /// 记录一个低基数静态运行期告警代码。
+     pub(crate) async fn record_warning(&self, warning: &'static str) {
+         self.diagnostics.lock().await.record_warning(warning);
+     }
+ 
+     /// 将生命周期超时转换成低基数、无业务正文的运行期告警代码。
+     pub(crate) async fn record_lifecycle_warning(&self, error: &ContextError) {
+-        if let ContextError::LifecycleTimeout { abort_settled, .. } = error {
+-            self.record_warning("context.lifecycle-hook.timeout").await;
+-            if !abort_settled {
+-                self.record_warning("context.lifecycle-hook.abort-unsettled")
+-                    .await;
+-            }
+-        }
++        () /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 追加一条不包含底层错误正文的生命周期观测。
+     pub(crate) async fn record_observation(
+         &self,
+         subject: impl Into<String>,
+         phase: DiagnosticPhase,
+         outcome: DiagnosticOutcome,

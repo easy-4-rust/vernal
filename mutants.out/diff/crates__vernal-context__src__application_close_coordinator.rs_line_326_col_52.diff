@@ -1,0 +1,21 @@
+--- crates/vernal-context/src/application_close_coordinator.rs
++++ replace == with != in ApplicationCloseCoordinator::finish_close
+@@ -318,17 +318,17 @@
+ 
+     /// 在后台完成任务排空、组件逆序停止和 Closed 终态发布。
+     async fn finish_close(&self) -> CloseResult {
+         let _operation = self.operation.lock().await;
+         if self.state().await == ContextState::Closed {
+             return Ok(());
+         }
+ 
+-        let draining_state = if self.state().await == ContextState::Ready {
++        let draining_state = if self.state().await != /* ~ changed by cargo-mutants ~ */ ContextState::Ready {
+             ContextState::Draining
+         } else {
+             ContextState::RollingBack
+         };
+         self.set_state(draining_state).await;
+ 
+         // 长期任务可能正在使用生命周期组件提供的连接池、消费者或调度器。因此先
+         // 取消并等待任务退出，再取得组件栈所有权并按依赖逆序执行 stop。

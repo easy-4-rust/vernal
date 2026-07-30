@@ -1,0 +1,21 @@
+--- crates/vernal-context/src/application_context.rs
++++ replace ApplicationContext::close -> Result<(), ContextError> with Ok(())
+@@ -166,17 +166,17 @@
+     /// 幂等关闭上下文。
+     ///
+     /// # Errors
+     ///
+     /// 返回第一个受管任务或 stop 错误，但仍会尝试关闭其余组件并最终进入 Closed。
+     /// 关闭由唯一 Tokio 协调任务持有；丢弃当前调用者的 Future 不会中断资源释放，
+     /// 后续或并发调用者会等待同一个可克隆结果。
+     pub async fn close(&self) -> Result<(), ContextError> {
+-        self.lifecycle().close().await
++        Ok(()) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 等待应用取消信号，并在收到信号后执行取消安全的完整关闭。
+     ///
+     /// 受管任务返回错误、发生 panic 或被异常取消时会取消应用令牌，因此服务主函数
+     /// 可以在 `start()` 成功后等待本方法，把后台任务失败转换成 Context 关闭结果。
+     /// 外部信号处理器也可以调用 [`CancellationToken::cancel`] 复用同一条关闭路径。
+     ///

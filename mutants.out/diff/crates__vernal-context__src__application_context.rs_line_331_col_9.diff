@@ -1,0 +1,21 @@
+--- crates/vernal-context/src/application_context.rs
++++ replace ApplicationContext::startup_date -> u64 with 0
+@@ -323,17 +323,17 @@
+             .expect("parent mutex poisoned") = parent;
+     }
+ 
+     /// 返回构造时刻的 epoch 毫秒时间戳（对标 Spring `ApplicationContext#getStartupDate`）。
+     ///
+     /// Spring 返回 `long` epoch millis；vernal 为对齐 i64/u64 选择 `u64`。
+     #[must_use]
+     pub fn startup_date(&self) -> u64 {
+-        self.startup_date_millis.load(Ordering::Acquire)
++        0 /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 返回上下文是否仍处于活动状态（refreshing/started/refreshing->ready）。
+     ///
+     /// 对标 Spring `ConfigurableApplicationContext#isActive`：
+     /// 状态在 `Refreshing` 之后到 `Draining` 之前返回 `true`，`Closed`
+     /// 之后返回 `false`。
+     pub async fn is_active(&self) -> bool {

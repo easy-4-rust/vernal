@@ -1,0 +1,21 @@
+--- crates/vernal-context/src/application_context.rs
++++ replace ApplicationContext::managed_tasks -> Option<&Arc<ManagedTaskSupervisor>> with Some(Box::leak(Box::new(Arc::new(Default::default()))))
+@@ -436,17 +436,17 @@
+     }
+ 
+     /// 返回高层应用建造器创建的 Tokio 任务监督器。
+     ///
+     /// 低层 `ApplicationContextBuilder` 不捕获 Runtime，因此返回 `None`。高层
+     /// 路径返回的对象与注册到 `IoC` 的 `Arc<ManagedTaskSupervisor>` 是同一实例。
+     #[must_use]
+     pub fn managed_tasks(&self) -> Option<&Arc<ManagedTaskSupervisor>> {
+-        self.lifecycle().resources().managed_tasks()
++        Some(Box::leak(Box::new(Arc::new(Default::default())))) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 返回受管任务的两阶段停机策略。
+     #[must_use]
+     pub fn task_shutdown_policy(&self) -> &TaskShutdownPolicy {
+         self.lifecycle().resources().task_shutdown_policy()
+     }
+ 
