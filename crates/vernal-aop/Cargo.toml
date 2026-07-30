@@ -12,6 +12,8 @@ tokio.workspace = true
 tokio-util.workspace = true
 tracing.workspace = true
 vernal-core = { path = "../vernal-core" }
+aspect-core = { path = "../../../aspect-rs/aspect-core" }
+aspect-std = { path = "../../../aspect-rs/aspect-std" }
 
 [dev-dependencies]
 criterion.workspace = true

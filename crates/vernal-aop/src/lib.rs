@@ -9,6 +9,7 @@ mod aop_component;
 mod aspect;
 mod aspect_adapter;
 mod aspect_error;
+mod aspect_rs_adapter;
 mod borrowed_invocation_argument;
 mod borrowed_invocation_future_target;
 mod borrowed_invocation_target;
@@ -68,6 +69,7 @@ pub use aop_component::AopComponent;
 pub use aspect::Aspect;
 pub use aspect_adapter::AspectAdapter;
 pub use aspect_error::AspectError;
+pub use aspect_rs_adapter::AspectRsAdapter;
 pub use borrowed_invocation_argument::BorrowedInvocationArgument;
 pub use borrowed_invocation_future_target::BorrowedInvocationFutureTarget;
 pub use borrowed_invocation_target::BorrowedInvocationTarget;
@@ -75,8 +77,10 @@ pub use borrowed_local_invocation_target::BorrowedLocalInvocationTarget;
 pub use component_pointcut::ComponentPointcut;
 pub use default_pointcut_advisor::DefaultPointcutAdvisor;
 pub use interceptor::Interceptor;
-// 业务切面 re-export（对应 aspect-rs aspect-std）
-pub use interceptor::{
+
+// 业务切面 re-export（基于 aspect-rs aspect-std，通过 AspectRsAdapter 适配）
+// 注意：这些是 aspect-std 的同步切面，需要通过 AspectRsAdapter 转换为 Interceptor
+pub use aspect_std::{
     CircuitState, LoggingAspect, TimingAspect, MetricsAspect, CachingAspect,
     RateLimitAspect, CircuitBreakerAspect, AuthorizationAspect, AllowlistAspect,
     AuthMode, ValidationAspect, ValidationRule,

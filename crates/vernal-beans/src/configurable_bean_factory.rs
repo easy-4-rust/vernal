@@ -32,7 +32,7 @@ pub trait ConfigurableBeanFactory: HierarchicalBeanFactory {
     /// 对应 Spring 的 `void setParentBeanFactory(BeanFactory parentBeanFactory)`。
     fn set_parent_bean_factory(
         &mut self,
-        parent: Arc<dyn std::any::Any + Send + Sync>,
+        parent: Arc<dyn crate::bean_factory::BeanFactory>,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
 
     /// 注册自定义 Scope。
@@ -48,7 +48,7 @@ pub trait ConfigurableBeanFactory: HierarchicalBeanFactory {
     /// 按名称获取已注册的 Scope。
     ///
     /// 对应 Spring 的 `Scope getRegisteredScope(String scopeName)`。
-    fn get_registered_scope(&self, scope_name: &str) -> Option<&dyn BeanScope>;
+    fn get_registered_scope(&self, scope_name: &str) -> Option<Arc<dyn BeanScope>>;
 
     /// 添加 BeanPostProcessor。
     ///

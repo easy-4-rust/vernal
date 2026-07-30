@@ -1,8 +1,8 @@
 //! 类型安全的组件容器对象。
 
 use std::{
-    any::Any,
-    collections::HashMap,
+    any::{Any, TypeId},
+    collections::{HashMap, HashSet},
     sync::{Arc, Mutex, OnceLock},
 };
 
@@ -44,6 +44,40 @@ pub struct Container {
     /// 缓存 ProxyBeanDefinition 对象，使 get_bean_definition 可以返回引用。
     definition_cache: Arc<Mutex<HashMap<String, ProxyBeanDefinition>>>,
     owner: Arc<()>,
+
+    // ── HierarchicalBeanFactory / ConfigurableBeanFactory 字段 ────────
+    /// 父 BeanFactory（支持父子容器层级结构）。
+    parent: Arc<Mutex<Option<Arc<dyn crate::bean_factory::BeanFactory>>>>,
+
+    // ── ConfigurableBeanFactory 字段 ─────────────────────────────────
+    /// 自定义 Scope 注册表。
+    scopes: Arc<Mutex<HashMap<String, Arc<dyn crate::bean_scope::BeanScope>>>>,
+    /// Bean 别名映射（alias -> bean_name）。
+    aliases: Arc<Mutex<HashMap<String, String>>>,
+    /// 嵌入式值解析器链（用于 `${...}` 占位符解析）。
+    embedded_value_resolvers: Arc<Mutex<Vec<Arc<dyn Fn(&str) -> String + Send + Sync>>>>,
+    /// 当前正在创建中的 Bean 名称集合。
+    currently_in_creation: Arc<Mutex<HashSet<String>>>,
+    /// 依赖关系映射：bean_name -> 依赖该 bean 的所有 bean 名称。
+    dependent_beans: Arc<Mutex<HashMap<String, HashSet<String>>>>,
+    /// 依赖关系映射：bean_name -> 该 bean 依赖的所有 bean 名称。
+    dependencies_for_bean: Arc<Mutex<HashMap<String, HashSet<String>>>>,
+    /// 配置是否已冻结。
+    configuration_frozen: Arc<Mutex<bool>>,
+
+    // ── SingletonBeanRegistry 字段 ──────────────────────────────────
+    /// 单例创建回调（bean_name -> 回调列表）。
+    singleton_callbacks: Arc<Mutex<HashMap<String, Vec<Arc<dyn Fn(&dyn Any) + Send + Sync>>>>>,
+
+    // ── ConfigurableListableBeanFactory 字段 ─────────────────────────
+    /// 忽略的依赖类型集合。
+    ignored_dependency_types: Arc<Mutex<HashSet<TypeId>>>,
+    /// 忽略的依赖接口集合。
+    ignored_dependency_interfaces: Arc<Mutex<HashSet<TypeId>>>,
+    /// 可解析依赖映射（TypeId -> 实例）。
+    resolvable_dependencies: Arc<Mutex<HashMap<TypeId, Arc<dyn Any + Send + Sync>>>>,
+    /// 单例名称到 ComponentKey 的映射（用于 SingletonBeanRegistry 按名称查找）。
+    name_to_singleton_key: Arc<Mutex<HashMap<String, ComponentKey>>>,
 }
 
 impl Container {
@@ -59,6 +93,19 @@ impl Container {
             dynamic_definitions: Arc::new(Mutex::new(HashMap::new())),
             definition_cache: Arc::new(Mutex::new(HashMap::new())),
             owner: Arc::new(()),
+            parent: Arc::new(Mutex::new(None)),
+            scopes: Arc::new(Mutex::new(HashMap::new())),
+            aliases: Arc::new(Mutex::new(HashMap::new())),
+            embedded_value_resolvers: Arc::new(Mutex::new(Vec::new())),
+            currently_in_creation: Arc::new(Mutex::new(HashSet::new())),
+            dependent_beans: Arc::new(Mutex::new(HashMap::new())),
+            dependencies_for_bean: Arc::new(Mutex::new(HashMap::new())),
+            configuration_frozen: Arc::new(Mutex::new(false)),
+            singleton_callbacks: Arc::new(Mutex::new(HashMap::new())),
+            ignored_dependency_types: Arc::new(Mutex::new(HashSet::new())),
+            ignored_dependency_interfaces: Arc::new(Mutex::new(HashSet::new())),
+            resolvable_dependencies: Arc::new(Mutex::new(HashMap::new())),
+            name_to_singleton_key: Arc::new(Mutex::new(HashMap::new())),
         }
     }
 
@@ -76,6 +123,19 @@ impl Container {
             dynamic_definitions: Arc::clone(&self.dynamic_definitions),
             definition_cache: Arc::clone(&self.definition_cache),
             owner: Arc::clone(&self.owner),
+            parent: Arc::clone(&self.parent),
+            scopes: Arc::clone(&self.scopes),
+            aliases: Arc::clone(&self.aliases),
+            embedded_value_resolvers: Arc::clone(&self.embedded_value_resolvers),
+            currently_in_creation: Arc::clone(&self.currently_in_creation),
+            dependent_beans: Arc::clone(&self.dependent_beans),
+            dependencies_for_bean: Arc::clone(&self.dependencies_for_bean),
+            configuration_frozen: Arc::clone(&self.configuration_frozen),
+            singleton_callbacks: Arc::clone(&self.singleton_callbacks),
+            ignored_dependency_types: Arc::clone(&self.ignored_dependency_types),
+            ignored_dependency_interfaces: Arc::clone(&self.ignored_dependency_interfaces),
+            resolvable_dependencies: Arc::clone(&self.resolvable_dependencies),
+            name_to_singleton_key: Arc::clone(&self.name_to_singleton_key),
         }
     }
 
@@ -584,8 +644,15 @@ impl Container {
                 };
                 // Singleton 的依赖解析故意不传播调用方 Scope。否则第一次恰好在
                 // Request/Tenant 内解析的单例会永久捕获短生命周期对象。
-                cell.get_or_init(|| self.construct(definition, stack, None))
-                    .clone()
+                let result = cell.get_or_init(|| self.construct(definition, stack, None)).clone();
+                // 记录名称到 ComponentKey 的映射（用于 SingletonBeanRegistry）
+                let bean_name = definition.key().type_name().to_string();
+                self.name_to_singleton_key
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner)
+                    .entry(bean_name)
+                    .or_insert_with(|| definition.key().clone());
+                result
             }
             Scope::Custom(scope_key) => {
                 let active_scope =
@@ -1522,5 +1589,560 @@ impl crate::bean_definition_registry::BeanDefinitionRegistry for Container {
             }
         }
         names
+    }
+}
+
+// ── Spring SingletonBeanRegistry 接口实现 ────────────────────────────────────
+
+impl crate::singleton_bean_registry::SingletonBeanRegistry for Container {
+    fn register_singleton(&self, bean_name: &str, singleton_object: Arc<dyn Any + Send + Sync>) {
+        // 使用 () 类型创建一个占位 ComponentKey，用 bean_name 作为 type_name 的替代
+        // 通过 name_to_singleton_key 映射支持按名称查找
+        let key = ComponentKey::of::<()>();
+        let cell = Arc::new(OnceLock::new());
+        let _ = cell.set(Ok(singleton_object));
+        self.singletons
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .insert(key.clone(), cell);
+
+        // 记录名称到 ComponentKey 的映射
+        self.name_to_singleton_key
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .insert(bean_name.to_string(), key.clone());
+
+        // 触发注册的回调
+        if let Some(callbacks) = self
+            .singleton_callbacks
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .get(bean_name)
+            .map(|v| v.clone())
+        {
+            if let Some(cell) = self
+                .singletons
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .get(&key)
+            {
+                if let Some(Ok(instance)) = cell.get() {
+                    for callback in &callbacks {
+                        callback(instance.as_ref());
+                    }
+                }
+            }
+        }
+    }
+
+    fn get_singleton(&self, bean_name: &str) -> Option<Arc<dyn Any + Send + Sync>> {
+        // 首先通过 name_to_singleton_key 查找
+        let key = self
+            .name_to_singleton_key
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .get(bean_name)
+            .cloned();
+
+        if let Some(key) = key {
+            let singletons = self
+                .singletons
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            if let Some(cell) = singletons.get(&key) {
+                if let Some(Ok(instance)) = cell.get() {
+                    return Some(Arc::clone(instance));
+                }
+            }
+        }
+
+        // 回退：遍历 singletons 按 type_name 匹配
+        let singletons = self
+            .singletons
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        for (key, cell) in singletons.iter() {
+            if let Some(Ok(instance)) = cell.get() {
+                if key.type_name() == bean_name {
+                    return Some(Arc::clone(instance));
+                }
+            }
+        }
+        None
+    }
+
+    fn contains_singleton(&self, bean_name: &str) -> bool {
+        self.get_singleton(bean_name).is_some()
+    }
+
+    fn singleton_names(&self) -> Vec<String> {
+        let singletons = self
+            .singletons
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let name_map = self
+            .name_to_singleton_key
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+
+        let mut names: Vec<String> = Vec::new();
+        for (key, cell) in singletons.iter() {
+            if cell.get().is_some() {
+                // 优先从 name_map 中查找名称
+                let name = name_map
+                    .iter()
+                    .find(|(_, k)| *k == key)
+                    .map(|(n, _)| n.clone())
+                    .unwrap_or_else(|| key.type_name().to_string());
+                if !names.contains(&name) {
+                    names.push(name);
+                }
+            }
+        }
+        names
+    }
+
+    fn singleton_count(&self) -> usize {
+        let singletons = self
+            .singletons
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        singletons
+            .values()
+            .filter(|cell| cell.get().is_some())
+            .count()
+    }
+
+    fn add_singleton_callback(
+        &mut self,
+        bean_name: String,
+        callback: Arc<dyn Fn(&dyn Any) + Send + Sync>,
+    ) {
+        self.singleton_callbacks
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .entry(bean_name)
+            .or_insert_with(Vec::new)
+            .push(callback);
+    }
+
+    fn singleton_mutex(&self) -> Arc<dyn Any + Send + Sync> {
+        // 返回 singletons 的 Arc 引用作为同步原语
+        Arc::clone(&self.singletons) as Arc<dyn Any + Send + Sync>
+    }
+}
+
+// ── Spring HierarchicalBeanFactory 接口实现 ───────────────────────────────────
+
+impl crate::hierarchical_bean_factory::HierarchicalBeanFactory for Container {
+    fn parent_bean_factory(&self) -> Option<Arc<dyn crate::bean_factory::BeanFactory>> {
+        let parent = self
+            .parent
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        parent.clone()
+    }
+
+    fn contains_local_bean(&self, name: &str) -> bool {
+        // 检查本地（非父容器）是否包含 Bean
+        // 检查 dynamic_definitions
+        {
+            let defs = self
+                .dynamic_definitions
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            if let Some(definition) = defs.get(name) {
+                if definition.bean_class_name() != "__DELETED__" {
+                    return true;
+                }
+            }
+        }
+        // 检查 registry
+        self.registry
+            .definitions()
+            .iter()
+            .any(|d| d.key().type_name() == name)
+    }
+}
+
+// ── Spring ListableBeanFactory 接口实现 ───────────────────────────────────────
+
+impl crate::listable_bean_factory::ListableBeanFactory for Container {
+    fn bean_definition_count(&self) -> usize {
+        let defs = self
+            .dynamic_definitions
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let registry_count = self
+            .registry
+            .definitions()
+            .iter()
+            .filter(|d| !defs.contains_key(d.key().type_name()))
+            .count();
+        let dynamic_count = defs
+            .values()
+            .filter(|d| d.bean_class_name() != "__DELETED__")
+            .count();
+        registry_count + dynamic_count
+    }
+
+    fn contains_bean_definition(&self, bean_name: &str) -> bool {
+        {
+            let defs = self
+                .dynamic_definitions
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            if let Some(definition) = defs.get(bean_name) {
+                if definition.bean_class_name() == "__DELETED__" {
+                    return false;
+                }
+                return true;
+            }
+        }
+        self.registry
+            .definitions()
+            .iter()
+            .any(|d| d.key().type_name() == bean_name)
+    }
+
+    fn bean_definition_names(&self) -> Vec<String> {
+        let defs = self
+            .dynamic_definitions
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut names: Vec<String> = self
+            .registry
+            .definitions()
+            .iter()
+            .filter(|d| !defs.contains_key(d.key().type_name()))
+            .map(|d| d.key().type_name().to_string())
+            .collect();
+        for (name, definition) in defs.iter() {
+            if definition.bean_class_name() != "__DELETED__" && !names.contains(name) {
+                names.push(name.clone());
+            }
+        }
+        names
+    }
+
+    fn bean_names_for_type_id(
+        &self,
+        type_id: TypeId,
+        _include_non_singletons: bool,
+        _allow_eager_init: bool,
+    ) -> Vec<String> {
+        self.registry
+            .definitions()
+            .iter()
+            .filter(|d| d.key().type_id == type_id)
+            .map(|d| d.key().type_name().to_string())
+            .collect()
+    }
+
+    fn beans_of_type_id(
+        &self,
+        type_id: TypeId,
+        _include_non_singletons: bool,
+        _allow_eager_init: bool,
+    ) -> Result<HashMap<String, Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>>
+    {
+        let mut result = HashMap::new();
+        let definitions: Vec<_> = self
+            .registry
+            .definitions()
+            .iter()
+            .filter(|d| d.key().type_id == type_id)
+            .collect();
+
+        for definition in definitions {
+            let instance = self.resolve_definition(definition, &[], None).map_err(|e| {
+                Box::new(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    format!("Failed to resolve bean '{}': {}", definition.key(), e),
+                )) as Box<dyn std::error::Error + Send + Sync>
+            })?;
+            result.insert(definition.key().type_name().to_string(), instance);
+        }
+
+        Ok(result)
+    }
+
+    fn bean_post_processor_count(&self) -> usize {
+        self.bean_post_processors
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .len()
+    }
+
+    fn contains_non_singleton_bean(&self) -> bool {
+        self.registry
+            .definitions()
+            .iter()
+            .any(|d| !d.scope().is_singleton())
+    }
+
+    fn contains_singleton_bean(&self) -> bool {
+        self.registry
+            .definitions()
+            .iter()
+            .any(|d| d.scope().is_singleton())
+    }
+
+    fn bean_names_iterator(&self) -> Box<dyn Iterator<Item = String> + '_> {
+        let names = self.bean_definition_names();
+        Box::new(names.into_iter())
+    }
+}
+
+// ── Spring ConfigurableBeanFactory 接口实现 ───────────────────────────────────
+
+impl crate::configurable_bean_factory::ConfigurableBeanFactory for Container {
+    fn set_parent_bean_factory(
+        &mut self,
+        parent: Arc<dyn crate::bean_factory::BeanFactory>,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        let mut p = self
+            .parent
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        *p = Some(parent);
+        Ok(())
+    }
+
+    fn register_scope(&mut self, scope_name: &str, scope: Box<dyn crate::bean_scope::BeanScope>) {
+        self.scopes
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .insert(scope_name.to_string(), Arc::from(scope));
+    }
+
+    fn registered_scope_names(&self) -> Vec<String> {
+        self.scopes
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .keys()
+            .cloned()
+            .collect()
+    }
+
+    fn get_registered_scope(&self, scope_name: &str) -> Option<Arc<dyn crate::bean_scope::BeanScope>> {
+        let scopes = self
+            .scopes
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        scopes.get(scope_name).map(|arc_scope| {
+            Arc::clone(arc_scope)
+        })
+    }
+
+    fn add_bean_post_processor(&mut self, processor: Arc<dyn crate::bean_post_processor::BeanPostProcessor>) {
+        self.bean_post_processors
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .push(processor);
+    }
+
+    fn bean_post_processor_count(&self) -> usize {
+        self.bean_post_processors
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .len()
+    }
+
+    fn register_alias(
+        &mut self,
+        bean_name: &str,
+        alias: &str,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        let mut aliases = self
+            .aliases
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if let Some(existing_target) = aliases.get(alias) {
+            if existing_target != bean_name {
+                return Err(Box::new(std::io::Error::new(
+                    std::io::ErrorKind::AlreadyExists,
+                    format!(
+                        "Alias '{}' already points to '{}', cannot reassign to '{}'",
+                        alias, existing_target, bean_name
+                    ),
+                )));
+            }
+        }
+        aliases.insert(alias.to_string(), bean_name.to_string());
+        Ok(())
+    }
+
+    fn is_factory_bean(&self, name: &str) -> bool {
+        // 检查名称是否以 FactoryBean 前缀开头
+        name.starts_with(crate::bean_factory::FACTORY_BEAN_PREFIX)
+    }
+
+    fn set_currently_in_creation(&mut self, bean_name: &str, in_creation: bool) {
+        let mut creation_set = self
+            .currently_in_creation
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if in_creation {
+            creation_set.insert(bean_name.to_string());
+        } else {
+            creation_set.remove(bean_name);
+        }
+    }
+
+    fn is_currently_in_creation(&self, bean_name: &str) -> bool {
+        self.currently_in_creation
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .contains(bean_name)
+    }
+
+    fn register_dependent_bean(&mut self, bean_name: &str, dependent_bean_name: &str) {
+        // dependent_beans: bean_name -> set of beans that depend on it
+        self.dependent_beans
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .entry(bean_name.to_string())
+            .or_insert_with(HashSet::new)
+            .insert(dependent_bean_name.to_string());
+
+        // dependencies_for_bean: dependent_bean_name -> set of beans it depends on
+        self.dependencies_for_bean
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .entry(dependent_bean_name.to_string())
+            .or_insert_with(HashSet::new)
+            .insert(bean_name.to_string());
+    }
+
+    fn get_dependent_beans(&self, bean_name: &str) -> Vec<String> {
+        self.dependent_beans
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .get(bean_name)
+            .map(|set| set.iter().cloned().collect())
+            .unwrap_or_default()
+    }
+
+    fn get_dependencies_for_bean(&self, bean_name: &str) -> Vec<String> {
+        self.dependencies_for_bean
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .get(bean_name)
+            .map(|set| set.iter().cloned().collect())
+            .unwrap_or_default()
+    }
+
+    fn destroy_bean(
+        &self,
+        _bean_name: &str,
+        _bean_instance: &dyn Any,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        // 在 vernal 中，销毁由 Component::shutdown 管理
+        Ok(())
+    }
+
+    fn destroy_singletons(&self) {
+        let mut singletons = self
+            .singletons
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        singletons.clear();
+    }
+
+    fn add_embedded_value_resolver(&mut self, resolver: Arc<dyn Fn(&str) -> String + Send + Sync>) {
+        self.embedded_value_resolvers
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .push(resolver);
+    }
+
+    fn resolve_embedded_value(&self, value: &str) -> String {
+        let resolvers = self
+            .embedded_value_resolvers
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if resolvers.is_empty() {
+            return value.to_string();
+        }
+        let mut result = value.to_string();
+        for resolver in resolvers.iter() {
+            result = resolver(&result);
+        }
+        result
+    }
+}
+
+// ── Spring ConfigurableListableBeanFactory 接口实现 ───────────────────────────
+
+impl crate::configurable_listable_bean_factory::ConfigurableListableBeanFactory for Container {
+    fn ignore_dependency_type(&mut self, type_id: TypeId) {
+        self.ignored_dependency_types
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .insert(type_id);
+    }
+
+    fn ignore_dependency_interface(&mut self, interface_id: TypeId) {
+        self.ignored_dependency_interfaces
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .insert(interface_id);
+    }
+
+    fn register_resolvable_dependency(
+        &mut self,
+        dependency_type: TypeId,
+        autowired_value: Arc<dyn Any + Send + Sync>,
+    ) {
+        self.resolvable_dependencies
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .insert(dependency_type, autowired_value);
+    }
+
+    fn is_autowire_candidate(&self, _bean_name: &str) -> bool {
+        // 默认所有 Bean 都是 autowire candidate
+        // 可以通过扩展字段支持排除逻辑
+        true
+    }
+
+    fn freeze_configuration(&mut self) {
+        *self
+            .configuration_frozen
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = true;
+    }
+
+    fn is_configuration_frozen(&self) -> bool {
+        *self
+            .configuration_frozen
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
+
+    fn pre_instantiate_singletons(&self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        // 预实例化所有 singleton Bean
+        let definitions: Vec<_> = self
+            .registry
+            .definitions()
+            .iter()
+            .filter(|d| d.scope().is_singleton())
+            .cloned()
+            .collect();
+
+        for definition in definitions {
+            self.resolve_definition(&definition, &[], None).map_err(|e| {
+                Box::new(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    format!(
+                        "Failed to pre-instantiate singleton '{}': {}",
+                        definition.key(),
+                        e
+                    ),
+                )) as Box<dyn std::error::Error + Send + Sync>
+            })?;
+        }
+        Ok(())
     }
 }

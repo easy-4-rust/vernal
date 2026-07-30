@@ -4,6 +4,8 @@
 //!
 //! 扩展 `BeanFactory`，支持父子容器层级结构。
 
+use std::sync::Arc;
+
 use crate::bean_factory::BeanFactory;
 
 /// Spring 风格的层级 BeanFactory 接口。
@@ -21,9 +23,9 @@ pub trait HierarchicalBeanFactory: BeanFactory {
     ///
     /// # 返回
     ///
-    /// - `Some(parent)` — 父容器引用（类型擦除）
+    /// - `Some(parent)` — 父容器的 Arc 引用
     /// - `None` — 此容器是根容器
-    fn parent_bean_factory(&self) -> Option<&dyn BeanFactory>;
+    fn parent_bean_factory(&self) -> Option<Arc<dyn BeanFactory>>;
 
     /// 检查本地（非父容器）是否包含指定 Bean。
     ///
