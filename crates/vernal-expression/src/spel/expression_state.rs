@@ -91,9 +91,9 @@ impl<'a> ExpressionState<'a> {
 
     /// 查找变量。
     #[must_use]
-    pub fn lookup_variable(&self, name: &str) -> Option<&TypedValue> {
+    pub fn lookup_variable(&self, name: &str) -> Option<TypedValue> {
         if let Some(v) = self.variables.get(name) {
-            return Some(v);
+            return Some(v.clone());
         }
         self.context.lookup_variable(name)
     }
@@ -299,14 +299,16 @@ mod tests {
     }
 
     #[test]
-    fn lookup_variable_context_returns_none() {
-        // StandardEvaluationContext::lookup_variable returns None
-        // because RwLock<HashMap> cannot return &TypedValue (lifetime issue).
-        // Variables are stored but not retrievable via the trait method.
-        // ExpressionState has its own variables HashMap that works correctly.
-        let ctx = StandardEvaluationContext::new(TypedValue::null());
+    fn lookup_variable_falls_through_to_context() {
+        // StandardEvaluationContext::lookup_variable now returns owned values
+        let mut ctx = StandardEvaluationContext::new(TypedValue::null());
+        ctx.set_variable(
+            "ctx_var",
+            TypedValue::new(ExpressionValue::Int(42), TypeDescriptor::INT),
+        );
         let state = ExpressionState::new(&ctx);
-        assert!(state.lookup_variable("ctx_var").is_none());
+        let found = state.lookup_variable("ctx_var").unwrap();
+        assert_eq!(*found.value(), ExpressionValue::Int(42));
     }
 
     #[test]

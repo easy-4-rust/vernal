@@ -142,7 +142,7 @@ pub trait EvaluationContext: Send + Sync {
     /// # 返回
     ///
     /// 变量的值，如果未找到则返回 `None`。
-    fn lookup_variable(&self, name: &str) -> Option<&TypedValue>;
+    fn lookup_variable(&self, name: &str) -> Option<TypedValue>;
 
     /// 是否允许赋值运算符（`=`、`++`、`--`）。
     ///

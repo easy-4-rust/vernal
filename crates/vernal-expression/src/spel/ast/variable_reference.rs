@@ -29,7 +29,7 @@ impl SpelNode for VariableReference {
         match self.name.as_str() {
             "this" => Ok(context.root_object().clone()),
             "root" => Ok(context.root_object().clone()),
-            _ => context.lookup_variable(&self.name).cloned().ok_or_else(|| {
+            _ => context.lookup_variable(&self.name).ok_or_else(|| {
                 EvaluationException::new(&self.name, None, format!("变量 '#{}' 未找到", self.name))
             }),
         }

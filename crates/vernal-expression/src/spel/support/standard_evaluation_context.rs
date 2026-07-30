@@ -210,9 +210,11 @@ impl EvaluationContext for StandardEvaluationContext {
         }
     }
 
-    fn lookup_variable(&self, name: &str) -> Option<&TypedValue> {
-        let _ = name;
-        None
+    fn lookup_variable(&self, name: &str) -> Option<TypedValue> {
+        self.variables
+            .read()
+            .ok()
+            .and_then(|vars| vars.get(name).cloned())
     }
 }
 

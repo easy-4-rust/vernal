@@ -96,8 +96,8 @@ impl EvaluationContext for DummyCtx {
         self.variables.insert(name.to_string(), value);
     }
 
-    fn lookup_variable(&self, name: &str) -> Option<&TypedValue> {
-        self.variables.get(name)
+    fn lookup_variable(&self, name: &str) -> Option<TypedValue> {
+        self.variables.get(name).cloned()
     }
 }
 

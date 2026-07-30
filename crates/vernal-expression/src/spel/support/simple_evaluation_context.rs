@@ -87,8 +87,8 @@ impl EvaluationContext for SimpleEvaluationContext {
         self.variables.insert(name.to_string(), value);
     }
 
-    fn lookup_variable(&self, name: &str) -> Option<&TypedValue> {
-        self.variables.get(name)
+    fn lookup_variable(&self, name: &str) -> Option<TypedValue> {
+        self.variables.get(name).cloned()
     }
 
     fn is_assignment_enabled(&self) -> bool {

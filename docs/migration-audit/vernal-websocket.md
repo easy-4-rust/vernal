@@ -1,0 +1,237 @@
+<!-- migration-doc: authority=authoritative canonical=../迁移验收规范.md -->
+# vernal-websocket 迁移事实审计
+
+> 本文由 `scripts/audit_migration_docs.py` 根据源码生成；禁止手工修改统计和对象行。
+> Spring 基线提交：`9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82`；路径规则：保留末 `2` 层包目录。
+
+<!-- current-migration-contract-start -->
+## 当前迁移规范执行口径
+
+| 规范项 | 本模块强制要求 |
+|---|---|
+| 来源基线 | `9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82` |
+| Java 对象边界 | 149 个 class/interface/enum/record；`package-info.java` 不计入 |
+| 目录算法 | 去掉组织和模块根包，保留末 2 层包目录 |
+| 文件边界 | 一个 Java 对象对应一个 snake_case `.rs` 文件；内部类/Builder 可随主对象 |
+| 模块文件 | `lib.rs`/`mod.rs` 只允许模块文档、声明和显式重导出 |
+| 完成状态 | 仅 `IMPLEMENTED`、`DEPENDENCY_REUSED`、`PLATFORM_NA` 计入完成 |
+| 未完成状态 | `MISSING`、`MISPLACED`、`STUB`、`PARTIAL`、`UNVERIFIED` |
+| 注释与测试 | 中文 Java 来源注释；正常、失败、边界和生命周期语义测试 |
+
+本文件顶部事实区始终按当前源码重新生成；下方历史设计附录不得覆盖这里的对象数量、路径、状态或证据。
+<!-- current-migration-contract-end -->
+
+## 汇总
+
+| 指标 | 数量 |
+|---|---:|
+| Java 业务对象 | 149 |
+| 已处理（严格三类） | 13 |
+| `DEPENDENCY_REUSED` | 0 |
+| `IMPLEMENTED` | 13 |
+| `MISPLACED` | 8 |
+| `MISSING` | 125 |
+| `PARTIAL` | 0 |
+| `PLATFORM_NA` | 0 |
+| `STUB` | 0 |
+| `UNVERIFIED` | 3 |
+
+## 结构红线
+
+> 下列既存问题属于未完成证据。本报告只登记，不在文档治理任务中修改源码。
+
+- 单文件多个公开对象位于 `message.rs`：`MessageKind`、`WebSocketMessage`
+- 单文件多个公开对象位于 `session.rs`：`SessionState`、`WebSocketSession`、`MemoryWebSocketSession`
+- 单文件多个公开对象位于 `transport.rs`：`WebSocketTransport`、`TokioWebsocketsTransport`
+- 单文件多个公开对象位于 `handshake.rs`：`HandshakeRequest`、`OriginPolicy`
+- 单文件多个公开对象位于 `backpressure.rs`：`BackpressurePolicy`、`OutboundQueue`
+- 单文件多个公开对象位于 `close_status.rs`：`CloseCode`、`CloseStatus`、`CloseStatusError`
+- 单文件多个公开对象位于 `lifecycle.rs`：`LifecycleState`、`LifecycleController`
+- 单文件多个公开对象位于 `handler/abstract_websocket_handler.rs`：`AbstractWebSocketHandler`、`MessageHandlerHooks`
+- 单文件多个公开对象位于 `handler/websocket_handler.rs`：`HandlerFuture`、`WebSocketHandler`
+- 单文件多个公开对象位于 `handler/concurrent_websocket_session_decorator.rs`：`OverflowStrategy`、`ConcurrentWebSocketSessionDecorator`
+- 单文件多个公开对象位于 `handler/bean_creating_handler_provider.rs`：`HandlerFactory`、`BeanCreatingHandlerProvider`、`HandlerCreationError`
+- 单文件多个公开对象位于 `handler/websocket_handler_decorator_factory.rs`：`WebSocketHandlerDecoratorFactory`、`IdentityHandlerDecoratorFactory`
+- 单文件多个公开对象位于 `server/websocket_handler_mapping.rs`：`MappingEntry`、`WebSocketHandlerMapping`
+- 单文件多个公开对象位于 `server/http_session_handshake_interceptor.rs`：`HttpSessionAttributes`、`HttpSession`、`HttpSessionHandshakeInterceptor`
+- 单文件多个公开对象位于 `server/handshake_interceptor.rs`：`HandshakeAttributes`、`HandshakeContext`、`BeforeHandshakeFuture`、`AfterHandshakeFuture`、`HandshakeInterceptor`、`HandlerInterceptorFuture`
+- 单文件多个公开对象位于 `server/handshake_handler.rs`：`HandshakeFuture`、`HandshakeHandler`
+- 单文件多个公开对象位于 `server/websocket_http_request_handler.rs`：`HandshakeResponse`、`WebSocketHttpRequestHandler`
+- 单文件多个公开对象位于 `sockjs/sockjs_service.rs`：`SockJsRequest`、`SockJsResponseWriter`、`SockJsServiceFuture`、`SockJsService`
+- 单文件多个公开对象位于 `stomp/stomp_codec.rs`：`StompCodecError`、`StompFrame`、`StompEncoder`、`StompDecoder`
+- 单文件多个公开对象位于 `stomp/stomp_command.rs`：`SimpMessageType`、`StompCommand`
+- 单文件多个公开对象位于 `messaging/websocket_stomp_client.rs`：`StompSessionState`、`StompSubscription`、`StompSession`、`WebSocketStompClient`
+- 单文件多个公开对象位于 `messaging/sub_protocol_websocket_handler.rs`：`WebSocketSessionHolder`、`SubProtocolWebSocketHandlerConfig`、`SubProtocolWebSocketHandler`、`SubProtocolStats`、`OutboundMessageDispatcher`
+- 单文件多个公开对象位于 `messaging/sub_protocol_error_handler.rs`：`SubProtocolErrorFuture`、`SubProtocolErrorHandler`
+- 单文件多个公开对象位于 `messaging/stomp_sub_protocol_error_handler.rs`：`StompErrorMessage`、`StompSubProtocolErrorHandler`
+- 单文件多个公开对象位于 `messaging/websocket_annotation_method_message_handler.rs`：`DestinationHandler`、`WebSocketAnnotationMethodMessageHandler`
+- 单文件多个公开对象位于 `messaging/sub_protocol_handler.rs`：`SubProtocolFuture`、`SubProtocolHandler`
+- 单文件多个公开对象位于 `messaging/sub_protocol_event.rs`：`SubProtocolEvent`、`SessionConnectEvent`、`SessionConnectedEvent`、`SessionDisconnectEvent`、`SessionSubscribeEvent`、`SessionUnsubscribeEvent`
+- 单文件多个公开对象位于 `client/websocket_client.rs`：`ConnectFuture`、`WebSocketClient`
+- 单文件多个公开对象位于 `client/connection_manager_support.rs`：`WebSocketClientConfig`、`ConnectionManagerSupport`、`WebSocketConnectionManager`
+- 单文件多个公开对象位于 `sockjs/transport/sockjs_session.rs`：`SockJsSession`、`SockJsSessionState`
+- 单文件多个公开对象位于 `sockjs/transport/transport_handler.rs`：`TransportHandleFuture`、`TransportHandler`
+- 单文件多个公开对象位于 `sockjs/frame/sockjs_frame.rs`：`SockJsFrameContentError`、`SockJsFrame`
+- 单文件多个公开对象位于 `sockjs/frame/abstract_sockjs_message_codec.rs`：`AbstractSockJsMessageCodec`、`JsonQuotingCodec`
+- 单文件多个公开对象位于 `sockjs/frame/sockjs_message_codec.rs`：`SockJsMessageCodec`、`SockJsCodecError`
+- 单文件多个公开对象位于 `sockjs/client/transport.rs`：`TransportConnectFuture`、`Transport`、`TransportRequest`
+- 单文件多个公开对象位于 `sockjs/client/abstract_xhr_transport.rs`：`HttpRequestExecutor`、`XhrTransportImpl`、`WebSocketClientTransport`
+- 单文件多个公开对象位于 `sockjs/client/abstract_client_sockjs_session.rs`：`ClientSessionState`、`ClientSockJsSession`
+- 单文件多个公开对象位于 `sockjs/client/info_receiver.rs`：`InfoFuture`、`ServerInfo`、`InfoReceiver`
+- 单文件多个公开对象位于 `sockjs/transport/handler/websocket_transport_handler.rs`：`WebSocketTransportHandler`、`SockJsWebSocketHandler`
+- 单文件多个公开对象位于 `sockjs/transport/session/abstract_http_sockjs_session.rs`：`HttpSockJsSession`、`WebSocketServerSockJsSession`
+- 单文件多个公开对象位于 `sockjs/transport/session/abstract_sockjs_session.rs`：`SessionLifecycle`、`AbstractSockJsSession`
+
+## 逐对象台账
+
+| Java FQN | Java 相对路径 | 预期 Rust 路径 | 当前 Rust 路径 | 状态 | 证据 |
+|---|---|---|---|---|---|
+| `org.springframework.web.socket.AbstractWebSocketMessage` | `AbstractWebSocketMessage.java` | `abstract_web_socket_message.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.BinaryMessage` | `BinaryMessage.java` | `binary_message.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.CloseStatus` | `CloseStatus.java` | `close_status.rs` | `close_status.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
+| `org.springframework.web.socket.PingMessage` | `PingMessage.java` | `ping_message.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.PongMessage` | `PongMessage.java` | `pong_message.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.SubProtocolCapable` | `SubProtocolCapable.java` | `sub_protocol_capable.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.TextMessage` | `TextMessage.java` | `text_message.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.WebSocketExtension` | `WebSocketExtension.java` | `web_socket_extension.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.WebSocketHandler` | `WebSocketHandler.java` | `web_socket_handler.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.WebSocketHttpHeaders` | `WebSocketHttpHeaders.java` | `web_socket_http_headers.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.WebSocketMessage` | `WebSocketMessage.java` | `web_socket_message.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.WebSocketSession` | `WebSocketSession.java` | `web_socket_session.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.adapter.AbstractWebSocketSession` | `adapter/AbstractWebSocketSession.java` | `adapter/abstract_web_socket_session.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.adapter.NativeWebSocketSession` | `adapter/NativeWebSocketSession.java` | `adapter/native_web_socket_session.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.adapter.jetty.JettyWebSocketHandlerAdapter` | `adapter/jetty/JettyWebSocketHandlerAdapter.java` | `adapter/jetty/jetty_web_socket_handler_adapter.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.adapter.jetty.JettyWebSocketSession` | `adapter/jetty/JettyWebSocketSession.java` | `adapter/jetty/jetty_web_socket_session.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.adapter.jetty.WebSocketToJettyExtensionConfigAdapter` | `adapter/jetty/WebSocketToJettyExtensionConfigAdapter.java` | `adapter/jetty/web_socket_to_jetty_extension_config_adapter.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.adapter.standard.ConvertingEncoderDecoderSupport` | `adapter/standard/ConvertingEncoderDecoderSupport.java` | `adapter/standard/converting_encoder_decoder_support.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.adapter.standard.StandardToWebSocketExtensionAdapter` | `adapter/standard/StandardToWebSocketExtensionAdapter.java` | `adapter/standard/standard_to_web_socket_extension_adapter.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.adapter.standard.StandardWebSocketHandlerAdapter` | `adapter/standard/StandardWebSocketHandlerAdapter.java` | `adapter/standard/standard_web_socket_handler_adapter.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.adapter.standard.StandardWebSocketSession` | `adapter/standard/StandardWebSocketSession.java` | `adapter/standard/standard_web_socket_session.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.adapter.standard.WebSocketToStandardExtensionAdapter` | `adapter/standard/WebSocketToStandardExtensionAdapter.java` | `adapter/standard/web_socket_to_standard_extension_adapter.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.client.AbstractWebSocketClient` | `client/AbstractWebSocketClient.java` | `client/abstract_web_socket_client.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.client.ConnectionManagerSupport` | `client/ConnectionManagerSupport.java` | `client/connection_manager_support.rs` | `client/connection_manager_support.rs` | `UNVERIFIED` | 缺少测试引用 |
+| `org.springframework.web.socket.client.WebSocketClient` | `client/WebSocketClient.java` | `client/web_socket_client.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.client.WebSocketConnectionManager` | `client/WebSocketConnectionManager.java` | `client/web_socket_connection_manager.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.client.standard.AnnotatedEndpointConnectionManager` | `client/standard/AnnotatedEndpointConnectionManager.java` | `client/standard/annotated_endpoint_connection_manager.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.client.standard.EndpointConnectionManager` | `client/standard/EndpointConnectionManager.java` | `client/standard/endpoint_connection_manager.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.client.standard.StandardWebSocketClient` | `client/standard/StandardWebSocketClient.java` | `client/standard/standard_web_socket_client.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.client.standard.WebSocketContainerFactoryBean` | `client/standard/WebSocketContainerFactoryBean.java` | `client/standard/web_socket_container_factory_bean.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.config.HandlersBeanDefinitionParser` | `config/HandlersBeanDefinitionParser.java` | `config/handlers_bean_definition_parser.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.config.MessageBrokerBeanDefinitionParser` | `config/MessageBrokerBeanDefinitionParser.java` | `config/message_broker_bean_definition_parser.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.config.WebSocketMessageBrokerStats` | `config/WebSocketMessageBrokerStats.java` | `config/web_socket_message_broker_stats.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.config.WebSocketNamespaceHandler` | `config/WebSocketNamespaceHandler.java` | `config/web_socket_namespace_handler.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.config.WebSocketNamespaceUtils` | `config/WebSocketNamespaceUtils.java` | `config/web_socket_namespace_utils.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.config.annotation.AbstractWebSocketHandlerRegistration` | `config/annotation/AbstractWebSocketHandlerRegistration.java` | `config/annotation/abstract_web_socket_handler_registration.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.config.annotation.DelegatingWebSocketConfiguration` | `config/annotation/DelegatingWebSocketConfiguration.java` | `config/annotation/delegating_web_socket_configuration.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.config.annotation.DelegatingWebSocketMessageBrokerConfiguration` | `config/annotation/DelegatingWebSocketMessageBrokerConfiguration.java` | `config/annotation/delegating_web_socket_message_broker_configuration.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.config.annotation.EnableWebSocket` | `config/annotation/EnableWebSocket.java` | `config/annotation/enable_web_socket.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker` | `config/annotation/EnableWebSocketMessageBroker.java` | `config/annotation/enable_web_socket_message_broker.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.config.annotation.ServletWebSocketHandlerRegistration` | `config/annotation/ServletWebSocketHandlerRegistration.java` | `config/annotation/servlet_web_socket_handler_registration.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.config.annotation.ServletWebSocketHandlerRegistry` | `config/annotation/ServletWebSocketHandlerRegistry.java` | `config/annotation/servlet_web_socket_handler_registry.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.config.annotation.SockJsServiceRegistration` | `config/annotation/SockJsServiceRegistration.java` | `config/annotation/sock_js_service_registration.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.config.annotation.StompEndpointRegistry` | `config/annotation/StompEndpointRegistry.java` | `config/annotation/stomp_endpoint_registry.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.config.annotation.StompWebSocketEndpointRegistration` | `config/annotation/StompWebSocketEndpointRegistration.java` | `config/annotation/stomp_web_socket_endpoint_registration.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.config.annotation.WebMvcStompEndpointRegistry` | `config/annotation/WebMvcStompEndpointRegistry.java` | `config/annotation/web_mvc_stomp_endpoint_registry.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.config.annotation.WebMvcStompWebSocketEndpointRegistration` | `config/annotation/WebMvcStompWebSocketEndpointRegistration.java` | `config/annotation/web_mvc_stomp_web_socket_endpoint_registration.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.config.annotation.WebSocketConfigurationSupport` | `config/annotation/WebSocketConfigurationSupport.java` | `config/annotation/web_socket_configuration_support.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.config.annotation.WebSocketConfigurer` | `config/annotation/WebSocketConfigurer.java` | `config/annotation/web_socket_configurer.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.config.annotation.WebSocketHandlerRegistration` | `config/annotation/WebSocketHandlerRegistration.java` | `config/annotation/web_socket_handler_registration.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry` | `config/annotation/WebSocketHandlerRegistry.java` | `config/annotation/web_socket_handler_registry.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurationSupport` | `config/annotation/WebSocketMessageBrokerConfigurationSupport.java` | `config/annotation/web_socket_message_broker_configuration_support.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer` | `config/annotation/WebSocketMessageBrokerConfigurer.java` | `config/annotation/web_socket_message_broker_configurer.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.config.annotation.WebSocketScope` | `config/annotation/WebSocketScope.java` | `config/annotation/web_socket_scope.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.config.annotation.WebSocketTransportRegistration` | `config/annotation/WebSocketTransportRegistration.java` | `config/annotation/web_socket_transport_registration.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.handler.AbstractWebSocketHandler` | `handler/AbstractWebSocketHandler.java` | `handler/abstract_web_socket_handler.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.handler.BeanCreatingHandlerProvider` | `handler/BeanCreatingHandlerProvider.java` | `handler/bean_creating_handler_provider.rs` | `handler/bean_creating_handler_provider.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `tests/handler_decorators.rs` |
+| `org.springframework.web.socket.handler.BinaryWebSocketHandler` | `handler/BinaryWebSocketHandler.java` | `handler/binary_web_socket_handler.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.handler.ConcurrentWebSocketSessionDecorator` | `handler/ConcurrentWebSocketSessionDecorator.java` | `handler/concurrent_web_socket_session_decorator.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.handler.ExceptionWebSocketHandlerDecorator` | `handler/ExceptionWebSocketHandlerDecorator.java` | `handler/exception_web_socket_handler_decorator.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.handler.LoggingWebSocketHandlerDecorator` | `handler/LoggingWebSocketHandlerDecorator.java` | `handler/logging_web_socket_handler_decorator.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.handler.PerConnectionWebSocketHandler` | `handler/PerConnectionWebSocketHandler.java` | `handler/per_connection_web_socket_handler.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.handler.SessionLimitExceededException` | `handler/SessionLimitExceededException.java` | `handler/session_limit_exceeded_exception.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.handler.TextWebSocketHandler` | `handler/TextWebSocketHandler.java` | `handler/text_web_socket_handler.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.handler.WebSocketHandlerDecorator` | `handler/WebSocketHandlerDecorator.java` | `handler/web_socket_handler_decorator.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.handler.WebSocketHandlerDecoratorFactory` | `handler/WebSocketHandlerDecoratorFactory.java` | `handler/web_socket_handler_decorator_factory.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.handler.WebSocketSessionDecorator` | `handler/WebSocketSessionDecorator.java` | `handler/web_socket_session_decorator.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.messaging.AbstractSubProtocolEvent` | `messaging/AbstractSubProtocolEvent.java` | `messaging/abstract_sub_protocol_event.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.messaging.DefaultSimpUserRegistry` | `messaging/DefaultSimpUserRegistry.java` | `messaging/default_simp_user_registry.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.messaging.SessionConnectEvent` | `messaging/SessionConnectEvent.java` | `messaging/session_connect_event.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.messaging.SessionConnectedEvent` | `messaging/SessionConnectedEvent.java` | `messaging/session_connected_event.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.messaging.SessionDisconnectEvent` | `messaging/SessionDisconnectEvent.java` | `messaging/session_disconnect_event.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.messaging.SessionSubscribeEvent` | `messaging/SessionSubscribeEvent.java` | `messaging/session_subscribe_event.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.messaging.SessionUnsubscribeEvent` | `messaging/SessionUnsubscribeEvent.java` | `messaging/session_unsubscribe_event.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.messaging.StompSubProtocolErrorHandler` | `messaging/StompSubProtocolErrorHandler.java` | `messaging/stomp_sub_protocol_error_handler.rs` | `messaging/stomp_sub_protocol_error_handler.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `tests/messaging_stomp.rs` |
+| `org.springframework.web.socket.messaging.StompSubProtocolHandler` | `messaging/StompSubProtocolHandler.java` | `messaging/stomp_sub_protocol_handler.rs` | `messaging/stomp_sub_protocol_handler.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `tests/messaging_stomp.rs` |
+| `org.springframework.web.socket.messaging.SubProtocolErrorHandler` | `messaging/SubProtocolErrorHandler.java` | `messaging/sub_protocol_error_handler.rs` | `messaging/sub_protocol_error_handler.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `tests/messaging_stomp.rs` |
+| `org.springframework.web.socket.messaging.SubProtocolHandler` | `messaging/SubProtocolHandler.java` | `messaging/sub_protocol_handler.rs` | `messaging/sub_protocol_handler.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `tests/messaging_stomp.rs` |
+| `org.springframework.web.socket.messaging.SubProtocolWebSocketHandler` | `messaging/SubProtocolWebSocketHandler.java` | `messaging/sub_protocol_web_socket_handler.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.messaging.WebSocketAnnotationMethodMessageHandler` | `messaging/WebSocketAnnotationMethodMessageHandler.java` | `messaging/web_socket_annotation_method_message_handler.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.messaging.WebSocketStompClient` | `messaging/WebSocketStompClient.java` | `messaging/web_socket_stomp_client.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.server.HandshakeFailureException` | `server/HandshakeFailureException.java` | `server/handshake_failure_exception.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.server.HandshakeHandler` | `server/HandshakeHandler.java` | `server/handshake_handler.rs` | `server/handshake_handler.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `tests/server_handshake.rs` |
+| `org.springframework.web.socket.server.HandshakeInterceptor` | `server/HandshakeInterceptor.java` | `server/handshake_interceptor.rs` | `server/handshake_interceptor.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `tests/server_handshake.rs` |
+| `org.springframework.web.socket.server.RequestUpgradeStrategy` | `server/RequestUpgradeStrategy.java` | `server/request_upgrade_strategy.rs` | `server/request_upgrade_strategy.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `tests/server_handshake.rs` |
+| `org.springframework.web.socket.server.jetty.JettyRequestUpgradeStrategy` | `server/jetty/JettyRequestUpgradeStrategy.java` | `server/jetty/jetty_request_upgrade_strategy.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.server.standard.ServerEndpointExporter` | `server/standard/ServerEndpointExporter.java` | `server/standard/server_endpoint_exporter.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.server.standard.ServerEndpointRegistration` | `server/standard/ServerEndpointRegistration.java` | `server/standard/server_endpoint_registration.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.server.standard.ServletServerContainerFactoryBean` | `server/standard/ServletServerContainerFactoryBean.java` | `server/standard/servlet_server_container_factory_bean.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.server.standard.SpringConfigurator` | `server/standard/SpringConfigurator.java` | `server/standard/spring_configurator.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.server.standard.StandardWebSocketUpgradeStrategy` | `server/standard/StandardWebSocketUpgradeStrategy.java` | `server/standard/standard_web_socket_upgrade_strategy.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.server.support.AbstractHandshakeHandler` | `server/support/AbstractHandshakeHandler.java` | `server/support/abstract_handshake_handler.rs` | `server/abstract_handshake_handler.rs` | `MISPLACED` | 文件名存在，但未位于保留末两层包目录计算出的路径 |
+| `org.springframework.web.socket.server.support.DefaultHandshakeHandler` | `server/support/DefaultHandshakeHandler.java` | `server/support/default_handshake_handler.rs` | `server/default_handshake_handler.rs` | `MISPLACED` | 文件名存在，但未位于保留末两层包目录计算出的路径 |
+| `org.springframework.web.socket.server.support.HandshakeInterceptorChain` | `server/support/HandshakeInterceptorChain.java` | `server/support/handshake_interceptor_chain.rs` | `server/handshake_interceptor_chain.rs` | `MISPLACED` | 文件名存在，但未位于保留末两层包目录计算出的路径 |
+| `org.springframework.web.socket.server.support.HttpSessionHandshakeInterceptor` | `server/support/HttpSessionHandshakeInterceptor.java` | `server/support/http_session_handshake_interceptor.rs` | `server/http_session_handshake_interceptor.rs` | `MISPLACED` | 文件名存在，但未位于保留末两层包目录计算出的路径 |
+| `org.springframework.web.socket.server.support.OriginHandshakeInterceptor` | `server/support/OriginHandshakeInterceptor.java` | `server/support/origin_handshake_interceptor.rs` | `server/origin_handshake_interceptor.rs` | `MISPLACED` | 文件名存在，但未位于保留末两层包目录计算出的路径 |
+| `org.springframework.web.socket.server.support.WebSocketHandlerMapping` | `server/support/WebSocketHandlerMapping.java` | `server/support/web_socket_handler_mapping.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.server.support.WebSocketHttpRequestHandler` | `server/support/WebSocketHttpRequestHandler.java` | `server/support/web_socket_http_request_handler.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.SockJsException` | `sockjs/SockJsException.java` | `sockjs/sock_js_exception.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.SockJsMessageDeliveryException` | `sockjs/SockJsMessageDeliveryException.java` | `sockjs/sock_js_message_delivery_exception.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.SockJsService` | `sockjs/SockJsService.java` | `sockjs/sock_js_service.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.SockJsTransportFailureException` | `sockjs/SockJsTransportFailureException.java` | `sockjs/sock_js_transport_failure_exception.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.client.AbstractClientSockJsSession` | `sockjs/client/AbstractClientSockJsSession.java` | `sockjs/client/abstract_client_sock_js_session.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.client.AbstractXhrTransport` | `sockjs/client/AbstractXhrTransport.java` | `sockjs/client/abstract_xhr_transport.rs` | `sockjs/client/abstract_xhr_transport.rs` | `UNVERIFIED` | 缺少同名公开主类型、测试引用 |
+| `org.springframework.web.socket.sockjs.client.DefaultTransportRequest` | `sockjs/client/DefaultTransportRequest.java` | `sockjs/client/default_transport_request.rs` | `sockjs/client/default_transport_request.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `tests/integration_network.rs` |
+| `org.springframework.web.socket.sockjs.client.InfoReceiver` | `sockjs/client/InfoReceiver.java` | `sockjs/client/info_receiver.rs` | `sockjs/client/info_receiver.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `tests/integration_network.rs` |
+| `org.springframework.web.socket.sockjs.client.JettyXhrTransport` | `sockjs/client/JettyXhrTransport.java` | `sockjs/client/jetty_xhr_transport.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.client.RestClientXhrTransport` | `sockjs/client/RestClientXhrTransport.java` | `sockjs/client/rest_client_xhr_transport.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.client.RestTemplateXhrTransport` | `sockjs/client/RestTemplateXhrTransport.java` | `sockjs/client/rest_template_xhr_transport.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.client.SockJsClient` | `sockjs/client/SockJsClient.java` | `sockjs/client/sock_js_client.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.client.SockJsUrlInfo` | `sockjs/client/SockJsUrlInfo.java` | `sockjs/client/sock_js_url_info.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.client.Transport` | `sockjs/client/Transport.java` | `sockjs/client/transport.rs` | `sockjs/client/transport.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `tests/integration_network.rs` |
+| `org.springframework.web.socket.sockjs.client.TransportRequest` | `sockjs/client/TransportRequest.java` | `sockjs/client/transport_request.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.client.WebSocketClientSockJsSession` | `sockjs/client/WebSocketClientSockJsSession.java` | `sockjs/client/web_socket_client_sock_js_session.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.client.WebSocketTransport` | `sockjs/client/WebSocketTransport.java` | `sockjs/client/web_socket_transport.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.client.XhrClientSockJsSession` | `sockjs/client/XhrClientSockJsSession.java` | `sockjs/client/xhr_client_sock_js_session.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.client.XhrTransport` | `sockjs/client/XhrTransport.java` | `sockjs/client/xhr_transport.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.frame.AbstractSockJsMessageCodec` | `sockjs/frame/AbstractSockJsMessageCodec.java` | `sockjs/frame/abstract_sock_js_message_codec.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.frame.DefaultSockJsFrameFormat` | `sockjs/frame/DefaultSockJsFrameFormat.java` | `sockjs/frame/default_sock_js_frame_format.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.frame.Jackson2SockJsMessageCodec` | `sockjs/frame/Jackson2SockJsMessageCodec.java` | `sockjs/frame/jackson2_sock_js_message_codec.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.frame.JacksonJsonSockJsMessageCodec` | `sockjs/frame/JacksonJsonSockJsMessageCodec.java` | `sockjs/frame/jackson_json_sock_js_message_codec.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.frame.SockJsFrame` | `sockjs/frame/SockJsFrame.java` | `sockjs/frame/sock_js_frame.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.frame.SockJsFrameFormat` | `sockjs/frame/SockJsFrameFormat.java` | `sockjs/frame/sock_js_frame_format.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.frame.SockJsFrameType` | `sockjs/frame/SockJsFrameType.java` | `sockjs/frame/sock_js_frame_type.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.frame.SockJsMessageCodec` | `sockjs/frame/SockJsMessageCodec.java` | `sockjs/frame/sock_js_message_codec.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.support.AbstractSockJsService` | `sockjs/support/AbstractSockJsService.java` | `sockjs/support/abstract_sock_js_service.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.support.SockJsHttpRequestHandler` | `sockjs/support/SockJsHttpRequestHandler.java` | `sockjs/support/sock_js_http_request_handler.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.transport.SockJsServiceConfig` | `sockjs/transport/SockJsServiceConfig.java` | `sockjs/transport/sock_js_service_config.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.transport.SockJsSession` | `sockjs/transport/SockJsSession.java` | `sockjs/transport/sock_js_session.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.transport.SockJsSessionFactory` | `sockjs/transport/SockJsSessionFactory.java` | `sockjs/transport/sock_js_session_factory.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.transport.TransportHandler` | `sockjs/transport/TransportHandler.java` | `sockjs/transport/transport_handler.rs` | `sockjs/transport/transport_handler.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `tests/integration_network.rs` |
+| `org.springframework.web.socket.sockjs.transport.TransportHandlingSockJsService` | `sockjs/transport/TransportHandlingSockJsService.java` | `sockjs/transport/transport_handling_sock_js_service.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.transport.TransportType` | `sockjs/transport/TransportType.java` | `sockjs/transport/transport_type.rs` | `sockjs/transport/transport_type.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `tests/integration_network.rs` |
+| `org.springframework.web.socket.sockjs.transport.handler.AbstractHttpReceivingTransportHandler` | `sockjs/transport/handler/AbstractHttpReceivingTransportHandler.java` | `transport/handler/abstract_http_receiving_transport_handler.rs` | `sockjs/transport/handler/abstract_http_receiving_transport_handler.rs` | `MISPLACED` | 文件名存在，但未位于保留末两层包目录计算出的路径 |
+| `org.springframework.web.socket.sockjs.transport.handler.AbstractHttpSendingTransportHandler` | `sockjs/transport/handler/AbstractHttpSendingTransportHandler.java` | `transport/handler/abstract_http_sending_transport_handler.rs` | `sockjs/transport/handler/abstract_http_sending_transport_handler.rs` | `MISPLACED` | 文件名存在，但未位于保留末两层包目录计算出的路径 |
+| `org.springframework.web.socket.sockjs.transport.handler.AbstractTransportHandler` | `sockjs/transport/handler/AbstractTransportHandler.java` | `transport/handler/abstract_transport_handler.rs` | `sockjs/transport/handler/abstract_transport_handler.rs` | `MISPLACED` | 文件名存在，但未位于保留末两层包目录计算出的路径 |
+| `org.springframework.web.socket.sockjs.transport.handler.DefaultSockJsService` | `sockjs/transport/handler/DefaultSockJsService.java` | `transport/handler/default_sock_js_service.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.transport.handler.EventSourceTransportHandler` | `sockjs/transport/handler/EventSourceTransportHandler.java` | `transport/handler/event_source_transport_handler.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.transport.handler.HtmlFileTransportHandler` | `sockjs/transport/handler/HtmlFileTransportHandler.java` | `transport/handler/html_file_transport_handler.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.transport.handler.SockJsWebSocketHandler` | `sockjs/transport/handler/SockJsWebSocketHandler.java` | `transport/handler/sock_js_web_socket_handler.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.transport.handler.WebSocketTransportHandler` | `sockjs/transport/handler/WebSocketTransportHandler.java` | `transport/handler/web_socket_transport_handler.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.transport.handler.XhrPollingTransportHandler` | `sockjs/transport/handler/XhrPollingTransportHandler.java` | `transport/handler/xhr_polling_transport_handler.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.transport.handler.XhrReceivingTransportHandler` | `sockjs/transport/handler/XhrReceivingTransportHandler.java` | `transport/handler/xhr_receiving_transport_handler.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.transport.handler.XhrStreamingTransportHandler` | `sockjs/transport/handler/XhrStreamingTransportHandler.java` | `transport/handler/xhr_streaming_transport_handler.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.transport.session.AbstractHttpSockJsSession` | `sockjs/transport/session/AbstractHttpSockJsSession.java` | `transport/session/abstract_http_sock_js_session.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.transport.session.AbstractSockJsSession` | `sockjs/transport/session/AbstractSockJsSession.java` | `transport/session/abstract_sock_js_session.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.transport.session.PollingSockJsSession` | `sockjs/transport/session/PollingSockJsSession.java` | `transport/session/polling_sock_js_session.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.transport.session.StreamingSockJsSession` | `sockjs/transport/session/StreamingSockJsSession.java` | `transport/session/streaming_sock_js_session.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.web.socket.sockjs.transport.session.WebSocketServerSockJsSession` | `sockjs/transport/session/WebSocketServerSockJsSession.java` | `transport/session/web_socket_server_sock_js_session.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |

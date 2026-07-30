@@ -1,0 +1,105 @@
+<!-- migration-doc: authority=authoritative canonical=../迁移验收规范.md -->
+# vernal-r2dbc 迁移事实审计
+
+> 本文由 `scripts/audit_migration_docs.py` 根据源码生成；禁止手工修改统计和对象行。
+> Spring 基线提交：`9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82`；路径规则：保留末 `2` 层包目录。
+
+<!-- current-migration-contract-start -->
+## 当前迁移规范执行口径
+
+| 规范项 | 本模块强制要求 |
+|---|---|
+| 来源基线 | `9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82` |
+| Java 对象边界 | 59 个 class/interface/enum/record；`package-info.java` 不计入 |
+| 目录算法 | 去掉组织和模块根包，保留末 2 层包目录 |
+| 文件边界 | 一个 Java 对象对应一个 snake_case `.rs` 文件；内部类/Builder 可随主对象 |
+| 模块文件 | `lib.rs`/`mod.rs` 只允许模块文档、声明和显式重导出 |
+| 完成状态 | 仅 `IMPLEMENTED`、`DEPENDENCY_REUSED`、`PLATFORM_NA` 计入完成 |
+| 未完成状态 | `MISSING`、`MISPLACED`、`STUB`、`PARTIAL`、`UNVERIFIED` |
+| 注释与测试 | 中文 Java 来源注释；正常、失败、边界和生命周期语义测试 |
+
+本文件顶部事实区始终按当前源码重新生成；下方历史设计附录不得覆盖这里的对象数量、路径、状态或证据。
+<!-- current-migration-contract-end -->
+
+## 汇总
+
+| 指标 | 数量 |
+|---|---:|
+| Java 业务对象 | 59 |
+| 已处理（严格三类） | 0 |
+| `DEPENDENCY_REUSED` | 0 |
+| `IMPLEMENTED` | 0 |
+| `MISPLACED` | 0 |
+| `MISSING` | 59 |
+| `PARTIAL` | 0 |
+| `PLATFORM_NA` | 0 |
+| `STUB` | 0 |
+| `UNVERIFIED` | 0 |
+
+## 结构红线
+
+- 未发现 `lib.rs`/`mod.rs` 类型定义或生产 wildcard import。
+
+## 逐对象台账
+
+| Java FQN | Java 相对路径 | 预期 Rust 路径 | 当前 Rust 路径 | 状态 | 证据 |
+|---|---|---|---|---|---|
+| `org.springframework.r2dbc.BadSqlGrammarException` | `BadSqlGrammarException.java` | `bad_sql_grammar_exception.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.UncategorizedR2dbcException` | `UncategorizedR2dbcException.java` | `uncategorized_r2dbc_exception.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.connection.ConnectionFactoryUtils` | `connection/ConnectionFactoryUtils.java` | `connection/connection_factory_utils.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.connection.ConnectionHolder` | `connection/ConnectionHolder.java` | `connection/connection_holder.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.connection.DelegatingConnectionFactory` | `connection/DelegatingConnectionFactory.java` | `connection/delegating_connection_factory.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.connection.R2dbcTransactionManager` | `connection/R2dbcTransactionManager.java` | `connection/r2dbc_transaction_manager.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.connection.SingleConnectionFactory` | `connection/SingleConnectionFactory.java` | `connection/single_connection_factory.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.connection.TransactionAwareConnectionFactoryProxy` | `connection/TransactionAwareConnectionFactoryProxy.java` | `connection/transaction_aware_connection_factory_proxy.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.connection.init.CannotReadScriptException` | `connection/init/CannotReadScriptException.java` | `connection/init/cannot_read_script_exception.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.connection.init.CompositeDatabasePopulator` | `connection/init/CompositeDatabasePopulator.java` | `connection/init/composite_database_populator.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.connection.init.ConnectionFactoryInitializer` | `connection/init/ConnectionFactoryInitializer.java` | `connection/init/connection_factory_initializer.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.connection.init.DatabasePopulator` | `connection/init/DatabasePopulator.java` | `connection/init/database_populator.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.connection.init.ResourceDatabasePopulator` | `connection/init/ResourceDatabasePopulator.java` | `connection/init/resource_database_populator.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.connection.init.ScriptException` | `connection/init/ScriptException.java` | `connection/init/script_exception.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.connection.init.ScriptParseException` | `connection/init/ScriptParseException.java` | `connection/init/script_parse_exception.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.connection.init.ScriptStatementFailedException` | `connection/init/ScriptStatementFailedException.java` | `connection/init/script_statement_failed_exception.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.connection.init.ScriptUtils` | `connection/init/ScriptUtils.java` | `connection/init/script_utils.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.connection.init.UncategorizedScriptException` | `connection/init/UncategorizedScriptException.java` | `connection/init/uncategorized_script_exception.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.connection.lookup.AbstractRoutingConnectionFactory` | `connection/lookup/AbstractRoutingConnectionFactory.java` | `connection/lookup/abstract_routing_connection_factory.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.connection.lookup.BeanFactoryConnectionFactoryLookup` | `connection/lookup/BeanFactoryConnectionFactoryLookup.java` | `connection/lookup/bean_factory_connection_factory_lookup.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.connection.lookup.ConnectionFactoryLookup` | `connection/lookup/ConnectionFactoryLookup.java` | `connection/lookup/connection_factory_lookup.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.connection.lookup.ConnectionFactoryLookupFailureException` | `connection/lookup/ConnectionFactoryLookupFailureException.java` | `connection/lookup/connection_factory_lookup_failure_exception.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.connection.lookup.MapConnectionFactoryLookup` | `connection/lookup/MapConnectionFactoryLookup.java` | `connection/lookup/map_connection_factory_lookup.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.connection.lookup.SingleConnectionFactoryLookup` | `connection/lookup/SingleConnectionFactoryLookup.java` | `connection/lookup/single_connection_factory_lookup.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.core.BeanPropertyRowMapper` | `core/BeanPropertyRowMapper.java` | `core/bean_property_row_mapper.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.core.BindParameterSource` | `core/BindParameterSource.java` | `core/bind_parameter_source.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.core.ColumnMapRowMapper` | `core/ColumnMapRowMapper.java` | `core/column_map_row_mapper.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.core.ConnectionAccessor` | `core/ConnectionAccessor.java` | `core/connection_accessor.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.core.ConnectionFunction` | `core/ConnectionFunction.java` | `core/connection_function.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.core.DataClassRowMapper` | `core/DataClassRowMapper.java` | `core/data_class_row_mapper.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.core.DatabaseClient` | `core/DatabaseClient.java` | `core/database_client.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.core.DefaultDatabaseClient` | `core/DefaultDatabaseClient.java` | `core/default_database_client.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.core.DefaultDatabaseClientBuilder` | `core/DefaultDatabaseClientBuilder.java` | `core/default_database_client_builder.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.core.DefaultFetchSpec` | `core/DefaultFetchSpec.java` | `core/default_fetch_spec.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.core.DelegateConnectionFunction` | `core/DelegateConnectionFunction.java` | `core/delegate_connection_function.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.core.ExecuteFunction` | `core/ExecuteFunction.java` | `core/execute_function.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.core.FetchSpec` | `core/FetchSpec.java` | `core/fetch_spec.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.core.MapBindParameterSource` | `core/MapBindParameterSource.java` | `core/map_bind_parameter_source.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.core.NamedParameterExpander` | `core/NamedParameterExpander.java` | `core/named_parameter_expander.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.core.NamedParameterUtils` | `core/NamedParameterUtils.java` | `core/named_parameter_utils.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.core.Parameter` | `core/Parameter.java` | `core/parameter.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.core.ParsedSql` | `core/ParsedSql.java` | `core/parsed_sql.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.core.PreparedOperation` | `core/PreparedOperation.java` | `core/prepared_operation.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.core.QueryOperation` | `core/QueryOperation.java` | `core/query_operation.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.core.ResultFunction` | `core/ResultFunction.java` | `core/result_function.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.core.RowsFetchSpec` | `core/RowsFetchSpec.java` | `core/rows_fetch_spec.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.core.SqlProvider` | `core/SqlProvider.java` | `core/sql_provider.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.core.StatementFilterFunction` | `core/StatementFilterFunction.java` | `core/statement_filter_function.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.core.UpdatedRowsFetchSpec` | `core/UpdatedRowsFetchSpec.java` | `core/updated_rows_fetch_spec.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.core.binding.AnonymousBindMarkers` | `core/binding/AnonymousBindMarkers.java` | `core/binding/anonymous_bind_markers.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.core.binding.BindMarker` | `core/binding/BindMarker.java` | `core/binding/bind_marker.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.core.binding.BindMarkers` | `core/binding/BindMarkers.java` | `core/binding/bind_markers.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.core.binding.BindMarkersFactory` | `core/binding/BindMarkersFactory.java` | `core/binding/bind_markers_factory.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.core.binding.BindMarkersFactoryResolver` | `core/binding/BindMarkersFactoryResolver.java` | `core/binding/bind_markers_factory_resolver.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.core.binding.BindTarget` | `core/binding/BindTarget.java` | `core/binding/bind_target.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.core.binding.Bindings` | `core/binding/Bindings.java` | `core/binding/bindings.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.core.binding.IndexedBindMarkers` | `core/binding/IndexedBindMarkers.java` | `core/binding/indexed_bind_markers.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.core.binding.MutableBindings` | `core/binding/MutableBindings.java` | `core/binding/mutable_bindings.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.r2dbc.core.binding.NamedBindMarkers` | `core/binding/NamedBindMarkers.java` | `core/binding/named_bind_markers.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |

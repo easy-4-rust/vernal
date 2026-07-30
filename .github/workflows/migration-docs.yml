@@ -1,0 +1,48 @@
+name: Migration documentation audit
+
+on:
+  pull_request:
+    paths:
+      - "docs/**"
+      - "scripts/audit_migration_docs.py"
+      - "scripts/tests/**"
+      - "crates/**/src/**"
+      - ".github/workflows/migration-docs.yml"
+  push:
+    paths:
+      - "docs/**"
+      - "scripts/audit_migration_docs.py"
+      - "scripts/tests/**"
+      - "crates/**/src/**"
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Vernal
+        uses: actions/checkout@v4
+        with:
+          path: vernal-framework
+
+      - name: Checkout Spring Framework baseline
+        uses: actions/checkout@v4
+        with:
+          repository: spring-projects/spring-framework
+          ref: 9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82
+          path: spring-framework
+          filter: blob:none
+
+      - name: Checkout aspect-rs baseline
+        uses: actions/checkout@v4
+        with:
+          repository: easy-4-rust/aspect-rs
+          ref: 89beaa9057b3f2b73093fc31d3219420e0bb6182
+          path: aspect-rs
+
+      - name: Run audit unit tests
+        working-directory: vernal-framework
+        run: python3 -m unittest discover -s scripts/tests
+
+      - name: Check migration reports and documentation governance
+        working-directory: vernal-framework
+        run: python3 scripts/audit_migration_docs.py --all --check

@@ -26,7 +26,7 @@ impl SpelNode for FunctionReference {
         context: &dyn EvaluationContext,
     ) -> Result<TypedValue, EvaluationException> {
         // 查找注册的函数（通过变量查找）
-        context.lookup_variable(&self.name).cloned().ok_or_else(|| {
+        context.lookup_variable(&self.name).ok_or_else(|| {
             EvaluationException::new(&self.name, None, format!("函数 '#{}' 未找到", self.name))
         })
     }

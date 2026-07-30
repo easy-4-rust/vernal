@@ -51,7 +51,7 @@ impl EvaluationContext for MockEvaluationContext {
         vec![]
     }
     fn set_variable(&mut self, _name: &str, _value: TypedValue) {}
-    fn lookup_variable(&self, _name: &str) -> Option<&TypedValue> {
+    fn lookup_variable(&self, _name: &str) -> Option<TypedValue> {
         None
     }
 }

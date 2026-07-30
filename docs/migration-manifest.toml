@@ -1,0 +1,262 @@
+version = 1
+spring_commit = "9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82"
+aspect_rs_commit = "89beaa9057b3f2b73093fc31d3219420e0bb6182"
+retain_segments = 2
+
+[[module]]
+name = "vernal-core"
+source_root = "../spring-framework/spring-core/src/main/java/org/springframework/core"
+source_package = "org.springframework.core"
+source_commit = "9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82"
+target_root = "crates/vernal-core/src"
+docs_dir = "docs/vernal-core"
+object_table = "docs/vernal-core/对象级对照表.md"
+
+[[module]]
+name = "vernal-beans"
+source_root = "../spring-framework/spring-beans/src/main/java/org/springframework/beans"
+source_package = "org.springframework.beans"
+source_commit = "9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82"
+target_root = "crates/vernal-beans/src"
+docs_dir = "docs/vernal-beans"
+object_table = "docs/vernal-beans/对象级对照表.md"
+
+[[module]]
+name = "vernal-aop"
+source_root = "../spring-framework/spring-aop/src/main/java"
+source_package = ""
+source_commit = "9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82"
+source_prefixes = ["org/springframework/aop", "org/aopalliance"]
+target_root = "crates/vernal-aop/src"
+docs_dir = "docs/vernal-aop"
+object_table = "docs/vernal-aop/对象级对照表.md"
+
+[[module.dependencies]]
+crate = "aspect-core"
+manifest = "crates/vernal-aop/Cargo.toml"
+source_root = "../aspect-rs/aspect-core/src"
+source_commit = "89beaa9057b3f2b73093fc31d3219420e0bb6182"
+repository = "https://github.com/easy-4-rust/aspect-rs"
+symbols = "aspect_core::{Aspect, AspectError, JoinPoint, Location, ProceedingJoinPoint}; aspect_core::pointcut::{Pointcut, FunctionInfo, Matcher, ExecutionPattern, ModulePattern, NamePattern, Visibility, parse_pointcut}"
+
+[[module.dependencies]]
+crate = "aspect-std"
+manifest = "crates/vernal-aop/Cargo.toml"
+source_root = "../aspect-rs/aspect-std/src"
+source_commit = "89beaa9057b3f2b73093fc31d3219420e0bb6182"
+repository = "https://github.com/easy-4-rust/aspect-rs"
+symbols = "aspect_std::{LoggingAspect, TimingAspect, CachingAspect, MetricsAspect, RateLimitAspect, CircuitBreakerAspect, AuthorizationAspect, AllowlistAspect, ValidationAspect}"
+
+[[module]]
+name = "vernal-context"
+source_root = "../spring-framework/spring-context/src/main/java/org/springframework/context"
+source_package = "org.springframework.context"
+source_commit = "9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82"
+target_root = "crates/vernal-context/src"
+docs_dir = "docs/vernal-context"
+object_table = "docs/vernal-context/对象级对照表.md"
+
+[[module]]
+name = "vernal-context-indexer"
+source_root = "../spring-framework/spring-context-indexer/src/main/java/org/springframework/context/index"
+source_package = "org.springframework.context.index"
+source_commit = "9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82"
+target_root = "crates/vernal-context-indexer/src"
+docs_dir = "docs/vernal-context-indexer"
+object_table = "docs/vernal-context-indexer/对象级对照表.md"
+
+[[module]]
+name = "vernal-context-support"
+source_root = "../spring-framework/spring-context-support/src/main/java/org/springframework"
+source_package = "org.springframework"
+source_commit = "9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82"
+target_root = "crates/vernal-context-support/src"
+docs_dir = "docs/vernal-context-support"
+object_table = "docs/vernal-context-support/对象级对照表.md"
+
+[[module]]
+name = "vernal-expression"
+source_root = "../spring-framework/spring-expression/src/main/java/org/springframework/expression"
+source_package = "org.springframework.expression"
+source_commit = "9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82"
+target_root = "crates/vernal-expression/src"
+docs_dir = "docs/vernal-expression"
+object_table = "docs/vernal-expression/对象级对照表.md"
+
+[[module]]
+name = "vernal-aspects"
+source_root = "../spring-framework/spring-aspects/src/main/java/org/springframework"
+source_package = "org.springframework"
+source_commit = "9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82"
+target_root = "crates/vernal-aspects/src"
+docs_dir = "docs/vernal-aspects"
+object_table = "docs/vernal-aspects/对象级对照表.md"
+
+[[module]]
+name = "vernal-tx"
+source_root = "../spring-framework/spring-tx/src/main/java/org/springframework/transaction"
+source_package = "org.springframework.transaction"
+source_commit = "9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82"
+target_root = "crates/vernal-tx/src"
+docs_dir = "docs/vernal-tx"
+object_table = "docs/vernal-tx/对象级对照表.md"
+
+[[module]]
+name = "vernal-messaging"
+source_root = "../spring-framework/spring-messaging/src/main/java/org/springframework/messaging"
+source_package = "org.springframework.messaging"
+source_commit = "9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82"
+target_root = "crates/vernal-messaging/src"
+docs_dir = "docs/vernal-messaging"
+object_table = "docs/vernal-messaging/对象级对照表.md"
+
+[[module]]
+name = "vernal-web"
+source_root = "../spring-framework/spring-web/src/main/java/org/springframework"
+source_package = "org.springframework"
+source_commit = "9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82"
+target_root = "crates/vernal-web/src"
+docs_dir = "docs/vernal-web"
+object_table = "docs/vernal-web/对象级对照表.md"
+
+[[module]]
+name = "vernal-websocket"
+source_root = "../spring-framework/spring-websocket/src/main/java/org/springframework/web/socket"
+source_package = "org.springframework.web.socket"
+source_commit = "9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82"
+target_root = "crates/vernal-websocket/src"
+docs_dir = "docs/vernal-websocket"
+object_table = "docs/vernal-websocket/对象级对照表.md"
+
+[[module]]
+name = "vernal-test"
+source_root = "../spring-framework/spring-test/src/main/java/org/springframework/test"
+source_package = "org.springframework.test"
+source_commit = "9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82"
+target_root = "crates/vernal-test/src"
+docs_dir = "docs/vernal-test"
+object_table = "docs/vernal-test/对象级对照表.md"
+
+[[module]]
+name = "vernal-async"
+source_root = "../spring-framework/spring-core/src/main/java/org/springframework/core/task"
+source_package = "org.springframework.core.task"
+source_commit = "9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82"
+target_root = "crates/vernal-async/src"
+docs_dir = "docs/vernal-async"
+object_table = "docs/vernal-async/对象级对照表.md"
+
+[[module]]
+name = "vernal-cache"
+source_root = "../spring-framework/spring-context/src/main/java/org/springframework/cache"
+source_package = "org.springframework.cache"
+source_commit = "9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82"
+target_root = "crates/vernal-cache/src"
+docs_dir = "docs/vernal-cache"
+object_table = "docs/vernal-cache/对象级对照表.md"
+
+[[module]]
+name = "vernal-core-test"
+source_root = "../spring-framework/spring-core-test/src/main/java"
+source_package = ""
+source_prefixes = ["org/springframework"]
+source_commit = "9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82"
+target_root = "crates/vernal-core-test/src"
+target_optional = true
+docs_dir = "docs/vernal-core-test"
+object_table = "docs/vernal-core-test/对象级对照表.md"
+
+[[documentation_only]]
+name = "vernal-log"
+docs_dir = "docs/vernal-log"
+reason = "当前 Spring Framework 仓库没有独立 spring-jcl 源模块；该目录只允许记录 tracing 替换约定和平台边界。"
+
+[[module]]
+name = "vernal-webmvc"
+source_root = "../spring-framework/spring-webmvc/src/main/java/org/springframework"
+source_package = "org.springframework"
+source_commit = "9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82"
+target_root = "crates/vernal-webmvc/src"
+target_optional = true
+docs_dir = "docs/vernal-webmvc"
+object_table = "docs/vernal-webmvc/对象级对照表.md"
+
+[[module]]
+name = "vernal-webflux"
+source_root = "../spring-framework/spring-webflux/src/main/java/org/springframework"
+source_package = "org.springframework"
+source_commit = "9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82"
+target_root = "crates/vernal-webflux/src"
+target_optional = true
+docs_dir = "docs/vernal-webflux"
+object_table = "docs/vernal-webflux/对象级对照表.md"
+
+[[documentation_only]]
+name = "vernal-web-support"
+docs_dir = "docs/vernal-web-support"
+reason = "该目录描述多个 Web runtime adapter，不对应单一 Spring 源根或单一目标 crate。"
+
+[[module]]
+name = "vernal-jdbc"
+source_root = "../spring-framework/spring-jdbc/src/main/java/org/springframework/jdbc"
+source_package = "org.springframework.jdbc"
+source_commit = "9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82"
+target_root = "crates/vernal-jdbc/src"
+target_optional = true
+docs_dir = "docs/vernal-jdbc"
+object_table = "docs/vernal-jdbc/对象级对照表.md"
+
+[[module]]
+name = "vernal-r2dbc"
+source_root = "../spring-framework/spring-r2dbc/src/main/java/org/springframework/r2dbc"
+source_package = "org.springframework.r2dbc"
+source_commit = "9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82"
+target_root = "crates/vernal-r2dbc/src"
+target_optional = true
+docs_dir = "docs/vernal-r2dbc"
+object_table = "docs/vernal-r2dbc/对象级对照表.md"
+
+[[module]]
+name = "vernal-orm"
+source_root = "../spring-framework/spring-orm/src/main/java/org/springframework/orm"
+source_package = "org.springframework.orm"
+source_commit = "9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82"
+target_root = "crates/vernal-orm/src"
+target_optional = true
+docs_dir = "docs/vernal-orm"
+object_table = "docs/vernal-orm/对象级对照表.md"
+
+[[documentation_only]]
+name = "spring-rbatis"
+docs_dir = "docs/vernal-rbatis"
+reason = "vernal-rbatis 目标 crate 尚未建立，当前只允许规划状态。"
+
+[[documentation_only]]
+name = "spring-rbdc"
+docs_dir = "docs/vernal-rbdc"
+reason = "vernal-rbdc 目标 crate 尚未建立，当前只允许规划状态。"
+
+[[module]]
+name = "vernal-instrument"
+source_root = "../spring-framework/spring-instrument/src/main/java/org/springframework/instrument"
+source_package = "org.springframework.instrument"
+source_commit = "9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82"
+target_root = "crates/vernal-instrument/src"
+target_optional = true
+docs_dir = "docs/vernal-instrument"
+object_table = "docs/vernal-instrument/对象级对照表.md"
+
+[[module.dispositions]]
+java_fqn = "org.springframework.instrument.InstrumentationSavingAgent"
+status = "PLATFORM_NA"
+platform_evidence = "该对象的 premain/agentmain 接口依赖 JVM java.lang.instrument.Instrumentation 与 Java Agent 装载协议；Rust 进程不存在对应 JVM 全局 Instrumentation 实例。"
+
+[[module]]
+name = "vernal-oxm"
+source_root = "../spring-framework/spring-oxm/src/main/java/org/springframework/oxm"
+source_package = "org.springframework.oxm"
+source_commit = "9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82"
+target_root = "crates/vernal-oxm/src"
+target_optional = true
+docs_dir = "docs/vernal-oxm"
+object_table = "docs/vernal-oxm/对象级对照表.md"
