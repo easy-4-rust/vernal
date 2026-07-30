@@ -535,11 +535,10 @@ fn utils_convert_typed_value_success() {
     let converter = MockTypeConverter;
     let value = TypedValue::new(ExpressionValue::Int(42), TypeDescriptor::INT);
     let target = TypeDescriptor::INT;
-    let result: i64 =
+    let result =
         expression_utils::ExpressionUtils::convert_typed_value(&converter, &value, &target)
             .unwrap();
-    // Simplified impl returns T::default()
-    assert_eq!(result, i64::default());
+    assert_eq!(*result.value(), ExpressionValue::Int(42));
 }
 
 #[test]
@@ -547,17 +546,11 @@ fn utils_convert_typed_value_with_different_target_types() {
     let converter = MockTypeConverter;
     let value = TypedValue::new(ExpressionValue::Boolean(true), TypeDescriptor::BOOLEAN);
 
-    // bool default
-    let result: bool =
+    // boolean
+    let result =
         expression_utils::ExpressionUtils::convert_typed_value(&converter, &value, &TypeDescriptor::BOOLEAN)
             .unwrap();
-    assert_eq!(result, bool::default());
-
-    // String default
-    let result: String =
-        expression_utils::ExpressionUtils::convert_typed_value(&converter, &value, &TypeDescriptor::BOOLEAN)
-            .unwrap();
-    assert_eq!(result, String::default());
+    assert_eq!(*result.value(), ExpressionValue::Boolean(true));
 }
 
 #[test]
@@ -565,7 +558,7 @@ fn utils_convert_typed_value_error_on_unsupported() {
     let converter = FailingTypeConverter;
     let value = TypedValue::new(ExpressionValue::Int(42), TypeDescriptor::INT);
     let target = TypeDescriptor::INT;
-    let result: Result<i64, _> =
+    let result =
         expression_utils::ExpressionUtils::convert_typed_value(&converter, &value, &target);
     assert!(result.is_err());
 }
