@@ -1,9 +1,10 @@
 # Spring Expression（SpEL）技术要求
 
-> **版本**：v1.0（2026-07-28）
+> **版本**：v1.1（2026-07-30）
 > **对标**：Spring Framework 7.0 `spring-expression` 模块
 > **Crate**：`vernal-expression`
 > **规模**：113 文件 / ~11989 行 / 52 AST 节点 / 46 TokenKind / 86 错误码
+> **测试**：1,390 passing / 覆盖率 80.51% lines / 71.39% functions
 > **Rust edition 2024 / rustc 1.88**
 > **选型权威**：`docs/Spring-组件替换约定.md`
 
