@@ -47,11 +47,16 @@ impl ExpressionCondition {
 
     /// 解析表达式中的环境属性引用。
     ///
-    /// 将 `${key}` 替换为环境中的实际值。
-    fn resolve_expression(&self, environment: &ApplicationEnvironment) -> Result<String, BoxError> {
+    /// 将 `${key}` 替换为 `#env_key` 变量引用，避免表达式注入。
+    /// 返回（转换后的表达式，环境变量键值对列表）。
+    fn resolve_expression(
+        &self,
+        environment: &ApplicationEnvironment,
+    ) -> Result<(String, Vec<(String, String)>), BoxError> {
         let mut resolved = self.expression.clone();
+        let mut env_vars: Vec<(String, String)> = Vec::new();
 
-        // 查找所有 ${key} 模式并替换
+        // 查找所有 ${key} 模式，替换为 #env_key 变量引用
         while let Some(start) = resolved.find("${") {
             if let Some(end) = resolved[start..].find('}') {
                 let key = &resolved[start + 2..start + end];
@@ -59,18 +64,23 @@ impl ExpressionCondition {
                     .get(key)
                     .map_err(|e| -> BoxError { Box::new(e) })?
                     .unwrap_or_default();
+
+                // 将 ${key} 替换为 #env_key（变量引用，不是值拼接）
+                let var_name = format!("env_{}", key.replace('.', "_"));
+                let replacement = format!("#{}", var_name);
                 resolved = format!(
                     "{}{}{}",
                     &resolved[..start],
-                    value,
+                    replacement,
                     &resolved[start + end + 1..]
                 );
+                env_vars.push((var_name, value));
             } else {
                 break;
             }
         }
 
-        Ok(resolved)
+        Ok((resolved, env_vars))
     }
 }
 
@@ -80,14 +90,25 @@ impl ComponentCondition for ExpressionCondition {
     }
 
     fn matches(&self, environment: &ApplicationEnvironment) -> Result<bool, BoxError> {
-        // 解析表达式中的环境属性引用
-        let resolved = self.resolve_expression(environment)?;
+        // 解析表达式中的环境属性引用为变量绑定（避免表达式注入）
+        let (resolved, env_vars) = self.resolve_expression(environment)?;
 
         // 用 vernal-expression 的 SpEL 解析器求值
         let parser = vernal_expression::spel::spel_expression_parser::SpelExpressionParser::new();
-        let ctx = vernal_expression::spel::support::standard_evaluation_context::StandardEvaluationContext::new(
+        let mut ctx = vernal_expression::spel::support::standard_evaluation_context::StandardEvaluationContext::new(
             vernal_expression::TypedValue::null(),
         );
+
+        // 将环境变量绑定到上下文（值不会被注入到表达式源码中）
+        for (var_name, value) in env_vars {
+            ctx.set_variable(
+                &var_name,
+                vernal_expression::TypedValue::new(
+                    vernal_expression::ExpressionValue::String(value),
+                    vernal_expression::TypeDescriptor::STRING,
+                ),
+            );
+        }
 
         let expr = parser
             .parse_expression(&resolved)

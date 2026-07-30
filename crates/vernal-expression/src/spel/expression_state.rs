@@ -3,12 +3,17 @@
 use std::collections::HashMap;
 
 use crate::evaluation_context::EvaluationContext;
-use crate::evaluation_exception::EvaluationException;
+use crate::spel::spel_evaluation_exception::SpelEvaluationException;
+use crate::spel::spel_message::SpelMessage;
 use crate::typed_value::TypedValue;
+
+/// 默认最大操作数限制（对标 Spring `SpelParserConfiguration.DEFAULT_MAX_OPERATIONS`）。
+const DEFAULT_MAX_OPERATIONS: u32 = 10_000;
 
 /// 求值状态（对标 Spring `ExpressionState`）。
 ///
 /// 维护每次表达式求值的活动上下文对象栈和操作计数。
+/// 操作计数超过 `max_operations` 时抛出 `SpelEvaluationException`。
 pub struct ExpressionState<'a> {
     /// 求值上下文。
     context: &'a dyn EvaluationContext,
@@ -18,6 +23,8 @@ pub struct ExpressionState<'a> {
     variables: HashMap<String, TypedValue>,
     /// 操作计数。
     operation_count: u32,
+    /// 最大操作数限制。
+    max_operations: u32,
 }
 
 impl<'a> ExpressionState<'a> {
@@ -29,6 +36,19 @@ impl<'a> ExpressionState<'a> {
             active_context: vec![context.root_object().clone()],
             variables: HashMap::new(),
             operation_count: 0,
+            max_operations: DEFAULT_MAX_OPERATIONS,
+        }
+    }
+
+    /// 创建状态并指定最大操作数限制。
+    #[must_use]
+    pub fn with_max_operations(context: &'a dyn EvaluationContext, max_operations: u32) -> Self {
+        Self {
+            context,
+            active_context: vec![context.root_object().clone()],
+            variables: HashMap::new(),
+            operation_count: 0,
+            max_operations,
         }
     }
 
@@ -69,8 +89,30 @@ impl<'a> ExpressionState<'a> {
     }
 
     /// 跟踪一次操作。
-    pub fn track_operation(&mut self) {
+    ///
+    /// 对标 Spring `ExpressionState.trackOperation()`。
+    /// 超过 `max_operations` 时返回 `Err(SpelEvaluationException)`。
+    pub fn track_operation(&mut self) -> Result<(), SpelEvaluationException> {
         self.operation_count = self.operation_count.saturating_add(1);
+        if self.operation_count > self.max_operations {
+            return Err(SpelEvaluationException::new(
+                SpelMessage::MaxOperationsExceeded,
+                &[&self.max_operations.to_string()],
+            ));
+        }
+        Ok(())
+    }
+
+    /// 获取当前操作计数。
+    #[must_use]
+    pub fn operation_count(&self) -> u32 {
+        self.operation_count
+    }
+
+    /// 获取最大操作数限制。
+    #[must_use]
+    pub fn max_operations(&self) -> u32 {
+        self.max_operations
     }
 }
 
@@ -169,16 +211,37 @@ mod tests {
     fn track_operation_increments_count() {
         let ctx = make_ctx();
         let mut state = ExpressionState::new(&ctx);
-        assert_eq!(state.operation_count, 0);
+        assert_eq!(state.operation_count(), 0);
 
-        state.track_operation();
-        assert_eq!(state.operation_count, 1);
+        assert!(state.track_operation().is_ok());
+        assert_eq!(state.operation_count(), 1);
 
-        state.track_operation();
-        assert_eq!(state.operation_count, 2);
+        assert!(state.track_operation().is_ok());
+        assert_eq!(state.operation_count(), 2);
 
-        state.track_operation();
-        assert_eq!(state.operation_count, 3);
+        assert!(state.track_operation().is_ok());
+        assert_eq!(state.operation_count(), 3);
+    }
+
+    #[test]
+    fn track_operation_enforces_limit() {
+        let ctx = make_ctx();
+        let mut state = ExpressionState::with_max_operations(&ctx, 3);
+        assert_eq!(state.max_operations(), 3);
+
+        assert!(state.track_operation().is_ok());
+        assert!(state.track_operation().is_ok());
+        assert!(state.track_operation().is_ok());
+        // 第4次操作应该超过限制
+        assert!(state.track_operation().is_err());
+    }
+
+    #[test]
+    fn with_max_operations_sets_limit() {
+        let ctx = make_ctx();
+        let state = ExpressionState::with_max_operations(&ctx, 100);
+        assert_eq!(state.max_operations(), 100);
+        assert_eq!(state.operation_count(), 0);
     }
 
     #[test]
