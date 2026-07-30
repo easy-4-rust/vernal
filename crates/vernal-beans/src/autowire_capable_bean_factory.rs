@@ -8,7 +8,7 @@ use std::any::Any;
 use std::sync::Arc;
 
 use crate::bean_factory::BeanFactory;
-use crate::dependency_descriptor::DependencyDescriptor;
+use crate::factory::support::dependency_descriptor::DependencyDescriptor;
 use crate::named_bean_holder::NamedBeanHolder;
 use crate::type_converter::TypeConverter;
 

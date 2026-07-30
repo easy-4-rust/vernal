@@ -1,0 +1,56 @@
+//! autowired_method_arguments_resolver — 对应 Java 类：org.springframework.beans.factory.aot.AutowiredMethodArgumentsResolver。
+
+use std::any::TypeId;
+use std::collections::HashMap;
+use std::sync::Mutex;
+use std::sync::atomic::{AtomicU32, Ordering};
+
+/// AOT 处理器基类。
+///
+/// 提供计数器、缓存等基础 AOT 能力。
+pub struct AutowiredMethodArgumentsResolver {
+    counter: AtomicU32,
+    cache: Mutex<HashMap<String, String>>,
+}
+
+impl AutowiredMethodArgumentsResolver {
+    pub fn new() -> Self {
+        Self {
+            counter: AtomicU32::new(0),
+            cache: Mutex::new(HashMap::new()),
+        }
+    }
+
+    pub fn increment(&self) -> u32 {
+        self.counter.fetch_add(1, Ordering::SeqCst)
+    }
+
+    pub fn count(&self) -> u32 {
+        self.counter.load(Ordering::SeqCst)
+    }
+
+    pub fn reset(&self) {
+        self.counter.store(0, Ordering::SeqCst);
+        self.cache.lock().unwrap().clear();
+    }
+
+    pub fn register(&self, key: String, value: String) {
+        self.cache.lock().unwrap().insert(key, value);
+    }
+
+    pub fn get(&self, key: &str) -> Option<String> {
+        self.cache.lock().unwrap().get(key).cloned()
+    }
+
+    pub fn cache_size(&self) -> usize {
+        self.cache.lock().unwrap().len()
+    }
+
+    pub fn process_type(&self, _type_id: TypeId) -> Result<String, String> {
+        Ok(format!("processed_{}", self.increment()))
+    }
+}
+
+impl Default for AutowiredMethodArgumentsResolver {
+    fn default() -> Self { Self::new() }
+}

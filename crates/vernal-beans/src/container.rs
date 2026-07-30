@@ -1239,7 +1239,7 @@ impl crate::autowire_capable_bean_factory::AutowireCapableBeanFactory for Contai
     /// 对应 Spring 的 `resolveDependency(DependencyDescriptor descriptor, String requestingBeanName)`。
     fn resolve_dependency(
         &self,
-        descriptor: &crate::dependency_descriptor::DependencyDescriptor,
+        descriptor: &crate::factory::support::dependency_descriptor::DependencyDescriptor,
         _requesting_bean_name: Option<&str>,
     ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>> {
         // 按依赖描述符的类型查找匹配的定义
@@ -1262,19 +1262,19 @@ impl crate::autowire_capable_bean_factory::AutowireCapableBeanFactory for Contai
                     })?;
                 Ok(Some(instance))
             }
-            [] if descriptor.is_optional() => Ok(None),
+            [] if !descriptor.is_required() => Ok(None),
             [] => Err(Box::new(std::io::Error::new(
                 std::io::ErrorKind::NotFound,
                 format!(
                     "No bean found for dependency type '{}'",
-                    descriptor.type_name()
+                    descriptor.type_name
                 ),
             )) as Box<dyn std::error::Error + Send + Sync>),
             _ => Err(Box::new(std::io::Error::new(
                 std::io::ErrorKind::Other,
                 format!(
                     "Multiple beans found for dependency type '{}'",
-                    descriptor.type_name()
+                    descriptor.type_name
                 ),
             )) as Box<dyn std::error::Error + Send + Sync>),
         }

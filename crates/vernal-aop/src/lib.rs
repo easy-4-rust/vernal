@@ -10,6 +10,9 @@ mod aspect;
 mod aspect_adapter;
 mod aspect_error;
 mod aspect_rs_adapter;
+mod class_filter;
+mod method_matcher;
+mod target_source;
 mod borrowed_invocation_argument;
 mod borrowed_invocation_future_target;
 mod borrowed_invocation_target;
@@ -61,6 +64,9 @@ mod simple_invocation_context;
 mod tag_pointcut;
 mod target_ref;
 
+pub mod framework;
+pub mod support;
+
 pub use advised::Advised;
 pub use advisor::Advisor;
 pub use and_pointcut::AndPointcut;
@@ -70,6 +76,9 @@ pub use aspect::Aspect;
 pub use aspect_adapter::AspectAdapter;
 pub use aspect_error::AspectError;
 pub use aspect_rs_adapter::AspectRsAdapter;
+pub use class_filter::{ClassFilter, ClassFilterFactory, TrueClassFilter, FnClassFilter};
+pub use method_matcher::{MethodMatcher, MethodMatcherFactory, TrueMethodMatcher, StaticMethodMatcher, DynamicMethodMatcher};
+pub use target_source::{TargetSource, TargetSourceError, SingletonTargetSource, LazyTargetSource, TargetClassAware};
 pub use borrowed_invocation_argument::BorrowedInvocationArgument;
 pub use borrowed_invocation_future_target::BorrowedInvocationFutureTarget;
 pub use borrowed_invocation_target::BorrowedInvocationTarget;
@@ -78,14 +87,14 @@ pub use component_pointcut::ComponentPointcut;
 pub use default_pointcut_advisor::DefaultPointcutAdvisor;
 pub use interceptor::Interceptor;
 
-// 业务切面 re-export（基于 aspect-rs aspect-std，通过 AspectRsAdapter 适配）
-// 注意：这些是 aspect-std 的同步切面，需要通过 AspectRsAdapter 转换为 Interceptor
+// 业务切面直接 re-export（基于 aspect-rs aspect-std）
+// 通过 AspectRsAdapter 可将这些同步 Aspect 适配为异步 Interceptor
 pub use aspect_std::{
     CircuitState, LoggingAspect, TimingAspect, MetricsAspect, CachingAspect,
     RateLimitAspect, CircuitBreakerAspect, AuthorizationAspect, AllowlistAspect,
     AuthMode, ValidationAspect, ValidationRule,
-    NotEmptyValidator, RangeValidator, CustomValidator,
 };
+pub use aspect_std::validation::{NotEmptyValidator, RangeValidator, CustomValidator};
 pub use introduction_advisor::IntroductionAdvisor;
 pub use introduction_info::IntroductionInfo;
 pub use invocation::Invocation;
