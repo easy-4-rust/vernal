@@ -1,0 +1,23 @@
+//! 解析子模块 — 对应 Spring 解析体系。
+pub mod alias_definition;
+pub mod bean_component_definition;
+pub mod bean_definition_parsing_exception;
+pub mod bean_entry;
+pub mod component_definition;
+pub mod composite_component_definition;
+pub mod constructor_argument_entry;
+pub mod defaults_definition;
+pub mod empty_reader_event_listener;
+pub mod fail_fast_problem_reporter;
+pub mod import_definition;
+pub mod location;
+pub mod null_source_extractor;
+pub mod parse_state;
+pub mod pass_through_source_extractor;
+pub mod problem;
+pub mod problem_reporter;
+pub mod property_entry;
+pub mod qualifier_entry;
+pub mod reader_context;
+pub mod reader_event_listener;
+pub mod source_extractor;

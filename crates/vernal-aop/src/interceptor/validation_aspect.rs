@@ -290,4 +290,79 @@ mod tests {
         let validator = RangeValidator::new("id", 0, 120, |_op| Some(120));
         assert!(validator.validate(&op).is_ok());
     }
+
+    // --- 分支覆盖补充测试 ---
+
+    #[test]
+    fn not_empty_validator_getter_returns_none() {
+        let validator = NotEmptyValidator::new("method", |_op| None);
+        let op = Operation::new("Svc", "m");
+        assert!(validator.validate(&op).is_ok());
+    }
+
+    #[test]
+    fn range_validator_getter_returns_none() {
+        let validator = RangeValidator::new("id", 1, 100, |_op| None);
+        let op = Operation::new("Svc", "m");
+        assert!(validator.validate(&op).is_ok());
+    }
+
+    #[test]
+    fn not_empty_validator_description() {
+        let validator = NotEmptyValidator::new("method", |_op| None);
+        assert_eq!(validator.description(), "not empty");
+    }
+
+    #[test]
+    fn range_validator_description() {
+        let validator = RangeValidator::new("id", 1, 100, |_op| None);
+        assert_eq!(validator.description(), "range check");
+    }
+
+    #[test]
+    fn custom_validator_description() {
+        let validator = CustomValidator::new("my custom rule", |_op| Ok(()));
+        assert_eq!(validator.description(), "my custom rule");
+    }
+
+    #[test]
+    fn validation_aspect_with_multiple_rules() {
+        let _validator = ValidationAspect::new()
+            .add_rule(Box::new(CustomValidator::new("rule1", |_op| Ok(()))))
+            .add_rule(Box::new(CustomValidator::new("rule2", |_op| Ok(()))));
+    }
+
+    #[test]
+    fn validation_aspect_validate_passes() {
+        let validator = ValidationAspect::new()
+            .add_rule(Box::new(CustomValidator::new("test", |_op| Ok(()))));
+        let op = Operation::new("Svc", "m");
+        assert!(validator.validate(&op).is_ok());
+    }
+
+    #[test]
+    fn validation_aspect_validate_fails() {
+        let validator = ValidationAspect::new()
+            .add_rule(Box::new(CustomValidator::new("test", |_op| {
+                Err("failed".to_string())
+            })));
+        let op = Operation::new("Svc", "m");
+        assert!(validator.validate(&op).is_err());
+    }
+
+    #[test]
+    fn validation_aspect_validate_first_rule_fails_stops() {
+        let validator = ValidationAspect::new()
+            .add_rule(Box::new(CustomValidator::new("rule1", |_op| {
+                Err("first failed".to_string())
+            })))
+            .add_rule(Box::new(CustomValidator::new("rule2", |_op| Ok(()))));
+        let op = Operation::new("Svc", "m");
+        assert!(validator.validate(&op).is_err());
+    }
+
+    #[test]
+    fn validation_aspect_default() {
+        let _validator = ValidationAspect::default();
+    }
 }

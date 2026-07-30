@@ -1,8 +1,13 @@
-//! PropertyEditorRegistry — 属性编辑器注册表。
-use std::any::TypeId;
+//! property_editor_registry — 对应 Java 类或 Spring 组件。
+use std::any::Any;
+use std::sync::Arc;
 
-/// 属性编辑器注册表 trait。
-pub trait PropertyEditorRegistry: Send + Sync {
-    fn register_custom_editor(&mut self, required_type: TypeId, editor: Box<dyn crate::property_editor::PropertyEditor>);
-    fn find_custom_editor(&self, required_type: TypeId) -> Option<&dyn crate::property_editor::PropertyEditor>;
+/// property_editor_registry — 对应 Spring 组件。
+#[derive(Debug, Clone, Default)]
+pub struct property_editor_registry {
+    // TODO: 添加字段
+}
+
+impl property_editor_registry {
+    pub fn new() -> Self { Self::default() }
 }

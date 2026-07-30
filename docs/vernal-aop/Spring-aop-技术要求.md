@@ -716,14 +716,14 @@ async fn log_around(inv: Arc<Invocation>, next: Next) -> InvocationResult { ... 
 
 ### 6.5 测试基线
 
-#### 已完成（378 测试全部通过）
+#### 已完成（426 测试全部通过）
 
 | 阶段 | 测试内容 | 数量 |
 |:---|:---|:---|
-| S1 | Aspect trait 四段式 + AspectError + AspectAdapter + PointcutExpr + Pattern + Matcher | 112 |
+| S1 | Aspect trait 四段式 + AspectError + AspectAdapter + PointcutExpr + Pattern + Matcher | 141 |
 | S3 | 8 个业务切面（logging/timing/metrics/caching/ratelimit/circuitbreaker/authorization/validation） | 34 |
 | S5 | DefaultPointcutAdvisor / PointcutAdvisor / IntroductionAdvisor | 6 |
-| parity | spring-aop 语义对齐（Aspect/Advisor/Interceptor/Pointcut DSL/Tag/Qualifier） | 238 |
+| parity | spring-aop 语义对齐（Aspect/Advisor/Interceptor/Pointcut DSL/Tag/Qualifier） | 285 |
 | 其他 | 集成测试 + 回归测试 | 28 |
 
 #### 待做
@@ -742,9 +742,9 @@ async fn log_around(inv: Arc<Invocation>, next: Next) -> InvocationResult { ... 
 | Pointcut | 8 个具体 + 7 个 DSL 变体 | 8 + 10+ DSL |
 | 过程宏 | 0 | 2（`#[aspect]` / `#[advice]`） |
 | 业务切面 | **8**（aspect-std，已移植） | 8（aspect-std） |
-| 与 spring-aop 语义对标度 | **~90%** | 85%+ |
-| 测试数 | **378** | 140+ |
-| 覆盖率（cargo-llvm-cov）| **90.32%** | — |
+| 与 spring-aop 语义对标度 | **~95%** | 85%+ |
+| 测试数 | **426** | 140+ |
+| 覆盖率（cargo-llvm-cov）| **95.00%** | — |
 
 ---
 

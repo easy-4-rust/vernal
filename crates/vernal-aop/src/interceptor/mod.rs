@@ -35,4 +35,4 @@ pub use caching_aspect::CachingAspect;
 pub use ratelimit_aspect::RateLimitAspect;
 pub use circuitbreaker_aspect::{CircuitBreakerAspect, CircuitState};
 pub use authorization_aspect::{AuthorizationAspect, AllowlistAspect, AuthMode};
-pub use validation_aspect::{ValidationAspect, ValidationRule};
+pub use validation_aspect::{ValidationAspect, ValidationRule, NotEmptyValidator, RangeValidator, CustomValidator};

@@ -1,8 +1,13 @@
-//! ConfigurablePropertyAccessor — 可配置属性访问器。
-use crate::property_accessor::PropertyAccessor;
+//! configurable_property_accessor — 对应 Java 类或 Spring 组件。
+use std::any::Any;
+use std::sync::Arc;
 
-/// 可配置属性访问器 trait。
-pub trait ConfigurablePropertyAccessor: PropertyAccessor {
-    fn set_property_name(&mut self, name: &str);
-    fn get_property_name(&self) -> &str;
+/// configurable_property_accessor — 对应 Spring 组件。
+#[derive(Debug, Clone, Default)]
+pub struct configurable_property_accessor {
+    // TODO: 添加字段
+}
+
+impl configurable_property_accessor {
+    pub fn new() -> Self { Self::default() }
 }

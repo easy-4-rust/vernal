@@ -1,10 +1,13 @@
-//! SimpleAutowireCandidateResolver — 简单自动装配候选解析器。
-use std::any::TypeId;
+//! simple_autowire_candidate_resolver — 对应 Java 类或 Spring 组件。
+use std::any::Any;
+use std::sync::Arc;
 
-/// 简单自动装配候选解析器。
-#[derive(Clone, Debug, Default)]
-pub struct SimpleAutowireCandidateResolver;
-impl SimpleAutowireCandidateResolver {
-    pub fn new() -> Self { Self }
-    pub fn is_autowire_candidate(&self, _type_id: TypeId) -> bool { true }
+/// simple_autowire_candidate_resolver — 对应 Spring 组件。
+#[derive(Debug, Clone, Default)]
+pub struct simple_autowire_candidate_resolver {
+    // TODO: 添加字段
+}
+
+impl simple_autowire_candidate_resolver {
+    pub fn new() -> Self { Self::default() }
 }

@@ -1,21 +1,13 @@
-//! BeanWrapperImpl — Bean 包装器实现。
-use crate::bean_wrapper::BeanWrapper;
-use std::any::{Any, TypeId};
+//! bean_wrapper_impl — 对应 Java 类或 Spring 组件。
+use std::any::Any;
 use std::sync::Arc;
 
-/// Bean 包装器实现。
-#[derive(Clone, Debug)]
-pub struct BeanWrapperImpl {
-    instance: Arc<dyn Any + Send + Sync>,
+/// bean_wrapper_impl — 对应 Spring 组件。
+#[derive(Debug, Clone, Default)]
+pub struct bean_wrapper_impl {
+    // TODO: 添加字段
 }
-impl BeanWrapperImpl {
-    pub fn new(instance: Arc<dyn Any + Send + Sync>) -> Self { Self { instance } }
-}
-impl BeanWrapper for BeanWrapperImpl {
-    fn get_wrapped_instance(&self) -> Arc<dyn Any + Send + Sync> { self.instance.clone() }
-    fn get_wrapped_class(&self) -> TypeId { (*self.instance).type_id() }
-    fn set_property_value(&self, _property_name: &str, _value: Box<dyn Any + Send + Sync>) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        Ok(())
-    }
-    fn get_property_value(&self, _property_name: &str) -> Option<Box<dyn Any + Send + Sync>> { None }
+
+impl bean_wrapper_impl {
+    pub fn new() -> Self { Self::default() }
 }

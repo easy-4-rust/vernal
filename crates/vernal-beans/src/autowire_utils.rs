@@ -1,14 +1,13 @@
-//! AutowireUtils — 自动装配工具。
-use std::any::TypeId;
+//! autowire_utils — 对应 Java 类或 Spring 组件。
+use std::any::Any;
+use std::sync::Arc;
 
-/// 自动装配工具。
-#[derive(Clone, Debug)]
-pub struct AutowireUtils;
-impl AutowireUtils {
-    pub fn is_autowire_candidate(type_id: TypeId, candidate_type_id: TypeId) -> bool {
-        type_id == candidate_type_id
-    }
-    pub fn determine_autowire_candidates(type_id: TypeId, candidates: &[TypeId]) -> Vec<TypeId> {
-        candidates.iter().filter(|&&c| c == type_id).cloned().collect()
-    }
+/// autowire_utils — 对应 Spring 组件。
+#[derive(Debug, Clone, Default)]
+pub struct autowire_utils {
+    // TODO: 添加字段
+}
+
+impl autowire_utils {
+    pub fn new() -> Self { Self::default() }
 }

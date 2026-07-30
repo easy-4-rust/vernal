@@ -252,4 +252,156 @@ mod tests {
         breaker.reset().await;
         assert_eq!(breaker.state().await, CircuitState::Closed);
     }
+
+    // --- 分支覆盖补充测试 ---
+
+    #[tokio::test]
+    async fn record_success_on_open_state() {
+        let breaker = CircuitBreakerAspect::new(1, Duration::from_secs(60));
+        breaker.record_failure().await;
+        assert!(matches!(breaker.state().await, CircuitState::Open { .. }));
+        
+        // record_success on Open should reset counts
+        breaker.record_success().await;
+        // State should still be Open (record_success doesn't change Open to Closed)
+        assert!(matches!(breaker.state().await, CircuitState::Open { .. }));
+    }
+
+    #[tokio::test]
+    async fn record_failure_on_open_state_noop() {
+        let breaker = CircuitBreakerAspect::new(1, Duration::from_secs(60));
+        breaker.record_failure().await;
+        assert!(matches!(breaker.state().await, CircuitState::Open { .. }));
+        
+        // record_failure on Open should be noop
+        breaker.record_failure().await;
+        assert!(matches!(breaker.state().await, CircuitState::Open { .. }));
+    }
+
+    #[tokio::test]
+    async fn should_allow_request_on_half_open() {
+        let breaker = CircuitBreakerAspect::new(1, Duration::from_millis(50));
+        breaker.record_failure().await;
+        tokio::time::sleep(Duration::from_millis(60)).await;
+        
+        // Should transition to half-open
+        assert!(breaker.should_allow_request().await.is_ok());
+        assert_eq!(breaker.state().await, CircuitState::HalfOpen);
+        
+        // Half-open should allow requests
+        assert!(breaker.should_allow_request().await.is_ok());
+    }
+
+    #[tokio::test]
+    async fn record_success_on_half_open_closes() {
+        let breaker = CircuitBreakerAspect::new(1, Duration::from_millis(50));
+        breaker.record_failure().await;
+        tokio::time::sleep(Duration::from_millis(60)).await;
+        
+        breaker.should_allow_request().await.unwrap();
+        assert_eq!(breaker.state().await, CircuitState::HalfOpen);
+        
+        breaker.record_success().await;
+        assert_eq!(breaker.state().await, CircuitState::Closed);
+    }
+
+    #[tokio::test]
+    async fn record_failure_on_half_open_reopens() {
+        let breaker = CircuitBreakerAspect::new(1, Duration::from_millis(50));
+        breaker.record_failure().await;
+        tokio::time::sleep(Duration::from_millis(60)).await;
+        
+        breaker.should_allow_request().await.unwrap();
+        assert_eq!(breaker.state().await, CircuitState::HalfOpen);
+        
+        breaker.record_failure().await;
+        assert!(matches!(breaker.state().await, CircuitState::Open { .. }));
+    }
+
+    #[tokio::test]
+    async fn record_success_on_closed_resets_failure_count() {
+        let breaker = CircuitBreakerAspect::new(3, Duration::from_secs(60));
+        
+        breaker.record_failure().await;
+        breaker.record_failure().await;
+        
+        // Success should reset failure count
+        breaker.record_success().await;
+        
+        // Should still be closed (threshold is 3)
+        assert_eq!(breaker.state().await, CircuitState::Closed);
+    }
+
+    #[tokio::test]
+    async fn intercept_success_path() {
+        let breaker = CircuitBreakerAspect::new(3, Duration::from_secs(60));
+        assert_eq!(breaker.state().await, CircuitState::Closed);
+        
+        // Use InvocationPlanBuilder to test intercept
+        let op = crate::Operation::new("test", "test");
+        let mut builder = crate::InvocationPlanBuilder::new();
+        builder.register(crate::Advisor::new(
+            |_: &crate::Operation| true,
+            breaker,
+            0,
+        ));
+        let plan = builder.build(op.clone());
+        
+        let inv = Arc::new(crate::Invocation::new(op));
+        let target: Arc<crate::InvocationTarget> = Arc::new(|_| {
+            Box::pin(async { Ok(Box::new(42i32) as crate::InvocationValue) })
+        });
+        let result = plan.invoke(inv, target).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn intercept_failure_records_failure() {
+        let breaker = CircuitBreakerAspect::new(2, Duration::from_secs(60));
+        
+        let op = crate::Operation::new("test", "test");
+        let mut builder = crate::InvocationPlanBuilder::new();
+        builder.register(crate::Advisor::new(
+            |_: &crate::Operation| true,
+            breaker.clone(),
+            0,
+        ));
+        let plan = builder.build(op.clone());
+        
+        // First failure
+        let inv = Arc::new(crate::Invocation::new(op.clone()));
+        let target: Arc<crate::InvocationTarget> = Arc::new(|_| {
+            Box::pin(async { Err(crate::InvocationError::Cancelled) })
+        });
+        let _ = plan.invoke(inv, target).await;
+        
+        // Second failure should open circuit
+        let inv = Arc::new(crate::Invocation::new(op.clone()));
+        let target: Arc<crate::InvocationTarget> = Arc::new(|_| {
+            Box::pin(async { Err(crate::InvocationError::Cancelled) })
+        });
+        let _ = plan.invoke(inv, target).await;
+        
+        assert!(matches!(breaker.state().await, CircuitState::Open { .. }));
+    }
+
+    #[tokio::test]
+    async fn half_open_max_requests() {
+        let breaker = CircuitBreakerAspect::new(1, Duration::from_millis(50))
+            .with_half_open_requests(2).await;
+        
+        breaker.record_failure().await;
+        tokio::time::sleep(Duration::from_millis(60)).await;
+        
+        // Transition to half-open
+        breaker.should_allow_request().await.unwrap();
+        
+        // First success - not enough to close (need 2)
+        breaker.record_success().await;
+        assert_eq!(breaker.state().await, CircuitState::HalfOpen);
+        
+        // Second success - should close
+        breaker.record_success().await;
+        assert_eq!(breaker.state().await, CircuitState::Closed);
+    }
 }

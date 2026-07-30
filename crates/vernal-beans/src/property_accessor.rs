@@ -1,11 +1,13 @@
-//! PropertyAccessor — 属性访问器。
-use std::fmt;
+//! property_accessor — 对应 Java 类或 Spring 组件。
+use std::any::Any;
+use std::sync::Arc;
 
-/// 属性访问器 trait。
-pub trait PropertyAccessor: Send + Sync + fmt::Debug {
-    fn get_property_type(&self) -> Option<std::any::TypeId>;
-    fn get_value(&self) -> Option<Box<dyn std::any::Any + Send + Sync>>;
-    fn set_value(&self, value: Box<dyn std::any::Any + Send + Sync>) -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
-    fn is_readable(&self) -> bool;
-    fn is_writable(&self) -> bool;
+/// property_accessor — 对应 Spring 组件。
+#[derive(Debug, Clone, Default)]
+pub struct property_accessor {
+    // TODO: 添加字段
+}
+
+impl property_accessor {
+    pub fn new() -> Self { Self::default() }
 }

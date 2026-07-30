@@ -191,4 +191,105 @@ mod tests {
         aspect.clear().await;
         assert_eq!(aspect.size().await, 0);
     }
+
+    // --- 私有方法覆盖测试 ---
+
+    #[test]
+    fn cache_key_generation() {
+        let aspect = CachingAspect::new();
+        let inv = Invocation::new(crate::Operation::new("UserService", "get_user"));
+        let key = aspect.cache_key(&inv);
+        assert_eq!(key, "UserService::get_user");
+    }
+
+    #[tokio::test]
+    async fn has_cached_empty_cache() {
+        let aspect = CachingAspect::new();
+        assert!(!aspect.has_cached("nonexistent").await);
+    }
+
+    #[tokio::test]
+    async fn insert_cached_then_has_cached() {
+        let aspect = CachingAspect::new();
+        let value: InvocationValue = Box::new(42i32);
+        aspect.insert_cached("test_key".to_string(), value).await;
+        assert!(aspect.has_cached("test_key").await);
+        assert!(!aspect.has_cached("other_key").await);
+    }
+
+    #[tokio::test]
+    async fn has_cached_expired_entry() {
+        let aspect = CachingAspect::new().with_ttl(Duration::from_millis(1));
+        let value: InvocationValue = Box::new(42i32);
+        aspect.insert_cached("test_key".to_string(), value).await;
+        tokio::time::sleep(Duration::from_millis(10)).await;
+        assert!(!aspect.has_cached("test_key").await);
+    }
+
+    #[tokio::test]
+    async fn has_cached_non_expired_entry() {
+        let aspect = CachingAspect::new().with_ttl(Duration::from_secs(60));
+        let value: InvocationValue = Box::new(42i32);
+        aspect.insert_cached("test_key".to_string(), value).await;
+        assert!(aspect.has_cached("test_key").await);
+    }
+
+    #[tokio::test]
+    async fn insert_cached_max_size_eviction() {
+        let aspect = CachingAspect::new()
+            .with_max_size(2)
+            .with_ttl(Duration::from_millis(1));
+        
+        let v1: InvocationValue = Box::new(1i32);
+        let v2: InvocationValue = Box::new(2i32);
+        aspect.insert_cached("k1".to_string(), v1).await;
+        aspect.insert_cached("k2".to_string(), v2).await;
+        assert_eq!(aspect.size().await, 2);
+        
+        // Wait for entries to expire
+        tokio::time::sleep(Duration::from_millis(10)).await;
+        
+        // Insert 3rd - should trigger eviction of expired entries
+        let v3: InvocationValue = Box::new(3i32);
+        aspect.insert_cached("k3".to_string(), v3).await;
+        assert_eq!(aspect.size().await, 1); // expired entries evicted
+    }
+
+    #[tokio::test]
+    async fn insert_cached_no_ttl_never_expires() {
+        let aspect = CachingAspect::new(); // no TTL
+        let value: InvocationValue = Box::new(42i32);
+        aspect.insert_cached("key".to_string(), value).await;
+        assert!(aspect.has_cached("key").await);
+    }
+
+    #[test]
+    fn is_expired_with_no_ttl() {
+        let entry = CacheEntry {
+            value: Box::new(42i32),
+            inserted_at: std::time::Instant::now(),
+            ttl: None,
+        };
+        assert!(!entry.is_expired());
+    }
+
+    #[test]
+    fn is_expired_with_ttl_not_yet() {
+        let entry = CacheEntry {
+            value: Box::new(42i32),
+            inserted_at: std::time::Instant::now(),
+            ttl: Some(Duration::from_secs(60)),
+        };
+        assert!(!entry.is_expired());
+    }
+
+    #[test]
+    fn is_expired_with_ttl_expired() {
+        let entry = CacheEntry {
+            value: Box::new(42i32),
+            inserted_at: std::time::Instant::now() - Duration::from_secs(120),
+            ttl: Some(Duration::from_secs(60)),
+        };
+        assert!(entry.is_expired());
+    }
 }

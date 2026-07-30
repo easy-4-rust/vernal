@@ -75,6 +75,13 @@ pub use borrowed_local_invocation_target::BorrowedLocalInvocationTarget;
 pub use component_pointcut::ComponentPointcut;
 pub use default_pointcut_advisor::DefaultPointcutAdvisor;
 pub use interceptor::Interceptor;
+// 业务切面 re-export（对应 aspect-rs aspect-std）
+pub use interceptor::{
+    CircuitState, LoggingAspect, TimingAspect, MetricsAspect, CachingAspect,
+    RateLimitAspect, CircuitBreakerAspect, AuthorizationAspect, AllowlistAspect,
+    AuthMode, ValidationAspect, ValidationRule,
+    NotEmptyValidator, RangeValidator, CustomValidator,
+};
 pub use introduction_advisor::IntroductionAdvisor;
 pub use introduction_info::IntroductionInfo;
 pub use invocation::Invocation;

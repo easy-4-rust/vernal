@@ -301,6 +301,83 @@ pub mod replace_override;
 pub mod custom_editor_configurer;
 pub mod bean_wiring_info;
 
+// ── 新增异常/错误模块 ─────────────────────────────────────────────────
+pub mod bean_definition_override_exception;
+pub mod bean_definition_parsing_exception;
+pub mod bean_definition_validation_exception;
+pub mod bean_is_abstract_exception;
+pub mod bean_is_not_a_factory_exception;
+pub mod factory_bean_not_initialized_exception;
+pub mod type_mismatch_exception;
+pub mod conversion_not_supported_exception;
+pub mod scope_not_active_exception;
+pub mod property_batch_update_exception;
+pub mod xml_bean_definition_store_exception;
+pub mod aot_processing_exception;
+pub mod aot_bean_processing_exception;
+pub mod aot_exception;
+
+// ── 新增独立模块 ─────────────────────────────────────────────────────
+pub mod qualifier_annotation_autowire_candidate_resolver;
+pub mod bean_reference;
+pub mod runtime_bean_reference;
+pub mod runtime_bean_name_reference;
+pub mod typed_string_value;
+pub mod bean_factory_initializer;
+pub mod bean_registry;
+pub mod bean_registrar;
+pub mod default_singleton_bean_registry;
+pub mod bean_registry_adapter;
+pub mod instance_supplier;
+pub mod registered_bean;
+pub mod mergeable;
+pub mod null_bean;
+pub mod custom_scope_configurer;
+pub mod property_editor_registry_support;
+pub mod resource_editor_registrar;
+pub mod bean_metadata_attribute;
+pub mod bean_metadata_attribute_accessor;
+pub mod bean_metadata_element;
+pub mod autowire_candidate;
+pub mod autowire_candidate_resolver;
+pub mod generic_type_aware_autowire_candidate_resolver;
+pub mod custom_autowire_configurer;
+pub mod bean_definition_visitor;
+pub mod bean_definition_overriding;
+pub mod description_utils;
+pub mod abstract_nestable_property_accessor;
+pub mod abstract_property_accessor;
+pub mod direct_field_accessor;
+pub mod property_accessor_factory;
+pub mod property_descriptor_utils;
+pub mod bean_info_factory;
+pub mod extended_bean_info;
+pub mod extended_bean_info_factory;
+pub mod generic_type_aware_property_descriptor;
+pub mod simple_bean_info_factory;
+pub mod standard_bean_info_factory;
+pub mod cached_introspection_results;
+pub mod bean_utils;
+pub mod bean_utils_runtime_hints;
+pub mod argument_converting_method_invoker;
+pub mod method_invoking_bean;
+pub mod method_invoking_factory_bean;
+pub mod property_values;
+pub mod property_values_editor;
+pub mod instantiable_bean;
+pub mod parameter_resolution_delegate;
+pub mod processor_cache;
+
+// ── 新增子模块（parsing/wiring/xml/aot/serviceloader/groovy/annotation/support）──
+pub mod parsing;
+pub mod wiring;
+pub mod xml;
+pub mod aot;
+pub mod serviceloader;
+pub mod groovy;
+pub mod annotation;
+pub mod support;
+
 // ── 原有 vernal-beans 模块 ─────────────────────────────────────────────
 
 mod bean_desc_cache;
