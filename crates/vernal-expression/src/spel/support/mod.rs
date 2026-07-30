@@ -5,6 +5,7 @@
 pub mod boolean_typed_value;
 pub mod data_binding_method_resolver;
 pub mod data_binding_property_accessor;
+pub mod environment_type_locator;
 pub mod map_accessor;
 pub mod reflective_constructor_executor;
 pub mod reflective_constructor_resolver;
@@ -20,3 +21,4 @@ pub mod standard_type_converter;
 pub mod standard_type_locator;
 pub mod vernal_bean_resolver;
 pub mod vernal_property_accessor;
+pub mod vernal_type_converter;
