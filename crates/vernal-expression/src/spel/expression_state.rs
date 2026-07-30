@@ -73,3 +73,137 @@ impl<'a> ExpressionState<'a> {
         self.operation_count = self.operation_count.saturating_add(1);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::spel::support::standard_evaluation_context::StandardEvaluationContext;
+    use crate::typed_value::{ExpressionValue, TypeDescriptor};
+
+    fn make_ctx() -> StandardEvaluationContext {
+        StandardEvaluationContext::new(TypedValue::null())
+    }
+
+    #[test]
+    fn new_state_has_root_as_active_context() {
+        let ctx = make_ctx();
+        let state = ExpressionState::new(&ctx);
+        assert!(state.active_context_object().is_null());
+    }
+
+    #[test]
+    fn push_and_pop_active_context() {
+        let ctx = make_ctx();
+        let mut state = ExpressionState::new(&ctx);
+
+        let v1 = TypedValue::new(ExpressionValue::Int(1), TypeDescriptor::INT);
+        let v2 = TypedValue::new(ExpressionValue::Int(2), TypeDescriptor::INT);
+
+        state.push_active_context_object(v1.clone());
+        assert_eq!(*state.active_context_object().value(), ExpressionValue::Int(1));
+
+        state.push_active_context_object(v2.clone());
+        assert_eq!(*state.active_context_object().value(), ExpressionValue::Int(2));
+
+        let popped = state.pop_active_context_object();
+        assert_eq!(*popped.value(), ExpressionValue::Int(2));
+        assert_eq!(*state.active_context_object().value(), ExpressionValue::Int(1));
+
+        let popped = state.pop_active_context_object();
+        assert_eq!(*popped.value(), ExpressionValue::Int(1));
+        assert!(state.active_context_object().is_null());
+    }
+
+    #[test]
+    fn set_and_lookup_variable() {
+        let ctx = make_ctx();
+        let mut state = ExpressionState::new(&ctx);
+
+        let val = TypedValue::new(ExpressionValue::String("hello".into()), TypeDescriptor::STRING);
+        state.set_variable("greeting", val.clone());
+
+        let found = state.lookup_variable("greeting").unwrap();
+        assert_eq!(*found.value(), ExpressionValue::String("hello".into()));
+    }
+
+    #[test]
+    fn lookup_variable_not_found() {
+        let ctx = make_ctx();
+        let state = ExpressionState::new(&ctx);
+        assert!(state.lookup_variable("nonexistent").is_none());
+    }
+
+    #[test]
+    fn lookup_variable_falls_through_to_context() {
+        let ctx = StandardEvaluationContext::new(TypedValue::null());
+        ctx.set_variable(
+            "ctx_var",
+            TypedValue::new(ExpressionValue::Int(42), TypeDescriptor::INT),
+        );
+        let state = ExpressionState::new(&ctx);
+
+        let found = state.lookup_variable("ctx_var").unwrap();
+        assert_eq!(*found.value(), ExpressionValue::Int(42));
+    }
+
+    #[test]
+    fn local_variable_overrides_context_variable() {
+        let ctx = StandardEvaluationContext::new(TypedValue::null());
+        ctx.set_variable(
+            "x",
+            TypedValue::new(ExpressionValue::Int(1), TypeDescriptor::INT),
+        );
+        let mut state = ExpressionState::new(&ctx);
+
+        state.set_variable(
+            "x",
+            TypedValue::new(ExpressionValue::Int(99), TypeDescriptor::INT),
+        );
+
+        let found = state.lookup_variable("x").unwrap();
+        assert_eq!(*found.value(), ExpressionValue::Int(99));
+    }
+
+    #[test]
+    fn evaluation_context_returns_context() {
+        let ctx = make_ctx();
+        let state = ExpressionState::new(&ctx);
+        let _ = state.evaluation_context();
+    }
+
+    #[test]
+    fn track_operation_increments_count() {
+        let ctx = make_ctx();
+        let mut state = ExpressionState::new(&ctx);
+        assert_eq!(state.operation_count, 0);
+
+        state.track_operation();
+        assert_eq!(state.operation_count, 1);
+
+        state.track_operation();
+        assert_eq!(state.operation_count, 2);
+
+        state.track_operation();
+        assert_eq!(state.operation_count, 3);
+    }
+
+    #[test]
+    fn multiple_push_pop_cycles() {
+        let ctx = make_ctx();
+        let mut state = ExpressionState::new(&ctx);
+
+        for i in 0..10 {
+            state.push_active_context_object(TypedValue::new(
+                ExpressionValue::Int(i),
+                TypeDescriptor::INT,
+            ));
+        }
+
+        for i in (0..10).rev() {
+            let popped = state.pop_active_context_object();
+            assert_eq!(*popped.value(), ExpressionValue::Int(i));
+        }
+
+        assert!(state.active_context_object().is_null());
+    }
+}
