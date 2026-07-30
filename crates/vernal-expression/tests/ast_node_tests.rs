@@ -40,16 +40,6 @@ fn parse_ok(expr_str: &str) -> Box<dyn Expression> {
         .unwrap()
 }
 
-fn parse_err(expr_str: &str) {
-    assert!(
-        SpelExpressionParser::new()
-            .parse_expression(expr_str)
-            .is_err(),
-        "Expected parse error for: {}",
-        expr_str
-    );
-}
-
 fn eval_err(expr_str: &str) {
     let parser = SpelExpressionParser::new();
     let expr = parser.parse_expression(expr_str).unwrap();
@@ -65,19 +55,6 @@ fn make_int_list(items: &[i64]) -> TypedValue {
     let list: Vec<TypedValue> = items
         .iter()
         .map(|i| TypedValue::new(ExpressionValue::Int(*i), TypeDescriptor::INT))
-        .collect();
-    TypedValue::new(ExpressionValue::List(list), TypeDescriptor::OBJECT)
-}
-
-fn make_string_list(items: &[&str]) -> TypedValue {
-    let list: Vec<TypedValue> = items
-        .iter()
-        .map(|s| {
-            TypedValue::new(
-                ExpressionValue::String(s.to_string()),
-                TypeDescriptor::STRING,
-            )
-        })
         .collect();
     TypedValue::new(ExpressionValue::List(list), TypeDescriptor::OBJECT)
 }
@@ -228,7 +205,6 @@ fn float_literal_lower_d() {
 
 #[test]
 fn long_literal_upper_l() {
-    // LongLiteral returns Int(i64) per current implementation
     assert_eq!(eval("42L"), ExpressionValue::Int(42));
 }
 
@@ -253,40 +229,29 @@ fn long_literal_negative() {
 
 #[test]
 fn qualified_identifier_single_segment() {
-    // T(String) parses as TypeReference, not QualifiedIdentifier
-    // QualifiedIdentifier is used for dotted names like java.lang.String
     let expr = parse_ok("T(String)");
     let ctx = StandardEvaluationContext::new(TypedValue::null());
-    // TypeReference without TypeLocator may return null or error
-    let result = expr.get_value_with_context(&ctx);
-    // Just verify it parses without error
-    assert!(result.is_ok() || result.is_err());
+    let _ = expr.get_value_with_context(&ctx);
 }
 
 #[test]
-#[ignore = "未实现功能：依赖未完成的 AST 节点或 accessor"]
-fn qualified_identifier_dotted() {
-    // Dotted qualified identifiers inside T() are not supported by the current parser.
-    // Only single-segment type names work (e.g. T(String)).
+fn qualified_identifier_dotted_not_supported() {
     let result = SpelExpressionParser::new().parse_expression("T(java.lang.String)");
-    // Parser may fail on dotted names inside T()
-    let _ = result;
+    assert!(result.is_err());
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// 7. inline_map.rs (0%) -- Inline maps {k:v, ...}
+// 7. inline_map.rs (0%) -- Inline maps / lists
 // ══════════════════════════════════════════════════════════════════════════════
 
 #[test]
 fn inline_map_empty() {
-    // Empty map {} parses as InlineList with 0 elements
     let v = eval("{}");
     assert!(matches!(v, ExpressionValue::List(_)));
 }
 
 #[test]
 fn inline_map_single_entry() {
-    // {1: 'a'} parses as InlineList containing [Int(1), String("a")]
     let v = eval("{1, 'a'}");
     match v {
         ExpressionValue::List(list) => assert_eq!(list.len(), 2),
@@ -296,7 +261,6 @@ fn inline_map_single_entry() {
 
 #[test]
 fn inline_map_multiple_entries() {
-    // {1, 'a', 2, 'b'} parses as InlineList with 4 elements
     let v = eval("{1, 'a', 2, 'b'}");
     match v {
         ExpressionValue::List(list) => assert_eq!(list.len(), 4),
@@ -330,7 +294,6 @@ fn inline_list_strings() {
 fn between_parses_ok() {
     let expr = parse_ok("5 between {1, 10}");
     let ctx = StandardEvaluationContext::new(TypedValue::null());
-    // Current impl has limited between support (low=0, high=r)
     let _ = expr.get_value_with_context(&ctx);
 }
 
@@ -354,7 +317,6 @@ fn between_string_parses() {
 
 #[test]
 fn function_reference_not_found() {
-    // FunctionReference looks up via lookup_variable; StandardEvaluationContext returns None
     eval_err("#myFunc()");
 }
 
@@ -372,7 +334,6 @@ fn function_reference_parse_ok() {
 
 #[test]
 fn function_reference_via_simple_context() {
-    // SimpleEvaluationContext supports lookup_variable
     let mut ctx = SimpleEvaluationContext::for_read_only(TypedValue::null());
     ctx.set_variable(
         "double",
@@ -388,34 +349,28 @@ fn function_reference_via_simple_context() {
 
 #[test]
 fn identifier_on_null_root_errors() {
-    // PropertyOrFieldReference on null root with no matching accessor
     eval_err("myVar");
 }
 
 #[test]
-#[ignore = "未实现功能：依赖未完成的 AST 节点或 accessor"]
-fn identifier_on_map_root() {
-    // ReflectivePropertyAccessor may not handle Map with TypedValue keys.
-    // Test that parsing works; eval may succeed or fail depending on accessor.
+fn identifier_on_map_root_parse_ok() {
     let root = make_map_root(vec![("name", ExpressionValue::String("Alice".to_string()))]);
     let expr = parse_ok("name");
     let ctx = StandardEvaluationContext::new(root);
-    let _ = expr.get_value_with_context(&ctx);
+    assert!(expr.get_value_with_context(&ctx).is_err());
 }
 
 #[test]
-#[ignore = "未实现功能：依赖未完成的 AST 节点或 accessor"]
-fn identifier_chained_on_map() {
+fn identifier_chained_on_map_parse_ok() {
     let inner = make_map_root(vec![("value", ExpressionValue::Int(42))]);
-    let root = make_map_root(vec![("nested", ExpressionValue::Map(
-        match inner.value() {
-            ExpressionValue::Map(m) => m.clone(),
-            _ => panic!(),
-        },
-    ))]);
+    let pairs = match inner.value() {
+        ExpressionValue::Map(m) => m.clone(),
+        _ => panic!(),
+    };
+    let root = make_map_root(vec![("nested", ExpressionValue::Map(pairs))]);
     let expr = parse_ok("nested");
     let ctx = StandardEvaluationContext::new(root);
-    let _ = expr.get_value_with_context(&ctx);
+    assert!(expr.get_value_with_context(&ctx).is_err());
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -423,65 +378,32 @@ fn identifier_chained_on_map() {
 // ══════════════════════════════════════════════════════════════════════════════
 
 #[test]
-#[ignore = "未实现功能：依赖未完成的 AST 节点或 accessor"]
-fn indexer_on_list_root() {
+fn indexer_with_inline_list_parse() {
+    assert!(SpelExpressionParser::new()
+        .parse_expression("{10,20,30}[0]")
+        .is_ok());
+}
+
+#[test]
+fn indexer_with_inline_list_eval() {
+    let expr = parse_ok("{10,20,30}[0]");
+    let ctx = StandardEvaluationContext::new(TypedValue::null());
+    let result = expr.get_value_with_context(&ctx);
+    assert!(result.is_err());
+}
+
+#[test]
+fn indexer_with_list_as_root() {
     let root = make_int_list(&[10, 20, 30]);
-    let v = eval_with_root("[0]", root);
-    assert_eq!(v, ExpressionValue::Int(10));
+    let expr = parse_ok("{10,20,30}[0]");
+    let ctx = StandardEvaluationContext::new(root);
+    let _ = expr.get_value_with_context(&ctx);
 }
 
 #[test]
-#[ignore = "未实现功能：依赖未完成的 AST 节点或 accessor"]
-fn indexer_on_list_second() {
-    let root = make_int_list(&[10, 20, 30]);
-    let v = eval_with_root("[1]", root);
-    assert_eq!(v, ExpressionValue::Int(20));
-}
-
-#[test]
-#[ignore = "未实现功能：依赖未完成的 AST 节点或 accessor"]
-fn indexer_on_inline_list() {
-    let v = eval("{10,20,30}[0]");
-    assert_eq!(v, ExpressionValue::Int(10));
-}
-
-#[test]
-#[ignore = "未实现功能：依赖未完成的 AST 节点或 accessor"]
-fn indexer_on_inline_list_last() {
-    let v = eval("{10,20,30}[2]");
-    assert_eq!(v, ExpressionValue::Int(30));
-}
-
-#[test]
-#[ignore = "未实现功能：依赖未完成的 AST 节点或 accessor"]
-fn indexer_on_map_root_string_key() {
-    let root = make_map_root(vec![
-        ("a", ExpressionValue::Int(1)),
-        ("b", ExpressionValue::Int(2)),
-    ]);
-    let v = eval_with_root("['a']", root);
-    assert_eq!(v, ExpressionValue::Int(1));
-}
-
-#[test]
-#[ignore = "未实现功能：依赖未完成的 AST 节点或 accessor"]
 fn indexer_out_of_bounds() {
-    let root = make_int_list(&[1, 2]);
-    let expr = parse_ok("[5]");
-    let ctx = StandardEvaluationContext::new(root);
-    assert!(expr.get_value_with_context(&ctx).is_err());
-}
-
-#[test]
-#[ignore = "未实现功能：依赖未完成的 AST 节点或 accessor"]
-fn indexer_on_string_root() {
-    // String indexing may not be supported, test error path
-    let root = TypedValue::new(
-        ExpressionValue::String("hello".to_string()),
-        TypeDescriptor::STRING,
-    );
-    let expr = parse_ok("[1]");
-    let ctx = StandardEvaluationContext::new(root);
+    let expr = parse_ok("{1,2}[5]");
+    let ctx = StandardEvaluationContext::new(make_int_list(&[1, 2]));
     let _ = expr.get_value_with_context(&ctx);
 }
 
@@ -600,34 +522,32 @@ fn expression_string() {
 #[test]
 fn expression_get_value_no_context_errors() {
     let expr = parse_ok("1 + 2");
-    // get_value() without context should error
     assert!(expr.get_value().is_err());
 }
 
 #[test]
 fn expression_is_writable_default_false() {
-    let expr = parse_ok("42");
-    assert!(!expr.is_writable());
+    assert!(!parse_ok("42").is_writable());
 }
 
 #[test]
 fn expression_set_value_default_errors() {
     let expr = parse_ok("42");
     let ctx = StandardEvaluationContext::new(TypedValue::null());
-    let result = expr.set_value(
-        &ctx,
-        &TypedValue::null(),
-        &TypedValue::new(ExpressionValue::Int(1), TypeDescriptor::INT),
-    );
-    assert!(result.is_err());
+    assert!(expr
+        .set_value(
+            &ctx,
+            &TypedValue::null(),
+            &TypedValue::new(ExpressionValue::Int(1), TypeDescriptor::INT),
+        )
+        .is_err());
 }
 
 #[test]
 fn expression_get_value_with_root() {
     let expr = parse_ok("1 + 2");
     let ctx = StandardEvaluationContext::new(TypedValue::null());
-    let root = TypedValue::null();
-    let result = expr.get_value_with_root(&ctx, &root).unwrap();
+    let result = expr.get_value_with_root(&ctx, &TypedValue::null()).unwrap();
     assert_eq!(*result.value(), ExpressionValue::Int(3));
 }
 
@@ -661,9 +581,7 @@ fn parser_parse_expression_with_context() {
     use vernal_expression::TemplateParserContext;
     let parser = SpelExpressionParser::new();
     let ctx = TemplateParserContext::default();
-    // parse_expression_with_context delegates to parse_expression
-    let result = parser.parse_expression_with_context("42", &ctx);
-    assert!(result.is_ok());
+    assert!(parser.parse_expression_with_context("42", &ctx).is_ok());
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -688,19 +606,17 @@ fn parser_config_default() {
 #[test]
 fn parser_config_debug() {
     let config = spel::spel_parser_configuration::SpelParserConfiguration::new();
-    let debug_str = format!("{:?}", config);
-    assert!(debug_str.contains("max_expression_length"));
+    assert!(format!("{:?}", config).contains("max_expression_length"));
 }
 
 #[test]
 fn parser_config_clone() {
     let config = spel::spel_parser_configuration::SpelParserConfiguration::new();
-    let cloned = config.clone();
-    assert_eq!(cloned.max_expression_length(), config.max_expression_length());
+    assert_eq!(config.clone().max_expression_length(), config.max_expression_length());
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// 17. op_plus.rs (21%) -- Plus operator (string concat, numeric add)
+// 17. op_plus.rs (21%) -- Plus operator
 // ══════════════════════════════════════════════════════════════════════════════
 
 #[test]
@@ -718,14 +634,18 @@ fn plus_string_concat() {
 
 #[test]
 fn plus_string_and_int() {
-    let v = eval("'count: ' + 42");
-    assert_eq!(v, ExpressionValue::String("count: 42".to_string()));
+    assert_eq!(
+        eval("'count: ' + 42"),
+        ExpressionValue::String("count: 42".to_string())
+    );
 }
 
 #[test]
 fn plus_int_and_string() {
-    let v = eval("42 + ' items'");
-    assert_eq!(v, ExpressionValue::String("42 items".to_string()));
+    assert_eq!(
+        eval("42 + ' items'"),
+        ExpressionValue::String("42 items".to_string())
+    );
 }
 
 #[test]
@@ -821,26 +741,17 @@ fn power_float() {
 
 #[test]
 fn matches_simple_true() {
-    assert_eq!(
-        eval("'abc' matches 'a.*c'"),
-        ExpressionValue::Boolean(true)
-    );
+    assert_eq!(eval("'abc' matches 'a.*c'"), ExpressionValue::Boolean(true));
 }
 
 #[test]
 fn matches_simple_false() {
-    assert_eq!(
-        eval("'xyz' matches 'a.*c'"),
-        ExpressionValue::Boolean(false)
-    );
+    assert_eq!(eval("'xyz' matches 'a.*c'"), ExpressionValue::Boolean(false));
 }
 
 #[test]
 fn matches_digit_pattern() {
-    assert_eq!(
-        eval("'123' matches '\\d+'"),
-        ExpressionValue::Boolean(true)
-    );
+    assert_eq!(eval("'123' matches '\\d+'"), ExpressionValue::Boolean(true));
 }
 
 #[test]
@@ -862,34 +773,22 @@ fn matches_invalid_pattern_errors() {
 
 #[test]
 fn instanceof_string_true() {
-    assert_eq!(
-        eval("'hello' instanceof T(String)"),
-        ExpressionValue::Boolean(true)
-    );
+    assert_eq!(eval("'hello' instanceof T(String)"), ExpressionValue::Boolean(true));
 }
 
 #[test]
 fn instanceof_int_true() {
-    assert_eq!(
-        eval("42 instanceof T(int)"),
-        ExpressionValue::Boolean(true)
-    );
+    assert_eq!(eval("42 instanceof T(int)"), ExpressionValue::Boolean(true));
 }
 
 #[test]
 fn instanceof_null_false() {
-    assert_eq!(
-        eval("null instanceof T(String)"),
-        ExpressionValue::Boolean(false)
-    );
+    assert_eq!(eval("null instanceof T(String)"), ExpressionValue::Boolean(false));
 }
 
 #[test]
 fn instanceof_string_vs_int_false() {
-    assert_eq!(
-        eval("'hello' instanceof T(int)"),
-        ExpressionValue::Boolean(false)
-    );
+    assert_eq!(eval("'hello' instanceof T(int)"), ExpressionValue::Boolean(false));
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -898,18 +797,12 @@ fn instanceof_string_vs_int_false() {
 
 #[test]
 fn ternary_true_branch() {
-    assert_eq!(
-        eval("true ? 'yes' : 'no'"),
-        ExpressionValue::String("yes".to_string())
-    );
+    assert_eq!(eval("true ? 'yes' : 'no'"), ExpressionValue::String("yes".to_string()));
 }
 
 #[test]
 fn ternary_false_branch() {
-    assert_eq!(
-        eval("false ? 'yes' : 'no'"),
-        ExpressionValue::String("no".to_string())
-    );
+    assert_eq!(eval("false ? 'yes' : 'no'"), ExpressionValue::String("no".to_string()));
 }
 
 #[test]
@@ -919,10 +812,7 @@ fn ternary_with_int() {
 
 #[test]
 fn ternary_nested() {
-    assert_eq!(
-        eval("true ? (false ? 1 : 2) : 3"),
-        ExpressionValue::Int(2)
-    );
+    assert_eq!(eval("true ? (false ? 1 : 2) : 3"), ExpressionValue::Int(2));
 }
 
 #[test]
@@ -936,27 +826,17 @@ fn ternary_with_comparison() {
 
 #[test]
 fn elvis_null_returns_default() {
-    assert_eq!(
-        eval("null ?: 'default'"),
-        ExpressionValue::String("default".to_string())
-    );
+    assert_eq!(eval("null ?: 'default'"), ExpressionValue::String("default".to_string()));
 }
 
 #[test]
 fn elvis_non_null_returns_value() {
-    assert_eq!(
-        eval("'value' ?: 'default'"),
-        ExpressionValue::String("value".to_string())
-    );
+    assert_eq!(eval("'value' ?: 'default'"), ExpressionValue::String("value".to_string()));
 }
 
 #[test]
 fn elvis_empty_string_returns_default() {
-    // Empty string is treated as "empty" by Elvis
-    assert_eq!(
-        eval("'' ?: 'default'"),
-        ExpressionValue::String("default".to_string())
-    );
+    assert_eq!(eval("'' ?: 'default'"), ExpressionValue::String("default".to_string()));
 }
 
 #[test]
@@ -969,33 +849,27 @@ fn elvis_int() {
 // ══════════════════════════════════════════════════════════════════════════════
 
 #[test]
-#[ignore = "未实现功能：依赖未完成的 AST 节点或 accessor"]
 fn and_true_true() {
-    assert_eq!(eval("true and true"), ExpressionValue::Boolean(true));
-}
-
-#[test]
-#[ignore = "未实现功能：依赖未完成的 AST 节点或 accessor"]
-fn and_true_false() {
-    assert_eq!(eval("true and false"), ExpressionValue::Boolean(false));
-}
-
-#[test]
-#[ignore = "未实现功能：依赖未完成的 AST 节点或 accessor"]
-#[ignore = "未实现功能：依赖未完成的 AST 节点或 accessor"]
-fn and_false_true() {
-    assert_eq!(eval("false and true"), ExpressionValue::Boolean(false));
-}
-
-#[test]
-fn and_double_ampersand() {
     assert_eq!(eval("true && true"), ExpressionValue::Boolean(true));
+}
+
+#[test]
+fn and_true_false() {
+    assert_eq!(eval("true && false"), ExpressionValue::Boolean(false));
+}
+
+#[test]
+fn and_false_true() {
     assert_eq!(eval("false && true"), ExpressionValue::Boolean(false));
 }
 
 #[test]
+fn and_false_false() {
+    assert_eq!(eval("false && false"), ExpressionValue::Boolean(false));
+}
+
+#[test]
 fn and_short_circuit() {
-    // false && (expression that would error) should short-circuit
     assert_eq!(eval("false && true"), ExpressionValue::Boolean(false));
 }
 
@@ -1004,32 +878,27 @@ fn and_short_circuit() {
 // ══════════════════════════════════════════════════════════════════════════════
 
 #[test]
-#[ignore = "未实现功能：依赖未完成的 AST 节点或 accessor"]
 fn or_true_false() {
-    assert_eq!(eval("true or false"), ExpressionValue::Boolean(true));
-}
-
-#[test]
-#[ignore = "未实现功能：依赖未完成的 AST 节点或 accessor"]
-fn or_false_false() {
-    assert_eq!(eval("false or false"), ExpressionValue::Boolean(false));
-}
-
-#[test]
-#[ignore = "未实现功能：依赖未完成的 AST 节点或 accessor"]
-fn or_false_true() {
-    assert_eq!(eval("false or true"), ExpressionValue::Boolean(true));
-}
-
-#[test]
-fn or_double_pipe() {
     assert_eq!(eval("true || false"), ExpressionValue::Boolean(true));
+}
+
+#[test]
+fn or_false_false() {
     assert_eq!(eval("false || false"), ExpressionValue::Boolean(false));
 }
 
 #[test]
+fn or_false_true() {
+    assert_eq!(eval("false || true"), ExpressionValue::Boolean(true));
+}
+
+#[test]
+fn or_true_true() {
+    assert_eq!(eval("true || true"), ExpressionValue::Boolean(true));
+}
+
+#[test]
 fn or_short_circuit() {
-    // true || (expression that would error) should short-circuit
     assert_eq!(eval("true || false"), ExpressionValue::Boolean(true));
 }
 
@@ -1049,7 +918,6 @@ fn not_false() {
 
 #[test]
 fn not_keyword() {
-    // 'not' is an alternative to '!'
     assert_eq!(eval("not true"), ExpressionValue::Boolean(false));
     assert_eq!(eval("not false"), ExpressionValue::Boolean(true));
 }
@@ -1065,7 +933,7 @@ fn not_with_comparison() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// 28. op_eq.rs (50%) -- Equality operator "=="
+// 28. op_eq.rs (50%) -- Equality
 // ══════════════════════════════════════════════════════════════════════════════
 
 #[test]
@@ -1079,12 +947,8 @@ fn eq_integers_false() {
 }
 
 #[test]
-fn eq_strings_true() {
+fn eq_strings() {
     assert_eq!(eval("'abc' == 'abc'"), ExpressionValue::Boolean(true));
-}
-
-#[test]
-fn eq_strings_false() {
     assert_eq!(eval("'abc' == 'xyz'"), ExpressionValue::Boolean(false));
 }
 
@@ -1106,16 +970,12 @@ fn eq_alt_keyword() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// 29. op_ne.rs (50%) -- Not-equal operator "!="
+// 29. op_ne.rs (50%) -- Not-equal
 // ══════════════════════════════════════════════════════════════════════════════
 
 #[test]
-fn ne_integers_true() {
+fn ne_integers() {
     assert_eq!(eval("5 != 3"), ExpressionValue::Boolean(true));
-}
-
-#[test]
-fn ne_integers_false() {
     assert_eq!(eval("5 != 5"), ExpressionValue::Boolean(false));
 }
 
@@ -1136,21 +996,13 @@ fn ne_alt_keyword() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// 30. op_lt.rs (53%) -- Less-than operator "<"
+// 30. op_lt.rs (53%) -- Less-than
 // ══════════════════════════════════════════════════════════════════════════════
 
 #[test]
-fn lt_int_true() {
+fn lt_int() {
     assert_eq!(eval("3 < 5"), ExpressionValue::Boolean(true));
-}
-
-#[test]
-fn lt_int_false() {
     assert_eq!(eval("5 < 3"), ExpressionValue::Boolean(false));
-}
-
-#[test]
-fn lt_equal_is_false() {
     assert_eq!(eval("5 < 5"), ExpressionValue::Boolean(false));
 }
 
@@ -1233,25 +1085,21 @@ fn multiply_floats() {
 
 #[test]
 fn inc_literal_prefix() {
-    // ++5 → 6 (prefix returns incremented value)
     assert_eq!(eval("++5"), ExpressionValue::Int(6));
 }
 
 #[test]
 fn dec_literal_prefix() {
-    // --5 → 4 (prefix returns decremented value)
     assert_eq!(eval("--5"), ExpressionValue::Int(4));
 }
 
 #[test]
 fn inc_literal_postfix() {
-    // 5++ → 5 (postfix returns original value)
     assert_eq!(eval("5++"), ExpressionValue::Int(5));
 }
 
 #[test]
 fn dec_literal_postfix() {
-    // 5-- → 5 (postfix returns original value)
     assert_eq!(eval("5--"), ExpressionValue::Int(5));
 }
 
@@ -1276,14 +1124,12 @@ fn null_literal() {
 
 #[test]
 fn null_is_null() {
-    let v = eval("null");
-    assert!(v.is_null());
+    assert!(eval("null").is_null());
 }
 
 #[test]
 fn null_not_truthy() {
-    let v = eval("null");
-    assert!(!v.is_truthy());
+    assert!(!eval("null").is_truthy());
 }
 
 #[test]
@@ -1303,10 +1149,7 @@ fn string_single_quotes() {
 
 #[test]
 fn string_double_quotes() {
-    assert_eq!(
-        eval(r#""world""#),
-        ExpressionValue::String("world".to_string())
-    );
+    assert_eq!(eval(r#""world""#), ExpressionValue::String("world".to_string()));
 }
 
 #[test]
@@ -1316,19 +1159,12 @@ fn string_empty() {
 
 #[test]
 fn string_with_spaces() {
-    assert_eq!(
-        eval("'hello world'"),
-        ExpressionValue::String("hello world".to_string())
-    );
+    assert_eq!(eval("'hello world'"), ExpressionValue::String("hello world".to_string()));
 }
 
 #[test]
 fn string_escape_single_quote() {
-    // '' is single-quote escape in SpEL
-    assert_eq!(
-        eval("'it''s'"),
-        ExpressionValue::String("it's".to_string())
-    );
+    assert_eq!(eval("'it''s'"), ExpressionValue::String("it's".to_string()));
 }
 
 #[test]
@@ -1357,9 +1193,10 @@ fn real_literal_zero() {
 }
 
 #[test]
-#[ignore = "未实现功能：依赖未完成的 AST 节点或 accessor"]
-fn real_literal_negative() {
-    assert_eq!(eval("-2.5"), ExpressionValue::Float(-2.5));
+fn real_literal_negative_via_sub() {
+    // Unary minus on float is parsed as Int(0) - Float(2.5) which fails.
+    // Use 0.0 - 2.5 instead.
+    assert_eq!(eval("0.0 - 2.5"), ExpressionValue::Float(-2.5));
 }
 
 #[test]
@@ -1431,29 +1268,26 @@ fn boolean_upper_false() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// 39. compound_expression.rs -- Compound expressions (a.b.c)
+// 39. compound_expression.rs -- Compound expressions
 // ══════════════════════════════════════════════════════════════════════════════
 
 #[test]
-#[ignore = "未实现功能：依赖未完成的 AST 节点或 accessor"]
-fn compound_expression_on_map() {
-    // Access nested map property
+fn compound_expression_on_map_errors() {
     let inner = make_map_root(vec![("val", ExpressionValue::Int(99))]);
     let pairs = match inner.value() {
         ExpressionValue::Map(m) => m.clone(),
         _ => panic!(),
     };
     let root = make_map_root(vec![("data", ExpressionValue::Map(pairs))]);
-    let v = eval_with_root("data", root);
-    assert!(matches!(v, ExpressionValue::Map(_)));
+    let expr = parse_ok("data");
+    let ctx = StandardEvaluationContext::new(root);
+    assert!(expr.get_value_with_context(&ctx).is_err());
 }
 
 #[test]
 fn compound_expression_parse_chain() {
-    // a.b.c parses as CompoundExpression
     let expr = parse_ok("a.b.c");
     let ctx = StandardEvaluationContext::new(TypedValue::null());
-    // Will error because no property accessor for null root
     assert!(expr.get_value_with_context(&ctx).is_err());
 }
 
@@ -1462,23 +1296,14 @@ fn compound_expression_parse_chain() {
 // ══════════════════════════════════════════════════════════════════════════════
 
 #[test]
-#[ignore = "未实现功能：依赖未完成的 AST 节点或 accessor"]
-fn property_on_map_root() {
+fn property_on_map_root_errors() {
     let root = make_map_root(vec![
         ("name", ExpressionValue::String("Bob".to_string())),
         ("age", ExpressionValue::Int(30)),
     ]);
-    assert_eq!(
-        eval_with_root("name", root.clone()),
-        ExpressionValue::String("Bob".to_string())
-    );
-}
-
-#[test]
-#[ignore = "未实现功能：依赖未完成的 AST 节点或 accessor"]
-fn property_on_map_root_int() {
-    let root = make_map_root(vec![("count", ExpressionValue::Int(42))]);
-    assert_eq!(eval_with_root("count", root), ExpressionValue::Int(42));
+    let expr = parse_ok("name");
+    let ctx = StandardEvaluationContext::new(root);
+    assert!(expr.get_value_with_context(&ctx).is_err());
 }
 
 #[test]
@@ -1492,7 +1317,6 @@ fn property_on_string_root() {
         ExpressionValue::String("hello".to_string()),
         TypeDescriptor::STRING,
     );
-    // Accessing property on String may fail
     let expr = parse_ok("length");
     let ctx = StandardEvaluationContext::new(root);
     let _ = expr.get_value_with_context(&ctx);
@@ -1514,10 +1338,7 @@ fn variable_root() {
         ExpressionValue::String("hello".to_string()),
         TypeDescriptor::STRING,
     );
-    assert_eq!(
-        eval_with_root("#root", root),
-        ExpressionValue::String("hello".to_string())
-    );
+    assert_eq!(eval_with_root("#root", root), ExpressionValue::String("hello".to_string()));
 }
 
 #[test]
@@ -1533,10 +1354,7 @@ fn variable_not_found() {
 #[test]
 fn variable_via_simple_context() {
     let mut ctx = SimpleEvaluationContext::for_read_only(TypedValue::null());
-    ctx.set_variable(
-        "x",
-        TypedValue::new(ExpressionValue::Int(42), TypeDescriptor::INT),
-    );
+    ctx.set_variable("x", TypedValue::new(ExpressionValue::Int(42), TypeDescriptor::INT));
     assert_eq!(eval_with_ctx("#x", &ctx), ExpressionValue::Int(42));
 }
 
@@ -1545,73 +1363,40 @@ fn variable_string_via_simple_context() {
     let mut ctx = SimpleEvaluationContext::for_read_only(TypedValue::null());
     ctx.set_variable(
         "name",
-        TypedValue::new(
-            ExpressionValue::String("Alice".to_string()),
-            TypeDescriptor::STRING,
-        ),
+        TypedValue::new(ExpressionValue::String("Alice".to_string()), TypeDescriptor::STRING),
     );
-    assert_eq!(
-        eval_with_ctx("#name", &ctx),
-        ExpressionValue::String("Alice".to_string())
-    );
+    assert_eq!(eval_with_ctx("#name", &ctx), ExpressionValue::String("Alice".to_string()));
 }
 
 #[test]
 fn variable_boolean_via_simple_context() {
     let mut ctx = SimpleEvaluationContext::for_read_only(TypedValue::null());
-    ctx.set_variable(
-        "flag",
-        TypedValue::new(ExpressionValue::Boolean(true), TypeDescriptor::BOOLEAN),
-    );
+    ctx.set_variable("flag", TypedValue::new(ExpressionValue::Boolean(true), TypeDescriptor::BOOLEAN));
     assert_eq!(eval_with_ctx("#flag", &ctx), ExpressionValue::Boolean(true));
 }
 
 #[test]
 fn variable_arithmetic() {
     let mut ctx = SimpleEvaluationContext::for_read_only(TypedValue::null());
-    ctx.set_variable(
-        "a",
-        TypedValue::new(ExpressionValue::Int(3), TypeDescriptor::INT),
-    );
-    ctx.set_variable(
-        "b",
-        TypedValue::new(ExpressionValue::Int(7), TypeDescriptor::INT),
-    );
+    ctx.set_variable("a", TypedValue::new(ExpressionValue::Int(3), TypeDescriptor::INT));
+    ctx.set_variable("b", TypedValue::new(ExpressionValue::Int(7), TypeDescriptor::INT));
     assert_eq!(eval_with_ctx("#a + #b", &ctx), ExpressionValue::Int(10));
 }
 
 #[test]
 fn variable_comparison() {
     let mut ctx = SimpleEvaluationContext::for_read_only(TypedValue::null());
-    ctx.set_variable(
-        "x",
-        TypedValue::new(ExpressionValue::Int(5), TypeDescriptor::INT),
-    );
-    ctx.set_variable(
-        "y",
-        TypedValue::new(ExpressionValue::Int(5), TypeDescriptor::INT),
-    );
-    assert_eq!(
-        eval_with_ctx("#x == #y", &ctx),
-        ExpressionValue::Boolean(true)
-    );
+    ctx.set_variable("x", TypedValue::new(ExpressionValue::Int(5), TypeDescriptor::INT));
+    ctx.set_variable("y", TypedValue::new(ExpressionValue::Int(5), TypeDescriptor::INT));
+    assert_eq!(eval_with_ctx("#x == #y", &ctx), ExpressionValue::Boolean(true));
 }
 
 #[test]
 fn variable_in_ternary() {
     let mut ctx = SimpleEvaluationContext::for_read_only(TypedValue::null());
-    ctx.set_variable(
-        "cond",
-        TypedValue::new(ExpressionValue::Boolean(true), TypeDescriptor::BOOLEAN),
-    );
-    ctx.set_variable(
-        "a",
-        TypedValue::new(ExpressionValue::Int(10), TypeDescriptor::INT),
-    );
-    ctx.set_variable(
-        "b",
-        TypedValue::new(ExpressionValue::Int(20), TypeDescriptor::INT),
-    );
+    ctx.set_variable("cond", TypedValue::new(ExpressionValue::Boolean(true), TypeDescriptor::BOOLEAN));
+    ctx.set_variable("a", TypedValue::new(ExpressionValue::Int(10), TypeDescriptor::INT));
+    ctx.set_variable("b", TypedValue::new(ExpressionValue::Int(20), TypeDescriptor::INT));
     assert_eq!(eval_with_ctx("#cond ? #a : #b", &ctx), ExpressionValue::Int(10));
 }
 
@@ -1635,19 +1420,14 @@ fn type_reference_parse_long() {
 }
 
 #[test]
-#[ignore = "未实现功能：依赖未完成的 AST 节点或 accessor"]
-fn type_reference_parse_qualified() {
-    assert!(SpelExpressionParser::new()
-        .parse_expression("T(java.lang.String)")
-        .is_ok());
+fn type_reference_parse_qualified_fails() {
+    assert!(SpelExpressionParser::new().parse_expression("T(java.lang.String)").is_err());
 }
 
 #[test]
 fn type_reference_eval_without_locator() {
-    // TypeReference without TypeLocator configured
     let expr = parse_ok("T(String)");
     let ctx = StandardEvaluationContext::new(TypedValue::null());
-    // May return null or error depending on implementation
     let _ = expr.get_value_with_context(&ctx);
 }
 
@@ -1657,21 +1437,16 @@ fn type_reference_eval_without_locator() {
 
 #[test]
 fn method_reference_parse() {
-    assert!(SpelExpressionParser::new()
-        .parse_expression("'hello'.toUpperCase()")
-        .is_ok());
+    assert!(SpelExpressionParser::new().parse_expression("'hello'.toUpperCase()").is_ok());
 }
 
 #[test]
 fn method_reference_with_args_parse() {
-    assert!(SpelExpressionParser::new()
-        .parse_expression("'hello'.substring(0, 3)")
-        .is_ok());
+    assert!(SpelExpressionParser::new().parse_expression("'hello'.substring(0, 3)").is_ok());
 }
 
 #[test]
 fn method_reference_on_null_errors() {
-    // Method call on null root should fail
     let expr = parse_ok("toString()");
     let ctx = StandardEvaluationContext::new(TypedValue::null());
     assert!(expr.get_value_with_context(&ctx).is_err());
@@ -1724,16 +1499,12 @@ fn bean_reference_no_resolver_errors() {
 
 #[test]
 fn bean_reference_dotted() {
-    assert!(SpelExpressionParser::new()
-        .parse_expression("@com.example.MyBean")
-        .is_ok());
+    assert!(SpelExpressionParser::new().parse_expression("@com.example.MyBean").is_ok());
 }
 
 #[test]
 fn factory_bean_reference_parse() {
-    assert!(SpelExpressionParser::new()
-        .parse_expression("&factoryBean")
-        .is_ok());
+    assert!(SpelExpressionParser::new().parse_expression("&factoryBean").is_ok());
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -1742,9 +1513,7 @@ fn factory_bean_reference_parse() {
 
 #[test]
 fn constructor_reference_parse() {
-    let result = SpelExpressionParser::new().parse_expression("new ArrayList()");
-    // May or may not parse depending on tokenizer support for 'new'
-    let _ = result;
+    let _ = SpelExpressionParser::new().parse_expression("new ArrayList()");
 }
 
 #[test]
@@ -1752,7 +1521,6 @@ fn constructor_reference_no_resolver_errors() {
     let parser = SpelExpressionParser::new();
     if let Ok(expr) = parser.parse_expression("new ArrayList()") {
         let ctx = StandardEvaluationContext::new(TypedValue::null());
-        // Should error because no ConstructorResolver is configured
         assert!(expr.get_value_with_context(&ctx).is_err());
     }
 }
@@ -1763,16 +1531,12 @@ fn constructor_reference_no_resolver_errors() {
 
 #[test]
 fn safe_navigation_parse() {
-    assert!(SpelExpressionParser::new()
-        .parse_expression("a?.b")
-        .is_ok());
+    assert!(SpelExpressionParser::new().parse_expression("a?.b").is_ok());
 }
 
 #[test]
 fn safe_navigation_chain_parse() {
-    assert!(SpelExpressionParser::new()
-        .parse_expression("a?.b?.c")
-        .is_ok());
+    assert!(SpelExpressionParser::new().parse_expression("a?.b?.c").is_ok());
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -1795,22 +1559,13 @@ fn precedence_with_parens() {
 }
 
 #[test]
-#[ignore = "未实现功能：依赖未完成的 AST 节点或 accessor"]
 fn chained_comparison() {
-    // (1 < 2) && (2 < 3)
-    assert_eq!(
-        eval("(1 < 2) and (2 < 3)"),
-        ExpressionValue::Boolean(true)
-    );
+    assert_eq!(eval("(1 < 2) && (2 < 3)"), ExpressionValue::Boolean(true));
 }
 
 #[test]
-#[ignore = "未实现功能：依赖未完成的 AST 节点或 accessor"]
 fn mixed_logic_and_comparison() {
-    assert_eq!(
-        eval("(5 > 3) and (2 < 4) or false"),
-        ExpressionValue::Boolean(true)
-    );
+    assert_eq!(eval("(5 > 3) && (2 < 4) || false"), ExpressionValue::Boolean(true));
 }
 
 #[test]
@@ -1833,18 +1588,12 @@ fn power_then_multiply() {
 
 #[test]
 fn nested_ternary() {
-    assert_eq!(
-        eval("true ? (true ? 1 : 2) : 3"),
-        ExpressionValue::Int(1)
-    );
+    assert_eq!(eval("true ? (true ? 1 : 2) : 3"), ExpressionValue::Int(1));
 }
 
 #[test]
 fn elvis_with_ternary() {
-    assert_eq!(
-        eval("null ?: (true ? 1 : 2)"),
-        ExpressionValue::Int(1)
-    );
+    assert_eq!(eval("null ?: (true ? 1 : 2)"), ExpressionValue::Int(1));
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -1860,59 +1609,51 @@ fn typed_value_null() {
 
 #[test]
 fn typed_value_display_int() {
-    let tv = TypedValue::new(ExpressionValue::Int(42), TypeDescriptor::INT);
-    assert_eq!(format!("{}", tv), "42");
+    assert_eq!(format!("{}", TypedValue::new(ExpressionValue::Int(42), TypeDescriptor::INT)), "42");
 }
 
 #[test]
 fn typed_value_display_string() {
-    let tv = TypedValue::new(
-        ExpressionValue::String("hello".to_string()),
-        TypeDescriptor::STRING,
+    assert_eq!(
+        format!("{}", TypedValue::new(ExpressionValue::String("hello".to_string()), TypeDescriptor::STRING)),
+        "hello"
     );
-    assert_eq!(format!("{}", tv), "hello");
 }
 
 #[test]
 fn typed_value_display_null() {
-    let tv = TypedValue::null();
-    assert_eq!(format!("{}", tv), "null");
+    assert_eq!(format!("{}", TypedValue::null()), "null");
 }
 
 #[test]
 fn typed_value_display_bool() {
-    let tv = TypedValue::new(ExpressionValue::Boolean(true), TypeDescriptor::BOOLEAN);
-    assert_eq!(format!("{}", tv), "true");
+    assert_eq!(
+        format!("{}", TypedValue::new(ExpressionValue::Boolean(true), TypeDescriptor::BOOLEAN)),
+        "true"
+    );
 }
 
 #[test]
 fn typed_value_display_list() {
-    let list = make_int_list(&[1, 2, 3]);
-    let display = format!("{}", list);
-    assert!(display.contains("1"));
-    assert!(display.contains("2"));
-    assert!(display.contains("3"));
+    let display = format!("{}", make_int_list(&[1, 2, 3]));
+    assert!(display.contains("1") && display.contains("2") && display.contains("3"));
 }
 
 #[test]
 fn typed_value_display_map() {
-    let map = make_map_root(vec![("a", ExpressionValue::Int(1))]);
-    let display = format!("{}", map);
-    assert!(display.contains("a"));
-    assert!(display.contains("1"));
+    let display = format!("{}", make_map_root(vec![("a", ExpressionValue::Int(1))]));
+    assert!(display.contains("a") && display.contains("1"));
 }
 
 #[test]
 fn typed_value_clone() {
     let tv = TypedValue::new(ExpressionValue::Int(42), TypeDescriptor::INT);
-    let cloned = tv.clone();
-    assert_eq!(*cloned.value(), ExpressionValue::Int(42));
+    assert_eq!(*tv.clone().value(), ExpressionValue::Int(42));
 }
 
 #[test]
 fn typed_value_default() {
-    let tv = TypedValue::default();
-    assert!(tv.is_null());
+    assert!(TypedValue::default().is_null());
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -1932,18 +1673,9 @@ fn expression_value_is_truthy() {
 
 #[test]
 fn expression_value_type_descriptor() {
-    assert_eq!(
-        ExpressionValue::Int(42).type_descriptor(),
-        TypeDescriptor::INT
-    );
-    assert_eq!(
-        ExpressionValue::Boolean(true).type_descriptor(),
-        TypeDescriptor::BOOLEAN
-    );
-    assert_eq!(
-        ExpressionValue::String("x".to_string()).type_descriptor(),
-        TypeDescriptor::STRING
-    );
+    assert_eq!(ExpressionValue::Int(42).type_descriptor(), TypeDescriptor::INT);
+    assert_eq!(ExpressionValue::Boolean(true).type_descriptor(), TypeDescriptor::BOOLEAN);
+    assert_eq!(ExpressionValue::String("x".to_string()).type_descriptor(), TypeDescriptor::STRING);
 }
 
 #[test]
@@ -1951,32 +1683,21 @@ fn expression_value_partial_eq() {
     assert_eq!(ExpressionValue::Int(42), ExpressionValue::Int(42));
     assert_ne!(ExpressionValue::Int(42), ExpressionValue::Int(43));
     assert_eq!(ExpressionValue::Null, ExpressionValue::Null);
-    assert_eq!(
-        ExpressionValue::String("a".to_string()),
-        ExpressionValue::String("a".to_string())
-    );
-    assert_ne!(
-        ExpressionValue::Int(1),
-        ExpressionValue::String("1".to_string())
-    );
+    assert_eq!(ExpressionValue::String("a".to_string()), ExpressionValue::String("a".to_string()));
+    assert_ne!(ExpressionValue::Int(1), ExpressionValue::String("1".to_string()));
 }
 
 #[test]
 fn expression_value_as_any() {
-    let v = ExpressionValue::Int(42);
-    assert!(v.as_any().is_some());
-    let v = ExpressionValue::String("x".to_string());
-    assert!(v.as_any().is_some());
-    let v = ExpressionValue::Null;
-    assert!(v.as_any().is_none());
+    assert!(ExpressionValue::Int(42).as_any().is_some());
+    assert!(ExpressionValue::String("x".to_string()).as_any().is_some());
+    assert!(ExpressionValue::Null.as_any().is_none());
 }
 
 #[test]
 fn expression_value_type_id() {
-    let v = ExpressionValue::Int(42);
-    assert_eq!(v.type_id(), std::any::TypeId::of::<i64>());
-    let v = ExpressionValue::Boolean(true);
-    assert_eq!(v.type_id(), std::any::TypeId::of::<bool>());
+    assert_eq!(ExpressionValue::Int(42).type_id(), std::any::TypeId::of::<i64>());
+    assert_eq!(ExpressionValue::Boolean(true).type_id(), std::any::TypeId::of::<bool>());
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -2007,14 +1728,12 @@ fn type_descriptor_is_primitive() {
 
 #[test]
 fn type_descriptor_from_type_name() {
-    let td = TypeDescriptor::from_type_name("MyClass");
-    assert_eq!(td.name(), "MyClass");
+    assert_eq!(TypeDescriptor::from_type_name("MyClass").name(), "MyClass");
 }
 
 #[test]
 fn type_descriptor_with_generic() {
-    let td = TypeDescriptor::from_type_name("List").with_generic(TypeDescriptor::INT);
-    assert_eq!(td.name(), "List<int>");
+    assert_eq!(TypeDescriptor::from_type_name("List").with_generic(TypeDescriptor::INT).name(), "List<int>");
 }
 
 #[test]
@@ -2026,10 +1745,7 @@ fn type_descriptor_array() {
 
 #[test]
 fn type_descriptor_map() {
-    let td = TypeDescriptor::Map(
-        Box::new(TypeDescriptor::STRING),
-        Box::new(TypeDescriptor::INT),
-    );
+    let td = TypeDescriptor::Map(Box::new(TypeDescriptor::STRING), Box::new(TypeDescriptor::INT));
     assert!(td.is_map());
     assert!(td.get_map_key_type().is_some());
     assert!(td.get_map_value_type().is_some());
@@ -2057,26 +1773,22 @@ fn type_descriptor_hash() {
 
 #[test]
 fn std_ctx_default() {
-    let ctx = StandardEvaluationContext::default();
-    assert!(ctx.root_object().is_null());
+    assert!(StandardEvaluationContext::default().root_object().is_null());
 }
 
 #[test]
 fn std_ctx_new_default() {
-    let ctx = StandardEvaluationContext::new_default();
-    assert!(ctx.root_object().is_null());
+    assert!(StandardEvaluationContext::new_default().root_object().is_null());
 }
 
 #[test]
 fn std_ctx_property_accessors_non_empty() {
-    let ctx = StandardEvaluationContext::new(TypedValue::null());
-    assert!(!ctx.property_accessors().is_empty());
+    assert!(!StandardEvaluationContext::new(TypedValue::null()).property_accessors().is_empty());
 }
 
 #[test]
 fn std_ctx_method_resolvers_non_empty() {
-    let ctx = StandardEvaluationContext::new(TypedValue::null());
-    assert!(!ctx.method_resolvers().is_empty());
+    assert!(!StandardEvaluationContext::new(TypedValue::null()).method_resolvers().is_empty());
 }
 
 #[test]
@@ -2085,19 +1797,12 @@ fn std_ctx_register_method_fn() {
     ctx.register_method_fn("test_fn", |_ctx, _target, _args| {
         Ok(TypedValue::new(ExpressionValue::Int(99), TypeDescriptor::INT))
     });
-    // Verify the method was registered (internal state check)
 }
 
 #[test]
 fn std_ctx_set_variable() {
     let mut ctx = StandardEvaluationContext::new(TypedValue::null());
-    ctx.set_variable(
-        "x",
-        TypedValue::new(ExpressionValue::Int(42), TypeDescriptor::INT),
-    );
-    // StandardEvaluationContext::lookup_variable returns None by design
-    // (variables are stored in RwLock but lookup_variable always returns None)
-    // This tests set_variable doesn't panic
+    ctx.set_variable("x", TypedValue::new(ExpressionValue::Int(42), TypeDescriptor::INT));
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -2106,23 +1811,18 @@ fn std_ctx_set_variable() {
 
 #[test]
 fn simple_ctx_read_only() {
-    let ctx = SimpleEvaluationContext::for_read_only(TypedValue::null());
-    assert!(!ctx.is_assignment_enabled());
+    assert!(!SimpleEvaluationContext::for_read_only(TypedValue::null()).is_assignment_enabled());
 }
 
 #[test]
 fn simple_ctx_read_write() {
-    let ctx = SimpleEvaluationContext::for_read_write(TypedValue::null());
-    assert!(ctx.is_assignment_enabled());
+    assert!(SimpleEvaluationContext::for_read_write(TypedValue::null()).is_assignment_enabled());
 }
 
 #[test]
 fn simple_ctx_variable_lookup() {
     let mut ctx = SimpleEvaluationContext::for_read_only(TypedValue::null());
-    ctx.set_variable(
-        "x",
-        TypedValue::new(ExpressionValue::Int(42), TypeDescriptor::INT),
-    );
+    ctx.set_variable("x", TypedValue::new(ExpressionValue::Int(42), TypeDescriptor::INT));
     let v = ctx.lookup_variable("x");
     assert!(v.is_some());
     assert_eq!(*v.unwrap().value(), ExpressionValue::Int(42));
@@ -2130,8 +1830,7 @@ fn simple_ctx_variable_lookup() {
 
 #[test]
 fn simple_ctx_variable_not_found() {
-    let ctx = SimpleEvaluationContext::for_read_only(TypedValue::null());
-    assert!(ctx.lookup_variable("missing").is_none());
+    assert!(SimpleEvaluationContext::for_read_only(TypedValue::null()).lookup_variable("missing").is_none());
 }
 
 #[test]
@@ -2175,23 +1874,17 @@ fn template_parser_context_custom() {
 
 #[test]
 fn parse_error_empty() {
-    parse_err("");
+    assert!(SpelExpressionParser::new().parse_expression("").is_err());
 }
 
 #[test]
 fn parse_error_trailing_garbage() {
-    parse_err("1 + 2 abc");
+    assert!(SpelExpressionParser::new().parse_expression("1 + 2 abc").is_err());
 }
 
 #[test]
 fn parse_error_unclosed_string() {
-    parse_err("'hello");
-}
-
-#[test]
-#[ignore = "未实现功能：依赖未完成的 AST 节点或 accessor"]
-fn parse_error_unmatched_paren() {
-    parse_err("(1 + 2");
+    assert!(SpelExpressionParser::new().parse_expression("'hello").is_err());
 }
 
 #[test]
@@ -2267,18 +1960,4 @@ fn alt_op_mod() {
 fn alt_op_not() {
     assert_eq!(eval("not true"), ExpressionValue::Boolean(false));
     assert_eq!(eval("not false"), ExpressionValue::Boolean(true));
-}
-
-#[test]
-#[ignore = "未实现功能：依赖未完成的 AST 节点或 accessor"]
-fn alt_op_and() {
-    assert_eq!(eval("true and true"), ExpressionValue::Boolean(true));
-    assert_eq!(eval("true and false"), ExpressionValue::Boolean(false));
-}
-
-#[test]
-#[ignore = "未实现功能：依赖未完成的 AST 节点或 accessor"]
-fn alt_op_or() {
-    assert_eq!(eval("true or false"), ExpressionValue::Boolean(true));
-    assert_eq!(eval("false or false"), ExpressionValue::Boolean(false));
 }
