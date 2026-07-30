@@ -1,0 +1,2618 @@
+
+*** crates/vernal-context/src/application_close_coordinator.rs:129:9: replace ApplicationCloseCoordinator::record_observation with ()
+
+*** mutation diff:
+--- crates/vernal-context/src/application_close_coordinator.rs
++++ replace ApplicationCloseCoordinator::record_observation with ()
+@@ -121,26 +121,17 @@
+     /// 追加一条不包含底层错误正文的生命周期观测。
+     pub(crate) async fn record_observation(
+         &self,
+         subject: impl Into<String>,
+         phase: DiagnosticPhase,
+         outcome: DiagnosticOutcome,
+         started: Instant,
+     ) {
+-        let elapsed_microseconds = u64::try_from(started.elapsed().as_micros()).unwrap_or(u64::MAX);
+-        self.diagnostics
+-            .lock()
+-            .await
+-            .record(StartupObservation::new(
+-                subject.into(),
+-                phase,
+-                outcome,
+-                elapsed_microseconds,
+-            ));
++        () /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 停止应用任务监督器，并仅向公开诊断写入稳定错误代码。
+     pub(crate) async fn shutdown_managed_tasks(&self) -> Option<ManagedTaskError> {
+         let supervisor = self.resources.managed_tasks()?;
+         let error = supervisor
+             .shutdown(*self.resources.task_shutdown_policy())
+             .await
+
+
+*** /opt/homebrew/bin/cargo test --no-run --verbose --package=vernal-context@0.0.0-dev
+       Fresh unicode-ident v1.0.24
+       Fresh autocfg v1.5.1
+       Fresh cfg-if v1.0.4
+       Fresh memchr v2.8.3
+       Fresh pin-project-lite v0.2.17
+       Fresh once_cell v1.21.4
+       Fresh smallvec v1.15.2
+       Fresh proc-macro2 v1.0.107
+       Fresh aho-corasick v1.1.4
+       Fresh core-foundation-sys v0.8.7
+       Fresh regex-syntax v0.8.11
+       Fresh scopeguard v1.2.0
+       Fresh quote v1.0.47
+       Fresh libc v0.2.189
+       Fresh crossbeam-utils v0.8.22
+       Fresh regex-automata v0.4.16
+       Fresh lock_api v0.4.14
+       Fresh iana-time-zone v0.1.65
+       Fresh syn v3.0.3
+       Fresh syn v2.0.119
+       Fresh num-traits v0.2.19
+       Fresh errno v0.3.14
+       Fresh parking_lot_core v0.9.12
+       Fresh regex v1.13.1
+       Fresh mio v1.2.2
+       Fresh socket2 v0.6.5
+       Fresh getrandom v0.4.3
+       Fresh linkme-impl v0.3.37
+       Fresh thiserror-impl v2.0.19
+       Fresh chrono v0.4.45
+       Fresh num-integer v0.1.46
+       Fresh futures-macro v0.3.33
+       Fresh signal-hook-registry v1.4.8
+       Fresh tokio-macros v2.7.1
+       Fresh futures-task v0.3.33
+       Fresh slab v0.4.12
+       Fresh linkme v0.3.37
+       Fresh thiserror v2.0.19
+       Fresh bytes v1.12.1
+       Fresh inventory v0.3.24
+       Fresh futures-core v0.3.33
+       Fresh crossbeam-epoch v0.9.20
+       Fresh num-bigint v0.4.8
+       Fresh portable-atomic v1.14.0
+       Fresh uuid v1.24.0
+       Fresh serde_core v1.0.229
+       Fresh parking_lot v0.12.5
+       Fresh vernal-core v0.0.0-dev (/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/crates/vernal-core)
+warning: missing documentation for an associated function
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:16:5
+   |
+16 |     pub fn new(target: HashMap<K, Vec<V>>) -> Self { Self { target } }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: requested on the command line with `-W missing-docs`
+
+warning: missing documentation for a method
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:18:5
+   |
+18 |     pub fn len(&self) -> usize { self.target.len() }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:20:5
+   |
+20 |     pub fn is_empty(&self) -> bool { self.target.is_empty() }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:22:5
+   |
+22 |     pub fn to_single_value_map(&self) -> HashMap<K, V> where K: Clone, V: Clone {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:26:5
+   |
+26 |     pub fn as_inner(&self) -> &HashMap<K, Vec<V>> { &self.target }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:27:5
+   |
+27 |     pub fn as_inner_mut(&mut self) -> &mut HashMap<K, Vec<V>> { &mut self.target }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:29:5
+   |
+29 |     pub fn into_inner(self) -> HashMap<K, Vec<V>> { self.target }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:55:5
+   |
+55 |     pub fn new(delegate: &'a M) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:59:5
+   |
+59 |     pub fn get(&self, key: &K) -> Option<&V> { self.delegate.get_first(key) }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:61:5
+   |
+61 |     pub fn len(&self) -> usize { self.delegate.len() }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:63:5
+   |
+63 |     pub fn is_empty(&self) -> bool { self.delegate.is_empty() }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:65:5
+   |
+65 |     pub fn contains_key(&self, key: &K) -> bool { self.delegate.contains_key(key) }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:75:5
+   |
+75 |     pub fn new(target: HashMap<K, V>) -> Self { Self { target } }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:77:5
+   |
+77 |     pub fn len(&self) -> usize { self.target.len() }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:79:5
+   |
+79 |     pub fn is_empty(&self) -> bool { self.target.is_empty() }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:81:5
+   |
+81 |     pub fn into_single_value_map(self) -> HashMap<K, V> { self.target }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> crates/vernal-core/src/util/multi_value_map_adapters.rs:101:5
+    |
+101 |     pub fn into_map(self) -> HashMap<K, Vec<V>> { self.map }
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+       Fresh futures-util v0.3.33
+       Fresh tokio v1.53.1
+       Fresh tracing-attributes v0.1.31
+       Fresh libm v0.2.16
+       Fresh crossbeam-channel v0.5.16
+       Fresh tracing-core v0.1.36
+       Fresh hashbrown v0.14.5
+       Fresh futures-sink v0.3.33
+       Fresh tagptr v0.2.0
+       Fresh equivalent v1.0.2
+warning: `vernal-core` (lib) generated 17 warnings
+       Fresh moka v0.12.15
+       Fresh bigdecimal v0.4.10
+       Fresh tokio-util v0.7.19
+       Fresh tracing v0.1.44
+       Fresh dashmap v6.2.1
+       Fresh zmij v1.0.23
+       Fresh serde_derive v1.0.229
+       Fresh itoa v1.0.18
+       Fresh serde_json v1.0.151
+       Fresh serde v1.0.229
+       Fresh vernal-expression v0.0.0-dev (/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/crates/vernal-expression)
+warning: unused import: `crate::method_resolver::MethodResolver`
+ --> crates/vernal-expression/src/method_filter.rs:6:5
+  |
+6 | use crate::method_resolver::MethodResolver;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `PrimitiveKind`
+  --> crates/vernal-expression/src/typed_value.rs:15:34
+   |
+15 | pub use crate::type_descriptor::{PrimitiveKind, TypeDescriptor};
+   |                                  ^^^^^^^^^^^^^
+
+warning: unused import: `crate::evaluation_context::EvaluationContext`
+ --> crates/vernal-expression/src/spel/ast/literal.rs:6:5
+  |
+6 | use crate::evaluation_context::EvaluationContext;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::evaluation_exception::EvaluationException`
+ --> crates/vernal-expression/src/spel/ast/literal.rs:7:5
+  |
+7 | use crate::evaluation_exception::EvaluationException;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::evaluation_context::EvaluationContext`
+ --> crates/vernal-expression/src/spel/ast/operator.rs:6:5
+  |
+6 | use crate::evaluation_context::EvaluationContext;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `ExpressionValue`
+ --> crates/vernal-expression/src/spel/ast/operator.rs:8:26
+  |
+8 | use crate::typed_value::{ExpressionValue, TypedValue};
+  |                          ^^^^^^^^^^^^^^^
+
+warning: unused import: `super::spel_node::SpelNode`
+ --> crates/vernal-expression/src/spel/ast/spel_node_impl.rs:5:5
+  |
+5 | use super::spel_node::SpelNode;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::evaluation_context::EvaluationContext`
+ --> crates/vernal-expression/src/spel/ast/spel_node_impl.rs:6:5
+  |
+6 | use crate::evaluation_context::EvaluationContext;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::evaluation_exception::EvaluationException`
+ --> crates/vernal-expression/src/spel/ast/spel_node_impl.rs:7:5
+  |
+7 | use crate::evaluation_exception::EvaluationException;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::typed_value::TypedValue`
+ --> crates/vernal-expression/src/spel/ast/spel_node_impl.rs:8:5
+  |
+8 | use crate::typed_value::TypedValue;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `ExpressionValue` and `TypeDescriptor`
+ --> crates/vernal-expression/src/spel/ast/null_literal.rs:9:26
+  |
+9 | use crate::typed_value::{ExpressionValue, TypeDescriptor, TypedValue};
+  |                          ^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^
+
+warning: unused import: `TypeDescriptor`
+ --> crates/vernal-expression/src/spel/ast/op_dec.rs:8:43
+  |
+8 | use crate::typed_value::{ExpressionValue, TypeDescriptor, TypedValue};
+  |                                           ^^^^^^^^^^^^^^
+
+warning: unused import: `TypeDescriptor`
+ --> crates/vernal-expression/src/spel/ast/op_inc.rs:8:43
+  |
+8 | use crate::typed_value::{ExpressionValue, TypeDescriptor, TypedValue};
+  |                                           ^^^^^^^^^^^^^^
+
+warning: unused import: `crate::spel::spel_message::SpelMessage`
+  --> crates/vernal-expression/src/spel/ast/operator_instanceof.rs:15:5
+   |
+15 | use crate::spel::spel_message::SpelMessage;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+ --> crates/vernal-expression/src/spel/support/map_accessor.rs:9:5
+  |
+9 | use std::collections::HashMap;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `ArcReflectiveMethodExecutor`
+  --> crates/vernal-expression/src/spel/support/standard_evaluation_context.rs:20:5
+   |
+20 |     ArcReflectiveMethodExecutor, ReflectiveMethodResolver,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::evaluation_exception::EvaluationException`
+ --> crates/vernal-expression/src/spel/expression_state.rs:6:5
+  |
+6 | use crate::evaluation_exception::EvaluationException;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `super::ast::identifier::Identifier`
+  --> crates/vernal-expression/src/spel/internal_spel_expression_parser.rs:35:5
+   |
+35 | use super::ast::identifier::Identifier;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `super::ast::inline_map::InlineMap`
+  --> crates/vernal-expression/src/spel/internal_spel_expression_parser.rs:38:5
+   |
+38 | use super::ast::inline_map::InlineMap;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused variable: `null_safe`
+   --> crates/vernal-expression/src/spel/internal_spel_expression_parser.rs:715:37
+    |
+715 |     fn maybe_eat_indexer(&mut self, null_safe: bool) -> Option<Box<dyn SpelNode>> {
+    |                                     ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_null_safe`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+   --> crates/vernal-expression/src/spel/internal_spel_expression_parser.rs:761:29
+    |
+761 |                         let mut t = self.next_token().unwrap();
+    |                             ----^
+    |                             |
+    |                             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+   --> crates/vernal-expression/src/spel/internal_spel_expression_parser.rs:765:29
+    |
+765 |                         let mut t = self.next_token().unwrap();
+    |                             ----^
+    |                             |
+    |                             help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> crates/vernal-expression/src/spel/internal_spel_expression_parser.rs:769:29
+    |
+769 |                         let mut t = self.next_token().unwrap();
+    |                             ----^
+    |                             |
+    |                             help: remove this `mut`
+
+warning: type alias `MethodFilterRegistry` is never used
+  --> crates/vernal-expression/src/method_filter.rs:18:10
+   |
+18 | pub type MethodFilterRegistry = std::collections::HashMap<std::any::TypeId, Vec<Box<dyn MethodFilter>>>;
+   |          ^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `null_safe` is never read
+  --> crates/vernal-expression/src/spel/ast/method_reference.rs:17:5
+   |
+14 | pub struct MethodReference {
+   |            --------------- field in this struct
+...
+17 |     null_safe: bool,
+   |     ^^^^^^^^^
+
+warning: field `null_safe` is never read
+  --> crates/vernal-expression/src/spel/ast/property_or_field_reference.rs:16:5
+   |
+14 | pub struct PropertyOrFieldReference {
+   |            ------------------------ field in this struct
+15 |     name: String,
+16 |     null_safe: bool,
+   |     ^^^^^^^^^
+
+warning: fields `auto_grow_collections` and `maximum_auto_grow_size` are never read
+  --> crates/vernal-expression/src/spel/spel_parser_configuration.rs:17:5
+   |
+ 9 | pub struct SpelParserConfiguration {
+   |            ----------------------- fields in this struct
+...
+17 |     auto_grow_collections: bool,
+   |     ^^^^^^^^^^^^^^^^^^^^^
+18 |     /// 最大自动增长大小
+19 |     maximum_auto_grow_size: usize,
+   |     ^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `SpelParserConfiguration` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: missing documentation for a trait
+ --> crates/vernal-expression/src/method_executor.rs:7:1
+  |
+7 | pub trait MethodExecutor: Send + Sync {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: requested on the command line with `-W missing-docs`
+
+warning: missing documentation for a method
+ --> crates/vernal-expression/src/method_executor.rs:8:5
+  |
+8 |     fn execute(&self, context: &dyn EvaluationContext, target: &TypedValue, arguments: &[TypedValue]) -> Result<TypedValue, AccessException>;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/boolean_literal.rs:19:5
+   |
+19 |     pub fn new(value: bool) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/float_literal.rs:20:5
+   |
+20 |     pub fn new(value: f64, original: String) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/long_literal.rs:22:5
+   |
+22 |     pub fn new(value: i64, original: String) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/null_literal.rs:17:5
+   |
+17 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/real_literal.rs:20:5
+   |
+20 |     pub fn new(value: f64, original: String) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/string_literal.rs:19:5
+   |
+19 |     pub fn new(value: String) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_divide.rs:20:5
+   |
+20 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_minus.rs:20:5
+   |
+20 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_modulus.rs:20:5
+   |
+20 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_multiply.rs:20:5
+   |
+20 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_plus.rs:25:5
+   |
+25 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/operator_power.rs:20:5
+   |
+20 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_eq.rs:20:5
+   |
+20 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_ge.rs:20:5
+   |
+20 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_gt.rs:20:5
+   |
+20 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_le.rs:20:5
+   |
+20 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_lt.rs:20:5
+   |
+20 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_ne.rs:20:5
+   |
+20 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_and.rs:19:5
+   |
+19 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_or.rs:19:5
+   |
+19 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/operator_not.rs:18:5
+   |
+18 |     pub fn new(operand: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_dec.rs:20:5
+   |
+20 |     pub fn new(operand: Box<dyn SpelNode>, prefix: bool) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_inc.rs:21:5
+   |
+21 |     pub fn new(operand: Box<dyn SpelNode>, prefix: bool) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/operator_between.rs:21:5
+   |
+21 |     pub fn new(value: Box<dyn SpelNode>, low: Box<dyn SpelNode>, high: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/bean_reference.rs:17:5
+   |
+17 |     pub fn new(name: String) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/constructor_reference.rs:18:5
+   |
+18 |     pub fn new(type_name: String, arguments: Vec<Box<dyn SpelNode>>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/elvis.rs:20:5
+   |
+20 |     pub fn new(expression: Box<dyn SpelNode>, default: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/function_reference.rs:18:5
+   |
+18 |     pub fn new(name: String, arguments: Vec<Box<dyn SpelNode>>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/identifier.rs:17:5
+   |
+17 |     pub fn new(name: String) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-expression/src/spel/ast/identifier.rs:22:5
+   |
+22 |     pub fn name(&self) -> &str {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/indexer.rs:17:5
+   |
+17 |     pub fn new(index: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/inline_list.rs:17:5
+   |
+17 |     pub fn new(elements: Vec<Box<dyn SpelNode>>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/inline_map.rs:18:5
+   |
+18 |     pub fn new(keys: Vec<Box<dyn SpelNode>>, values: Vec<Box<dyn SpelNode>>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/method_reference.rs:22:5
+   |
+22 |     pub fn new(name: String, arguments: Vec<Box<dyn SpelNode>>, null_safe: bool) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/property_or_field_reference.rs:21:5
+   |
+21 |     pub fn new(name: String, null_safe: bool) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-expression/src/spel/ast/property_or_field_reference.rs:26:5
+   |
+26 |     pub fn name(&self) -> &str {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/qualified_identifier.rs:17:5
+   |
+17 |     pub fn new(name: String) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/ternary.rs:19:5
+   |
+19 | /     pub fn new(
+20 | |         condition: Box<dyn SpelNode>,
+21 | |         true_value: Box<dyn SpelNode>,
+22 | |         false_value: Box<dyn SpelNode>,
+23 | |     ) -> Self {
+   | |_____________^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/type_reference.rs:17:5
+   |
+17 |     pub fn new(type_name: String) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/variable_reference.rs:19:5
+   |
+19 |     pub fn new(name: String) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+       Fresh vernal-aop v0.0.0-dev (/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/crates/vernal-aop)
+warning: unused import: `ModulePattern`
+  --> crates/vernal-aop/src/pointcut/dsl/matcher.rs:10:40
+   |
+10 | use super::pattern::{ExecutionPattern, ModulePattern};
+   |                                        ^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: `vernal-expression` (lib) generated 69 warnings (run `cargo fix --lib -p vernal-expression` to apply 23 suggestions)
+warning: `vernal-aop` (lib) generated 1 warning (run `cargo fix --lib -p vernal-aop` to apply 1 suggestion)
+       Fresh vernal-beans v0.0.0-dev (/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/crates/vernal-beans)
+warning: unused import: `std::any::TypeId`
+  --> crates/vernal-beans/src/component_metadata.rs:25:5
+   |
+25 | use std::any::TypeId;
+   |     ^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `std::sync::Arc`
+ --> crates/vernal-beans/src/configuration_class_post_processor.rs:7:5
+  |
+7 | use std::sync::Arc;
+  |     ^^^^^^^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+  --> crates/vernal-beans/src/conversion_service.rs:11:5
+   |
+11 | use std::collections::HashMap;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+  --> crates/vernal-beans/src/field_metadata.rs:28:5
+   |
+28 | use std::collections::HashMap;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Arc`
+  --> crates/vernal-beans/src/field_metadata.rs:29:17
+   |
+29 | use std::sync::{Arc, Mutex};
+   |                 ^^^
+
+warning: unused import: `std::sync::Arc`
+ --> crates/vernal-beans/src/placeholder_configurer.rs:8:5
+  |
+8 | use std::sync::Arc;
+  |     ^^^^^^^^^^^^^^
+
+warning: unused import: `EvaluationContext`
+  --> crates/vernal-beans/src/standard_bean_expression_resolver.rs:12:55
+   |
+12 | use vernal_expression::{Expression, ExpressionParser, EvaluationContext};
+   |                                                       ^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::property_editor::PropertyEditor`
+  --> crates/vernal-beans/src/conversion_service.rs:14:5
+   |
+14 | use crate::property_editor::PropertyEditor;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Expression`
+  --> crates/vernal-beans/src/standard_bean_expression_resolver.rs:12:25
+   |
+12 | use vernal_expression::{Expression, ExpressionParser, EvaluationContext};
+   |                         ^^^^^^^^^^
+
+warning: unused import: `crate::bean_factory::BeanFactory`
+  --> crates/vernal-beans/src/bean_factory_utils.rs:11:5
+   |
+11 | use crate::bean_factory::BeanFactory;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused variable: `other`
+   --> crates/vernal-beans/src/standard_bean_expression_resolver.rs:141:29
+    |
+141 | ...                   other => {
+    |                       ^^^^^ help: if this is intentional, prefix it with an underscore: `_other`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `property_name`
+   --> crates/vernal-beans/src/type_converter_delegate.rs:106:9
+    |
+106 |         property_name: Option<&str>,
+    |         ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_property_name`
+
+warning: unused variable: `definition`
+   --> crates/vernal-beans/src/registry_builder.rs:291:9
+    |
+291 |         definition: Box<dyn crate::bean_definition::BeanDefinition>,
+    |         ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_definition`
+
+warning: unused variable: `bean_name`
+   --> crates/vernal-beans/src/registry_builder.rs:340:9
+    |
+340 |         bean_name: &str,
+    |         ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_bean_name`
+
+warning: fields `bean_name` and `source` are never read
+    --> crates/vernal-beans/src/container.rs:1235:16
+     |
+1234 | pub(crate) struct ProxyBeanDefinition {
+     |                   ------------------- fields in this struct
+1235 |     pub(crate) bean_name: String,
+     |                ^^^^^^^^^
+...
+1238 |     pub(crate) source: String,
+     |                ^^^^^^
+     |
+     = note: `ProxyBeanDefinition` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+     = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `bean_name` is never read
+    --> crates/vernal-beans/src/container.rs:1265:5
+     |
+1264 | struct DeletedBeanDefinition {
+     |        --------------------- field in this struct
+1265 |     bean_name: String,
+     |     ^^^^^^^^^
+     |
+     = note: `DeletedBeanDefinition` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: field `bean_name` is never read
+    --> crates/vernal-beans/src/container.rs:1292:5
+     |
+1291 | struct RemovedBeanDefinition {
+     |        --------------------- field in this struct
+1292 |     bean_name: String,
+     |     ^^^^^^^^^
+     |
+     = note: `RemovedBeanDefinition` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: struct `ProxyBeanDefinition` is never constructed
+   --> crates/vernal-beans/src/registry_builder.rs:368:8
+    |
+368 | struct ProxyBeanDefinition {
+    |        ^^^^^^^^^^^^^^^^^^^
+
+warning: field `bean_name` is never read
+   --> crates/vernal-beans/src/registry_builder.rs:400:5
+    |
+399 | struct RemovedBeanDefinition {
+    |        --------------------- field in this struct
+400 |     bean_name: String,
+    |     ^^^^^^^^^
+    |
+    = note: `RemovedBeanDefinition` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/byte_array_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: requested on the command line with `-W missing-docs`
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/byte_array_property_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/char_array_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/char_array_property_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/char_property_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/charset_editor.rs:17:5
+   |
+17 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/charset_property_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/class_array_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/class_editor.rs:17:5
+   |
+17 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/currency_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/file_array_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/file_editor.rs:17:5
+   |
+17 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/input_source_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/input_stream_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/locale_editor.rs:17:5
+   |
+17 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/path_editor.rs:17:5
+   |
+17 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/path_property_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/pattern_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/properties_editor.rs:17:5
+   |
+17 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/reader_editor.rs:17:5
+   |
+17 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/resource_bundle_editor.rs:17:5
+   |
+17 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/string_array_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/timezone_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/zone_id_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: `vernal-beans` (lib) generated 43 warnings (run `cargo fix --lib -p vernal-beans` to apply 11 suggestions)
+       Dirty vernal-context v0.0.0-dev (/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/crates/vernal-context): couldn't read metadata for file `target/debug/deps/libvernal_context-3d0e0a67de859753.rlib`
+   Compiling vernal-context v0.0.0-dev (/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/crates/vernal-context)
+     Running `rustc --crate-name vernal_context --edition=2024 crates/vernal-context/src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type lib --emit=dep-info,metadata,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked '--warn=clippy::pedantic' '--warn=clippy::all' --forbid=unsafe_code '--allow=clippy::module_name_repetitions' '--allow=clippy::missing_panics_doc' '--allow=clippy::missing_errors_doc' --warn=missing_docs --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=2cf25976a5f49237 -C extra-filename=-3d0e0a67de859753 --out-dir /private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps -C incremental=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/incremental -L dependency=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps --extern serde=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde-a8469b41c943557e.rmeta --extern tokio=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio-8941ce8df0c80b3f.rmeta --extern tokio_util=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio_util-4bcaaed7a8face4f.rmeta --extern vernal_aop=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_aop-c7fc2a809f623b15.rmeta --extern vernal_beans=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_beans-7e56e1599e6efb8e.rmeta --extern vernal_core=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_core-5fcb76ab5bc81f82.rmeta --extern vernal_expression=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_expression-96ffc72cb4ec74ac.rmeta`
+     Running `rustc --crate-name vernal_context --edition=2024 crates/vernal-context/src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked '--warn=clippy::pedantic' '--warn=clippy::all' --forbid=unsafe_code '--allow=clippy::module_name_repetitions' '--allow=clippy::missing_panics_doc' '--allow=clippy::missing_errors_doc' --warn=missing_docs --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=5135d37c9ebb13ab -C extra-filename=-d1f9ad0e6de377a6 --out-dir /private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps -C incremental=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/incremental -L dependency=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps --extern serde=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde-a8469b41c943557e.rlib --extern serde_json=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde_json-da9e4ac63f48fdd5.rlib --extern tokio=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio-8941ce8df0c80b3f.rlib --extern tokio_util=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio_util-4bcaaed7a8face4f.rlib --extern vernal_aop=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_aop-c7fc2a809f623b15.rlib --extern vernal_beans=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_beans-7e56e1599e6efb8e.rlib --extern vernal_core=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_core-5fcb76ab5bc81f82.rlib --extern vernal_expression=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_expression-96ffc72cb4ec74ac.rlib`
+warning: unused import: `StartupObservation`
+  --> crates/vernal-context/src/application_close_coordinator.rs:19:23
+   |
+19 |     ManagedTaskError, StartupObservation, StartupReport, context_resources::ContextResources,
+   |                       ^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `vernal_core::BoxError`
+  --> crates/vernal-context/src/async_task.rs:43:5
+   |
+43 | use vernal_core::BoxError;
+   |     ^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Read`
+ --> crates/vernal-context/src/resource/resource.rs:5:21
+  |
+5 | use std::io::{self, Read};
+  |                     ^^^^
+
+warning: unused import: `std::path::PathBuf`
+ --> crates/vernal-context/src/resource/resource.rs:6:5
+  |
+6 | use std::path::PathBuf;
+  |     ^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `EvaluationContext`
+  --> crates/vernal-context/src/expression_condition.rs:11:43
+   |
+11 | use vernal_expression::{ExpressionParser, EvaluationContext};
+   |                                           ^^^^^^^^^^^^^^^^^
+
+warning: unused variable: `subject`
+   --> crates/vernal-context/src/application_close_coordinator.rs:124:9
+    |
+124 |         subject: impl Into<String>,
+    |         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_subject`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `phase`
+   --> crates/vernal-context/src/application_close_coordinator.rs:125:9
+    |
+125 |         phase: DiagnosticPhase,
+    |         ^^^^^ help: if this is intentional, prefix it with an underscore: `_phase`
+
+warning: unused variable: `outcome`
+   --> crates/vernal-context/src/application_close_coordinator.rs:126:9
+    |
+126 |         outcome: DiagnosticOutcome,
+    |         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_outcome`
+
+warning: unused variable: `started`
+   --> crates/vernal-context/src/application_close_coordinator.rs:127:9
+    |
+127 |         started: Instant,
+    |         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_started`
+
+warning: type `ManagedAdvisor` is more private than the item `AdvisorRegistration::Component::0`
+  --> crates/vernal-context/src/advisor_registration.rs:15:15
+   |
+15 |     Component(ManagedAdvisor),
+   |               ^^^^^^^^^^^^^^ field `AdvisorRegistration::Component::0` is reachable at visibility `pub`
+   |
+note: but type `ManagedAdvisor` is only usable at visibility `pub(crate)`
+  --> crates/vernal-context/src/managed_advisor.rs:17:1
+   |
+17 | pub(crate) struct ManagedAdvisor {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: `#[warn(private_interfaces)]` on by default
+
+warning: type `ManagedLocalAdvisor` is more private than the item `LocalAdvisorRegistration::Component::0`
+  --> crates/vernal-context/src/local_advisor_registration.rs:14:15
+   |
+14 |     Component(ManagedLocalAdvisor),
+   |               ^^^^^^^^^^^^^^^^^^^ field `LocalAdvisorRegistration::Component::0` is reachable at visibility `pub`
+   |
+note: but type `ManagedLocalAdvisor` is only usable at visibility `pub(crate)`
+  --> crates/vernal-context/src/managed_local_advisor.rs:16:1
+   |
+16 | pub(crate) struct ManagedLocalAdvisor {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: field `bean_expression_resolver` is never read
+   --> crates/vernal-context/src/value_binding.rs:104:5
+    |
+102 | pub struct ValueExpressionResolver {
+    |            ----------------------- field in this struct
+103 |     /// Bean 表达式解析器引用。
+104 |     bean_expression_resolver: Arc<dyn value_expression_resolver_trait::BeanExpressionResolverBridge>,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: associated function `new` is never used
+  --> crates/vernal-context/src/startup_observation.rs:22:19
+   |
+20 | impl StartupObservation {
+   | ----------------------- associated function in this implementation
+21 |     /// 创建一条完成后的启动观察记录。
+22 |     pub(crate) fn new(
+   |                   ^^^
+
+warning: missing documentation for a struct field
+  --> crates/vernal-context/src/application_module_parts.rs:20:5
+   |
+20 |     pub definitions: Vec<ComponentDefinition>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: requested on the command line with `-W missing-docs`
+
+warning: missing documentation for a struct field
+  --> crates/vernal-context/src/application_module_parts.rs:21:5
+   |
+21 |     pub bindings: Vec<TraitBinding>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> crates/vernal-context/src/application_module_parts.rs:22:5
+   |
+22 |     pub lifecycle_registrars: Vec<Box<LifecycleRegistrar>>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> crates/vernal-context/src/application_module_parts.rs:23:5
+   |
+23 |     pub event_listener_registrars: Vec<Box<EventListenerRegistrar>>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> crates/vernal-context/src/application_module_parts.rs:24:5
+   |
+24 |     pub application_runner_registrars: Vec<Box<ApplicationRunnerRegistrar>>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> crates/vernal-context/src/application_module_parts.rs:25:5
+   |
+25 |     pub scheduled_task_registrars: Vec<Box<ScheduledTaskRegistrar>>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> crates/vernal-context/src/application_module_parts.rs:26:5
+   |
+26 |     pub advisor_registrations: Vec<AdvisorRegistration>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> crates/vernal-context/src/application_module_parts.rs:27:5
+   |
+27 |     pub local_advisor_registrations: Vec<LocalAdvisorRegistration>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> crates/vernal-context/src/application_module_parts.rs:28:5
+   |
+28 |     pub operations: Vec<Operation>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> crates/vernal-context/src/application_module_parts.rs:29:5
+   |
+29 |     pub environment_contributions: Vec<ModuleEnvironmentContribution>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> crates/vernal-context/src/application_module_parts.rs:30:5
+   |
+30 |     pub conditional_modules: Vec<ConditionalComponentModule>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> crates/vernal-context/src/conditional_component_module_parts.rs:15:5
+   |
+15 |     pub definitions: Vec<ComponentDefinition>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> crates/vernal-context/src/conditional_component_module_parts.rs:16:5
+   |
+16 |     pub bindings: Vec<TraitBinding>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> crates/vernal-context/src/conditional_component_module_parts.rs:17:5
+   |
+17 |     pub lifecycle_registrars: Vec<Box<LifecycleRegistrar>>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> crates/vernal-context/src/conditional_component_module_parts.rs:18:5
+   |
+18 |     pub event_listener_registrars: Vec<Box<EventListenerRegistrar>>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> crates/vernal-context/src/conditional_component_module_parts.rs:19:5
+   |
+19 |     pub application_runner_registrars: Vec<Box<ApplicationRunnerRegistrar>>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> crates/vernal-context/src/conditional_component_module_parts.rs:20:5
+   |
+20 |     pub scheduled_task_registrars: Vec<Box<ScheduledTaskRegistrar>>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> crates/vernal-context/src/value_binding.rs:114:9
+    |
+114 | /         fn evaluate(
+115 | |             &self,
+116 | |             expression: &str,
+117 | |             bean_name: Option<&str>,
+118 | |         ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>>;
+    | |__________________________________________________________________________________________________^
+
+warning: `vernal-context` (lib test) generated 31 warnings (run `cargo fix --lib -p vernal-context --tests` to apply 9 suggestions)
+warning: `vernal-context` (lib) generated 31 warnings (31 duplicates)
+     Running `rustc --crate-name application_event_tests --edition=2024 crates/vernal-context/tests/application_event_tests.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked '--warn=clippy::pedantic' '--warn=clippy::all' --forbid=unsafe_code '--allow=clippy::module_name_repetitions' '--allow=clippy::missing_panics_doc' '--allow=clippy::missing_errors_doc' --warn=missing_docs --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=5298962665ebc574 -C extra-filename=-4670dfcd19b3b343 --out-dir /private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps -C incremental=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/incremental -L dependency=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps --extern serde=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde-a8469b41c943557e.rlib --extern serde_json=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde_json-da9e4ac63f48fdd5.rlib --extern tokio=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio-8941ce8df0c80b3f.rlib --extern tokio_util=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio_util-4bcaaed7a8face4f.rlib --extern vernal_aop=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_aop-c7fc2a809f623b15.rlib --extern vernal_beans=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_beans-7e56e1599e6efb8e.rlib --extern vernal_context=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_context-3d0e0a67de859753.rlib --extern vernal_core=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_core-5fcb76ab5bc81f82.rlib --extern vernal_expression=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_expression-96ffc72cb4ec74ac.rlib`
+     Running `rustc --crate-name startup_diagnostics --edition=2024 crates/vernal-context/tests/startup_diagnostics.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked '--warn=clippy::pedantic' '--warn=clippy::all' --forbid=unsafe_code '--allow=clippy::module_name_repetitions' '--allow=clippy::missing_panics_doc' '--allow=clippy::missing_errors_doc' --warn=missing_docs --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=957e7e747cb84e38 -C extra-filename=-b7e832a93e8070db --out-dir /private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps -C incremental=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/incremental -L dependency=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps --extern serde=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde-a8469b41c943557e.rlib --extern serde_json=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde_json-da9e4ac63f48fdd5.rlib --extern tokio=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio-8941ce8df0c80b3f.rlib --extern tokio_util=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio_util-4bcaaed7a8face4f.rlib --extern vernal_aop=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_aop-c7fc2a809f623b15.rlib --extern vernal_beans=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_beans-7e56e1599e6efb8e.rlib --extern vernal_context=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_context-3d0e0a67de859753.rlib --extern vernal_core=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_core-5fcb76ab5bc81f82.rlib --extern vernal_expression=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_expression-96ffc72cb4ec74ac.rlib`
+     Running `rustc --crate-name value_object_coverage --edition=2024 crates/vernal-context/tests/value_object_coverage.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked '--warn=clippy::pedantic' '--warn=clippy::all' --forbid=unsafe_code '--allow=clippy::module_name_repetitions' '--allow=clippy::missing_panics_doc' '--allow=clippy::missing_errors_doc' --warn=missing_docs --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=5c6ebf5894332149 -C extra-filename=-d68a517606280c48 --out-dir /private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps -C incremental=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/incremental -L dependency=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps --extern serde=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde-a8469b41c943557e.rlib --extern serde_json=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde_json-da9e4ac63f48fdd5.rlib --extern tokio=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio-8941ce8df0c80b3f.rlib --extern tokio_util=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio_util-4bcaaed7a8face4f.rlib --extern vernal_aop=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_aop-c7fc2a809f623b15.rlib --extern vernal_beans=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_beans-7e56e1599e6efb8e.rlib --extern vernal_context=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_context-3d0e0a67de859753.rlib --extern vernal_core=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_core-5fcb76ab5bc81f82.rlib --extern vernal_expression=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_expression-96ffc72cb4ec74ac.rlib`
+     Running `rustc --crate-name generic_application_context_tests --edition=2024 crates/vernal-context/tests/generic_application_context_tests.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked '--warn=clippy::pedantic' '--warn=clippy::all' --forbid=unsafe_code '--allow=clippy::module_name_repetitions' '--allow=clippy::missing_panics_doc' '--allow=clippy::missing_errors_doc' --warn=missing_docs --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=c4bbe5994577b709 -C extra-filename=-1d928b1d43261630 --out-dir /private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps -C incremental=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/incremental -L dependency=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps --extern serde=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde-a8469b41c943557e.rlib --extern serde_json=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde_json-da9e4ac63f48fdd5.rlib --extern tokio=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio-8941ce8df0c80b3f.rlib --extern tokio_util=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio_util-4bcaaed7a8face4f.rlib --extern vernal_aop=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_aop-c7fc2a809f623b15.rlib --extern vernal_beans=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_beans-7e56e1599e6efb8e.rlib --extern vernal_context=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_context-3d0e0a67de859753.rlib --extern vernal_core=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_core-5fcb76ab5bc81f82.rlib --extern vernal_expression=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_expression-96ffc72cb4ec74ac.rlib`
+     Running `rustc --crate-name conditional_components --edition=2024 crates/vernal-context/tests/conditional_components.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked '--warn=clippy::pedantic' '--warn=clippy::all' --forbid=unsafe_code '--allow=clippy::module_name_repetitions' '--allow=clippy::missing_panics_doc' '--allow=clippy::missing_errors_doc' --warn=missing_docs --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=13497bf53db8b344 -C extra-filename=-c861ec4c27905e0c --out-dir /private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps -C incremental=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/incremental -L dependency=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps --extern serde=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde-a8469b41c943557e.rlib --extern serde_json=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde_json-da9e4ac63f48fdd5.rlib --extern tokio=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio-8941ce8df0c80b3f.rlib --extern tokio_util=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio_util-4bcaaed7a8face4f.rlib --extern vernal_aop=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_aop-c7fc2a809f623b15.rlib --extern vernal_beans=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_beans-7e56e1599e6efb8e.rlib --extern vernal_context=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_context-3d0e0a67de859753.rlib --extern vernal_core=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_core-5fcb76ab5bc81f82.rlib --extern vernal_expression=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_expression-96ffc72cb4ec74ac.rlib`
+     Running `rustc --crate-name scheduled_tasks --edition=2024 crates/vernal-context/tests/scheduled_tasks.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked '--warn=clippy::pedantic' '--warn=clippy::all' --forbid=unsafe_code '--allow=clippy::module_name_repetitions' '--allow=clippy::missing_panics_doc' '--allow=clippy::missing_errors_doc' --warn=missing_docs --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=d2a494ec523e51d6 -C extra-filename=-ebb02cb5f241ac0b --out-dir /private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps -C incremental=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/incremental -L dependency=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps --extern serde=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde-a8469b41c943557e.rlib --extern serde_json=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde_json-da9e4ac63f48fdd5.rlib --extern tokio=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio-8941ce8df0c80b3f.rlib --extern tokio_util=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio_util-4bcaaed7a8face4f.rlib --extern vernal_aop=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_aop-c7fc2a809f623b15.rlib --extern vernal_beans=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_beans-7e56e1599e6efb8e.rlib --extern vernal_context=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_context-3d0e0a67de859753.rlib --extern vernal_core=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_core-5fcb76ab5bc81f82.rlib --extern vernal_expression=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_expression-96ffc72cb4ec74ac.rlib`
+     Running `rustc --crate-name ioc_managed_aop --edition=2024 crates/vernal-context/tests/ioc_managed_aop.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked '--warn=clippy::pedantic' '--warn=clippy::all' --forbid=unsafe_code '--allow=clippy::module_name_repetitions' '--allow=clippy::missing_panics_doc' '--allow=clippy::missing_errors_doc' --warn=missing_docs --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=8b3132eba7fb0e71 -C extra-filename=-14476f8520591226 --out-dir /private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps -C incremental=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/incremental -L dependency=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps --extern serde=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde-a8469b41c943557e.rlib --extern serde_json=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde_json-da9e4ac63f48fdd5.rlib --extern tokio=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio-8941ce8df0c80b3f.rlib --extern tokio_util=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio_util-4bcaaed7a8face4f.rlib --extern vernal_aop=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_aop-c7fc2a809f623b15.rlib --extern vernal_beans=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_beans-7e56e1599e6efb8e.rlib --extern vernal_context=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_context-3d0e0a67de859753.rlib --extern vernal_core=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_core-5fcb76ab5bc81f82.rlib --extern vernal_expression=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_expression-96ffc72cb4ec74ac.rlib`
+     Running `rustc --crate-name error_display_coverage --edition=2024 crates/vernal-context/tests/error_display_coverage.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked '--warn=clippy::pedantic' '--warn=clippy::all' --forbid=unsafe_code '--allow=clippy::module_name_repetitions' '--allow=clippy::missing_panics_doc' '--allow=clippy::missing_errors_doc' --warn=missing_docs --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=e7fdef9bf85190da -C extra-filename=-71f188dfd17d54c2 --out-dir /private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps -C incremental=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/incremental -L dependency=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps --extern serde=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde-a8469b41c943557e.rlib --extern serde_json=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde_json-da9e4ac63f48fdd5.rlib --extern tokio=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio-8941ce8df0c80b3f.rlib --extern tokio_util=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio_util-4bcaaed7a8face4f.rlib --extern vernal_aop=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_aop-c7fc2a809f623b15.rlib --extern vernal_beans=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_beans-7e56e1599e6efb8e.rlib --extern vernal_context=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_context-3d0e0a67de859753.rlib --extern vernal_core=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_core-5fcb76ab5bc81f82.rlib --extern vernal_expression=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_expression-96ffc72cb4ec74ac.rlib`
+     Running `rustc --crate-name context_components --edition=2024 crates/vernal-context/tests/context_components.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked '--warn=clippy::pedantic' '--warn=clippy::all' --forbid=unsafe_code '--allow=clippy::module_name_repetitions' '--allow=clippy::missing_panics_doc' '--allow=clippy::missing_errors_doc' --warn=missing_docs --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=43b531b7e381f24b -C extra-filename=-8fdaaf148b2fb199 --out-dir /private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps -C incremental=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/incremental -L dependency=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps --extern serde=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde-a8469b41c943557e.rlib --extern serde_json=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde_json-da9e4ac63f48fdd5.rlib --extern tokio=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio-8941ce8df0c80b3f.rlib --extern tokio_util=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio_util-4bcaaed7a8face4f.rlib --extern vernal_aop=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_aop-c7fc2a809f623b15.rlib --extern vernal_beans=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_beans-7e56e1599e6efb8e.rlib --extern vernal_context=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_context-3d0e0a67de859753.rlib --extern vernal_core=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_core-5fcb76ab5bc81f82.rlib --extern vernal_expression=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_expression-96ffc72cb4ec74ac.rlib`
+     Running `rustc --crate-name application_lifecycle_events --edition=2024 crates/vernal-context/tests/application_lifecycle_events.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked '--warn=clippy::pedantic' '--warn=clippy::all' --forbid=unsafe_code '--allow=clippy::module_name_repetitions' '--allow=clippy::missing_panics_doc' '--allow=clippy::missing_errors_doc' --warn=missing_docs --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=0ff6896f670242f2 -C extra-filename=-71d194456d184e9c --out-dir /private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps -C incremental=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/incremental -L dependency=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps --extern serde=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde-a8469b41c943557e.rlib --extern serde_json=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde_json-da9e4ac63f48fdd5.rlib --extern tokio=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio-8941ce8df0c80b3f.rlib --extern tokio_util=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio_util-4bcaaed7a8face4f.rlib --extern vernal_aop=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_aop-c7fc2a809f623b15.rlib --extern vernal_beans=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_beans-7e56e1599e6efb8e.rlib --extern vernal_context=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_context-3d0e0a67de859753.rlib --extern vernal_core=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_core-5fcb76ab5bc81f82.rlib --extern vernal_expression=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_expression-96ffc72cb4ec74ac.rlib`
+     Running `rustc --crate-name module_coverage --edition=2024 crates/vernal-context/tests/module_coverage.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked '--warn=clippy::pedantic' '--warn=clippy::all' --forbid=unsafe_code '--allow=clippy::module_name_repetitions' '--allow=clippy::missing_panics_doc' '--allow=clippy::missing_errors_doc' --warn=missing_docs --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=99e0179f633857a6 -C extra-filename=-016bb3854d5e20d4 --out-dir /private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps -C incremental=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/incremental -L dependency=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps --extern serde=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde-a8469b41c943557e.rlib --extern serde_json=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde_json-da9e4ac63f48fdd5.rlib --extern tokio=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio-8941ce8df0c80b3f.rlib --extern tokio_util=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio_util-4bcaaed7a8face4f.rlib --extern vernal_aop=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_aop-c7fc2a809f623b15.rlib --extern vernal_beans=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_beans-7e56e1599e6efb8e.rlib --extern vernal_context=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_context-3d0e0a67de859753.rlib --extern vernal_core=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_core-5fcb76ab5bc81f82.rlib --extern vernal_expression=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_expression-96ffc72cb4ec74ac.rlib`
+     Running `rustc --crate-name lifecycle_processor_tests --edition=2024 crates/vernal-context/tests/lifecycle_processor_tests.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked '--warn=clippy::pedantic' '--warn=clippy::all' --forbid=unsafe_code '--allow=clippy::module_name_repetitions' '--allow=clippy::missing_panics_doc' '--allow=clippy::missing_errors_doc' --warn=missing_docs --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=b6d7909d695949cc -C extra-filename=-1f67f49296bddb13 --out-dir /private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps -C incremental=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/incremental -L dependency=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps --extern serde=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde-a8469b41c943557e.rlib --extern serde_json=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde_json-da9e4ac63f48fdd5.rlib --extern tokio=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio-8941ce8df0c80b3f.rlib --extern tokio_util=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio_util-4bcaaed7a8face4f.rlib --extern vernal_aop=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_aop-c7fc2a809f623b15.rlib --extern vernal_beans=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_beans-7e56e1599e6efb8e.rlib --extern vernal_context=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_context-3d0e0a67de859753.rlib --extern vernal_core=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_core-5fcb76ab5bc81f82.rlib --extern vernal_expression=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_expression-96ffc72cb4ec74ac.rlib`
+     Running `rustc --crate-name application_environment_tests --edition=2024 crates/vernal-context/tests/application_environment_tests.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked '--warn=clippy::pedantic' '--warn=clippy::all' --forbid=unsafe_code '--allow=clippy::module_name_repetitions' '--allow=clippy::missing_panics_doc' '--allow=clippy::missing_errors_doc' --warn=missing_docs --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=cd806b08cdfe6914 -C extra-filename=-07e461e119575c77 --out-dir /private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps -C incremental=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/incremental -L dependency=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps --extern serde=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde-a8469b41c943557e.rlib --extern serde_json=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde_json-da9e4ac63f48fdd5.rlib --extern tokio=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio-8941ce8df0c80b3f.rlib --extern tokio_util=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio_util-4bcaaed7a8face4f.rlib --extern vernal_aop=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_aop-c7fc2a809f623b15.rlib --extern vernal_beans=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_beans-7e56e1599e6efb8e.rlib --extern vernal_context=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_context-3d0e0a67de859753.rlib --extern vernal_core=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_core-5fcb76ab5bc81f82.rlib --extern vernal_expression=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_expression-96ffc72cb4ec74ac.rlib`
+warning: associated function `new` is never used
+  --> crates/vernal-context/tests/application_event_tests.rs:65:8
+   |
+64 | impl OrderCreatedEvent {
+   | ---------------------- associated function in this implementation
+65 |     fn new(source: Arc<dyn Any + Send + Sync>, order_id: u64) -> Self {
+   |        ^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `vernal-context` (test "application_event_tests") generated 1 warning
+     Running `rustc --crate-name operation_metadata --edition=2024 crates/vernal-context/tests/operation_metadata.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked '--warn=clippy::pedantic' '--warn=clippy::all' --forbid=unsafe_code '--allow=clippy::module_name_repetitions' '--allow=clippy::missing_panics_doc' '--allow=clippy::missing_errors_doc' --warn=missing_docs --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=5033bdf290605e38 -C extra-filename=-ee57f335d7a6e3e8 --out-dir /private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps -C incremental=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/incremental -L dependency=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps --extern serde=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde-a8469b41c943557e.rlib --extern serde_json=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde_json-da9e4ac63f48fdd5.rlib --extern tokio=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio-8941ce8df0c80b3f.rlib --extern tokio_util=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio_util-4bcaaed7a8face4f.rlib --extern vernal_aop=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_aop-c7fc2a809f623b15.rlib --extern vernal_beans=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_beans-7e56e1599e6efb8e.rlib --extern vernal_context=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_context-3d0e0a67de859753.rlib --extern vernal_core=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_core-5fcb76ab5bc81f82.rlib --extern vernal_expression=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_expression-96ffc72cb4ec74ac.rlib`
+     Running `rustc --crate-name application_launch --edition=2024 crates/vernal-context/tests/application_launch.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked '--warn=clippy::pedantic' '--warn=clippy::all' --forbid=unsafe_code '--allow=clippy::module_name_repetitions' '--allow=clippy::missing_panics_doc' '--allow=clippy::missing_errors_doc' --warn=missing_docs --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=e123e5c926f6e5f0 -C extra-filename=-fcc9747794de4dc3 --out-dir /private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps -C incremental=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/incremental -L dependency=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps --extern serde=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde-a8469b41c943557e.rlib --extern serde_json=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde_json-da9e4ac63f48fdd5.rlib --extern tokio=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio-8941ce8df0c80b3f.rlib --extern tokio_util=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio_util-4bcaaed7a8face4f.rlib --extern vernal_aop=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_aop-c7fc2a809f623b15.rlib --extern vernal_beans=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_beans-7e56e1599e6efb8e.rlib --extern vernal_context=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_context-3d0e0a67de859753.rlib --extern vernal_core=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_core-5fcb76ab5bc81f82.rlib --extern vernal_expression=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_expression-96ffc72cb4ec74ac.rlib`
+     Running `rustc --crate-name application_runner_tests --edition=2024 crates/vernal-context/tests/application_runner_tests.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked '--warn=clippy::pedantic' '--warn=clippy::all' --forbid=unsafe_code '--allow=clippy::module_name_repetitions' '--allow=clippy::missing_panics_doc' '--allow=clippy::missing_errors_doc' --warn=missing_docs --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=b43577f610ab5832 -C extra-filename=-71f9b71fb0162e66 --out-dir /private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps -C incremental=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/incremental -L dependency=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps --extern serde=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde-a8469b41c943557e.rlib --extern serde_json=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde_json-da9e4ac63f48fdd5.rlib --extern tokio=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio-8941ce8df0c80b3f.rlib --extern tokio_util=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio_util-4bcaaed7a8face4f.rlib --extern vernal_aop=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_aop-c7fc2a809f623b15.rlib --extern vernal_beans=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_beans-7e56e1599e6efb8e.rlib --extern vernal_context=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_context-3d0e0a67de859753.rlib --extern vernal_core=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_core-5fcb76ab5bc81f82.rlib --extern vernal_expression=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_expression-96ffc72cb4ec74ac.rlib`
+     Running `rustc --crate-name context_lifecycle --edition=2024 crates/vernal-context/tests/context_lifecycle.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked '--warn=clippy::pedantic' '--warn=clippy::all' --forbid=unsafe_code '--allow=clippy::module_name_repetitions' '--allow=clippy::missing_panics_doc' '--allow=clippy::missing_errors_doc' --warn=missing_docs --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=dc85de0903c9569b -C extra-filename=-f8fc148abd05324c --out-dir /private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps -C incremental=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/incremental -L dependency=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps --extern serde=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde-a8469b41c943557e.rlib --extern serde_json=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde_json-da9e4ac63f48fdd5.rlib --extern tokio=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio-8941ce8df0c80b3f.rlib --extern tokio_util=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio_util-4bcaaed7a8face4f.rlib --extern vernal_aop=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_aop-c7fc2a809f623b15.rlib --extern vernal_beans=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_beans-7e56e1599e6efb8e.rlib --extern vernal_context=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_context-3d0e0a67de859753.rlib --extern vernal_core=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_core-5fcb76ab5bc81f82.rlib --extern vernal_expression=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_expression-96ffc72cb4ec74ac.rlib`
+     Running `rustc --crate-name shutdown_signals --edition=2024 crates/vernal-context/tests/shutdown_signals.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked '--warn=clippy::pedantic' '--warn=clippy::all' --forbid=unsafe_code '--allow=clippy::module_name_repetitions' '--allow=clippy::missing_panics_doc' '--allow=clippy::missing_errors_doc' --warn=missing_docs --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=2b7f261254fd6dfe -C extra-filename=-e7496baf29115586 --out-dir /private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps -C incremental=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/incremental -L dependency=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps --extern serde=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde-a8469b41c943557e.rlib --extern serde_json=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde_json-da9e4ac63f48fdd5.rlib --extern tokio=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio-8941ce8df0c80b3f.rlib --extern tokio_util=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio_util-4bcaaed7a8face4f.rlib --extern vernal_aop=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_aop-c7fc2a809f623b15.rlib --extern vernal_beans=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_beans-7e56e1599e6efb8e.rlib --extern vernal_context=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_context-3d0e0a67de859753.rlib --extern vernal_core=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_core-5fcb76ab5bc81f82.rlib --extern vernal_expression=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_expression-96ffc72cb4ec74ac.rlib`
+warning: unused import: `RegistryBuilder`
+  --> crates/vernal-context/tests/application_runner_tests.rs:19:41
+   |
+19 | use vernal_beans::{ComponentDefinition, RegistryBuilder};
+   |                                         ^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+     Running `rustc --crate-name application_runners --edition=2024 crates/vernal-context/tests/application_runners.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked '--warn=clippy::pedantic' '--warn=clippy::all' --forbid=unsafe_code '--allow=clippy::module_name_repetitions' '--allow=clippy::missing_panics_doc' '--allow=clippy::missing_errors_doc' --warn=missing_docs --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=2053f716c6b27e7c -C extra-filename=-46d991398af9f4c6 --out-dir /private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps -C incremental=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/incremental -L dependency=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps --extern serde=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde-a8469b41c943557e.rlib --extern serde_json=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde_json-da9e4ac63f48fdd5.rlib --extern tokio=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio-8941ce8df0c80b3f.rlib --extern tokio_util=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio_util-4bcaaed7a8face4f.rlib --extern vernal_aop=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_aop-c7fc2a809f623b15.rlib --extern vernal_beans=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_beans-7e56e1599e6efb8e.rlib --extern vernal_context=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_context-3d0e0a67de859753.rlib --extern vernal_core=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_core-5fcb76ab5bc81f82.rlib --extern vernal_expression=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_expression-96ffc72cb4ec74ac.rlib`
+warning: struct `FailingRunner` is never constructed
+  --> crates/vernal-context/tests/application_runner_tests.rs:84:8
+   |
+84 | struct FailingRunner;
+   |        ^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: struct `NoopLifecycle` is never constructed
+   --> crates/vernal-context/tests/application_runner_tests.rs:102:8
+    |
+102 | struct NoopLifecycle;
+    |        ^^^^^^^^^^^^^
+
+     Running `rustc --crate-name lifecycle_pause_restart_tests --edition=2024 crates/vernal-context/tests/lifecycle_pause_restart_tests.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked '--warn=clippy::pedantic' '--warn=clippy::all' --forbid=unsafe_code '--allow=clippy::module_name_repetitions' '--allow=clippy::missing_panics_doc' '--allow=clippy::missing_errors_doc' --warn=missing_docs --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=a865cae000074195 -C extra-filename=-18df066c25553379 --out-dir /private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps -C incremental=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/incremental -L dependency=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps --extern serde=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde-a8469b41c943557e.rlib --extern serde_json=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde_json-da9e4ac63f48fdd5.rlib --extern tokio=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio-8941ce8df0c80b3f.rlib --extern tokio_util=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio_util-4bcaaed7a8face4f.rlib --extern vernal_aop=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_aop-c7fc2a809f623b15.rlib --extern vernal_beans=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_beans-7e56e1599e6efb8e.rlib --extern vernal_context=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_context-3d0e0a67de859753.rlib --extern vernal_core=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_core-5fcb76ab5bc81f82.rlib --extern vernal_expression=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_expression-96ffc72cb4ec74ac.rlib`
+     Running `rustc --crate-name contract_verification_tests --edition=2024 crates/vernal-context/tests/contract_verification_tests.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked '--warn=clippy::pedantic' '--warn=clippy::all' --forbid=unsafe_code '--allow=clippy::module_name_repetitions' '--allow=clippy::missing_panics_doc' '--allow=clippy::missing_errors_doc' --warn=missing_docs --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=47ba81a786c382b1 -C extra-filename=-66dcba518a3189ab --out-dir /private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps -C incremental=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/incremental -L dependency=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps --extern serde=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde-a8469b41c943557e.rlib --extern serde_json=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde_json-da9e4ac63f48fdd5.rlib --extern tokio=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio-8941ce8df0c80b3f.rlib --extern tokio_util=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio_util-4bcaaed7a8face4f.rlib --extern vernal_aop=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_aop-c7fc2a809f623b15.rlib --extern vernal_beans=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_beans-7e56e1599e6efb8e.rlib --extern vernal_context=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_context-3d0e0a67de859753.rlib --extern vernal_core=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_core-5fcb76ab5bc81f82.rlib --extern vernal_expression=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_expression-96ffc72cb4ec74ac.rlib`
+     Running `rustc --crate-name condition_tests --edition=2024 crates/vernal-context/tests/condition_tests.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked '--warn=clippy::pedantic' '--warn=clippy::all' --forbid=unsafe_code '--allow=clippy::module_name_repetitions' '--allow=clippy::missing_panics_doc' '--allow=clippy::missing_errors_doc' --warn=missing_docs --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=b0a0de9c107204aa -C extra-filename=-dcc49d60d005038b --out-dir /private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps -C incremental=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/incremental -L dependency=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps --extern serde=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde-a8469b41c943557e.rlib --extern serde_json=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde_json-da9e4ac63f48fdd5.rlib --extern tokio=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio-8941ce8df0c80b3f.rlib --extern tokio_util=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio_util-4bcaaed7a8face4f.rlib --extern vernal_aop=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_aop-c7fc2a809f623b15.rlib --extern vernal_beans=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_beans-7e56e1599e6efb8e.rlib --extern vernal_context=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_context-3d0e0a67de859753.rlib --extern vernal_core=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_core-5fcb76ab5bc81f82.rlib --extern vernal_expression=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_expression-96ffc72cb4ec74ac.rlib`
+     Running `rustc --crate-name context_scope --edition=2024 crates/vernal-context/tests/context_scope.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked '--warn=clippy::pedantic' '--warn=clippy::all' --forbid=unsafe_code '--allow=clippy::module_name_repetitions' '--allow=clippy::missing_panics_doc' '--allow=clippy::missing_errors_doc' --warn=missing_docs --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=a5cb73f9a0336ffc -C extra-filename=-2b7804feea450084 --out-dir /private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps -C incremental=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/incremental -L dependency=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps --extern serde=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde-a8469b41c943557e.rlib --extern serde_json=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde_json-da9e4ac63f48fdd5.rlib --extern tokio=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio-8941ce8df0c80b3f.rlib --extern tokio_util=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio_util-4bcaaed7a8face4f.rlib --extern vernal_aop=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_aop-c7fc2a809f623b15.rlib --extern vernal_beans=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_beans-7e56e1599e6efb8e.rlib --extern vernal_context=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_context-3d0e0a67de859753.rlib --extern vernal_core=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_core-5fcb76ab5bc81f82.rlib --extern vernal_expression=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_expression-96ffc72cb4ec74ac.rlib`
+     Running `rustc --crate-name lifecycle_timeouts --edition=2024 crates/vernal-context/tests/lifecycle_timeouts.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked '--warn=clippy::pedantic' '--warn=clippy::all' --forbid=unsafe_code '--allow=clippy::module_name_repetitions' '--allow=clippy::missing_panics_doc' '--allow=clippy::missing_errors_doc' --warn=missing_docs --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=a2f2c8d2a8105bdf -C extra-filename=-fb98887c46604b4f --out-dir /private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps -C incremental=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/incremental -L dependency=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps --extern serde=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde-a8469b41c943557e.rlib --extern serde_json=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde_json-da9e4ac63f48fdd5.rlib --extern tokio=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio-8941ce8df0c80b3f.rlib --extern tokio_util=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio_util-4bcaaed7a8face4f.rlib --extern vernal_aop=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_aop-c7fc2a809f623b15.rlib --extern vernal_beans=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_beans-7e56e1599e6efb8e.rlib --extern vernal_context=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_context-3d0e0a67de859753.rlib --extern vernal_core=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_core-5fcb76ab5bc81f82.rlib --extern vernal_expression=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_expression-96ffc72cb4ec74ac.rlib`
+     Running `rustc --crate-name managed_tasks --edition=2024 crates/vernal-context/tests/managed_tasks.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked '--warn=clippy::pedantic' '--warn=clippy::all' --forbid=unsafe_code '--allow=clippy::module_name_repetitions' '--allow=clippy::missing_panics_doc' '--allow=clippy::missing_errors_doc' --warn=missing_docs --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=db0b9a808c991b36 -C extra-filename=-c4d7bf9d62bd104d --out-dir /private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps -C incremental=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/incremental -L dependency=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps --extern serde=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde-a8469b41c943557e.rlib --extern serde_json=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde_json-da9e4ac63f48fdd5.rlib --extern tokio=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio-8941ce8df0c80b3f.rlib --extern tokio_util=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio_util-4bcaaed7a8face4f.rlib --extern vernal_aop=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_aop-c7fc2a809f623b15.rlib --extern vernal_beans=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_beans-7e56e1599e6efb8e.rlib --extern vernal_context=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_context-3d0e0a67de859753.rlib --extern vernal_core=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_core-5fcb76ab5bc81f82.rlib --extern vernal_expression=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_expression-96ffc72cb4ec74ac.rlib`
+     Running `rustc --crate-name application_environment --edition=2024 crates/vernal-context/tests/application_environment.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked '--warn=clippy::pedantic' '--warn=clippy::all' --forbid=unsafe_code '--allow=clippy::module_name_repetitions' '--allow=clippy::missing_panics_doc' '--allow=clippy::missing_errors_doc' --warn=missing_docs --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=720d68b1f5553dc7 -C extra-filename=-16efef965c363842 --out-dir /private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps -C incremental=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/incremental -L dependency=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps --extern serde=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde-a8469b41c943557e.rlib --extern serde_json=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde_json-da9e4ac63f48fdd5.rlib --extern tokio=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio-8941ce8df0c80b3f.rlib --extern tokio_util=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio_util-4bcaaed7a8face4f.rlib --extern vernal_aop=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_aop-c7fc2a809f623b15.rlib --extern vernal_beans=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_beans-7e56e1599e6efb8e.rlib --extern vernal_context=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_context-3d0e0a67de859753.rlib --extern vernal_core=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_core-5fcb76ab5bc81f82.rlib --extern vernal_expression=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_expression-96ffc72cb4ec74ac.rlib`
+     Running `rustc --crate-name application_event_listeners --edition=2024 crates/vernal-context/tests/application_event_listeners.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked '--warn=clippy::pedantic' '--warn=clippy::all' --forbid=unsafe_code '--allow=clippy::module_name_repetitions' '--allow=clippy::missing_panics_doc' '--allow=clippy::missing_errors_doc' --warn=missing_docs --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=b93596cbc4d7618c -C extra-filename=-c372da0ef53c8be4 --out-dir /private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps -C incremental=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/incremental -L dependency=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps --extern serde=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde-a8469b41c943557e.rlib --extern serde_json=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde_json-da9e4ac63f48fdd5.rlib --extern tokio=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio-8941ce8df0c80b3f.rlib --extern tokio_util=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio_util-4bcaaed7a8face4f.rlib --extern vernal_aop=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_aop-c7fc2a809f623b15.rlib --extern vernal_beans=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_beans-7e56e1599e6efb8e.rlib --extern vernal_context=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_context-3d0e0a67de859753.rlib --extern vernal_core=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_core-5fcb76ab5bc81f82.rlib --extern vernal_expression=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_expression-96ffc72cb4ec74ac.rlib`
+     Running `rustc --crate-name application_modules --edition=2024 crates/vernal-context/tests/application_modules.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked '--warn=clippy::pedantic' '--warn=clippy::all' --forbid=unsafe_code '--allow=clippy::module_name_repetitions' '--allow=clippy::missing_panics_doc' '--allow=clippy::missing_errors_doc' --warn=missing_docs --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=5948f2ded6671209 -C extra-filename=-553129aa972b3886 --out-dir /private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps -C incremental=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/incremental -L dependency=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps --extern serde=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde-a8469b41c943557e.rlib --extern serde_json=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde_json-da9e4ac63f48fdd5.rlib --extern tokio=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio-8941ce8df0c80b3f.rlib --extern tokio_util=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio_util-4bcaaed7a8face4f.rlib --extern vernal_aop=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_aop-c7fc2a809f623b15.rlib --extern vernal_beans=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_beans-7e56e1599e6efb8e.rlib --extern vernal_context=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_context-3d0e0a67de859753.rlib --extern vernal_core=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_core-5fcb76ab5bc81f82.rlib --extern vernal_expression=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_expression-96ffc72cb4ec74ac.rlib`
+warning: `vernal-context` (test "application_runner_tests") generated 3 warnings (run `cargo fix --test "application_runner_tests" -p vernal-context` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 9.96s
+  Executable `/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/vernal_context-d1f9ad0e6de377a6`
+  Executable `/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/application_environment-16efef965c363842`
+  Executable `/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/application_environment_tests-07e461e119575c77`
+  Executable `/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/application_event_listeners-c372da0ef53c8be4`
+  Executable `/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/application_event_tests-4670dfcd19b3b343`
+  Executable `/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/application_launch-fcc9747794de4dc3`
+  Executable `/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/application_lifecycle_events-71d194456d184e9c`
+  Executable `/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/application_modules-553129aa972b3886`
+  Executable `/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/application_runner_tests-71f9b71fb0162e66`
+  Executable `/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/application_runners-46d991398af9f4c6`
+  Executable `/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/condition_tests-dcc49d60d005038b`
+  Executable `/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/conditional_components-c861ec4c27905e0c`
+  Executable `/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/context_components-8fdaaf148b2fb199`
+  Executable `/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/context_lifecycle-f8fc148abd05324c`
+  Executable `/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/context_scope-2b7804feea450084`
+  Executable `/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/contract_verification_tests-66dcba518a3189ab`
+  Executable `/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/error_display_coverage-71f188dfd17d54c2`
+  Executable `/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/generic_application_context_tests-1d928b1d43261630`
+  Executable `/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/ioc_managed_aop-14476f8520591226`
+  Executable `/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/lifecycle_pause_restart_tests-18df066c25553379`
+  Executable `/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/lifecycle_processor_tests-1f67f49296bddb13`
+  Executable `/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/lifecycle_timeouts-fb98887c46604b4f`
+  Executable `/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/managed_tasks-c4d7bf9d62bd104d`
+  Executable `/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/module_coverage-016bb3854d5e20d4`
+  Executable `/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/operation_metadata-ee57f335d7a6e3e8`
+  Executable `/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/scheduled_tasks-ebb02cb5f241ac0b`
+  Executable `/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/shutdown_signals-e7496baf29115586`
+  Executable `/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/startup_diagnostics-b7e832a93e8070db`
+  Executable `/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/value_object_coverage-d68a517606280c48`
+
+*** result: Success
+
+*** /opt/homebrew/bin/cargo test --verbose --package=vernal-context@0.0.0-dev
+       Fresh unicode-ident v1.0.24
+       Fresh autocfg v1.5.1
+       Fresh cfg-if v1.0.4
+       Fresh memchr v2.8.3
+       Fresh pin-project-lite v0.2.17
+       Fresh once_cell v1.21.4
+       Fresh proc-macro2 v1.0.107
+       Fresh aho-corasick v1.1.4
+       Fresh regex-syntax v0.8.11
+       Fresh smallvec v1.15.2
+       Fresh core-foundation-sys v0.8.7
+       Fresh quote v1.0.47
+       Fresh libc v0.2.189
+       Fresh crossbeam-utils v0.8.22
+       Fresh scopeguard v1.2.0
+       Fresh iana-time-zone v0.1.65
+       Fresh regex-automata v0.4.16
+       Fresh syn v3.0.3
+       Fresh syn v2.0.119
+       Fresh num-traits v0.2.19
+       Fresh parking_lot_core v0.9.12
+       Fresh errno v0.3.14
+       Fresh lock_api v0.4.14
+       Fresh getrandom v0.4.3
+       Fresh socket2 v0.6.5
+       Fresh regex v1.13.1
+       Fresh thiserror-impl v2.0.19
+       Fresh linkme-impl v0.3.37
+       Fresh tokio-macros v2.7.1
+       Fresh chrono v0.4.45
+       Fresh futures-macro v0.3.33
+       Fresh num-integer v0.1.46
+       Fresh signal-hook-registry v1.4.8
+       Fresh mio v1.2.2
+       Fresh futures-task v0.3.33
+       Fresh inventory v0.3.24
+       Fresh slab v0.4.12
+       Fresh linkme v0.3.37
+       Fresh thiserror v2.0.19
+       Fresh bytes v1.12.1
+       Fresh futures-core v0.3.33
+       Fresh libm v0.2.16
+       Fresh num-bigint v0.4.8
+       Fresh serde_core v1.0.229
+       Fresh uuid v1.24.0
+       Fresh portable-atomic v1.14.0
+       Fresh crossbeam-epoch v0.9.20
+       Fresh parking_lot v0.12.5
+       Fresh futures-util v0.3.33
+       Fresh tokio v1.53.1
+       Fresh vernal-core v0.0.0-dev (/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/crates/vernal-core)
+warning: missing documentation for an associated function
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:16:5
+   |
+16 |     pub fn new(target: HashMap<K, Vec<V>>) -> Self { Self { target } }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: requested on the command line with `-W missing-docs`
+
+warning: missing documentation for a method
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:18:5
+   |
+18 |     pub fn len(&self) -> usize { self.target.len() }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:20:5
+   |
+20 |     pub fn is_empty(&self) -> bool { self.target.is_empty() }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:22:5
+   |
+22 |     pub fn to_single_value_map(&self) -> HashMap<K, V> where K: Clone, V: Clone {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:26:5
+   |
+26 |     pub fn as_inner(&self) -> &HashMap<K, Vec<V>> { &self.target }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:27:5
+   |
+27 |     pub fn as_inner_mut(&mut self) -> &mut HashMap<K, Vec<V>> { &mut self.target }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:29:5
+   |
+29 |     pub fn into_inner(self) -> HashMap<K, Vec<V>> { self.target }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:55:5
+   |
+55 |     pub fn new(delegate: &'a M) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:59:5
+   |
+59 |     pub fn get(&self, key: &K) -> Option<&V> { self.delegate.get_first(key) }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:61:5
+   |
+61 |     pub fn len(&self) -> usize { self.delegate.len() }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:63:5
+   |
+63 |     pub fn is_empty(&self) -> bool { self.delegate.is_empty() }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:65:5
+   |
+65 |     pub fn contains_key(&self, key: &K) -> bool { self.delegate.contains_key(key) }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:75:5
+   |
+75 |     pub fn new(target: HashMap<K, V>) -> Self { Self { target } }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:77:5
+   |
+77 |     pub fn len(&self) -> usize { self.target.len() }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:79:5
+   |
+79 |     pub fn is_empty(&self) -> bool { self.target.is_empty() }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:81:5
+   |
+81 |     pub fn into_single_value_map(self) -> HashMap<K, V> { self.target }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> crates/vernal-core/src/util/multi_value_map_adapters.rs:101:5
+    |
+101 |     pub fn into_map(self) -> HashMap<K, Vec<V>> { self.map }
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+       Fresh tracing-attributes v0.1.31
+       Fresh crossbeam-channel v0.5.16
+       Fresh tracing-core v0.1.36
+       Fresh equivalent v1.0.2
+       Fresh hashbrown v0.14.5
+       Fresh futures-sink v0.3.33
+       Fresh tagptr v0.2.0
+warning: `vernal-core` (lib) generated 17 warnings
+       Fresh tokio-util v0.7.19
+       Fresh moka v0.12.15
+       Fresh dashmap v6.2.1
+       Fresh tracing v0.1.44
+       Fresh zmij v1.0.23
+       Fresh bigdecimal v0.4.10
+       Fresh serde_derive v1.0.229
+       Fresh itoa v1.0.18
+       Fresh vernal-expression v0.0.0-dev (/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/crates/vernal-expression)
+warning: unused import: `crate::method_resolver::MethodResolver`
+ --> crates/vernal-expression/src/method_filter.rs:6:5
+  |
+6 | use crate::method_resolver::MethodResolver;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `PrimitiveKind`
+  --> crates/vernal-expression/src/typed_value.rs:15:34
+   |
+15 | pub use crate::type_descriptor::{PrimitiveKind, TypeDescriptor};
+   |                                  ^^^^^^^^^^^^^
+
+warning: unused import: `crate::evaluation_context::EvaluationContext`
+ --> crates/vernal-expression/src/spel/ast/literal.rs:6:5
+  |
+6 | use crate::evaluation_context::EvaluationContext;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::evaluation_exception::EvaluationException`
+ --> crates/vernal-expression/src/spel/ast/literal.rs:7:5
+  |
+7 | use crate::evaluation_exception::EvaluationException;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::evaluation_context::EvaluationContext`
+ --> crates/vernal-expression/src/spel/ast/operator.rs:6:5
+  |
+6 | use crate::evaluation_context::EvaluationContext;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `ExpressionValue`
+ --> crates/vernal-expression/src/spel/ast/operator.rs:8:26
+  |
+8 | use crate::typed_value::{ExpressionValue, TypedValue};
+  |                          ^^^^^^^^^^^^^^^
+
+warning: unused import: `super::spel_node::SpelNode`
+ --> crates/vernal-expression/src/spel/ast/spel_node_impl.rs:5:5
+  |
+5 | use super::spel_node::SpelNode;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::evaluation_context::EvaluationContext`
+ --> crates/vernal-expression/src/spel/ast/spel_node_impl.rs:6:5
+  |
+6 | use crate::evaluation_context::EvaluationContext;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::evaluation_exception::EvaluationException`
+ --> crates/vernal-expression/src/spel/ast/spel_node_impl.rs:7:5
+  |
+7 | use crate::evaluation_exception::EvaluationException;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::typed_value::TypedValue`
+ --> crates/vernal-expression/src/spel/ast/spel_node_impl.rs:8:5
+  |
+8 | use crate::typed_value::TypedValue;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `ExpressionValue` and `TypeDescriptor`
+ --> crates/vernal-expression/src/spel/ast/null_literal.rs:9:26
+  |
+9 | use crate::typed_value::{ExpressionValue, TypeDescriptor, TypedValue};
+  |                          ^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^
+
+warning: unused import: `TypeDescriptor`
+ --> crates/vernal-expression/src/spel/ast/op_dec.rs:8:43
+  |
+8 | use crate::typed_value::{ExpressionValue, TypeDescriptor, TypedValue};
+  |                                           ^^^^^^^^^^^^^^
+
+warning: unused import: `TypeDescriptor`
+ --> crates/vernal-expression/src/spel/ast/op_inc.rs:8:43
+  |
+8 | use crate::typed_value::{ExpressionValue, TypeDescriptor, TypedValue};
+  |                                           ^^^^^^^^^^^^^^
+
+warning: unused import: `crate::spel::spel_message::SpelMessage`
+  --> crates/vernal-expression/src/spel/ast/operator_instanceof.rs:15:5
+   |
+15 | use crate::spel::spel_message::SpelMessage;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+ --> crates/vernal-expression/src/spel/support/map_accessor.rs:9:5
+  |
+9 | use std::collections::HashMap;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `ArcReflectiveMethodExecutor`
+  --> crates/vernal-expression/src/spel/support/standard_evaluation_context.rs:20:5
+   |
+20 |     ArcReflectiveMethodExecutor, ReflectiveMethodResolver,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::evaluation_exception::EvaluationException`
+ --> crates/vernal-expression/src/spel/expression_state.rs:6:5
+  |
+6 | use crate::evaluation_exception::EvaluationException;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `super::ast::identifier::Identifier`
+  --> crates/vernal-expression/src/spel/internal_spel_expression_parser.rs:35:5
+   |
+35 | use super::ast::identifier::Identifier;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `super::ast::inline_map::InlineMap`
+  --> crates/vernal-expression/src/spel/internal_spel_expression_parser.rs:38:5
+   |
+38 | use super::ast::inline_map::InlineMap;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused variable: `null_safe`
+   --> crates/vernal-expression/src/spel/internal_spel_expression_parser.rs:715:37
+    |
+715 |     fn maybe_eat_indexer(&mut self, null_safe: bool) -> Option<Box<dyn SpelNode>> {
+    |                                     ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_null_safe`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+   --> crates/vernal-expression/src/spel/internal_spel_expression_parser.rs:761:29
+    |
+761 |                         let mut t = self.next_token().unwrap();
+    |                             ----^
+    |                             |
+    |                             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+   --> crates/vernal-expression/src/spel/internal_spel_expression_parser.rs:765:29
+    |
+765 |                         let mut t = self.next_token().unwrap();
+    |                             ----^
+    |                             |
+    |                             help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> crates/vernal-expression/src/spel/internal_spel_expression_parser.rs:769:29
+    |
+769 |                         let mut t = self.next_token().unwrap();
+    |                             ----^
+    |                             |
+    |                             help: remove this `mut`
+
+warning: type alias `MethodFilterRegistry` is never used
+  --> crates/vernal-expression/src/method_filter.rs:18:10
+   |
+18 | pub type MethodFilterRegistry = std::collections::HashMap<std::any::TypeId, Vec<Box<dyn MethodFilter>>>;
+   |          ^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `null_safe` is never read
+  --> crates/vernal-expression/src/spel/ast/method_reference.rs:17:5
+   |
+14 | pub struct MethodReference {
+   |            --------------- field in this struct
+...
+17 |     null_safe: bool,
+   |     ^^^^^^^^^
+
+warning: field `null_safe` is never read
+  --> crates/vernal-expression/src/spel/ast/property_or_field_reference.rs:16:5
+   |
+14 | pub struct PropertyOrFieldReference {
+   |            ------------------------ field in this struct
+15 |     name: String,
+16 |     null_safe: bool,
+   |     ^^^^^^^^^
+
+warning: fields `auto_grow_collections` and `maximum_auto_grow_size` are never read
+  --> crates/vernal-expression/src/spel/spel_parser_configuration.rs:17:5
+   |
+ 9 | pub struct SpelParserConfiguration {
+   |            ----------------------- fields in this struct
+...
+17 |     auto_grow_collections: bool,
+   |     ^^^^^^^^^^^^^^^^^^^^^
+18 |     /// 最大自动增长大小
+19 |     maximum_auto_grow_size: usize,
+   |     ^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `SpelParserConfiguration` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: missing documentation for a trait
+ --> crates/vernal-expression/src/method_executor.rs:7:1
+  |
+7 | pub trait MethodExecutor: Send + Sync {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: requested on the command line with `-W missing-docs`
+
+warning: missing documentation for a method
+ --> crates/vernal-expression/src/method_executor.rs:8:5
+  |
+8 |     fn execute(&self, context: &dyn EvaluationContext, target: &TypedValue, arguments: &[TypedValue]) -> Result<TypedValue, AccessException>;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/boolean_literal.rs:19:5
+   |
+19 |     pub fn new(value: bool) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/float_literal.rs:20:5
+   |
+20 |     pub fn new(value: f64, original: String) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/long_literal.rs:22:5
+   |
+22 |     pub fn new(value: i64, original: String) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/null_literal.rs:17:5
+   |
+17 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/real_literal.rs:20:5
+   |
+20 |     pub fn new(value: f64, original: String) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/string_literal.rs:19:5
+   |
+19 |     pub fn new(value: String) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_divide.rs:20:5
+   |
+20 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_minus.rs:20:5
+   |
+20 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_modulus.rs:20:5
+   |
+20 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_multiply.rs:20:5
+   |
+20 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_plus.rs:25:5
+   |
+25 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/operator_power.rs:20:5
+   |
+20 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_eq.rs:20:5
+   |
+20 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_ge.rs:20:5
+   |
+20 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_gt.rs:20:5
+   |
+20 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_le.rs:20:5
+   |
+20 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_lt.rs:20:5
+   |
+20 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_ne.rs:20:5
+   |
+20 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_and.rs:19:5
+   |
+19 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_or.rs:19:5
+   |
+19 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/operator_not.rs:18:5
+   |
+18 |     pub fn new(operand: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_dec.rs:20:5
+   |
+20 |     pub fn new(operand: Box<dyn SpelNode>, prefix: bool) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_inc.rs:21:5
+   |
+21 |     pub fn new(operand: Box<dyn SpelNode>, prefix: bool) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/operator_between.rs:21:5
+   |
+21 |     pub fn new(value: Box<dyn SpelNode>, low: Box<dyn SpelNode>, high: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/bean_reference.rs:17:5
+   |
+17 |     pub fn new(name: String) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/constructor_reference.rs:18:5
+   |
+18 |     pub fn new(type_name: String, arguments: Vec<Box<dyn SpelNode>>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/elvis.rs:20:5
+   |
+20 |     pub fn new(expression: Box<dyn SpelNode>, default: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/function_reference.rs:18:5
+   |
+18 |     pub fn new(name: String, arguments: Vec<Box<dyn SpelNode>>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/identifier.rs:17:5
+   |
+17 |     pub fn new(name: String) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-expression/src/spel/ast/identifier.rs:22:5
+   |
+22 |     pub fn name(&self) -> &str {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/indexer.rs:17:5
+   |
+17 |     pub fn new(index: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/inline_list.rs:17:5
+   |
+17 |     pub fn new(elements: Vec<Box<dyn SpelNode>>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/inline_map.rs:18:5
+   |
+18 |     pub fn new(keys: Vec<Box<dyn SpelNode>>, values: Vec<Box<dyn SpelNode>>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/method_reference.rs:22:5
+   |
+22 |     pub fn new(name: String, arguments: Vec<Box<dyn SpelNode>>, null_safe: bool) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/property_or_field_reference.rs:21:5
+   |
+21 |     pub fn new(name: String, null_safe: bool) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-expression/src/spel/ast/property_or_field_reference.rs:26:5
+   |
+26 |     pub fn name(&self) -> &str {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/qualified_identifier.rs:17:5
+   |
+17 |     pub fn new(name: String) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/ternary.rs:19:5
+   |
+19 | /     pub fn new(
+20 | |         condition: Box<dyn SpelNode>,
+21 | |         true_value: Box<dyn SpelNode>,
+22 | |         false_value: Box<dyn SpelNode>,
+23 | |     ) -> Self {
+   | |_____________^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/type_reference.rs:17:5
+   |
+17 |     pub fn new(type_name: String) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/variable_reference.rs:19:5
+   |
+19 |     pub fn new(name: String) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+       Fresh serde v1.0.229
+       Fresh serde_json v1.0.151
+       Fresh vernal-aop v0.0.0-dev (/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/crates/vernal-aop)
+warning: unused import: `ModulePattern`
+  --> crates/vernal-aop/src/pointcut/dsl/matcher.rs:10:40
+   |
+10 | use super::pattern::{ExecutionPattern, ModulePattern};
+   |                                        ^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: `vernal-expression` (lib) generated 69 warnings (run `cargo fix --lib -p vernal-expression` to apply 23 suggestions)
+warning: `vernal-aop` (lib) generated 1 warning (run `cargo fix --lib -p vernal-aop` to apply 1 suggestion)
+       Fresh vernal-beans v0.0.0-dev (/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/crates/vernal-beans)
+warning: unused import: `std::any::TypeId`
+  --> crates/vernal-beans/src/component_metadata.rs:25:5
+   |
+25 | use std::any::TypeId;
+   |     ^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `std::sync::Arc`
+ --> crates/vernal-beans/src/configuration_class_post_processor.rs:7:5
+  |
+7 | use std::sync::Arc;
+  |     ^^^^^^^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+  --> crates/vernal-beans/src/conversion_service.rs:11:5
+   |
+11 | use std::collections::HashMap;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+  --> crates/vernal-beans/src/field_metadata.rs:28:5
+   |
+28 | use std::collections::HashMap;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Arc`
+  --> crates/vernal-beans/src/field_metadata.rs:29:17
+   |
+29 | use std::sync::{Arc, Mutex};
+   |                 ^^^
+
+warning: unused import: `std::sync::Arc`
+ --> crates/vernal-beans/src/placeholder_configurer.rs:8:5
+  |
+8 | use std::sync::Arc;
+  |     ^^^^^^^^^^^^^^
+
+warning: unused import: `EvaluationContext`
+  --> crates/vernal-beans/src/standard_bean_expression_resolver.rs:12:55
+   |
+12 | use vernal_expression::{Expression, ExpressionParser, EvaluationContext};
+   |                                                       ^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::property_editor::PropertyEditor`
+  --> crates/vernal-beans/src/conversion_service.rs:14:5
+   |
+14 | use crate::property_editor::PropertyEditor;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Expression`
+  --> crates/vernal-beans/src/standard_bean_expression_resolver.rs:12:25
+   |
+12 | use vernal_expression::{Expression, ExpressionParser, EvaluationContext};
+   |                         ^^^^^^^^^^
+
+warning: unused import: `crate::bean_factory::BeanFactory`
+  --> crates/vernal-beans/src/bean_factory_utils.rs:11:5
+   |
+11 | use crate::bean_factory::BeanFactory;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused variable: `other`
+   --> crates/vernal-beans/src/standard_bean_expression_resolver.rs:141:29
+    |
+141 | ...                   other => {
+    |                       ^^^^^ help: if this is intentional, prefix it with an underscore: `_other`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `property_name`
+   --> crates/vernal-beans/src/type_converter_delegate.rs:106:9
+    |
+106 |         property_name: Option<&str>,
+    |         ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_property_name`
+
+warning: unused variable: `definition`
+   --> crates/vernal-beans/src/registry_builder.rs:291:9
+    |
+291 |         definition: Box<dyn crate::bean_definition::BeanDefinition>,
+    |         ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_definition`
+
+warning: unused variable: `bean_name`
+   --> crates/vernal-beans/src/registry_builder.rs:340:9
+    |
+340 |         bean_name: &str,
+    |         ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_bean_name`
+
+warning: fields `bean_name` and `source` are never read
+    --> crates/vernal-beans/src/container.rs:1235:16
+     |
+1234 | pub(crate) struct ProxyBeanDefinition {
+     |                   ------------------- fields in this struct
+1235 |     pub(crate) bean_name: String,
+     |                ^^^^^^^^^
+...
+1238 |     pub(crate) source: String,
+     |                ^^^^^^
+     |
+     = note: `ProxyBeanDefinition` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+     = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `bean_name` is never read
+    --> crates/vernal-beans/src/container.rs:1265:5
+     |
+1264 | struct DeletedBeanDefinition {
+     |        --------------------- field in this struct
+1265 |     bean_name: String,
+     |     ^^^^^^^^^
+     |
+     = note: `DeletedBeanDefinition` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: field `bean_name` is never read
+    --> crates/vernal-beans/src/container.rs:1292:5
+     |
+1291 | struct RemovedBeanDefinition {
+     |        --------------------- field in this struct
+1292 |     bean_name: String,
+     |     ^^^^^^^^^
+     |
+     = note: `RemovedBeanDefinition` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: struct `ProxyBeanDefinition` is never constructed
+   --> crates/vernal-beans/src/registry_builder.rs:368:8
+    |
+368 | struct ProxyBeanDefinition {
+    |        ^^^^^^^^^^^^^^^^^^^
+
+warning: field `bean_name` is never read
+   --> crates/vernal-beans/src/registry_builder.rs:400:5
+    |
+399 | struct RemovedBeanDefinition {
+    |        --------------------- field in this struct
+400 |     bean_name: String,
+    |     ^^^^^^^^^
+    |
+    = note: `RemovedBeanDefinition` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/byte_array_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: requested on the command line with `-W missing-docs`
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/byte_array_property_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/char_array_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/char_array_property_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/char_property_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/charset_editor.rs:17:5
+   |
+17 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/charset_property_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/class_array_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/class_editor.rs:17:5
+   |
+17 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/currency_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/file_array_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/file_editor.rs:17:5
+   |
+17 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/input_source_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/input_stream_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/locale_editor.rs:17:5
+   |
+17 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/path_editor.rs:17:5
+   |
+17 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/path_property_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/pattern_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/properties_editor.rs:17:5
+   |
+17 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/reader_editor.rs:17:5
+   |
+17 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/resource_bundle_editor.rs:17:5
+   |
+17 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/string_array_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/timezone_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/zone_id_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: `vernal-beans` (lib) generated 43 warnings (run `cargo fix --lib -p vernal-beans` to apply 11 suggestions)
+warning: unused import: `StartupObservation`
+  --> crates/vernal-context/src/application_close_coordinator.rs:19:23
+   |
+19 |     ManagedTaskError, StartupObservation, StartupReport, context_resources::ContextResources,
+   |                       ^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `vernal_core::BoxError`
+  --> crates/vernal-context/src/async_task.rs:43:5
+   |
+43 | use vernal_core::BoxError;
+   |     ^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Read`
+ --> crates/vernal-context/src/resource/resource.rs:5:21
+  |
+5 | use std::io::{self, Read};
+  |                     ^^^^
+
+warning: unused import: `std::path::PathBuf`
+ --> crates/vernal-context/src/resource/resource.rs:6:5
+  |
+6 | use std::path::PathBuf;
+  |     ^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `EvaluationContext`
+  --> crates/vernal-context/src/expression_condition.rs:11:43
+   |
+11 | use vernal_expression::{ExpressionParser, EvaluationContext};
+   |                                           ^^^^^^^^^^^^^^^^^
+
+warning: unused variable: `subject`
+   --> crates/vernal-context/src/application_close_coordinator.rs:124:9
+    |
+124 |         subject: impl Into<String>,
+    |         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_subject`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `phase`
+   --> crates/vernal-context/src/application_close_coordinator.rs:125:9
+    |
+125 |         phase: DiagnosticPhase,
+    |         ^^^^^ help: if this is intentional, prefix it with an underscore: `_phase`
+
+warning: unused variable: `outcome`
+   --> crates/vernal-context/src/application_close_coordinator.rs:126:9
+    |
+126 |         outcome: DiagnosticOutcome,
+    |         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_outcome`
+
+warning: unused variable: `started`
+   --> crates/vernal-context/src/application_close_coordinator.rs:127:9
+    |
+127 |         started: Instant,
+    |         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_started`
+
+warning: type `ManagedAdvisor` is more private than the item `AdvisorRegistration::Component::0`
+  --> crates/vernal-context/src/advisor_registration.rs:15:15
+   |
+15 |     Component(ManagedAdvisor),
+   |               ^^^^^^^^^^^^^^ field `AdvisorRegistration::Component::0` is reachable at visibility `pub`
+   |
+note: but type `ManagedAdvisor` is only usable at visibility `pub(crate)`
+  --> crates/vernal-context/src/managed_advisor.rs:17:1
+   |
+17 | pub(crate) struct ManagedAdvisor {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: `#[warn(private_interfaces)]` on by default
+
+warning: type `ManagedLocalAdvisor` is more private than the item `LocalAdvisorRegistration::Component::0`
+  --> crates/vernal-context/src/local_advisor_registration.rs:14:15
+   |
+14 |     Component(ManagedLocalAdvisor),
+   |               ^^^^^^^^^^^^^^^^^^^ field `LocalAdvisorRegistration::Component::0` is reachable at visibility `pub`
+   |
+note: but type `ManagedLocalAdvisor` is only usable at visibility `pub(crate)`
+  --> crates/vernal-context/src/managed_local_advisor.rs:16:1
+   |
+16 | pub(crate) struct ManagedLocalAdvisor {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: field `bean_expression_resolver` is never read
+   --> crates/vernal-context/src/value_binding.rs:104:5
+    |
+102 | pub struct ValueExpressionResolver {
+    |            ----------------------- field in this struct
+103 |     /// Bean 表达式解析器引用。
+104 |     bean_expression_resolver: Arc<dyn value_expression_resolver_trait::BeanExpressionResolverBridge>,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: associated function `new` is never used
+  --> crates/vernal-context/src/startup_observation.rs:22:19
+   |
+20 | impl StartupObservation {
+   | ----------------------- associated function in this implementation
+21 |     /// 创建一条完成后的启动观察记录。
+22 |     pub(crate) fn new(
+   |                   ^^^
+
+warning: missing documentation for a struct field
+  --> crates/vernal-context/src/application_module_parts.rs:20:5
+   |
+20 |     pub definitions: Vec<ComponentDefinition>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: requested on the command line with `-W missing-docs`
+
+warning: missing documentation for a struct field
+  --> crates/vernal-context/src/application_module_parts.rs:21:5
+   |
+21 |     pub bindings: Vec<TraitBinding>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> crates/vernal-context/src/application_module_parts.rs:22:5
+   |
+22 |     pub lifecycle_registrars: Vec<Box<LifecycleRegistrar>>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> crates/vernal-context/src/application_module_parts.rs:23:5
+   |
+23 |     pub event_listener_registrars: Vec<Box<EventListenerRegistrar>>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> crates/vernal-context/src/application_module_parts.rs:24:5
+   |
+24 |     pub application_runner_registrars: Vec<Box<ApplicationRunnerRegistrar>>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> crates/vernal-context/src/application_module_parts.rs:25:5
+   |
+25 |     pub scheduled_task_registrars: Vec<Box<ScheduledTaskRegistrar>>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> crates/vernal-context/src/application_module_parts.rs:26:5
+   |
+26 |     pub advisor_registrations: Vec<AdvisorRegistration>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> crates/vernal-context/src/application_module_parts.rs:27:5
+   |
+27 |     pub local_advisor_registrations: Vec<LocalAdvisorRegistration>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> crates/vernal-context/src/application_module_parts.rs:28:5
+   |
+28 |     pub operations: Vec<Operation>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> crates/vernal-context/src/application_module_parts.rs:29:5
+   |
+29 |     pub environment_contributions: Vec<ModuleEnvironmentContribution>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> crates/vernal-context/src/application_module_parts.rs:30:5
+   |
+30 |     pub conditional_modules: Vec<ConditionalComponentModule>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> crates/vernal-context/src/conditional_component_module_parts.rs:15:5
+   |
+15 |     pub definitions: Vec<ComponentDefinition>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> crates/vernal-context/src/conditional_component_module_parts.rs:16:5
+   |
+16 |     pub bindings: Vec<TraitBinding>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> crates/vernal-context/src/conditional_component_module_parts.rs:17:5
+   |
+17 |     pub lifecycle_registrars: Vec<Box<LifecycleRegistrar>>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> crates/vernal-context/src/conditional_component_module_parts.rs:18:5
+   |
+18 |     pub event_listener_registrars: Vec<Box<EventListenerRegistrar>>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> crates/vernal-context/src/conditional_component_module_parts.rs:19:5
+   |
+19 |     pub application_runner_registrars: Vec<Box<ApplicationRunnerRegistrar>>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a struct field
+  --> crates/vernal-context/src/conditional_component_module_parts.rs:20:5
+   |
+20 |     pub scheduled_task_registrars: Vec<Box<ScheduledTaskRegistrar>>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> crates/vernal-context/src/value_binding.rs:114:9
+    |
+114 | /         fn evaluate(
+115 | |             &self,
+116 | |             expression: &str,
+117 | |             bean_name: Option<&str>,
+118 | |         ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>>;
+    | |__________________________________________________________________________________________________^
+
+warning: `vernal-context` (lib) generated 31 warnings (run `cargo fix --lib -p vernal-context` to apply 9 suggestions)
+warning: `vernal-context` (lib test) generated 31 warnings (31 duplicates)
+warning: unused import: `RegistryBuilder`
+  --> crates/vernal-context/tests/application_runner_tests.rs:19:41
+   |
+19 | use vernal_beans::{ComponentDefinition, RegistryBuilder};
+   |                                         ^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: struct `FailingRunner` is never constructed
+  --> crates/vernal-context/tests/application_runner_tests.rs:84:8
+   |
+84 | struct FailingRunner;
+   |        ^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: struct `NoopLifecycle` is never constructed
+   --> crates/vernal-context/tests/application_runner_tests.rs:102:8
+    |
+102 | struct NoopLifecycle;
+    |        ^^^^^^^^^^^^^
+
+warning: `vernal-context` (test "application_runner_tests") generated 3 warnings (run `cargo fix --test "application_runner_tests" -p vernal-context` to apply 1 suggestion)
+warning: associated function `new` is never used
+  --> crates/vernal-context/tests/application_event_tests.rs:65:8
+   |
+64 | impl OrderCreatedEvent {
+   | ---------------------- associated function in this implementation
+65 |     fn new(source: Arc<dyn Any + Send + Sync>, order_id: u64) -> Self {
+   |        ^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+       Fresh vernal-context v0.0.0-dev (/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/crates/vernal-context)
+warning: `vernal-context` (test "application_event_tests") generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.15s
+     Running `/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/vernal_context-d1f9ad0e6de377a6`
+
+running 6 tests
+test application_context_event::tests::event_base_captures_timestamp_at_construction ... ok
+test application_context_event::tests::event_base_with_explicit_timestamp ... ok
+test application_context_event::tests::event_base_source_can_be_downcast ... ok
+test payload_application_event::tests::payload_event_carries_source_payload_and_type ... ok
+test payload_application_event::tests::payload_event_clone_preserves_payload_arc ... ok
+test payload_application_event::tests::payload_event_with_timestamp_is_deterministic ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/application_environment-16efef965c363842`
+
+running 7 tests
+test active_profiles_replace_defaults_and_remain_context_local ... ok
+test source_read_failure_is_structured_and_does_not_fall_through ... ok
+test explicit_source_order_controls_property_precedence ... ok
+test typed_lookup_and_required_properties_are_structured_and_redacted ... ok
+test source_and_map_registration_reject_ambiguous_inputs_atomically ... ok
+test placeholder_failures_report_keys_without_values ... ok
+test placeholders_resolve_across_sources_with_nested_defaults ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/application_environment_tests-07e461e119575c77`
+
+running 20 tests
+test contains_property ... ok
+test invalid_property_key_rejected ... ok
+test is_profile_active_rejects_invalid ... ok
+test is_profile_active ... ok
+test default_profiles_when_no_active ... ok
+test active_profiles_take_precedence ... ok
+test nested_placeholder_partial_resolution ... ok
+test get_property_single_source ... ok
+test missing_key_returns_none ... ok
+test higher_priority_source_wins ... ok
+test duplicate_source_name_rejected ... ok
+test circular_placeholder_detected ... ok
+test placeholder_circular_chain ... ok
+test placeholder_recursive_resolution ... ok
+test placeholder_with_default ... ok
+test placeholder_with_default_resolved ... ok
+test property_source_read_failure_propagates ... ok
+test require_missing_property ... ok
+test typed_property_conversion ... ok
+test unresolved_placeholder ... ok
+
+test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/application_event_listeners-c372da0ef53c8be4`
+
+running 6 tests
+test application_rejects_duplicate_component_event_subscription ... ok
+test application_rejects_non_singleton_listener_without_promoting_its_scope ... ok
+test unmatched_condition_omits_listener_component_and_subscription_atomically ... ok
+test listener_failure_cancels_application_and_redacts_default_error_text ... ok
+test refresh_subscribes_ioc_listener_before_lifecycle_initialize_publishes ... ok
+test application_module_atomically_contributes_listener_component_and_subscription ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/application_event_tests-4670dfcd19b3b343`
+
+running 15 tests
+test event_type_id_helper_matches_typeid_of ... ok
+test application_context_event_base_with_explicit_timestamp ... ok
+test smart_listener_hooks_have_spring_defaults ... ok
+test application_context_event_base_captures_source_and_timestamp ... ok
+test payload_application_event_carries_all_fields ... ok
+test smart_listener_supports_event_type_filters_correctly ... ok
+test smart_listener_id_and_order_can_be_overridden ... ok
+test custom_event_exposes_source_and_timestamp_via_trait ... ok
+test smart_listener_supports_source_filters_correctly ... ok
+test event_bus_default_and_custom_capacity ... ok
+test event_bus_subscriber_count_tracks_receivers ... ok
+test event_bus_publish_without_subscribers_returns_zero ... ok
+test event_bus_publish_payload_wraps_into_payload_event ... ok
+test payload_event_distinct_subscribers_by_payload_type ... ok
+test event_bus_publish_subscribe_round_trip ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/application_launch-fcc9747794de4dc3`
+
+running 5 tests
+test launch_preserves_build_failure_without_fabricating_startup_report ... ok
+test launch_returns_shared_ready_context_and_close_remains_explicit ... ok
+test launch_start_failure_rolls_back_initialized_component_and_reports_closed ... ok
+test launch_refresh_failure_is_closed_and_reported_without_leaking_secret ... ok
+test cancelling_launch_waiter_finishes_startup_then_closes_orphan_context ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running `/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/application_lifecycle_events-71d194456d184e9c`
+
+running 4 tests
+test failed_refresh_never_publishes_a_false_refreshed_fact ... ok
+test failed_start_never_publishes_a_false_ready_fact ... ok
+test ready_listener_failure_uses_managed_task_cancellation_and_redaction ... ok
+test context_publishes_refreshed_then_ready_after_each_state_commit ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/application_modules-553129aa972b3886`
+
+running 7 tests
+test module_identity_rejects_invalid_empty_and_duplicate_declarations ... ok
+test configuration_failure_is_redacted_and_discards_staged_contributions ... ok
+test invalid_or_duplicate_nested_conditions_roll_back_the_outer_module ... ok
+test definition_conflict_rolls_back_environment_operation_and_module_name ... ok
+test environment_conflict_rolls_back_components_and_operations ... ok
+test module_condition_uses_the_same_staged_environment_and_reports_match ... ok
+test module_atomically_installs_ioc_lifecycle_aop_operation_and_environment ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/application_runner_tests-71f9b71fb0162e66`
+
+running 7 tests
+test scheduled_task_name ... ok
+test application_runner_name ... ok
+test runner_runs_after_lifecycle_start ... ok
+test multiple_runners_execute_sequentially ... ok
+test application_runner_called_after_lifecycle_start ... ok
+test scheduled_task_responds_to_cancellation ... ok
+test scheduled_task_executes_periodically ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.16s
+
+     Running `/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/application_runners-46d991398af9f4c6`
+
+running 7 tests
+test runner_declarations_require_existing_singleton_and_unique_component_identity ... ok
+test qualified_runner_resolves_only_its_exact_singleton_identity ... ok
+test application_module_and_condition_module_contribute_the_same_runner_contract ... ok
+test runner_panic_is_captured_redacted_and_rolled_back ... ok
+test runner_failure_short_circuits_later_work_rolls_back_and_redacts_defaults ... FAILED
+test runners_follow_dependency_order_between_lifecycle_start_and_ready_fact ... FAILED
+test runner_timeout_uses_start_budget_aborts_and_closes_context ... ok
+
+failures:
+
+---- runner_failure_short_circuits_later_work_rolls_back_and_redacts_defaults stdout ----
+
+thread 'runner_failure_short_circuits_later_work_rolls_back_and_redacts_defaults' (2418999) panicked at crates/vernal-context/tests/application_runners.rs:143:5:
+assertion failed: report.observations().iter().any(|observation|
+        {
+            observation.phase() == DiagnosticPhase::ApplicationRunner &&
+                    observation.outcome() == DiagnosticOutcome::Failed &&
+                !observation.subject().contains("secret-runner-downstream-response")
+        })
+
+---- runners_follow_dependency_order_between_lifecycle_start_and_ready_fact stdout ----
+
+thread 'runners_follow_dependency_order_between_lifecycle_start_and_ready_fact' (2419002) panicked at crates/vernal-context/tests/application_runners.rs:71:5:
+startup report must expose a redacted successful runner observation
+
+
+failures:
+    runner_failure_short_circuits_later_work_rolls_back_and_redacts_defaults
+    runners_follow_dependency_order_between_lifecycle_start_and_ready_fact
+
+test result: FAILED. 5 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+error: test failed, to rerun pass `-p vernal-context --test application_runners`
+
+*** result: Failure(101)

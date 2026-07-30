@@ -1,0 +1,1012 @@
+
+*** crates/vernal-context/src/application_close_coordinator.rs:143:9: replace ApplicationCloseCoordinator::shutdown_managed_tasks -> Option<ManagedTaskError> with Some(Default::default())
+
+*** mutation diff:
+--- crates/vernal-context/src/application_close_coordinator.rs
++++ replace ApplicationCloseCoordinator::shutdown_managed_tasks -> Option<ManagedTaskError> with Some(Default::default())
+@@ -135,26 +135,17 @@
+                 phase,
+                 outcome,
+                 elapsed_microseconds,
+             ));
+     }
+ 
+     /// 停止应用任务监督器，并仅向公开诊断写入稳定错误代码。
+     pub(crate) async fn shutdown_managed_tasks(&self) -> Option<ManagedTaskError> {
+-        let supervisor = self.resources.managed_tasks()?;
+-        let error = supervisor
+-            .shutdown(*self.resources.task_shutdown_policy())
+-            .await
+-            .err();
+-        if error.is_some() {
+-            self.record_warning("context.managed-task.shutdown-failed")
+-                .await;
+-        }
+-        error
++        Some(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 在独立 Tokio task 中执行一个组件停止钩子。
+     ///
+     /// 单个用户钩子 panic 只会转化为该组件的结构化失败，协调器仍会继续停止其余
+     /// 组件。组件名在提交任务前取得，诊断路径不会读取用户错误正文。
+     pub(crate) async fn stop_component(
+         &self,
+
+
+*** /opt/homebrew/bin/cargo test --no-run --verbose --package=vernal-context@0.0.0-dev
+       Fresh unicode-ident v1.0.24
+       Fresh autocfg v1.5.1
+       Fresh cfg-if v1.0.4
+       Fresh memchr v2.8.3
+       Fresh pin-project-lite v0.2.17
+       Fresh once_cell v1.21.4
+       Fresh proc-macro2 v1.0.107
+       Fresh aho-corasick v1.1.4
+       Fresh regex-syntax v0.8.11
+       Fresh smallvec v1.15.2
+       Fresh scopeguard v1.2.0
+       Fresh core-foundation-sys v0.8.7
+       Fresh quote v1.0.47
+       Fresh libc v0.2.189
+       Fresh crossbeam-utils v0.8.22
+       Fresh lock_api v0.4.14
+       Fresh iana-time-zone v0.1.65
+       Fresh regex-automata v0.4.16
+       Fresh syn v2.0.119
+       Fresh syn v3.0.3
+       Fresh num-traits v0.2.19
+       Fresh errno v0.3.14
+       Fresh parking_lot_core v0.9.12
+       Fresh socket2 v0.6.5
+       Fresh regex v1.13.1
+       Fresh getrandom v0.4.3
+       Fresh mio v1.2.2
+       Fresh thiserror-impl v2.0.19
+       Fresh linkme-impl v0.3.37
+       Fresh tokio-macros v2.7.1
+       Fresh chrono v0.4.45
+       Fresh signal-hook-registry v1.4.8
+       Fresh futures-macro v0.3.33
+       Fresh num-integer v0.1.46
+       Fresh inventory v0.3.24
+       Fresh bytes v1.12.1
+       Fresh futures-core v0.3.33
+       Fresh thiserror v2.0.19
+       Fresh linkme v0.3.37
+       Fresh futures-task v0.3.33
+       Fresh slab v0.4.12
+       Fresh tokio v1.53.1
+       Fresh num-bigint v0.4.8
+       Fresh crossbeam-epoch v0.9.20
+       Fresh serde_core v1.0.229
+       Fresh uuid v1.24.0
+       Fresh parking_lot v0.12.5
+       Fresh portable-atomic v1.14.0
+       Fresh vernal-core v0.0.0-dev (/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/crates/vernal-core)
+warning: missing documentation for an associated function
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:16:5
+   |
+16 |     pub fn new(target: HashMap<K, Vec<V>>) -> Self { Self { target } }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: requested on the command line with `-W missing-docs`
+
+warning: missing documentation for a method
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:18:5
+   |
+18 |     pub fn len(&self) -> usize { self.target.len() }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:20:5
+   |
+20 |     pub fn is_empty(&self) -> bool { self.target.is_empty() }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:22:5
+   |
+22 |     pub fn to_single_value_map(&self) -> HashMap<K, V> where K: Clone, V: Clone {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:26:5
+   |
+26 |     pub fn as_inner(&self) -> &HashMap<K, Vec<V>> { &self.target }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:27:5
+   |
+27 |     pub fn as_inner_mut(&mut self) -> &mut HashMap<K, Vec<V>> { &mut self.target }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:29:5
+   |
+29 |     pub fn into_inner(self) -> HashMap<K, Vec<V>> { self.target }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:55:5
+   |
+55 |     pub fn new(delegate: &'a M) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:59:5
+   |
+59 |     pub fn get(&self, key: &K) -> Option<&V> { self.delegate.get_first(key) }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:61:5
+   |
+61 |     pub fn len(&self) -> usize { self.delegate.len() }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:63:5
+   |
+63 |     pub fn is_empty(&self) -> bool { self.delegate.is_empty() }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:65:5
+   |
+65 |     pub fn contains_key(&self, key: &K) -> bool { self.delegate.contains_key(key) }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:75:5
+   |
+75 |     pub fn new(target: HashMap<K, V>) -> Self { Self { target } }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:77:5
+   |
+77 |     pub fn len(&self) -> usize { self.target.len() }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:79:5
+   |
+79 |     pub fn is_empty(&self) -> bool { self.target.is_empty() }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-core/src/util/multi_value_map_adapters.rs:81:5
+   |
+81 |     pub fn into_single_value_map(self) -> HashMap<K, V> { self.target }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+   --> crates/vernal-core/src/util/multi_value_map_adapters.rs:101:5
+    |
+101 |     pub fn into_map(self) -> HashMap<K, Vec<V>> { self.map }
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+       Fresh futures-util v0.3.33
+       Fresh tracing-attributes v0.1.31
+       Fresh libm v0.2.16
+       Fresh crossbeam-channel v0.5.16
+       Fresh tracing-core v0.1.36
+       Fresh futures-sink v0.3.33
+       Fresh hashbrown v0.14.5
+       Fresh tagptr v0.2.0
+       Fresh equivalent v1.0.2
+warning: `vernal-core` (lib) generated 17 warnings
+       Fresh zmij v1.0.23
+       Fresh dashmap v6.2.1
+       Fresh tracing v0.1.44
+       Fresh tokio-util v0.7.19
+       Fresh bigdecimal v0.4.10
+       Fresh moka v0.12.15
+       Fresh serde_derive v1.0.229
+       Fresh itoa v1.0.18
+       Fresh serde_json v1.0.151
+       Fresh vernal-expression v0.0.0-dev (/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/crates/vernal-expression)
+warning: unused import: `crate::method_resolver::MethodResolver`
+ --> crates/vernal-expression/src/method_filter.rs:6:5
+  |
+6 | use crate::method_resolver::MethodResolver;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `PrimitiveKind`
+  --> crates/vernal-expression/src/typed_value.rs:15:34
+   |
+15 | pub use crate::type_descriptor::{PrimitiveKind, TypeDescriptor};
+   |                                  ^^^^^^^^^^^^^
+
+warning: unused import: `crate::evaluation_context::EvaluationContext`
+ --> crates/vernal-expression/src/spel/ast/literal.rs:6:5
+  |
+6 | use crate::evaluation_context::EvaluationContext;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::evaluation_exception::EvaluationException`
+ --> crates/vernal-expression/src/spel/ast/literal.rs:7:5
+  |
+7 | use crate::evaluation_exception::EvaluationException;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::evaluation_context::EvaluationContext`
+ --> crates/vernal-expression/src/spel/ast/operator.rs:6:5
+  |
+6 | use crate::evaluation_context::EvaluationContext;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `ExpressionValue`
+ --> crates/vernal-expression/src/spel/ast/operator.rs:8:26
+  |
+8 | use crate::typed_value::{ExpressionValue, TypedValue};
+  |                          ^^^^^^^^^^^^^^^
+
+warning: unused import: `super::spel_node::SpelNode`
+ --> crates/vernal-expression/src/spel/ast/spel_node_impl.rs:5:5
+  |
+5 | use super::spel_node::SpelNode;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::evaluation_context::EvaluationContext`
+ --> crates/vernal-expression/src/spel/ast/spel_node_impl.rs:6:5
+  |
+6 | use crate::evaluation_context::EvaluationContext;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::evaluation_exception::EvaluationException`
+ --> crates/vernal-expression/src/spel/ast/spel_node_impl.rs:7:5
+  |
+7 | use crate::evaluation_exception::EvaluationException;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::typed_value::TypedValue`
+ --> crates/vernal-expression/src/spel/ast/spel_node_impl.rs:8:5
+  |
+8 | use crate::typed_value::TypedValue;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `ExpressionValue` and `TypeDescriptor`
+ --> crates/vernal-expression/src/spel/ast/null_literal.rs:9:26
+  |
+9 | use crate::typed_value::{ExpressionValue, TypeDescriptor, TypedValue};
+  |                          ^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^
+
+warning: unused import: `TypeDescriptor`
+ --> crates/vernal-expression/src/spel/ast/op_dec.rs:8:43
+  |
+8 | use crate::typed_value::{ExpressionValue, TypeDescriptor, TypedValue};
+  |                                           ^^^^^^^^^^^^^^
+
+warning: unused import: `TypeDescriptor`
+ --> crates/vernal-expression/src/spel/ast/op_inc.rs:8:43
+  |
+8 | use crate::typed_value::{ExpressionValue, TypeDescriptor, TypedValue};
+  |                                           ^^^^^^^^^^^^^^
+
+warning: unused import: `crate::spel::spel_message::SpelMessage`
+  --> crates/vernal-expression/src/spel/ast/operator_instanceof.rs:15:5
+   |
+15 | use crate::spel::spel_message::SpelMessage;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+ --> crates/vernal-expression/src/spel/support/map_accessor.rs:9:5
+  |
+9 | use std::collections::HashMap;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `ArcReflectiveMethodExecutor`
+  --> crates/vernal-expression/src/spel/support/standard_evaluation_context.rs:20:5
+   |
+20 |     ArcReflectiveMethodExecutor, ReflectiveMethodResolver,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::evaluation_exception::EvaluationException`
+ --> crates/vernal-expression/src/spel/expression_state.rs:6:5
+  |
+6 | use crate::evaluation_exception::EvaluationException;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `super::ast::identifier::Identifier`
+  --> crates/vernal-expression/src/spel/internal_spel_expression_parser.rs:35:5
+   |
+35 | use super::ast::identifier::Identifier;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `super::ast::inline_map::InlineMap`
+  --> crates/vernal-expression/src/spel/internal_spel_expression_parser.rs:38:5
+   |
+38 | use super::ast::inline_map::InlineMap;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused variable: `null_safe`
+   --> crates/vernal-expression/src/spel/internal_spel_expression_parser.rs:715:37
+    |
+715 |     fn maybe_eat_indexer(&mut self, null_safe: bool) -> Option<Box<dyn SpelNode>> {
+    |                                     ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_null_safe`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+   --> crates/vernal-expression/src/spel/internal_spel_expression_parser.rs:761:29
+    |
+761 |                         let mut t = self.next_token().unwrap();
+    |                             ----^
+    |                             |
+    |                             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+   --> crates/vernal-expression/src/spel/internal_spel_expression_parser.rs:765:29
+    |
+765 |                         let mut t = self.next_token().unwrap();
+    |                             ----^
+    |                             |
+    |                             help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> crates/vernal-expression/src/spel/internal_spel_expression_parser.rs:769:29
+    |
+769 |                         let mut t = self.next_token().unwrap();
+    |                             ----^
+    |                             |
+    |                             help: remove this `mut`
+
+warning: type alias `MethodFilterRegistry` is never used
+  --> crates/vernal-expression/src/method_filter.rs:18:10
+   |
+18 | pub type MethodFilterRegistry = std::collections::HashMap<std::any::TypeId, Vec<Box<dyn MethodFilter>>>;
+   |          ^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `null_safe` is never read
+  --> crates/vernal-expression/src/spel/ast/method_reference.rs:17:5
+   |
+14 | pub struct MethodReference {
+   |            --------------- field in this struct
+...
+17 |     null_safe: bool,
+   |     ^^^^^^^^^
+
+warning: field `null_safe` is never read
+  --> crates/vernal-expression/src/spel/ast/property_or_field_reference.rs:16:5
+   |
+14 | pub struct PropertyOrFieldReference {
+   |            ------------------------ field in this struct
+15 |     name: String,
+16 |     null_safe: bool,
+   |     ^^^^^^^^^
+
+warning: fields `auto_grow_collections` and `maximum_auto_grow_size` are never read
+  --> crates/vernal-expression/src/spel/spel_parser_configuration.rs:17:5
+   |
+ 9 | pub struct SpelParserConfiguration {
+   |            ----------------------- fields in this struct
+...
+17 |     auto_grow_collections: bool,
+   |     ^^^^^^^^^^^^^^^^^^^^^
+18 |     /// 最大自动增长大小
+19 |     maximum_auto_grow_size: usize,
+   |     ^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `SpelParserConfiguration` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: missing documentation for a trait
+ --> crates/vernal-expression/src/method_executor.rs:7:1
+  |
+7 | pub trait MethodExecutor: Send + Sync {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: requested on the command line with `-W missing-docs`
+
+warning: missing documentation for a method
+ --> crates/vernal-expression/src/method_executor.rs:8:5
+  |
+8 |     fn execute(&self, context: &dyn EvaluationContext, target: &TypedValue, arguments: &[TypedValue]) -> Result<TypedValue, AccessException>;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/boolean_literal.rs:19:5
+   |
+19 |     pub fn new(value: bool) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/float_literal.rs:20:5
+   |
+20 |     pub fn new(value: f64, original: String) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/long_literal.rs:22:5
+   |
+22 |     pub fn new(value: i64, original: String) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/null_literal.rs:17:5
+   |
+17 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/real_literal.rs:20:5
+   |
+20 |     pub fn new(value: f64, original: String) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/string_literal.rs:19:5
+   |
+19 |     pub fn new(value: String) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_divide.rs:20:5
+   |
+20 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_minus.rs:20:5
+   |
+20 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_modulus.rs:20:5
+   |
+20 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_multiply.rs:20:5
+   |
+20 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_plus.rs:25:5
+   |
+25 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/operator_power.rs:20:5
+   |
+20 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_eq.rs:20:5
+   |
+20 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_ge.rs:20:5
+   |
+20 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_gt.rs:20:5
+   |
+20 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_le.rs:20:5
+   |
+20 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_lt.rs:20:5
+   |
+20 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_ne.rs:20:5
+   |
+20 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_and.rs:19:5
+   |
+19 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_or.rs:19:5
+   |
+19 |     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/operator_not.rs:18:5
+   |
+18 |     pub fn new(operand: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_dec.rs:20:5
+   |
+20 |     pub fn new(operand: Box<dyn SpelNode>, prefix: bool) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/op_inc.rs:21:5
+   |
+21 |     pub fn new(operand: Box<dyn SpelNode>, prefix: bool) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/operator_between.rs:21:5
+   |
+21 |     pub fn new(value: Box<dyn SpelNode>, low: Box<dyn SpelNode>, high: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/bean_reference.rs:17:5
+   |
+17 |     pub fn new(name: String) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/constructor_reference.rs:18:5
+   |
+18 |     pub fn new(type_name: String, arguments: Vec<Box<dyn SpelNode>>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/elvis.rs:20:5
+   |
+20 |     pub fn new(expression: Box<dyn SpelNode>, default: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/function_reference.rs:18:5
+   |
+18 |     pub fn new(name: String, arguments: Vec<Box<dyn SpelNode>>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/identifier.rs:17:5
+   |
+17 |     pub fn new(name: String) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-expression/src/spel/ast/identifier.rs:22:5
+   |
+22 |     pub fn name(&self) -> &str {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/indexer.rs:17:5
+   |
+17 |     pub fn new(index: Box<dyn SpelNode>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/inline_list.rs:17:5
+   |
+17 |     pub fn new(elements: Vec<Box<dyn SpelNode>>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/inline_map.rs:18:5
+   |
+18 |     pub fn new(keys: Vec<Box<dyn SpelNode>>, values: Vec<Box<dyn SpelNode>>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/method_reference.rs:22:5
+   |
+22 |     pub fn new(name: String, arguments: Vec<Box<dyn SpelNode>>, null_safe: bool) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/property_or_field_reference.rs:21:5
+   |
+21 |     pub fn new(name: String, null_safe: bool) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for a method
+  --> crates/vernal-expression/src/spel/ast/property_or_field_reference.rs:26:5
+   |
+26 |     pub fn name(&self) -> &str {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/qualified_identifier.rs:17:5
+   |
+17 |     pub fn new(name: String) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/ternary.rs:19:5
+   |
+19 | /     pub fn new(
+20 | |         condition: Box<dyn SpelNode>,
+21 | |         true_value: Box<dyn SpelNode>,
+22 | |         false_value: Box<dyn SpelNode>,
+23 | |     ) -> Self {
+   | |_____________^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/type_reference.rs:17:5
+   |
+17 |     pub fn new(type_name: String) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-expression/src/spel/ast/variable_reference.rs:19:5
+   |
+19 |     pub fn new(name: String) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+       Fresh serde v1.0.229
+       Fresh vernal-aop v0.0.0-dev (/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/crates/vernal-aop)
+warning: unused import: `ModulePattern`
+  --> crates/vernal-aop/src/pointcut/dsl/matcher.rs:10:40
+   |
+10 | use super::pattern::{ExecutionPattern, ModulePattern};
+   |                                        ^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: `vernal-expression` (lib) generated 69 warnings (run `cargo fix --lib -p vernal-expression` to apply 23 suggestions)
+warning: `vernal-aop` (lib) generated 1 warning (run `cargo fix --lib -p vernal-aop` to apply 1 suggestion)
+       Fresh vernal-beans v0.0.0-dev (/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/crates/vernal-beans)
+warning: unused import: `std::any::TypeId`
+  --> crates/vernal-beans/src/component_metadata.rs:25:5
+   |
+25 | use std::any::TypeId;
+   |     ^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `std::sync::Arc`
+ --> crates/vernal-beans/src/configuration_class_post_processor.rs:7:5
+  |
+7 | use std::sync::Arc;
+  |     ^^^^^^^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+  --> crates/vernal-beans/src/conversion_service.rs:11:5
+   |
+11 | use std::collections::HashMap;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+  --> crates/vernal-beans/src/field_metadata.rs:28:5
+   |
+28 | use std::collections::HashMap;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Arc`
+  --> crates/vernal-beans/src/field_metadata.rs:29:17
+   |
+29 | use std::sync::{Arc, Mutex};
+   |                 ^^^
+
+warning: unused import: `std::sync::Arc`
+ --> crates/vernal-beans/src/placeholder_configurer.rs:8:5
+  |
+8 | use std::sync::Arc;
+  |     ^^^^^^^^^^^^^^
+
+warning: unused import: `EvaluationContext`
+  --> crates/vernal-beans/src/standard_bean_expression_resolver.rs:12:55
+   |
+12 | use vernal_expression::{Expression, ExpressionParser, EvaluationContext};
+   |                                                       ^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::property_editor::PropertyEditor`
+  --> crates/vernal-beans/src/conversion_service.rs:14:5
+   |
+14 | use crate::property_editor::PropertyEditor;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Expression`
+  --> crates/vernal-beans/src/standard_bean_expression_resolver.rs:12:25
+   |
+12 | use vernal_expression::{Expression, ExpressionParser, EvaluationContext};
+   |                         ^^^^^^^^^^
+
+warning: unused import: `crate::bean_factory::BeanFactory`
+  --> crates/vernal-beans/src/bean_factory_utils.rs:11:5
+   |
+11 | use crate::bean_factory::BeanFactory;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused variable: `other`
+   --> crates/vernal-beans/src/standard_bean_expression_resolver.rs:141:29
+    |
+141 | ...                   other => {
+    |                       ^^^^^ help: if this is intentional, prefix it with an underscore: `_other`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `property_name`
+   --> crates/vernal-beans/src/type_converter_delegate.rs:106:9
+    |
+106 |         property_name: Option<&str>,
+    |         ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_property_name`
+
+warning: unused variable: `definition`
+   --> crates/vernal-beans/src/registry_builder.rs:291:9
+    |
+291 |         definition: Box<dyn crate::bean_definition::BeanDefinition>,
+    |         ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_definition`
+
+warning: unused variable: `bean_name`
+   --> crates/vernal-beans/src/registry_builder.rs:340:9
+    |
+340 |         bean_name: &str,
+    |         ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_bean_name`
+
+warning: fields `bean_name` and `source` are never read
+    --> crates/vernal-beans/src/container.rs:1235:16
+     |
+1234 | pub(crate) struct ProxyBeanDefinition {
+     |                   ------------------- fields in this struct
+1235 |     pub(crate) bean_name: String,
+     |                ^^^^^^^^^
+...
+1238 |     pub(crate) source: String,
+     |                ^^^^^^
+     |
+     = note: `ProxyBeanDefinition` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+     = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `bean_name` is never read
+    --> crates/vernal-beans/src/container.rs:1265:5
+     |
+1264 | struct DeletedBeanDefinition {
+     |        --------------------- field in this struct
+1265 |     bean_name: String,
+     |     ^^^^^^^^^
+     |
+     = note: `DeletedBeanDefinition` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: field `bean_name` is never read
+    --> crates/vernal-beans/src/container.rs:1292:5
+     |
+1291 | struct RemovedBeanDefinition {
+     |        --------------------- field in this struct
+1292 |     bean_name: String,
+     |     ^^^^^^^^^
+     |
+     = note: `RemovedBeanDefinition` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: struct `ProxyBeanDefinition` is never constructed
+   --> crates/vernal-beans/src/registry_builder.rs:368:8
+    |
+368 | struct ProxyBeanDefinition {
+    |        ^^^^^^^^^^^^^^^^^^^
+
+warning: field `bean_name` is never read
+   --> crates/vernal-beans/src/registry_builder.rs:400:5
+    |
+399 | struct RemovedBeanDefinition {
+    |        --------------------- field in this struct
+400 |     bean_name: String,
+    |     ^^^^^^^^^
+    |
+    = note: `RemovedBeanDefinition` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/byte_array_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: requested on the command line with `-W missing-docs`
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/byte_array_property_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/char_array_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/char_array_property_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/char_property_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/charset_editor.rs:17:5
+   |
+17 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/charset_property_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/class_array_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/class_editor.rs:17:5
+   |
+17 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/currency_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/file_array_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/file_editor.rs:17:5
+   |
+17 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/input_source_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/input_stream_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/locale_editor.rs:17:5
+   |
+17 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/path_editor.rs:17:5
+   |
+17 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/path_property_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/pattern_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/properties_editor.rs:17:5
+   |
+17 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/reader_editor.rs:17:5
+   |
+17 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/resource_bundle_editor.rs:17:5
+   |
+17 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/string_array_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/timezone_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: missing documentation for an associated function
+  --> crates/vernal-beans/src/zone_id_editor.rs:16:5
+   |
+16 |     pub fn new() -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: `vernal-beans` (lib) generated 43 warnings (run `cargo fix --lib -p vernal-beans` to apply 11 suggestions)
+       Dirty vernal-context v0.0.0-dev (/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/crates/vernal-context): the file `crates/vernal-context/src/application_close_coordinator.rs` has changed (1785340655.250200846s, 16s after last build at 1785340639.853802095s)
+   Compiling vernal-context v0.0.0-dev (/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/crates/vernal-context)
+     Running `rustc --crate-name vernal_context --edition=2024 crates/vernal-context/src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked '--warn=clippy::pedantic' '--warn=clippy::all' --forbid=unsafe_code '--allow=clippy::module_name_repetitions' '--allow=clippy::missing_panics_doc' '--allow=clippy::missing_errors_doc' --warn=missing_docs --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=5135d37c9ebb13ab -C extra-filename=-d1f9ad0e6de377a6 --out-dir /private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps -C incremental=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/incremental -L dependency=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps --extern serde=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde-a8469b41c943557e.rlib --extern serde_json=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde_json-da9e4ac63f48fdd5.rlib --extern tokio=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio-8941ce8df0c80b3f.rlib --extern tokio_util=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio_util-4bcaaed7a8face4f.rlib --extern vernal_aop=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_aop-c7fc2a809f623b15.rlib --extern vernal_beans=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_beans-7e56e1599e6efb8e.rlib --extern vernal_core=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_core-5fcb76ab5bc81f82.rlib --extern vernal_expression=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_expression-96ffc72cb4ec74ac.rlib`
+     Running `rustc --crate-name vernal_context --edition=2024 crates/vernal-context/src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type lib --emit=dep-info,metadata,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked '--warn=clippy::pedantic' '--warn=clippy::all' --forbid=unsafe_code '--allow=clippy::module_name_repetitions' '--allow=clippy::missing_panics_doc' '--allow=clippy::missing_errors_doc' --warn=missing_docs --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=2cf25976a5f49237 -C extra-filename=-3d0e0a67de859753 --out-dir /private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps -C incremental=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/incremental -L dependency=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps --extern serde=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde-a8469b41c943557e.rmeta --extern tokio=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio-8941ce8df0c80b3f.rmeta --extern tokio_util=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio_util-4bcaaed7a8face4f.rmeta --extern vernal_aop=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_aop-c7fc2a809f623b15.rmeta --extern vernal_beans=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_beans-7e56e1599e6efb8e.rmeta --extern vernal_core=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_core-5fcb76ab5bc81f82.rmeta --extern vernal_expression=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_expression-96ffc72cb4ec74ac.rmeta`
+warning: unused import: `vernal_core::BoxError`
+  --> crates/vernal-context/src/async_task.rs:43:5
+   |
+43 | use vernal_core::BoxError;
+   |     ^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `Read`
+ --> crates/vernal-context/src/resource/resource.rs:5:21
+  |
+5 | use std::io::{self, Read};
+  |                     ^^^^
+
+warning: unused import: `std::path::PathBuf`
+ --> crates/vernal-context/src/resource/resource.rs:6:5
+  |
+6 | use std::path::PathBuf;
+  |     ^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `EvaluationContext`
+  --> crates/vernal-context/src/expression_condition.rs:11:43
+   |
+11 | use vernal_expression::{ExpressionParser, EvaluationContext};
+   |                                           ^^^^^^^^^^^^^^^^^
+
+error[E0277]: the trait bound `ManagedTaskError: Default` is not satisfied
+   --> crates/vernal-context/src/application_close_coordinator.rs:143:14
+    |
+143 |         Some(Default::default()) /* ~ changed by cargo-mutants ~ */
+    |              ^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+    |
+help: the trait `Default` is not implemented for `ManagedTaskError`
+   --> crates/vernal-context/src/managed_task_error.rs:13:1
+    |
+ 13 | pub enum ManagedTaskError {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For more information about this error, try `rustc --explain E0277`.
+warning: `vernal-context` (lib test) generated 4 warnings
+error: could not compile `vernal-context` (lib test) due to 1 previous error; 4 warnings emitted
+
+Caused by:
+  process didn't exit successfully: `rustc --crate-name vernal_context --edition=2024 crates/vernal-context/src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked '--warn=clippy::pedantic' '--warn=clippy::all' --forbid=unsafe_code '--allow=clippy::module_name_repetitions' '--allow=clippy::missing_panics_doc' '--allow=clippy::missing_errors_doc' --warn=missing_docs --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=5135d37c9ebb13ab -C extra-filename=-d1f9ad0e6de377a6 --out-dir /private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps -C incremental=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/incremental -L dependency=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps --extern serde=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde-a8469b41c943557e.rlib --extern serde_json=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde_json-da9e4ac63f48fdd5.rlib --extern tokio=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio-8941ce8df0c80b3f.rlib --extern tokio_util=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio_util-4bcaaed7a8face4f.rlib --extern vernal_aop=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_aop-c7fc2a809f623b15.rlib --extern vernal_beans=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_beans-7e56e1599e6efb8e.rlib --extern vernal_core=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_core-5fcb76ab5bc81f82.rlib --extern vernal_expression=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_expression-96ffc72cb4ec74ac.rlib` (exit status: 1)
+warning: build failed, waiting for other jobs to finish...
+warning: `vernal-context` (lib) generated 4 warnings (4 duplicates)
+error: could not compile `vernal-context` (lib) due to 1 previous error; 4 warnings emitted
+
+Caused by:
+  process didn't exit successfully: `rustc --crate-name vernal_context --edition=2024 crates/vernal-context/src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type lib --emit=dep-info,metadata,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked '--warn=clippy::pedantic' '--warn=clippy::all' --forbid=unsafe_code '--allow=clippy::module_name_repetitions' '--allow=clippy::missing_panics_doc' '--allow=clippy::missing_errors_doc' --warn=missing_docs --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=2cf25976a5f49237 -C extra-filename=-3d0e0a67de859753 --out-dir /private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps -C incremental=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/incremental -L dependency=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps --extern serde=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libserde-a8469b41c943557e.rmeta --extern tokio=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio-8941ce8df0c80b3f.rmeta --extern tokio_util=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libtokio_util-4bcaaed7a8face4f.rmeta --extern vernal_aop=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_aop-c7fc2a809f623b15.rmeta --extern vernal_beans=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_beans-7e56e1599e6efb8e.rmeta --extern vernal_core=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_core-5fcb76ab5bc81f82.rmeta --extern vernal_expression=/private/var/folders/_s/9_xnnkz141920t1yv5zhvd1r0000gn/T/cargo-mutants-vernal-framework-eVKz1j.tmp/target/debug/deps/libvernal_expression-96ffc72cb4ec74ac.rmeta` (exit status: 1)
+
+*** result: Failure(101)

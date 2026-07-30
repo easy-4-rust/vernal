@@ -49,7 +49,7 @@ pub mod operator_between;
 pub mod operator_instanceof;
 pub mod operator_matches;
 
-// ─── 表达式节点（17 个） ───
+// ─── 表达式节点（18 个） ───
 pub mod assign;
 pub mod bean_reference;
 pub mod compound_expression;
@@ -64,6 +64,7 @@ pub mod method_reference;
 pub mod projection;
 pub mod property_or_field_reference;
 pub mod qualified_identifier;
+pub mod safe_navigation;
 pub mod selection;
 pub mod ternary;
 pub mod type_reference;

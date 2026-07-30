@@ -1,0 +1,30 @@
+--- crates/vernal-context/src/application_close_coordinator.rs
++++ replace ApplicationCloseCoordinator::shutdown_managed_tasks -> Option<ManagedTaskError> with None
+@@ -135,26 +135,17 @@
+                 phase,
+                 outcome,
+                 elapsed_microseconds,
+             ));
+     }
+ 
+     /// 停止应用任务监督器，并仅向公开诊断写入稳定错误代码。
+     pub(crate) async fn shutdown_managed_tasks(&self) -> Option<ManagedTaskError> {
+-        let supervisor = self.resources.managed_tasks()?;
+-        let error = supervisor
+-            .shutdown(*self.resources.task_shutdown_policy())
+-            .await
+-            .err();
+-        if error.is_some() {
+-            self.record_warning("context.managed-task.shutdown-failed")
+-                .await;
+-        }
+-        error
++        None /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 在独立 Tokio task 中执行一个组件停止钩子。
+     ///
+     /// 单个用户钩子 panic 只会转化为该组件的结构化失败，协调器仍会继续停止其余
+     /// 组件。组件名在提交任务前取得，诊断路径不会读取用户错误正文。
+     pub(crate) async fn stop_component(
+         &self,

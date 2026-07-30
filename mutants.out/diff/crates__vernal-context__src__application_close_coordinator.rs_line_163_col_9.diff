@@ -1,0 +1,44 @@
+--- crates/vernal-context/src/application_close_coordinator.rs
++++ replace ApplicationCloseCoordinator::stop_component -> Result<(), ContextError> with Ok(())
+@@ -155,40 +155,17 @@
+     /// 在独立 Tokio task 中执行一个组件停止钩子。
+     ///
+     /// 单个用户钩子 panic 只会转化为该组件的结构化失败，协调器仍会继续停止其余
+     /// 组件。组件名在提交任务前取得，诊断路径不会读取用户错误正文。
+     pub(crate) async fn stop_component(
+         &self,
+         component: &Arc<dyn Lifecycle>,
+     ) -> Result<(), ContextError> {
+-        let started = Instant::now();
+-        let name = component.name();
+-        let owned_component = Arc::clone(component);
+-        let task = tokio::spawn(async move { owned_component.stop().await });
+-        let policy = *self.resources.lifecycle_execution_policy();
+-        let result = LifecycleTaskExecutor::execute(
+-            task,
+-            name,
+-            LifecyclePhase::Stop,
+-            policy.stop_timeout(),
+-            policy.abort_timeout(),
+-        )
+-        .await;
+-        let outcome = if result.is_ok() {
+-            DiagnosticOutcome::Succeeded
+-        } else {
+-            DiagnosticOutcome::Failed
+-        };
+-        self.record_observation(name, DiagnosticPhase::Stop, outcome, started)
+-            .await;
+-        if let Err(error) = &result {
+-            self.record_lifecycle_warning(error).await;
+-        }
+-        result
++        Ok(()) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 逆序停止全部组件、隔离每个钩子的 panic，并保留第一个错误。
+     pub(crate) async fn stop_all(&self, components: &[Arc<dyn Lifecycle>]) -> Option<ContextError> {
+         let mut first_error = None;
+         for component in components.iter().rev() {
+             let stop_error = self.stop_component(component).await.err();
+             if first_error.is_none() {

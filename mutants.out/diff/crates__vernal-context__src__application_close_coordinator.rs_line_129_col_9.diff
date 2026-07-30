@@ -1,0 +1,30 @@
+--- crates/vernal-context/src/application_close_coordinator.rs
++++ replace ApplicationCloseCoordinator::record_observation with ()
+@@ -121,26 +121,17 @@
+     /// 追加一条不包含底层错误正文的生命周期观测。
+     pub(crate) async fn record_observation(
+         &self,
+         subject: impl Into<String>,
+         phase: DiagnosticPhase,
+         outcome: DiagnosticOutcome,
+         started: Instant,
+     ) {
+-        let elapsed_microseconds = u64::try_from(started.elapsed().as_micros()).unwrap_or(u64::MAX);
+-        self.diagnostics
+-            .lock()
+-            .await
+-            .record(StartupObservation::new(
+-                subject.into(),
+-                phase,
+-                outcome,
+-                elapsed_microseconds,
+-            ));
++        () /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// 停止应用任务监督器，并仅向公开诊断写入稳定错误代码。
+     pub(crate) async fn shutdown_managed_tasks(&self) -> Option<ManagedTaskError> {
+         let supervisor = self.resources.managed_tasks()?;
+         let error = supervisor
+             .shutdown(*self.resources.task_shutdown_policy())
+             .await

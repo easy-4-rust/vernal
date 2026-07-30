@@ -56,7 +56,7 @@ impl TypedValue {
     /// - `value` — 要封装的值
     /// - `type_descriptor` — 值的类型描述符
     #[must_use]
-    pub fn new(value: ExpressionValue, type_descriptor: TypeDescriptor) -> Self {
+    pub const fn new(value: ExpressionValue, type_descriptor: TypeDescriptor) -> Self {
         Self {
             value,
             type_descriptor,
