@@ -88,23 +88,43 @@ impl SpelNode for Indexer {
                 }
             }
 
-            // Object[property] — 对象属性访问（通过 PropertyAccessor）
-            (_, ExpressionValue::String(prop_name)) => {
-                let accessors = state.property_accessors();
-                for accessor in &accessors {
-                    if accessor.can_read(state.evaluation_context(), &target, prop_name) {
+            // 通过 IndexAccessor 访问（对标 Spring Indexer 的 IndexAccessor 集成）
+            _ => {
+                let index_accessors = state.evaluation_context().index_accessors();
+                for accessor in &index_accessors {
+                    if accessor.can_read(state.evaluation_context(), &target, &index) {
                         return accessor
-                            .read(state.evaluation_context(), &target, prop_name)
+                            .read(state.evaluation_context(), &target, &index)
                             .map_err(|e| {
                                 EvaluationException::new(
                                     "",
                                     None,
                                     SpelMessage::ExceptionDuringIndexRead
-                                        .format_message(&[prop_name, &e.to_string()]),
+                                        .format_message(&[&index.to_string(), &e.to_string()]),
                                 )
                             });
                     }
                 }
+
+                // Object[property] — 对象属性访问（通过 PropertyAccessor）
+                if let ExpressionValue::String(prop_name) = index.value() {
+                    let accessors = state.property_accessors();
+                    for accessor in &accessors {
+                        if accessor.can_read(state.evaluation_context(), &target, prop_name) {
+                            return accessor
+                                .read(state.evaluation_context(), &target, prop_name)
+                                .map_err(|e| {
+                                    EvaluationException::new(
+                                        "",
+                                        None,
+                                        SpelMessage::ExceptionDuringIndexRead
+                                            .format_message(&[prop_name, &e.to_string()]),
+                                    )
+                                });
+                        }
+                    }
+                }
+
                 Err(EvaluationException::new(
                     "",
                     None,
@@ -112,13 +132,6 @@ impl SpelNode for Indexer {
                         .format_message(&[&target.type_descriptor().name()]),
                 ))
             }
-
-            _ => Err(EvaluationException::new(
-                "",
-                None,
-                SpelMessage::IndexingNotSupportedForType
-                    .format_message(&[&target.type_descriptor().name()]),
-            )),
         }
     }
 
