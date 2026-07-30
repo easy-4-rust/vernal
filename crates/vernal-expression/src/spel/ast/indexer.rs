@@ -60,11 +60,16 @@ impl SpelNode for Indexer {
         }
 
         match (target.value(), index.value()) {
-            // List[Int] — 列表索引
+            // List[Int] — 列表索引（支持自动增长）
             (ExpressionValue::List(list), ExpressionValue::Int(i)) => {
                 let idx = *i as usize;
                 if idx < list.len() {
                     Ok(list[idx].clone())
+                } else if state.auto_grow_collections() && idx < state.maximum_auto_grow_size() {
+                    // 对标 Spring Indexer: autoGrowCollections 支持
+                    // 当索引超出范围但小于 maximumAutoGrowSize 时，返回 null
+                    // 注意：实际的列表增长需要在 setValue 时完成
+                    Ok(TypedValue::null())
                 } else {
                     Err(EvaluationException::new(
                         "",

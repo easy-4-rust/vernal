@@ -25,6 +25,10 @@ pub struct ExpressionState<'a> {
     operation_count: u32,
     /// 最大操作数限制。
     max_operations: u32,
+    /// 是否自动增长集合（对标 Spring SpelParserConfiguration.autoGrowCollections）。
+    auto_grow_collections: bool,
+    /// 集合自动增长最大尺寸（对标 Spring SpelParserConfiguration.maximumAutoGrowSize）。
+    maximum_auto_grow_size: usize,
 }
 
 impl<'a> ExpressionState<'a> {
@@ -38,6 +42,8 @@ impl<'a> ExpressionState<'a> {
             variables: HashMap::new(),
             operation_count: 0,
             max_operations: DEFAULT_MAX_OPERATIONS,
+            auto_grow_collections: false,
+            maximum_auto_grow_size: 256,
         }
     }
 
@@ -51,7 +57,31 @@ impl<'a> ExpressionState<'a> {
             variables: HashMap::new(),
             operation_count: 0,
             max_operations,
+            auto_grow_collections: false,
+            maximum_auto_grow_size: 256,
         }
+    }
+
+    /// 设置是否自动增长集合。
+    pub fn set_auto_grow_collections(&mut self, auto_grow: bool) {
+        self.auto_grow_collections = auto_grow;
+    }
+
+    /// 设置集合自动增长最大尺寸。
+    pub fn set_maximum_auto_grow_size(&mut self, max_size: usize) {
+        self.maximum_auto_grow_size = max_size;
+    }
+
+    /// 是否自动增长集合。
+    #[must_use]
+    pub fn auto_grow_collections(&self) -> bool {
+        self.auto_grow_collections
+    }
+
+    /// 集合自动增长最大尺寸。
+    #[must_use]
+    pub fn maximum_auto_grow_size(&self) -> usize {
+        self.maximum_auto_grow_size
     }
 
     /// 设置局部变量。
