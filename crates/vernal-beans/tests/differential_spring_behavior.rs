@@ -40,6 +40,7 @@ struct UserRepository {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 struct OrderService {
     user_repo_url: String,
 }

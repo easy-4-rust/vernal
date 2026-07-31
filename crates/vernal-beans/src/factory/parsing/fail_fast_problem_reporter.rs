@@ -5,7 +5,7 @@
 //!
 //! 对应 Java 类：`org.springframework.beans.factory.parsing.FailFastProblemReporter`。
 
-use super::problem::{Problem, ProblemSeverity};
+use super::problem::Problem;
 use super::problem_reporter::ProblemReporter;
 
 /// 快速失败的问题报告器。

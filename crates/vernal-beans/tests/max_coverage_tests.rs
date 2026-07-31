@@ -6,13 +6,34 @@ use std::any::{Any, TypeId};
 use std::sync::Arc;
 
 use vernal_beans::{
-    BeanDefinition, BeanDescCache, BeanFactory, BeanFactoryUtils, ComponentDefinition,
-    ComponentKey, ConfigurableBeanFactory, ConfigurableListableBeanFactory, Container,
-    ConversionServiceFactory, DefinitionError, DirectFieldAccessor, FactoryBeanRegistrySupport,
-    GraphError, HierarchicalBeanFactory, ListableBeanFactory, PropertyEditor,
-    PropertyEditorCache, PropertyEditorRegistry, Qualifier, RegistryBuilder, ResolveError,
-    RootBeanDefinition, Scope, ScopeError, ScopeKey, ScopeState, TransientTracker,
+    BeanDescCache,
+    BeanFactory,
+    BeanFactoryUtils,
+    ComponentDefinition,
+    ComponentKey,
+    ConfigurableBeanFactory,
+    ConfigurableListableBeanFactory,
+    Container,
+    ConversionServiceFactory,
+    DefinitionError,
+    DirectFieldAccessor,
+    GraphError,
+    HierarchicalBeanFactory,
+    ListableBeanFactory,
+    PropertyEditor,
+    PropertyEditorCache,
+    PropertyEditorRegistry,
+    Qualifier,
+    RegistryBuilder,
+    ResolveError,
+    RootBeanDefinition,
+    Scope,
+    ScopeError,
+    ScopeKey,
+    ScopeState,
+    TransientTracker,
 };
+
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Helpers
@@ -102,14 +123,14 @@ fn container_select_definition_ambiguous() {
     // Register two definitions of the same type with different qualifiers
     let q1 = Qualifier::new("a").unwrap();
     let q2 = Qualifier::new("b").unwrap();
-    b.register(
+    let _ = b.register(
         ComponentDefinition::singleton::<String, _>(|_| "a".to_string()).qualified(q1),
     );
-    b.register(
+    let _ = b.register(
         ComponentDefinition::singleton::<String, _>(|_| "b".to_string()).qualified(q2),
     );
     // Also register unqualified - this creates ambiguity when resolving without qualifier
-    b.register(ComponentDefinition::singleton::<i32, _>(|_| 1i32));
+    let _ = b.register(ComponentDefinition::singleton::<i32, _>(|_| 1i32));
     let c = Container::new(b.build().unwrap());
     // Resolving String without qualifier should be ambiguous (3 matches)
     let result: Result<Arc<String>, _> = c.resolve();
@@ -191,7 +212,7 @@ fn container_resolve_in_scope_wrong_owner() {
 fn container_resolve_qualified_in_success() {
     let mut b = RegistryBuilder::new();
     let q = Qualifier::new("primary").unwrap();
-    b.register(
+    let _ = b.register(
         ComponentDefinition::singleton::<String, _>(|_| "primary".to_string()).qualified(q.clone()),
     );
     let c = Container::new(b.build().unwrap());
@@ -212,7 +233,7 @@ fn container_resolve_qualified_not_found() {
 fn container_resolve_qualified_in_wrong_owner() {
     let mut b = RegistryBuilder::new();
     let q = Qualifier::new("q").unwrap();
-    b.register(
+    let _ = b.register(
         ComponentDefinition::singleton::<String, _>(|_| "v".to_string()).qualified(q.clone()),
     );
     let c = Container::new(b.build().unwrap());
@@ -732,7 +753,7 @@ fn container_construct_with_post_processor() {
         }
     }
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+    let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
     let mut c = Container::new(b.build().unwrap());
     c.add_bean_post_processor(Arc::new(MockPP));
     assert_eq!(c.bean_post_processor_count(), 1);
@@ -757,7 +778,7 @@ fn container_post_processor_none_return() {
         }
     }
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+    let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
     let mut c = Container::new(b.build().unwrap());
     c.add_bean_post_processor(Arc::new(NonePP));
     let val: Arc<String> = c.resolve().unwrap();
@@ -771,7 +792,7 @@ fn container_post_processor_error_ignored() {
     impl BeanPostProcessor for ErrorPP {
         fn post_process_after_initialization(
             &self,
-            bean: Arc<dyn Any + Send + Sync>,
+            _bean: Arc<dyn Any + Send + Sync>,
             _: &str,
         ) -> Result<
             Option<Arc<dyn Any + Send + Sync>>,
@@ -781,7 +802,7 @@ fn container_post_processor_error_ignored() {
         }
     }
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+    let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
     let mut c = Container::new(b.build().unwrap());
     c.add_bean_post_processor(Arc::new(ErrorPP));
     let val: Arc<String> = c.resolve().unwrap();

@@ -26,8 +26,8 @@ pub trait SmartInstantiationAwareBeanPostProcessor: Send + Sync {
     /// 默认返回 `None`（使用原始类型）。
     fn predict_bean_type(
         &self,
-        bean_class: &str,
-        bean_name: &str,
+        _bean_class: &str,
+        _bean_name: &str,
     ) -> Option<String> {
         None
     }
@@ -38,8 +38,8 @@ pub trait SmartInstantiationAwareBeanPostProcessor: Send + Sync {
     /// 默认返回 `None`（使用默认构造器）。
     fn determine_candidate_constructors(
         &self,
-        bean_class: &str,
-        bean_name: &str,
+        _bean_class: &str,
+        _bean_name: &str,
     ) -> Option<Vec<Vec<String>>> {
         None
     }
@@ -51,7 +51,7 @@ pub trait SmartInstantiationAwareBeanPostProcessor: Send + Sync {
     fn get_early_bean_reference(
         &self,
         bean: Arc<dyn Any + Send + Sync>,
-        bean_name: &str,
+        _bean_name: &str,
     ) -> Arc<dyn Any + Send + Sync> {
         bean
     }
@@ -59,8 +59,8 @@ pub trait SmartInstantiationAwareBeanPostProcessor: Send + Sync {
     /// 在 Bean 实例化之前调用。
     fn post_process_before_instantiation(
         &self,
-        bean_class: &str,
-        bean_name: &str,
+        _bean_class: &str,
+        _bean_name: &str,
     ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>> {
         Ok(None)
     }
@@ -68,8 +68,8 @@ pub trait SmartInstantiationAwareBeanPostProcessor: Send + Sync {
     /// 在 Bean 实例化之后调用。
     fn post_process_after_instantiation(
         &self,
-        bean: &dyn Any,
-        bean_name: &str,
+        _bean: &dyn Any,
+        _bean_name: &str,
     ) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
         Ok(true)
     }
@@ -78,7 +78,7 @@ pub trait SmartInstantiationAwareBeanPostProcessor: Send + Sync {
     fn post_process_before_initialization(
         &self,
         bean: Arc<dyn Any + Send + Sync>,
-        bean_name: &str,
+        _bean_name: &str,
     ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>> {
         Ok(Some(bean))
     }
@@ -87,7 +87,7 @@ pub trait SmartInstantiationAwareBeanPostProcessor: Send + Sync {
     fn post_process_after_initialization(
         &self,
         bean: Arc<dyn Any + Send + Sync>,
-        bean_name: &str,
+        _bean_name: &str,
     ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>> {
         Ok(Some(bean))
     }

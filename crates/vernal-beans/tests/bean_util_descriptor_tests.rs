@@ -64,7 +64,8 @@ fn bean_util_copy_properties_failure() {
     };
 
     #[derive(Deserialize, Debug)]
-    struct Incompatible {
+    #[allow(dead_code)]
+        struct Incompatible {
         name: String,
         // 缺少 age 和 active 字段，serde 默认会失败
     }

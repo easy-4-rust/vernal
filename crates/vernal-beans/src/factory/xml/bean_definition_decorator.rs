@@ -56,6 +56,7 @@ pub trait BeanDefinitionDecorator: Send + Sync {
 pub struct ScopedProxyDecorator;
 
 impl ScopedProxyDecorator {
+    /// 创建一个新的实例。
     pub fn new() -> Self {
         Self
     }

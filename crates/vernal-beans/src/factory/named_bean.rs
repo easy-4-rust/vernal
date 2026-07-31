@@ -21,6 +21,7 @@ pub struct SimpleNamedBean {
 }
 
 impl SimpleNamedBean {
+    /// 创建一个新的实例。
     pub fn new(name: impl Into<String>) -> Self {
         Self { name: name.into() }
     }

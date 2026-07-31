@@ -8,7 +8,6 @@ use std::any::{Any, TypeId};
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use crate::factory::bean_factory::BeanFactory;
 use crate::factory::listable_bean_factory::ListableBeanFactory;
 
 /// FactoryBean 前缀：`"&"`。

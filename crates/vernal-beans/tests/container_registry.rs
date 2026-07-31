@@ -1,7 +1,5 @@
 //! Container BeanDefinitionRegistry trait 实现测试。
 
-use std::any::Any;
-use std::sync::Arc;
 
 use vernal_beans::ComponentDefinition;
 use vernal_beans::RegistryBuilder;
@@ -11,6 +9,7 @@ use vernal_beans::BeanDefinitionRegistry;
 // ── 测试类型 ─────────────────────────────────────────────────────────────
 
 #[derive(Debug)]
+#[allow(dead_code)]
 struct DatabasePool {
     url: String,
 }

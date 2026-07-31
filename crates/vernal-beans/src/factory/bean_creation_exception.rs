@@ -4,7 +4,6 @@
 
 use std::fmt;
 
-use crate::beans_exception::BeansException;
 
 /// Bean 创建失败时抛出的异常。
 ///

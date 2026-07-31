@@ -1,6 +1,6 @@
-/// Comprehensive coverage improvement tests for vernal-beans.
-///
-/// Targets files with the most uncovered lines to maximize code coverage.
+//! Comprehensive coverage improvement tests for vernal-beans.
+//!
+//! Targets files with the most uncovered lines to maximize code coverage.
 use std::any::{Any, TypeId};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -17,7 +17,7 @@ use vernal_beans::{
 #[test]
 fn container_resolve_trait_single_binding() {
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+    let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
     let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
     b.bind(binding).unwrap();
     let c = Container::new(b.build().unwrap());
@@ -36,7 +36,7 @@ fn container_resolve_trait_not_found() {
 #[test]
 fn container_resolve_trait_in_wrong_owner() {
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+    let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
     let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
     b.bind(binding).unwrap();
     let c = Container::new(b.build().unwrap());
@@ -49,7 +49,7 @@ fn container_resolve_trait_in_wrong_owner() {
 #[test]
 fn container_resolve_qualified_trait() {
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+    let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
     let q = Qualifier::new("primary").unwrap();
     let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>)
         .qualified(q.clone());
@@ -63,7 +63,7 @@ fn container_resolve_qualified_trait() {
 #[test]
 fn container_resolve_qualified_trait_in_wrong_owner() {
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+    let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
     let q = Qualifier::new("q").unwrap();
     let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>)
         .qualified(q.clone());
@@ -88,8 +88,8 @@ fn container_resolve_all_traits_empty() {
 #[test]
 fn container_resolve_all_traits_multiple() {
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-    b.register(ComponentDefinition::singleton::<i32, _>(|_| 42i32));
+    let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+    let _ = b.register(ComponentDefinition::singleton::<i32, _>(|_| 42i32));
     let binding1 = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
     let binding2 = TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>);
     b.bind(binding1).unwrap();
@@ -114,7 +114,7 @@ fn container_resolve_all_traits_in_wrong_owner() {
 #[test]
 fn container_resolve_in_correct_owner() {
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+    let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
     let c = Container::new(b.build().unwrap());
     let scope = c.open_scope::<String>();
     let result: Result<Arc<String>, _> = c.resolve_in(&scope);
@@ -124,7 +124,7 @@ fn container_resolve_in_correct_owner() {
 #[test]
 fn container_transient_tracks_instances() {
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::transient::<i32, _>(|_| 42i32));
+    let _ = b.register(ComponentDefinition::transient::<i32, _>(|_| 42i32));
     let c = Container::new(b.build().unwrap());
     let _: Arc<i32> = c.resolve().unwrap();
     let _tracker = c.transient_tracker();
@@ -133,8 +133,8 @@ fn container_transient_tracks_instances() {
 #[test]
 fn container_select_definition_ambiguous() {
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-    b.register(
+    let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+    let _ = b.register(
         ComponentDefinition::singleton::<String, _>(|_| "b".to_string())
             .qualified(Qualifier::new("q1").unwrap()),
     );
@@ -153,7 +153,7 @@ fn container_warm_up_empty_registry() {
 #[test]
 fn container_warm_up_with_transient() {
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::transient::<String, _>(|_| "t".to_string()));
+    let _ = b.register(ComponentDefinition::transient::<String, _>(|_| "t".to_string()));
     let c = Container::new(b.build().unwrap());
     c.warm_up().unwrap();
 }
@@ -608,7 +608,7 @@ fn charset_editor_get_value_type() {
 #[test]
 fn resolver_resolve_undeclared_dependency() {
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::singleton::<String, _>(|resolver| {
+    let _ = b.register(ComponentDefinition::singleton::<String, _>(|resolver| {
         let result: Result<Arc<i32>, _> = resolver.resolve();
         assert!(result.is_err());
         "hello".to_string()
@@ -621,7 +621,7 @@ fn resolver_resolve_undeclared_dependency() {
 #[test]
 fn resolver_resolve_optional_undeclared() {
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::singleton::<String, _>(|resolver| {
+    let _ = b.register(ComponentDefinition::singleton::<String, _>(|resolver| {
         let result: Result<Option<Arc<i32>>, _> = resolver.resolve_optional();
         assert!(result.is_err());
         "hello".to_string()
@@ -633,7 +633,7 @@ fn resolver_resolve_optional_undeclared() {
 #[test]
 fn resolver_component_returns_key() {
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::singleton::<String, _>(|resolver| {
+    let _ = b.register(ComponentDefinition::singleton::<String, _>(|resolver| {
         let _key = resolver.component();
         "hello".to_string()
     }));
@@ -644,7 +644,7 @@ fn resolver_component_returns_key() {
 #[test]
 fn resolver_resolve_qualified_undeclared() {
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::singleton::<String, _>(|resolver| {
+    let _ = b.register(ComponentDefinition::singleton::<String, _>(|resolver| {
         let q = Qualifier::new("q").unwrap();
         let result: Result<Arc<i32>, _> = resolver.resolve_qualified(&q);
         assert!(result.is_err());
@@ -657,7 +657,7 @@ fn resolver_resolve_qualified_undeclared() {
 #[test]
 fn resolver_resolve_optional_qualified_undeclared() {
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::singleton::<String, _>(|resolver| {
+    let _ = b.register(ComponentDefinition::singleton::<String, _>(|resolver| {
         let q = Qualifier::new("q").unwrap();
         let result: Result<Option<Arc<i32>>, _> = resolver.resolve_optional_qualified(&q);
         assert!(result.is_err());
@@ -670,7 +670,7 @@ fn resolver_resolve_optional_qualified_undeclared() {
 #[test]
 fn resolver_resolve_trait_undeclared() {
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::singleton::<String, _>(|resolver| {
+    let _ = b.register(ComponentDefinition::singleton::<String, _>(|resolver| {
         let result: Result<Arc<dyn std::fmt::Display + Send + Sync>, _> = resolver.resolve_trait();
         assert!(result.is_err());
         "hello".to_string()
@@ -682,7 +682,7 @@ fn resolver_resolve_trait_undeclared() {
 #[test]
 fn resolver_resolve_qualified_trait_undeclared() {
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::singleton::<String, _>(|resolver| {
+    let _ = b.register(ComponentDefinition::singleton::<String, _>(|resolver| {
         let q = Qualifier::new("q").unwrap();
         let result: Result<Arc<dyn std::fmt::Display + Send + Sync>, _> =
             resolver.resolve_qualified_trait(&q);
@@ -696,7 +696,7 @@ fn resolver_resolve_qualified_trait_undeclared() {
 #[test]
 fn resolver_resolve_optional_trait_undeclared() {
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::singleton::<String, _>(|resolver| {
+    let _ = b.register(ComponentDefinition::singleton::<String, _>(|resolver| {
         let result: Result<Option<Arc<dyn std::fmt::Display + Send + Sync>>, _> =
             resolver.resolve_optional_trait();
         assert!(result.is_err());
@@ -709,7 +709,7 @@ fn resolver_resolve_optional_trait_undeclared() {
 #[test]
 fn resolver_resolve_optional_qualified_trait_undeclared() {
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::singleton::<String, _>(|resolver| {
+    let _ = b.register(ComponentDefinition::singleton::<String, _>(|resolver| {
         let q = Qualifier::new("q").unwrap();
         let result: Result<Option<Arc<dyn std::fmt::Display + Send + Sync>>, _> =
             resolver.resolve_optional_qualified_trait(&q);
@@ -723,7 +723,7 @@ fn resolver_resolve_optional_qualified_trait_undeclared() {
 #[test]
 fn resolver_resolve_all_traits_undeclared() {
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::singleton::<String, _>(|resolver| {
+    let _ = b.register(ComponentDefinition::singleton::<String, _>(|resolver| {
         let result: Result<Vec<Arc<dyn std::fmt::Display + Send + Sync>>, _> =
             resolver.resolve_all_traits();
         assert!(result.is_err());
@@ -736,7 +736,7 @@ fn resolver_resolve_all_traits_undeclared() {
 #[test]
 fn resolver_provider_undeclared() {
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::singleton::<String, _>(|resolver| {
+    let _ = b.register(ComponentDefinition::singleton::<String, _>(|resolver| {
         let result = resolver.provider::<i32>();
         assert!(result.is_err());
         "hello".to_string()
@@ -748,7 +748,7 @@ fn resolver_provider_undeclared() {
 #[test]
 fn resolver_qualified_provider_undeclared() {
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::singleton::<String, _>(|resolver| {
+    let _ = b.register(ComponentDefinition::singleton::<String, _>(|resolver| {
         let q = Qualifier::new("q").unwrap();
         let result = resolver.qualified_provider::<i32>(&q);
         assert!(result.is_err());
@@ -761,7 +761,7 @@ fn resolver_qualified_provider_undeclared() {
 #[test]
 fn resolver_optional_provider_undeclared() {
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::singleton::<String, _>(|resolver| {
+    let _ = b.register(ComponentDefinition::singleton::<String, _>(|resolver| {
         let result = resolver.optional_provider::<i32>();
         assert!(result.is_err());
         "hello".to_string()
@@ -773,7 +773,7 @@ fn resolver_optional_provider_undeclared() {
 #[test]
 fn resolver_optional_qualified_provider_undeclared() {
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::singleton::<String, _>(|resolver| {
+    let _ = b.register(ComponentDefinition::singleton::<String, _>(|resolver| {
         let q = Qualifier::new("q").unwrap();
         let result = resolver.optional_qualified_provider::<i32>(&q);
         assert!(result.is_err());
@@ -786,7 +786,7 @@ fn resolver_optional_qualified_provider_undeclared() {
 #[test]
 fn resolver_trait_provider_undeclared() {
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::singleton::<String, _>(|resolver| {
+    let _ = b.register(ComponentDefinition::singleton::<String, _>(|resolver| {
         let result = resolver.trait_provider::<dyn std::fmt::Display + Send + Sync>();
         assert!(result.is_err());
         "hello".to_string()
@@ -798,7 +798,7 @@ fn resolver_trait_provider_undeclared() {
 #[test]
 fn resolver_qualified_trait_provider_undeclared() {
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::singleton::<String, _>(|resolver| {
+    let _ = b.register(ComponentDefinition::singleton::<String, _>(|resolver| {
         let q = Qualifier::new("q").unwrap();
         let result = resolver.qualified_trait_provider::<dyn std::fmt::Display + Send + Sync>(&q);
         assert!(result.is_err());
@@ -811,7 +811,7 @@ fn resolver_qualified_trait_provider_undeclared() {
 #[test]
 fn resolver_optional_trait_provider_undeclared() {
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::singleton::<String, _>(|resolver| {
+    let _ = b.register(ComponentDefinition::singleton::<String, _>(|resolver| {
         let result = resolver.optional_trait_provider::<dyn std::fmt::Display + Send + Sync>();
         assert!(result.is_err());
         "hello".to_string()
@@ -823,7 +823,7 @@ fn resolver_optional_trait_provider_undeclared() {
 #[test]
 fn resolver_optional_qualified_trait_provider_undeclared() {
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::singleton::<String, _>(|resolver| {
+    let _ = b.register(ComponentDefinition::singleton::<String, _>(|resolver| {
         let q = Qualifier::new("q").unwrap();
         let result = resolver.optional_qualified_trait_provider::<dyn std::fmt::Display + Send + Sync>(&q);
         assert!(result.is_err());
@@ -1241,7 +1241,7 @@ fn configuration_class_post_processor_bean_factory_post_processor() {
     use vernal_beans::BeanFactoryPostProcessor;
     let p = ConfigurationClassPostProcessor::new();
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+    let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
     let mut c = Container::new(b.build().unwrap());
     let result = p.post_process_bean_factory(&mut c);
     assert!(result.is_ok());
@@ -1834,7 +1834,7 @@ fn container_listable_bean_names_for_type_id_empty() {
 fn container_contains_non_singleton_bean_with_transient() {
     use vernal_beans::ListableBeanFactory;
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::transient::<String, _>(|_| "t".to_string()));
+    let _ = b.register(ComponentDefinition::transient::<String, _>(|_| "t".to_string()));
     let c = Container::new(b.build().unwrap());
     assert!(c.contains_non_singleton_bean());
 }

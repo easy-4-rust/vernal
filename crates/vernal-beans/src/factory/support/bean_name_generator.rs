@@ -42,6 +42,7 @@ pub struct DefaultBeanNameGenerator {
 }
 
 impl DefaultBeanNameGenerator {
+    /// 创建一个新的实例。
     pub fn new() -> Self {
         Self { counter: AtomicU32::new(0) }
     }

@@ -4,10 +4,13 @@ use crate::factory::xml::entity_resolver::{EntityResolver, ResolvedEntity};
 /// 可插拔 Schema 解析器。
 #[derive(Clone, Debug, Default)]
 pub struct PluggableSchemaResolver {
+    /// pub。
     pub schema_mappings: std::collections::HashMap<String, String>,
 }
 impl PluggableSchemaResolver {
+    /// 创建一个新的实例。
     pub fn new() -> Self { Self::default() }
+    /// 转换为text。
     pub fn from_text(mappings_text: &str) -> Self {
         let mut schema_mappings = std::collections::HashMap::new();
         for line in mappings_text.lines() {

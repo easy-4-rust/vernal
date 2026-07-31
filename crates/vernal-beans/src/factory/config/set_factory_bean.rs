@@ -3,7 +3,6 @@
 //! Set 工厂 Bean，用于创建 Set 集合。
 
 use std::any::Any;
-use std::collections::HashSet;
 use std::sync::Arc;
 
 /// Set 工厂 Bean。

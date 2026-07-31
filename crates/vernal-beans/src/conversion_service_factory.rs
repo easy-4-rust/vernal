@@ -6,11 +6,9 @@
 //! 在 Spring 中，`ConversionServiceFactory` 负责创建和配置
 //! `ConversionService` 实例，注册默认的类型转换器。
 
-use std::any::TypeId;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 
-use crate::conversion_service::ConversionService;
 
 /// 转换服务工厂。
 ///

@@ -11,8 +11,6 @@
 //! 3. 调用 `doParse` 子类自定义逻辑
 //! 4. 注册到 BeanDefinitionRegistry
 
-use std::any::Any;
-use std::sync::Arc;
 
 /// 抽象 Bean 定义解析器。
 ///

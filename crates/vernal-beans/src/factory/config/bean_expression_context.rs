@@ -16,18 +16,22 @@ pub struct BeanExpressionContext {
 }
 
 impl BeanExpressionContext {
+    /// 创建一个新的实例。
     pub fn new() -> Self {
         Self { variables: HashMap::new() }
     }
 
+    /// 设置变量。
     pub fn set_variable(&mut self, name: impl Into<String>, value: impl std::any::Any + Send + Sync) {
         self.variables.insert(name.into(), Box::new(value));
     }
 
+    /// 获取变量。
     pub fn get_variable(&self, name: &str) -> Option<&dyn std::any::Any> {
         self.variables.get(name).map(|v| v.as_ref() as &dyn std::any::Any)
     }
 
+    /// 判断是否变量。
     pub fn has_variable(&self, name: &str) -> bool {
         self.variables.contains_key(name)
     }

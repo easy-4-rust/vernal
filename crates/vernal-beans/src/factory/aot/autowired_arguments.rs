@@ -19,6 +19,7 @@ pub struct AutowiredArguments {
 }
 
 impl AutowiredArguments {
+    /// 执行empty操作。
     pub fn empty() -> Self {
         Self {
             arguments: Vec::new(),
@@ -26,6 +27,7 @@ impl AutowiredArguments {
         }
     }
 
+    /// 转换为arguments。
     pub fn from_arguments(args: Vec<Arc<dyn Any + Send + Sync>>) -> Self {
         let type_ids = args.iter().map(|a| (**a).type_id()).collect();
         Self {
@@ -34,18 +36,22 @@ impl AutowiredArguments {
         }
     }
 
+    /// 获取条目数量。
     pub fn count(&self) -> usize {
         self.arguments.len()
     }
 
+    /// 判断是否empty。
     pub fn is_empty(&self) -> bool {
         self.arguments.is_empty()
     }
 
+    /// 获取指定条目。
     pub fn get(&self, index: usize) -> Option<Arc<dyn Any + Send + Sync>> {
         self.arguments.get(index).map(Arc::clone)
     }
 
+    /// 获取类型idat。
     pub fn type_id_at(&self, index: usize) -> Option<TypeId> {
         self.type_ids.get(index).copied()
     }

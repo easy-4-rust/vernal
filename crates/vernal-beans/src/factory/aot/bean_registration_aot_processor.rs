@@ -10,7 +10,9 @@ use std::collections::HashMap;
 
 /// AOT 贡献（trait）。
 pub trait AotContribution: Send + Sync {
+    /// 执行class_name操作。
     fn class_name(&self) -> &str;
+    /// 执行method_name操作。
     fn method_name(&self) -> &str;
 }
 
@@ -25,30 +27,36 @@ pub struct BeanRegistrationAotProcessor {
 }
 
 impl BeanRegistrationAotProcessor {
+    /// 创建一个新的实例。
     pub fn new() -> Self {
         Self {
             processed: Mutex::new(HashMap::new()),
         }
     }
 
+    /// 处理输入并返回结果。
     pub fn process(&self, type_id: TypeId, class_name: String) -> Result<(), AotProcessingError> {
         let mut processed = self.processed.lock().unwrap();
         processed.insert(type_id, class_name);
         Ok(())
     }
 
+    /// 获取processed数量。
     pub fn processed_count(&self) -> usize {
         self.processed.lock().unwrap().len()
     }
 
+    /// 判断是否包含指定条目。
     pub fn contains(&self, type_id: TypeId) -> bool {
         self.processed.lock().unwrap().contains_key(&type_id)
     }
 
+    /// 获取processed。
     pub fn get_processed(&self, type_id: TypeId) -> Option<String> {
         self.processed.lock().unwrap().get(&type_id).cloned()
     }
 
+    /// 移除。
     pub fn clear(&self) {
         self.processed.lock().unwrap().clear();
     }
@@ -65,9 +73,11 @@ pub struct AotProcessingError {
 }
 
 impl AotProcessingError {
+    /// 创建一个新的实例。
     pub fn new(message: impl Into<String>) -> Self {
         Self { message: message.into() }
     }
+    /// 获取消息。
     pub fn message(&self) -> &str { &self.message }
 }
 

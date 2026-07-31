@@ -13,18 +13,22 @@ pub struct DeprecatedBeanWarner {
 }
 
 impl DeprecatedBeanWarner {
+    /// 创建一个新的实例。
     pub fn new() -> Self {
         Self { deprecated_beans: Vec::new() }
     }
 
+    /// 添加deprecatedBean。
     pub fn add_deprecated_bean(&mut self, bean_name: impl Into<String>) {
         self.deprecated_beans.push(bean_name.into());
     }
 
+    /// 判断是否deprecated。
     pub fn is_deprecated(&self, bean_name: &str) -> bool {
         self.deprecated_beans.iter().any(|n| n == bean_name)
     }
 
+    /// 执行deprecated_beans操作。
     pub fn deprecated_beans(&self) -> &[String] {
         &self.deprecated_beans
     }

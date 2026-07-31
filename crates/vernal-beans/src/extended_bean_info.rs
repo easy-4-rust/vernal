@@ -11,6 +11,7 @@ use std::collections::HashMap;
 ///
 /// 提供了比标准 BeanInfo 更丰富的元数据信息。
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct ExtendedBeanInfo {
     type_name: String,
     properties: HashMap<String, PropertyDescriptor>,
@@ -27,12 +28,17 @@ pub struct PropertyDescriptor {
 }
 
 impl PropertyDescriptor {
+    /// 创建一个新的实例。
     pub fn new(name: impl Into<String>, property_type: TypeId, readable: bool, writable: bool) -> Self {
         Self { name: name.into(), property_type, readable, writable }
     }
+    /// 获取名称。
     pub fn name(&self) -> &str { &self.name }
+    /// 获取属性类型。
     pub fn property_type(&self) -> TypeId { self.property_type }
+    /// 判断是否可读。
     pub fn is_readable(&self) -> bool { self.readable }
+    /// 判断是否可写。
     pub fn is_writable(&self) -> bool { self.writable }
 }
 
@@ -44,14 +50,18 @@ pub struct MethodDescriptor {
 }
 
 impl MethodDescriptor {
+    /// 创建一个新的实例。
     pub fn new(name: impl Into<String>, parameter_count: usize) -> Self {
         Self { name: name.into(), parameter_count }
     }
+    /// 获取名称。
     pub fn name(&self) -> &str { &self.name }
+    /// 获取参数数量。
     pub fn parameter_count(&self) -> usize { self.parameter_count }
 }
 
 impl ExtendedBeanInfo {
+    /// 创建一个新的实例。
     pub fn new(type_name: impl Into<String>) -> Self {
         Self {
             type_name: type_name.into(),
@@ -60,31 +70,39 @@ impl ExtendedBeanInfo {
         }
     }
 
+    /// 添加属性。
     pub fn add_property(&mut self, descriptor: PropertyDescriptor) {
         self.properties.insert(descriptor.name.clone(), descriptor);
     }
 
+    /// 添加方法。
     pub fn add_method(&mut self, descriptor: MethodDescriptor) {
         self.methods.insert(descriptor.name.clone(), descriptor);
     }
 
+    /// 获取属性。
     pub fn get_property(&self, name: &str) -> Option<&PropertyDescriptor> {
         self.properties.get(name)
     }
 
+    /// 获取方法。
     pub fn get_method(&self, name: &str) -> Option<&MethodDescriptor> {
         self.methods.get(name)
     }
 
+    /// 执行property_names操作。
     pub fn property_names(&self) -> Vec<String> {
         self.properties.keys().cloned().collect()
     }
 
+    /// 执行method_names操作。
     pub fn method_names(&self) -> Vec<String> {
         self.methods.keys().cloned().collect()
     }
 
+    /// 获取属性数量。
     pub fn property_count(&self) -> usize { self.properties.len() }
+    /// 获取方法数量。
     pub fn method_count(&self) -> usize { self.methods.len() }
 }
 

@@ -335,7 +335,6 @@ impl RootBeanDefinition {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::factory::config::bean_definition::BeanDefinition;
 
     #[test]
     fn generic_builder_basic() {

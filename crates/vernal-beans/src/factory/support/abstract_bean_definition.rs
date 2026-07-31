@@ -16,8 +16,6 @@
 
 use crate::factory::config::bean_definition::BeanDefinition;
 use crate::component_scope::Scope;
-use std::any::Any;
-use std::fmt;
 
 use crate::component_key::ComponentKey;
 

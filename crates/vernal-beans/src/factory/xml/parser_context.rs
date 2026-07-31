@@ -11,7 +11,6 @@
 //! 在 vernal 中，`ParserContext` 存储解析状态和配置，
 //! 传递给各个解析器使用。
 
-use std::collections::HashMap;
 
 /// 解析器上下文。
 ///

@@ -93,7 +93,7 @@ mod tests {
     #[test]
     fn test_collecting_reporter_fatal() {
         use super::super::location::Location;
-        use super::super::problem::{Problem, ProblemSeverity};
+        use super::super::problem::Problem;
 
         let reporter = CollectingReporter::new();
         let loc = Location::new("test.xml", 1, 1);

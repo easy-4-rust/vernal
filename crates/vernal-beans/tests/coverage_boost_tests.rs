@@ -4,13 +4,35 @@ use std::any::{Any, TypeId};
 use std::sync::Arc;
 
 use vernal_beans::{
-    BeanDescCache, BeanDefinition, BeanFactory, BeanFactoryUtils, ComponentDefinition,
-    ComponentKey, ConfigurableBeanFactory, ConfigurableListableBeanFactory, Container,
-    ConversionServiceFactory, DefinitionError, DirectFieldAccessor, FactoryBeanRegistrySupport,
-    GraphError, HierarchicalBeanFactory, ListableBeanFactory, PropertyEditor,
-    PropertyEditorCache, PropertyEditorRegistry, Qualifier, RegistryBuilder, ResolveError,
-    RootBeanDefinition, Scope, ScopeError, ScopeKey, ScopeState, TransientTracker,
+    BeanDescCache,
+    BeanDefinition,
+    BeanFactoryUtils,
+    ComponentDefinition,
+    ComponentKey,
+    ConfigurableBeanFactory,
+    ConfigurableListableBeanFactory,
+    Container,
+    ConversionServiceFactory,
+    DefinitionError,
+    DirectFieldAccessor,
+    FactoryBeanRegistrySupport,
+    GraphError,
+    HierarchicalBeanFactory,
+    ListableBeanFactory,
+    PropertyEditor,
+    PropertyEditorCache,
+    PropertyEditorRegistry,
+    Qualifier,
+    RegistryBuilder,
+    ResolveError,
+    RootBeanDefinition,
+    Scope,
+    ScopeError,
+    ScopeKey,
+    ScopeState,
+    TransientTracker,
 };
+
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Helper
@@ -1144,7 +1166,7 @@ fn property_editor_cache_debug_impl() {
 fn container_resolve_qualified_in_success() {
     let mut b = RegistryBuilder::new();
     let q = Qualifier::new("primary").unwrap();
-    b.register(ComponentDefinition::singleton::<String, _>(|_| "primary".to_string()).qualified(q.clone()));
+    let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "primary".to_string()).qualified(q.clone()));
     let c = Container::new(b.build().unwrap());
     let scope = c.open_scope::<String>();
     let val: Arc<String> = c.resolve_qualified_in(&q, &scope).unwrap();
@@ -1155,7 +1177,7 @@ fn container_resolve_qualified_in_success() {
 fn container_resolve_qualified_in_wrong_owner() {
     let mut b = RegistryBuilder::new();
     let q = Qualifier::new("q").unwrap();
-    b.register(ComponentDefinition::singleton::<String, _>(|_| "v".to_string()).qualified(q.clone()));
+    let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "v".to_string()).qualified(q.clone()));
     let c = Container::new(b.build().unwrap());
     let other = Container::new(RegistryBuilder::new().build().unwrap());
     let scope = other.open_scope::<String>();
@@ -1216,7 +1238,7 @@ fn container_warm_up_empty() {
 #[test]
 fn container_transient_scope_tracking() {
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::transient::<i32, _>(|_| 42i32));
+    let _ = b.register(ComponentDefinition::transient::<i32, _>(|_| 42i32));
     let c = Container::new(b.build().unwrap());
     let tracker = c.transient_tracker();
     assert_eq!(tracker.total_surviving(), 0);
@@ -1243,7 +1265,7 @@ fn container_construct_with_post_processor() {
         }
     }
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+    let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
     let mut c = Container::new(b.build().unwrap());
     c.add_bean_post_processor(Arc::new(MockPP));
     assert_eq!(c.bean_post_processor_count(), 1);
@@ -1295,7 +1317,7 @@ fn container_listable_beans_of_type_id_empty() {
 #[test]
 fn container_listable_contains_non_singleton_with_transient() {
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::transient::<String, _>(|_| "t".to_string()));
+    let _ = b.register(ComponentDefinition::transient::<String, _>(|_| "t".to_string()));
     let c = Container::new(b.build().unwrap());
     assert!(c.contains_non_singleton_bean());
     assert!(!c.contains_singleton_bean());
@@ -1381,7 +1403,7 @@ fn container_post_processor_count_reflects_additions() {
         }
     }
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+    let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
     let mut c = Container::new(b.build().unwrap());
     assert_eq!(c.bean_post_processor_count(), 0);
     c.add_bean_post_processor(Arc::new(PP));

@@ -1,12 +1,12 @@
-/// Container 最终覆盖率测试。
+//! Container 最终覆盖率测试。
 use std::any::Any;
 use std::sync::Arc;
 
 fn make_container() -> vernal_beans::Container {
     let mut b = vernal_beans::RegistryBuilder::new();
-    b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
-    b.register(vernal_beans::ComponentDefinition::singleton::<i32, _>(|_| 42i32));
-    b.register(vernal_beans::ComponentDefinition::singleton::<f64, _>(|_| 3.14f64));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<i32, _>(|_| 42i32));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<f64, _>(|_| 3.14f64));
     vernal_beans::Container::new(b.build().unwrap())
 }
 
@@ -50,7 +50,7 @@ fn container_resolve_in_scope() {
 fn container_resolve_qualified() {
     let mut b = vernal_beans::RegistryBuilder::new();
     let q = vernal_beans::Qualifier::new("primary").unwrap();
-    b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "primary".to_string()).qualified(q.clone()));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "primary".to_string()).qualified(q.clone()));
     let c = vernal_beans::Container::new(b.build().unwrap());
     let val: Arc<String> = c.resolve_qualified(&q).unwrap();
     assert_eq!(*val, "primary");
@@ -397,7 +397,6 @@ fn root_bean_definition_basic() {
 #[test]
 fn root_bean_definition_setters() {
     use vernal_beans::RootBeanDefinition;
-    use vernal_beans::BeanDefinition;
     let mut rbd = RootBeanDefinition::new();
     rbd.set_bean_class_name("com.example.MyService");
     assert_eq!(rbd.bean_class_name(), "com.example.MyService");
@@ -425,7 +424,6 @@ fn bean_definition_builder_generic() {
 #[test]
 fn bean_definition_builder_root() {
     use vernal_beans::BeanDefinitionBuilder;
-    use vernal_beans::BeanDefinition;
     let def = BeanDefinitionBuilder::root("com.example.Root")
         .set_primary(true)
         .build();

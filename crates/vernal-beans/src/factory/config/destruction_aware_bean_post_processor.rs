@@ -15,7 +15,7 @@ pub trait DestructionAwareBeanPostProcessor: Send + Sync {
     fn post_process_before_destruction(&self, bean: Arc<dyn Any + Send + Sync>, bean_name: &str) -> Result<(), Box<dyn std::error::Error + Send +Sync>>;
 
     /// 是否需要处理销毁。
-    fn requires_destruction(&self, bean: Arc<dyn Any + Send + Sync>) -> bool {
+    fn requires_destruction(&self, _bean: Arc<dyn Any + Send + Sync>) -> bool {
         true
     }
 }

@@ -1,11 +1,11 @@
-/// 函数覆盖率提升测试 — 针对未覆盖的核心文件方法。
+//! 函数覆盖率提升测试 — 针对未覆盖的核心文件方法。
 use std::any::Any;
 use std::sync::Arc;
 
 fn make_container() -> vernal_beans::Container {
     let mut b = vernal_beans::RegistryBuilder::new();
-    b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
-    b.register(vernal_beans::ComponentDefinition::singleton::<i32, _>(|_| 42i32));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<i32, _>(|_| 42i32));
     vernal_beans::Container::new(b.build().unwrap())
 }
 
@@ -175,21 +175,12 @@ fn generic_bean_definition_from_root() {
 // TransientTracker 测试
 // ═══════════════════════════════════════════════════════════════════
 
-#[test]
-
-#[test]
-
-#[test]
-
-#[test]
-
 // ═══════════════════════════════════════════════════════════════════
 // BeanDefinition trait 测试
 // ═══════════════════════════════════════════════════════════════════
 
 #[test]
 fn bean_definition_trait_methods() {
-    use vernal_beans::BeanDefinition;
     use vernal_beans::RootBeanDefinition;
     let mut rbd = RootBeanDefinition::new();
     rbd.set_bean_class_name("com.example.Service");
@@ -247,7 +238,6 @@ fn injection_point_with_options() {
 #[test]
 fn bean_definition_builder_generic_full() {
     use vernal_beans::BeanDefinitionBuilder;
-    use vernal_beans::BeanDefinition;
     let def = BeanDefinitionBuilder::generic("com.example.Service")
         .set_parent_name("parentService")
         .set_scope(vernal_beans::Scope::Transient)
@@ -272,7 +262,6 @@ fn bean_definition_builder_generic_full() {
 #[test]
 fn bean_definition_builder_root_full() {
     use vernal_beans::BeanDefinitionBuilder;
-    use vernal_beans::BeanDefinition;
     let def = BeanDefinitionBuilder::root("com.example.Root")
         .set_scope(vernal_beans::Scope::Transient)
         .set_lazy_init(true)
@@ -335,7 +324,7 @@ fn container_resolve_multiple_types() {
 fn container_resolve_qualified() {
     let mut b = vernal_beans::RegistryBuilder::new();
     let q = vernal_beans::Qualifier::new("primary").unwrap();
-    b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "primary_val".to_string()).qualified(q.clone()));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "primary_val".to_string()).qualified(q.clone()));
     let c = vernal_beans::Container::new(b.build().unwrap());
     let val: Arc<String> = c.resolve_qualified(&q).unwrap();
     assert_eq!(*val, "primary_val");
@@ -344,8 +333,8 @@ fn container_resolve_qualified() {
 #[test]
 fn container_warm_up() {
     let mut b = vernal_beans::RegistryBuilder::new();
-    b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
-    b.register(vernal_beans::ComponentDefinition::singleton::<i32, _>(|_| 42i32));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<i32, _>(|_| 42i32));
     let c = vernal_beans::Container::new(b.build().unwrap());
     assert!(c.warm_up().is_ok());
     assert!(c.unused_definitions().is_empty());

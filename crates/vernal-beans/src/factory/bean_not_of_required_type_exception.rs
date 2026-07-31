@@ -2,7 +2,6 @@
 //!
 //! Bean 类型不匹配时抛出的异常。
 
-use std::any::TypeId;
 use std::fmt;
 
 /// Bean 类型不匹配时抛出的异常。

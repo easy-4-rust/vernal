@@ -13,6 +13,7 @@ pub struct PathPropertyEditor {
 }
 
 impl PathPropertyEditor {
+    /// 创建一个新的实例。
     pub fn new() -> Self {
         Self { value: None }
     }

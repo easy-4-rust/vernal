@@ -10,7 +10,6 @@
 //! 2. 遍历子元素，委托给对应的解析器
 //! 3. 处理 `<import>`、`<alias>`、`<bean>` 和自定义元素
 
-use std::collections::HashMap;
 
 /// Bean 定义文档读取器接口。
 ///
@@ -65,6 +64,7 @@ pub struct DefaultBeanDefinitionDocumentReader {
 }
 
 impl DefaultBeanDefinitionDocumentReader {
+    /// 创建一个新的实例。
     pub fn new() -> Self {
         Self::default()
     }

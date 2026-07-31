@@ -14,6 +14,7 @@ pub struct AutowiredPropertyMarker {
 }
 
 impl AutowiredPropertyMarker {
+    /// 创建一个新的实例。
     pub fn new(property_name: impl Into<String>, required: bool) -> Self {
         Self {
             property_name: property_name.into(),
@@ -21,10 +22,12 @@ impl AutowiredPropertyMarker {
         }
     }
 
+    /// 执行property_name操作。
     pub fn property_name(&self) -> &str {
         &self.property_name
     }
 
+    /// 判断是否必需的。
     pub fn is_required(&self) -> bool {
         self.required
     }

@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use crate::factory::config::bean_expression_resolver::BeanExpressionResolver;
-use vernal_expression::{Expression, ExpressionParser, EvaluationContext};
+use vernal_expression::ExpressionParser;
 
 /// 标准 Bean 表达式解析器（完整实现）。
 pub struct StandardBeanExpressionResolver {
@@ -138,7 +138,7 @@ impl BeanExpressionResolver for StandardBeanExpressionResolver {
                             vernal_expression::ExpressionValue::Map(m) => {
                                 Arc::new(m.clone())
                             }
-                            other => {
+                            _other => {
                                 Arc::new(val.clone())
                             }
                         };

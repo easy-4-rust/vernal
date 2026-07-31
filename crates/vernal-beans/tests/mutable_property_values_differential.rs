@@ -3,7 +3,6 @@
 //! 参照 Spring Framework 7.0.8 的 `MutablePropertyValuesTests` 测试场景，
 //! 验证 vernal-beans 的 MutablePropertyValues 行为与 Spring 一致。
 
-use std::any::Any;
 use std::sync::Arc;
 
 use vernal_beans::mutable_property_values::MutablePropertyValues;

@@ -4,9 +4,13 @@ use std::any::Any;
 use std::sync::Arc;
 
 use vernal_beans::{
-    ComponentDefinition, Container, Qualifier,
-    RegistryBuilder, Resolver, Scope, TraitBinding, TraitKey, ComponentKey,
+    ComponentDefinition,
+    Container,
+    RegistryBuilder,
+    Resolver,
+    TraitBinding,
 };
+
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TraitProvider 测试

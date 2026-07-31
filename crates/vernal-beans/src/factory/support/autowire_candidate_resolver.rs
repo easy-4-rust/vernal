@@ -38,6 +38,7 @@ pub trait AutowireCandidateResolver: Send + Sync {
 pub struct SimpleAutowireCandidateResolver;
 
 impl SimpleAutowireCandidateResolver {
+    /// 创建一个新的实例。
     pub fn new() -> Self { Self }
 }
 
@@ -59,6 +60,7 @@ pub struct TypeBasedAutowireCandidateResolver {
 }
 
 impl TypeBasedAutowireCandidateResolver {
+    /// 创建一个新的实例。
     pub fn new() -> Self {
         Self {
             allowed_types: std::sync::Mutex::new(std::collections::HashSet::new()),

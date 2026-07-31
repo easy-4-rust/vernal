@@ -16,8 +16,6 @@ use crate::{
     resolution_tracker::ResolutionTracker,
 };
 
-use crate::instantiation_aware_bean_post_processor::InstantiationAwareBeanPostProcessor;
-use crate::destruction_aware_bean_post_processor::DestructionAwareBeanPostProcessor;
 type SingletonCell = OnceLock<Result<ErasedComponent, ResolveError>>;
 
 /// 隔离持有组件实例和作用域状态的运行时容器。
@@ -1418,6 +1416,7 @@ impl crate::factory::config::autowire_capable_bean_factory::AutowireCapableBeanF
 
 /// 代理 BeanDefinition（用于 Container 的 BeanDefinitionRegistry 实现）。
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub(crate) struct ProxyBeanDefinition {
     pub(crate) bean_name: String,
     pub(crate) type_name: String,
@@ -1448,6 +1447,7 @@ impl crate::factory::config::bean_definition::BeanDefinition for ProxyBeanDefini
 
 /// 被删除的 BeanDefinition 标记。
 #[derive(Debug)]
+#[allow(dead_code)]
 struct DeletedBeanDefinition {
     bean_name: String,
 }
@@ -1475,6 +1475,7 @@ impl crate::factory::config::bean_definition::BeanDefinition for DeletedBeanDefi
 
 /// 被移除的 BeanDefinition（用于 remove_bean_definition 返回值）。
 #[derive(Debug)]
+#[allow(dead_code)]
 struct RemovedBeanDefinition {
     bean_name: String,
     type_name: String,
@@ -2281,8 +2282,8 @@ mod tests {
 
     fn make_container() -> Container {
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
-        b.register(ComponentDefinition::singleton::<i32, _>(|_| 42i32));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<i32, _>(|_| 42i32));
         Container::new(b.build().unwrap())
     }
 
@@ -2306,7 +2307,7 @@ mod tests {
     #[test]
     fn resolve_type_mismatch_returns_error() {
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
         let c = Container::new(b.build().unwrap());
         // Try to resolve String as i32
         let result: Result<Arc<i32>, _> = c.resolve();
@@ -2319,7 +2320,7 @@ mod tests {
     fn resolve_qualified_success() {
         let mut b = RegistryBuilder::new();
         let q = Qualifier::new("primary").unwrap();
-        b.register(
+        let _ = b.register(
             ComponentDefinition::singleton::<String, _>(|_| "primary".to_string())
                 .qualified(q.clone()),
         );
@@ -2389,7 +2390,7 @@ mod tests {
 
     #[test]
     fn add_and_count_bean_post_processors() {
-        let mut c = make_container();
+        let c = make_container();
         assert_eq!(c.bean_post_processor_count(), 0);
         // We can't easily construct a real BeanPostProcessor in unit tests,
         // but we test the count method
@@ -2533,8 +2534,8 @@ mod tests {
     fn bean_factory_get_bean_by_type_id_ambiguous() {
         use crate::factory::bean_factory::BeanFactory;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-        b.register(
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(
             ComponentDefinition::singleton::<String, _>(|_| "b".to_string())
                 .qualified(Qualifier::new("q").unwrap()),
         );
@@ -2569,7 +2570,7 @@ mod tests {
     fn bean_factory_is_prototype() {
         use crate::factory::bean_factory::BeanFactory;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::transient::<String, _>(|_| "t".to_string()));
+        let _ = b.register(ComponentDefinition::transient::<String, _>(|_| "t".to_string()));
         let c = Container::new(b.build().unwrap());
         assert!(c.is_prototype(&ComponentKey::of::<String>()).unwrap());
     }
@@ -2833,8 +2834,8 @@ mod tests {
     fn resolve_named_bean_ambiguous() {
         use crate::factory::config::autowire_capable_bean_factory::AutowireCapableBeanFactory;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-        b.register(
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(
             ComponentDefinition::singleton::<String, _>(|_| "b".to_string())
                 .qualified(Qualifier::new("q").unwrap()),
         );
@@ -2875,8 +2876,8 @@ mod tests {
     fn resolve_dependency_ambiguous() {
         use crate::factory::config::autowire_capable_bean_factory::AutowireCapableBeanFactory;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-        b.register(
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(
             ComponentDefinition::singleton::<String, _>(|_| "b".to_string())
                 .qualified(Qualifier::new("q").unwrap()),
         );
@@ -3122,7 +3123,6 @@ mod tests {
 
     #[test]
     fn listable_bean_post_processor_count() {
-        use crate::factory::listable_bean_factory::ListableBeanFactory;
         let c = make_container();
         assert_eq!(c.bean_post_processor_count(), 0);
     }
@@ -3337,7 +3337,7 @@ mod tests {
     #[test]
     fn transient_creates_new_instance_each_time() {
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::transient::<i32, _>(|_| {
+        let _ = b.register(ComponentDefinition::transient::<i32, _>(|_| {
             use std::sync::atomic::{AtomicI32, Ordering};
             static COUNTER: AtomicI32 = AtomicI32::new(0);
             COUNTER.fetch_add(1, Ordering::SeqCst)
@@ -3422,7 +3422,7 @@ mod tests {
     #[test]
     fn select_definition_not_found_returns_error() {
         let c = Container::new(RegistryBuilder::new().build().unwrap());
-        let dep = crate::Dependency::of::<f64>();
+        let _dep = crate::Dependency::of::<f64>();
         // Use the internal select_definition via resolve
         let result: Result<Arc<f64>, _> = c.resolve();
         assert!(result.is_err());
@@ -3455,11 +3455,11 @@ mod tests {
     #[test]
     fn select_definition_ambiguous() {
         let mut b = RegistryBuilder::new();
-        b.register(
+        let _ = b.register(
             ComponentDefinition::singleton::<String, _>(|_| "a".to_string())
                 .qualified(Qualifier::new("q1").unwrap()),
         );
-        b.register(
+        let _ = b.register(
             ComponentDefinition::singleton::<String, _>(|_| "b".to_string())
                 .qualified(Qualifier::new("q2").unwrap()),
         );
@@ -3545,7 +3545,7 @@ mod tests {
     fn get_bean_by_type_id_single_match() {
         use crate::factory::bean_factory::BeanFactory;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
         let c = Container::new(b.build().unwrap());
         let result = c.get_bean_by_type_id(std::any::TypeId::of::<String>());
         assert!(result.is_ok());
@@ -3554,8 +3554,8 @@ mod tests {
     #[test]
     fn warm_up_with_transient_skipped() {
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
-        b.register(ComponentDefinition::transient::<i32, _>(|_| 42));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+        let _ = b.register(ComponentDefinition::transient::<i32, _>(|_| 42));
         let c = Container::new(b.build().unwrap());
         c.warm_up().unwrap();
         // Only singletons should be warmed up
@@ -3575,7 +3575,7 @@ mod tests {
     fn resolve_qualified_in_same_owner_succeeds() {
         let mut b = RegistryBuilder::new();
         let q = Qualifier::new("primary").unwrap();
-        b.register(
+        let _ = b.register(
             ComponentDefinition::singleton::<String, _>(|_| "primary".to_string())
                 .qualified(q.clone()),
         );
@@ -3616,7 +3616,7 @@ mod tests {
     fn resolve_in_same_owner_for_qualified() {
         let mut b = RegistryBuilder::new();
         let q = Qualifier::new("primary").unwrap();
-        b.register(
+        let _ = b.register(
             ComponentDefinition::singleton::<String, _>(|_| "primary".to_string())
                 .qualified(q.clone()),
         );
@@ -3658,7 +3658,7 @@ mod tests {
     #[test]
     fn resolve_optional_type_mismatch_returns_error() {
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
         let c = Container::new(b.build().unwrap());
         // resolve_optional_typed: Dependency::of::<i32> won't match String definition
         let result = c.resolve_optional_typed::<i32>(&crate::Dependency::of::<i32>(), &[], None);
@@ -3701,11 +3701,11 @@ mod tests {
     #[test]
     fn select_definition_ambiguous_multiple() {
         let mut b = RegistryBuilder::new();
-        b.register(
+        let _ = b.register(
             ComponentDefinition::singleton::<String, _>(|_| "a".to_string())
                 .qualified(Qualifier::new("q1").unwrap()),
         );
-        b.register(
+        let _ = b.register(
             ComponentDefinition::singleton::<String, _>(|_| "b".to_string())
                 .qualified(Qualifier::new("q2").unwrap()),
         );
@@ -3719,7 +3719,7 @@ mod tests {
     fn select_definition_with_matching_qualifier() {
         let mut b = RegistryBuilder::new();
         let q = Qualifier::new("primary").unwrap();
-        b.register(
+        let _ = b.register(
             ComponentDefinition::singleton::<String, _>(|_| "primary".to_string())
                 .qualified(q.clone()),
         );
@@ -3935,8 +3935,8 @@ mod tests {
     fn listable_contains_non_singleton_with_transient() {
         use crate::factory::listable_bean_factory::ListableBeanFactory;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "s".to_string()));
-        b.register(ComponentDefinition::transient::<i32, _>(|_| 42));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "s".to_string()));
+        let _ = b.register(ComponentDefinition::transient::<i32, _>(|_| 42));
         let c = Container::new(b.build().unwrap());
         assert!(c.contains_non_singleton_bean());
         assert!(c.contains_singleton_bean());
@@ -3955,8 +3955,8 @@ mod tests {
     fn listable_bean_names_for_type_multiple() {
         use crate::factory::listable_bean_factory::ListableBeanFactory;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-        b.register(
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(
             ComponentDefinition::singleton::<String, _>(|_| "b".to_string())
                 .qualified(Qualifier::new("q").unwrap()),
         );
@@ -3992,8 +3992,8 @@ mod tests {
     fn autowire_bean_multiple_matches() {
         use crate::factory::config::autowire_capable_bean_factory::AutowireCapableBeanFactory;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-        b.register(
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(
             ComponentDefinition::singleton::<String, _>(|_| "b".to_string())
                 .qualified(Qualifier::new("q").unwrap()),
         );
@@ -4021,8 +4021,8 @@ mod tests {
     fn resolve_dependency_multiple_found() {
         use crate::factory::config::autowire_capable_bean_factory::AutowireCapableBeanFactory;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-        b.register(
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(
             ComponentDefinition::singleton::<String, _>(|_| "b".to_string())
                 .qualified(Qualifier::new("q").unwrap()),
         );
@@ -4077,7 +4077,7 @@ mod tests {
     #[test]
     fn transient_instances_tracked() {
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::transient::<String, _>(|_| "t".to_string()));
+        let _ = b.register(ComponentDefinition::transient::<String, _>(|_| "t".to_string()));
         let c = Container::new(b.build().unwrap());
         let _: Arc<String> = c.resolve().unwrap();
         // Transient tracker should have the instance
@@ -4126,9 +4126,9 @@ mod tests {
     #[test]
     fn warm_up_mixed_scopes() {
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "s".to_string()));
-        b.register(ComponentDefinition::transient::<i32, _>(|_| 42));
-        b.register(ComponentDefinition::singleton::<f64, _>(|_| 3.14));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "s".to_string()));
+        let _ = b.register(ComponentDefinition::transient::<i32, _>(|_| 42));
+        let _ = b.register(ComponentDefinition::singleton::<f64, _>(|_| 3.14));
         let c = Container::new(b.build().unwrap());
         c.warm_up().unwrap();
         let unused = c.unused_definitions();
@@ -4141,7 +4141,7 @@ mod tests {
     #[test]
     fn resolve_definition_transient_scope() {
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::transient::<String, _>(|_| "t".to_string()));
+        let _ = b.register(ComponentDefinition::transient::<String, _>(|_| "t".to_string()));
         let c = Container::new(b.build().unwrap());
         let a: Arc<String> = c.resolve().unwrap();
         let b: Arc<String> = c.resolve().unwrap();
@@ -4170,7 +4170,7 @@ mod tests {
     fn select_trait_binding_single_match_v5() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "impl".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "impl".to_string()));
         let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
         b.bind(binding).unwrap();
         let c = Container::new(b.build().unwrap());
@@ -4183,8 +4183,8 @@ mod tests {
     fn select_trait_binding_ambiguous_with_primary_v5() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-        b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
         let binding1 = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>).primary();
         let binding2 = TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>);
         b.bind(binding1).unwrap();
@@ -4199,8 +4199,8 @@ mod tests {
     fn select_trait_binding_ambiguous_no_primary() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-        b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
         let binding1 = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
         let binding2 = TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>);
         b.bind(binding1).unwrap();
@@ -4215,7 +4215,7 @@ mod tests {
     fn select_trait_binding_with_qualifier_v5() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "q_impl".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "q_impl".to_string()));
         let q = Qualifier::new("myQ").unwrap();
         let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>).qualified(q.clone());
         b.bind(binding).unwrap();
@@ -4228,8 +4228,8 @@ mod tests {
     fn select_trait_binding_ambiguous_with_qualifier() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-        b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
         let q1 = Qualifier::new("q1").unwrap();
         let q2 = Qualifier::new("q2").unwrap();
         let binding1 = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>).qualified(q1.clone());
@@ -4246,8 +4246,8 @@ mod tests {
     fn resolve_all_traits_multiple() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-        b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
         let binding1 = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
         let binding2 = TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>);
         b.bind(binding1).unwrap();
@@ -4261,7 +4261,7 @@ mod tests {
     fn resolve_all_traits_in_same_owner_v5() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
         let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
         b.bind(binding).unwrap();
         let c = Container::new(b.build().unwrap());
@@ -4274,7 +4274,7 @@ mod tests {
     fn resolve_trait_in_same_owner_v5() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
         let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
         b.bind(binding).unwrap();
         let c = Container::new(b.build().unwrap());
@@ -4287,7 +4287,7 @@ mod tests {
     fn resolve_qualified_trait_in_same_owner_v5() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
         let q = Qualifier::new("q").unwrap();
         let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>).qualified(q.clone());
         b.bind(binding).unwrap();
@@ -4319,8 +4319,8 @@ mod tests {
     fn listable_beans_of_type_id_multiple() {
         use crate::factory::listable_bean_factory::ListableBeanFactory;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-        b.register(
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(
             ComponentDefinition::singleton::<String, _>(|_| "b".to_string())
                 .qualified(Qualifier::new("q").unwrap()),
         );
@@ -4506,8 +4506,8 @@ mod tests {
     fn resolve_named_bean_ambiguous_v2() {
         use crate::factory::config::autowire_capable_bean_factory::AutowireCapableBeanFactory;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-        b.register(
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(
             ComponentDefinition::singleton::<String, _>(|_| "b".to_string())
                 .qualified(Qualifier::new("q").unwrap()),
         );
@@ -4644,7 +4644,7 @@ mod tests {
     fn resolve_optional_trait_found() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
         let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
         b.bind(binding).unwrap();
         let c = Container::new(b.build().unwrap());
@@ -4685,7 +4685,6 @@ mod tests {
 
     #[test]
     fn listable_bean_post_processor_count_v2() {
-        use crate::factory::listable_bean_factory::ListableBeanFactory;
         let c = make_container();
         assert_eq!(c.bean_post_processor_count(), 0);
     }
@@ -5081,7 +5080,7 @@ mod tests {
     fn resolve_definition_custom_scope_not_active() {
         struct CustomMarker;
         let mut b = RegistryBuilder::new();
-        b.register(
+        let _ = b.register(
             ComponentDefinition::scoped::<String, CustomMarker, _>(|_| "custom".to_string()),
         );
         let c = Container::new(b.build().unwrap());
@@ -5143,7 +5142,7 @@ mod tests {
     fn resolve_qualified_trait_not_found_for_wrong_qualifier() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
         let q = Qualifier::new("myQ").unwrap();
         b.bind(TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>).qualified(q.clone())).unwrap();
         let c = Container::new(b.build().unwrap());
@@ -5243,7 +5242,7 @@ mod tests {
     fn is_singleton_transient_returns_false() {
         use crate::factory::bean_factory::BeanFactory;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::transient::<String, _>(|_| "t".to_string()));
+        let _ = b.register(ComponentDefinition::transient::<String, _>(|_| "t".to_string()));
         let c = Container::new(b.build().unwrap());
         assert!(!c.is_singleton(&ComponentKey::of::<String>()).unwrap());
     }
@@ -5538,8 +5537,8 @@ mod tests {
     fn listable_bean_names_for_type_id_multiple() {
         use crate::factory::listable_bean_factory::ListableBeanFactory;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-        b.register(
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(
             ComponentDefinition::singleton::<String, _>(|_| "b".to_string())
                 .qualified(Qualifier::new("q").unwrap()),
         );
@@ -5564,8 +5563,8 @@ mod tests {
     fn contains_non_singleton_with_transient() {
         use crate::factory::listable_bean_factory::ListableBeanFactory;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "s".to_string()));
-        b.register(ComponentDefinition::transient::<i32, _>(|_| 42));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "s".to_string()));
+        let _ = b.register(ComponentDefinition::transient::<i32, _>(|_| 42));
         let c = Container::new(b.build().unwrap());
         assert!(c.contains_non_singleton_bean());
         assert!(c.contains_singleton_bean());
@@ -5708,8 +5707,8 @@ mod tests {
     #[test]
     fn unused_definitions_transient_stays_unused() {
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "s".to_string()));
-        b.register(ComponentDefinition::transient::<i32, _>(|_| 42));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "s".to_string()));
+        let _ = b.register(ComponentDefinition::transient::<i32, _>(|_| 42));
         let c = Container::new(b.build().unwrap());
         let _: Arc<String> = c.resolve().unwrap();
         let unused = c.unused_definitions();
@@ -5724,9 +5723,9 @@ mod tests {
     #[test]
     fn warm_up_only_singletons_resolved() {
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "s".to_string()));
-        b.register(ComponentDefinition::transient::<i32, _>(|_| 42));
-        b.register(ComponentDefinition::singleton::<f64, _>(|_| 3.14));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "s".to_string()));
+        let _ = b.register(ComponentDefinition::transient::<i32, _>(|_| 42));
+        let _ = b.register(ComponentDefinition::singleton::<f64, _>(|_| 3.14));
         let c = Container::new(b.build().unwrap());
         c.warm_up().unwrap();
         let unused = c.unused_definitions();
@@ -5761,7 +5760,6 @@ mod tests {
 
     #[test]
     fn bean_post_processor_count_via_configurable() {
-        use crate::factory::config::configurable_bean_factory::ConfigurableBeanFactory;
         let mut c = make_container();
         assert_eq!(c.bean_post_processor_count(), 0);
         c.add_bean_post_processor(Arc::new(NoneAfterInitProcessor));
@@ -5770,8 +5768,6 @@ mod tests {
 
     #[test]
     fn bean_post_processor_count_via_listable() {
-        use crate::factory::listable_bean_factory::ListableBeanFactory;
-        use crate::factory::config::configurable_bean_factory::ConfigurableBeanFactory;
         let mut c = make_container();
         assert_eq!(c.bean_post_processor_count(), 0);
         c.add_bean_post_processor(Arc::new(NoneAfterInitProcessor));
@@ -5845,7 +5841,7 @@ mod tests {
     fn resolve_qualified_in_matching_scope() {
         let mut b = RegistryBuilder::new();
         let q = Qualifier::new("primary").unwrap();
-        b.register(
+        let _ = b.register(
             ComponentDefinition::singleton::<String, _>(|_| "primary".to_string())
                 .qualified(q.clone()),
         );
@@ -5864,7 +5860,7 @@ mod tests {
     fn resolve_trait_in_matching_scope() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
         b.bind(TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>)).unwrap();
         let c = Container::new(b.build().unwrap());
         let scope = c.open_scope::<String>();
@@ -5876,7 +5872,7 @@ mod tests {
     fn resolve_qualified_trait_in_matching_scope() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
         let q = Qualifier::new("q").unwrap();
         b.bind(TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>).qualified(q.clone())).unwrap();
         let c = Container::new(b.build().unwrap());
@@ -5889,8 +5885,8 @@ mod tests {
     fn resolve_all_traits_in_matching_scope() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-        b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
         b.bind(TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>)).unwrap();
         b.bind(TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>)).unwrap();
         let c = Container::new(b.build().unwrap());
@@ -5975,7 +5971,7 @@ mod tests {
     fn resolve_trait_single_binding() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
         b.bind(TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>)).unwrap();
         let c = Container::new(b.build().unwrap());
         let result: Result<Arc<dyn std::fmt::Display + Send + Sync>, _> = c.resolve_trait();
@@ -5993,8 +5989,8 @@ mod tests {
     fn resolve_trait_primary_resolves() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-        b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
         b.bind(TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>)).unwrap();
         b.bind(TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>).primary()).unwrap();
         let c = Container::new(b.build().unwrap());
@@ -6006,8 +6002,8 @@ mod tests {
     fn resolve_trait_ambiguous_no_primary_v5() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-        b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
         b.bind(TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>)).unwrap();
         b.bind(TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>)).unwrap();
         let c = Container::new(b.build().unwrap());
@@ -6019,7 +6015,7 @@ mod tests {
     fn resolve_qualified_trait_success() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
         let q = Qualifier::new("q").unwrap();
         b.bind(TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>).qualified(q.clone())).unwrap();
         let c = Container::new(b.build().unwrap());
@@ -6046,8 +6042,8 @@ mod tests {
     fn resolve_all_traits_multiple_v3() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-        b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
         b.bind(TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>)).unwrap();
         b.bind(TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>)).unwrap();
         let c = Container::new(b.build().unwrap());
@@ -6059,7 +6055,7 @@ mod tests {
     fn resolve_trait_in_wrong_owner_v3() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
         b.bind(TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>)).unwrap();
         let c = Container::new(b.build().unwrap());
         let other = Container::new(RegistryBuilder::new().build().unwrap());
@@ -6072,7 +6068,7 @@ mod tests {
     fn resolve_qualified_trait_in_wrong_owner_v3() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
         let q = Qualifier::new("q").unwrap();
         b.bind(TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>).qualified(q.clone())).unwrap();
         let c = Container::new(b.build().unwrap());
@@ -6086,7 +6082,7 @@ mod tests {
     fn resolve_all_traits_in_wrong_owner_v3() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
         b.bind(TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>)).unwrap();
         let c = Container::new(b.build().unwrap());
         let other = Container::new(RegistryBuilder::new().build().unwrap());
@@ -6116,7 +6112,7 @@ mod tests {
     fn select_trait_binding_single() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
         b.bind(TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>)).unwrap();
         let c = Container::new(b.build().unwrap());
         let dep = crate::Dependency::trait_of::<dyn std::fmt::Display + Send + Sync>();
@@ -6136,7 +6132,7 @@ mod tests {
     fn select_trait_binding_qualified_match() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
         let q = Qualifier::new("q").unwrap();
         b.bind(TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>).qualified(q.clone())).unwrap();
         let c = Container::new(b.build().unwrap());
@@ -6149,7 +6145,7 @@ mod tests {
     fn select_trait_binding_not_found_with_wrong_qualifier_v3() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
         let q = Qualifier::new("q").unwrap();
         b.bind(TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>).qualified(q.clone())).unwrap();
         let c = Container::new(b.build().unwrap());
@@ -6441,8 +6437,8 @@ mod tests {
     fn autowire_bean_multiple_definitions_returns_existing() {
         use crate::factory::config::autowire_capable_bean_factory::AutowireCapableBeanFactory;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-        b.register(
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(
             ComponentDefinition::singleton::<String, _>(|_| "b".to_string())
                 .qualified(Qualifier::new("q").unwrap()),
         );
@@ -6615,8 +6611,8 @@ mod tests {
         let tracker1 = c.transient_tracker();
         let tracker2 = handle.transient_tracker();
         // They share the same underlying data
-        drop(tracker1);
-        drop(tracker2);
+        let _ = tracker1;
+        let _ = tracker2;
     }
 
     #[test]
@@ -6728,7 +6724,7 @@ mod tests {
     fn resolve_optional_trait_found_returns_some() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "impl".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "impl".to_string()));
         let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
         b.bind(binding).unwrap();
         let c = Container::new(b.build().unwrap());
@@ -6791,9 +6787,9 @@ mod tests {
     fn resolve_all_traits_multiple_bindings() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-        b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
-        b.register(ComponentDefinition::singleton::<f64, _>(|_| 3.14));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
+        let _ = b.register(ComponentDefinition::singleton::<f64, _>(|_| 3.14));
         let binding1 = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
         let binding2 = TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>);
         let binding3 = TraitBinding::new(|f: Arc<f64>| f as Arc<dyn std::fmt::Display + Send + Sync>);
@@ -6813,7 +6809,7 @@ mod tests {
     fn resolve_trait_in_same_owner_with_binding() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "impl".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "impl".to_string()));
         let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
         b.bind(binding).unwrap();
         let c = Container::new(b.build().unwrap());
@@ -6830,7 +6826,7 @@ mod tests {
     fn resolve_qualified_trait_in_same_owner_with_binding() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "impl".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "impl".to_string()));
         let q = Qualifier::new("q").unwrap();
         let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>).qualified(q.clone());
         b.bind(binding).unwrap();
@@ -6848,8 +6844,8 @@ mod tests {
     fn resolve_all_traits_in_same_owner_with_bindings() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-        b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
         let binding1 = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
         let binding2 = TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>);
         b.bind(binding1).unwrap();
@@ -6868,8 +6864,8 @@ mod tests {
     fn resolve_trait_primary_disambiguates() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-        b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
         let binding1 = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>).primary();
         let binding2 = TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>);
         b.bind(binding1).unwrap();
@@ -6887,8 +6883,8 @@ mod tests {
     fn resolve_trait_multiple_primaries_ambiguous() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-        b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
         let binding1 = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>).primary();
         let binding2 = TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>).primary();
         // The second primary should fail validation in bind_all
@@ -6904,7 +6900,7 @@ mod tests {
     fn resolve_qualified_trait_with_matching_binding() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "impl".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "impl".to_string()));
         let q = Qualifier::new("myQ").unwrap();
         let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>).qualified(q.clone());
         b.bind(binding).unwrap();
@@ -6921,7 +6917,7 @@ mod tests {
     fn resolve_qualified_trait_no_matching_binding() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "impl".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "impl".to_string()));
         let q1 = Qualifier::new("q1").unwrap();
         let q2 = Qualifier::new("q2").unwrap();
         let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>).qualified(q1.clone());
@@ -6939,7 +6935,7 @@ mod tests {
     fn resolve_trait_in_wrong_owner_v4() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "impl".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "impl".to_string()));
         let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
         b.bind(binding).unwrap();
         let c = Container::new(b.build().unwrap());
@@ -6957,7 +6953,7 @@ mod tests {
     fn resolve_qualified_trait_in_wrong_owner_v4() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "impl".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "impl".to_string()));
         let q = Qualifier::new("q").unwrap();
         let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>).qualified(q.clone());
         b.bind(binding).unwrap();
@@ -6976,7 +6972,7 @@ mod tests {
     fn resolve_all_traits_in_wrong_owner_v4() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "impl".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "impl".to_string()));
         let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
         b.bind(binding).unwrap();
         let c = Container::new(b.build().unwrap());
@@ -6994,7 +6990,7 @@ mod tests {
     fn select_trait_binding_with_qualifier_match() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "impl".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "impl".to_string()));
         let q = Qualifier::new("q").unwrap();
         let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>).qualified(q.clone());
         b.bind(binding).unwrap();
@@ -7024,8 +7020,8 @@ mod tests {
     fn select_trait_binding_ambiguous_same_qualifier() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-        b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
         let q = Qualifier::new("q").unwrap();
         let binding1 = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>).qualified(q.clone());
         let binding2 = TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>).qualified(q.clone());
@@ -7041,7 +7037,7 @@ mod tests {
     #[test]
     fn resolve_definition_factory_error() {
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| {
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| {
             panic!("factory error");
         }));
         let c = Container::new(b.build().unwrap());
@@ -7059,7 +7055,7 @@ mod tests {
     #[test]
     fn resolve_type_mismatch_after_construction() {
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
         let c = Container::new(b.build().unwrap());
         // Try to resolve String as i32 - should fail with TypeMismatch
         let result: Result<Arc<i32>, _> = c.resolve();
@@ -7073,7 +7069,7 @@ mod tests {
     #[test]
     fn resolve_optional_type_mismatch_returns_error_v4() {
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
         let c = Container::new(b.build().unwrap());
         // resolve_optional_typed with i32 dependency on String definition
         // The definition matches by type_id, so it finds String, but downcast to i32 fails
@@ -7091,7 +7087,7 @@ mod tests {
     fn resolve_trait_typed_with_valid_binding() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "impl".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "impl".to_string()));
         let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
         b.bind(binding).unwrap();
         let c = Container::new(b.build().unwrap());
@@ -7193,7 +7189,7 @@ mod tests {
     fn resolve_qualified_success_with_matching() {
         let mut b = RegistryBuilder::new();
         let q = Qualifier::new("primary").unwrap();
-        b.register(
+        let _ = b.register(
             ComponentDefinition::singleton::<String, _>(|_| "primary".to_string())
                 .qualified(q.clone()),
         );
@@ -7234,7 +7230,7 @@ mod tests {
     fn resolve_qualified_in_same_owner_success() {
         let mut b = RegistryBuilder::new();
         let q = Qualifier::new("primary").unwrap();
-        b.register(
+        let _ = b.register(
             ComponentDefinition::singleton::<String, _>(|_| "primary".to_string())
                 .qualified(q.clone()),
         );
@@ -7301,7 +7297,7 @@ mod tests {
     fn resolve_trait_with_binding_upcast_success() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
         let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
         b.bind(binding).unwrap();
         let c = Container::new(b.build().unwrap());
@@ -7313,7 +7309,7 @@ mod tests {
     fn resolve_trait_in_same_owner_with_binding_v2() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "world".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "world".to_string()));
         let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
         b.bind(binding).unwrap();
         let c = Container::new(b.build().unwrap());
@@ -7330,8 +7326,8 @@ mod tests {
     fn resolve_all_traits_in_with_multiple_bindings() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-        b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
         let binding1 = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
         let binding2 = TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>);
         b.bind(binding1).unwrap();
@@ -7350,7 +7346,7 @@ mod tests {
     fn resolve_optional_trait_typed_found_returns_some() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "found".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "found".to_string()));
         let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
         b.bind(binding).unwrap();
         let c = Container::new(b.build().unwrap());
@@ -7371,8 +7367,8 @@ mod tests {
     fn select_trait_binding_ambiguous_multiple_primary_fails() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-        b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
         // Two primary bindings for the same trait - should fail (build fails)
         let binding1 = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>).primary();
         let binding2 = TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>).primary();
@@ -7389,7 +7385,7 @@ mod tests {
     fn resolve_qualified_trait_with_qualifier_match() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "qualified_impl".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "qualified_impl".to_string()));
         let q = Qualifier::new("special").unwrap();
         let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>)
             .qualified(q.clone());
@@ -7407,7 +7403,7 @@ mod tests {
     fn resolve_qualified_trait_in_with_qualifier_match() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "scoped_qualified".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "scoped_qualified".to_string()));
         let q = Qualifier::new("scoped_q").unwrap();
         let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>)
             .qualified(q.clone());
@@ -7563,14 +7559,12 @@ mod tests {
 
     #[test]
     fn listable_bean_post_processor_count_zero() {
-        use crate::factory::listable_bean_factory::ListableBeanFactory;
         let c = make_container();
         assert_eq!(c.bean_post_processor_count(), 0);
     }
 
     #[test]
     fn listable_bean_post_processor_count_with_processors() {
-        use crate::factory::listable_bean_factory::ListableBeanFactory;
         let mut c = make_container();
         c.add_bean_post_processor(Arc::new(NoneAfterInitProcessor));
         assert_eq!(c.bean_post_processor_count(), 1);
@@ -7797,8 +7791,8 @@ mod tests {
     fn autowire_capable_autowire_bean_multiple_matches() {
         use crate::factory::config::autowire_capable_bean_factory::AutowireCapableBeanFactory;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-        b.register(
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(
             ComponentDefinition::singleton::<String, _>(|_| "b".to_string())
                 .qualified(Qualifier::new("q").unwrap()),
         );
@@ -7935,8 +7929,8 @@ mod tests {
     fn autowire_capable_resolve_named_bean_ambiguous() {
         use crate::factory::config::autowire_capable_bean_factory::AutowireCapableBeanFactory;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-        b.register(
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(
             ComponentDefinition::singleton::<String, _>(|_| "b".to_string())
                 .qualified(Qualifier::new("q").unwrap()),
         );
@@ -7986,8 +7980,8 @@ mod tests {
     fn autowire_capable_resolve_dependency_ambiguous() {
         use crate::factory::config::autowire_capable_bean_factory::AutowireCapableBeanFactory;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-        b.register(
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(
             ComponentDefinition::singleton::<String, _>(|_| "b".to_string())
                 .qualified(Qualifier::new("q").unwrap()),
         );
@@ -8267,7 +8261,7 @@ mod tests {
     fn resolve_definition_custom_scope_not_active_error() {
         struct CustomMarker;
         let mut b = RegistryBuilder::new();
-        b.register(
+        let _ = b.register(
             ComponentDefinition::scoped::<String, CustomMarker, _>(|_| "custom".to_string()),
         );
         let c = Container::new(b.build().unwrap());
@@ -8282,7 +8276,7 @@ mod tests {
     #[test]
     fn transient_creates_new_each_time() {
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::transient::<i32, _>(|_| {
+        let _ = b.register(ComponentDefinition::transient::<i32, _>(|_| {
             use std::sync::atomic::{AtomicI32, Ordering};
             static COUNTER: AtomicI32 = AtomicI32::new(0);
             COUNTER.fetch_add(1, Ordering::SeqCst)
@@ -8296,7 +8290,7 @@ mod tests {
     #[test]
     fn transient_instances_tracked_v3() {
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::transient::<String, _>(|_| "t".to_string()));
+        let _ = b.register(ComponentDefinition::transient::<String, _>(|_| "t".to_string()));
         let c = Container::new(b.build().unwrap());
         let _: Arc<String> = c.resolve().unwrap();
         // Transient tracker should have the instance
@@ -8315,9 +8309,9 @@ mod tests {
     #[test]
     fn warm_up_mixed_scopes_v4() {
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "s".to_string()));
-        b.register(ComponentDefinition::transient::<i32, _>(|_| 42));
-        b.register(ComponentDefinition::singleton::<f64, _>(|_| 3.14));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "s".to_string()));
+        let _ = b.register(ComponentDefinition::transient::<i32, _>(|_| 42));
+        let _ = b.register(ComponentDefinition::singleton::<f64, _>(|_| 3.14));
         let c = Container::new(b.build().unwrap());
         c.warm_up().unwrap();
         let unused = c.unused_definitions();
@@ -8515,7 +8509,7 @@ mod tests {
     #[test]
     fn resolve_trait_with_primary_binding() {
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
         let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>)
             .primary();
         b.bind(binding).unwrap();
@@ -8527,8 +8521,8 @@ mod tests {
     #[test]
     fn resolve_trait_ambiguous_no_primary_v6() {
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-        b.register(ComponentDefinition::singleton::<i32, _>(|_| 42i32));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<i32, _>(|_| 42i32));
         let binding1 = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
         let binding2 = TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>);
         b.bind_all(vec![binding1, binding2]).unwrap();
@@ -8540,8 +8534,8 @@ mod tests {
     #[test]
     fn resolve_all_traits_with_multiple_bindings() {
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-        b.register(ComponentDefinition::singleton::<i32, _>(|_| 42i32));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<i32, _>(|_| 42i32));
         let binding1 = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
         let binding2 = TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>);
         b.bind_all(vec![binding1, binding2]).unwrap();
@@ -8553,7 +8547,7 @@ mod tests {
     #[test]
     fn resolve_trait_in_same_owner_v6() {
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
         let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>)
             .primary();
         b.bind(binding).unwrap();
@@ -8566,7 +8560,7 @@ mod tests {
     #[test]
     fn resolve_all_traits_in_same_owner_v6() {
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
         let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
         b.bind(binding).unwrap();
         let c = Container::new(b.build().unwrap());
@@ -8579,7 +8573,7 @@ mod tests {
     #[test]
     fn resolve_qualified_trait_found() {
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
         let q = Qualifier::new("primary").unwrap();
         let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>)
             .qualified(q.clone());
@@ -8592,7 +8586,7 @@ mod tests {
     #[test]
     fn resolve_qualified_trait_in_same_owner_v6() {
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
         let q = Qualifier::new("primary").unwrap();
         let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>)
             .qualified(q.clone());
@@ -8608,7 +8602,7 @@ mod tests {
     #[test]
     fn select_trait_binding_single_match_v6() {
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
         let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
         b.bind(binding).unwrap();
         let c = Container::new(b.build().unwrap());
@@ -8628,8 +8622,8 @@ mod tests {
     #[test]
     fn select_trait_binding_ambiguous_with_primary_v6() {
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-        b.register(ComponentDefinition::singleton::<i32, _>(|_| 42i32));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<i32, _>(|_| 42i32));
         let binding1 = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>)
             .primary();
         let binding2 = TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>);
@@ -8643,8 +8637,8 @@ mod tests {
     #[test]
     fn select_trait_binding_ambiguous_no_primary_fails() {
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-        b.register(ComponentDefinition::singleton::<i32, _>(|_| 42i32));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<i32, _>(|_| 42i32));
         let binding1 = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
         let binding2 = TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>);
         b.bind_all(vec![binding1, binding2]).unwrap();
@@ -8657,7 +8651,7 @@ mod tests {
     #[test]
     fn select_trait_binding_with_qualifier_v6() {
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
         let q = Qualifier::new("myq").unwrap();
         let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>)
             .qualified(q.clone());
@@ -8673,7 +8667,7 @@ mod tests {
     #[test]
     fn resolve_binding_success() {
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
         let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
         b.bind(binding).unwrap();
         let c = Container::new(b.build().unwrap());
@@ -8696,7 +8690,7 @@ mod tests {
     #[test]
     fn resolve_definition_transient_new_each_time() {
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::transient::<i32, _>(|_| {
+        let _ = b.register(ComponentDefinition::transient::<i32, _>(|_| {
             use std::sync::atomic::{AtomicI32, Ordering};
             static COUNTER: AtomicI32 = AtomicI32::new(0);
             COUNTER.fetch_add(1, Ordering::SeqCst)
@@ -8712,7 +8706,6 @@ mod tests {
     #[test]
     fn construct_with_post_processor_returns_proxy() {
         use crate::factory::config::bean_post_processor::BeanPostProcessor;
-        use crate::instantiation_aware_bean_post_processor::InstantiationAwareBeanPostProcessor;
 
         struct ProxyProcessor;
         impl BeanPostProcessor for ProxyProcessor {
@@ -8795,7 +8788,7 @@ mod tests {
         impl BeanPostProcessor for NoneProcessor {
             fn post_process_after_initialization(
                 &self,
-                bean: Arc<dyn Any + Send + Sync>,
+                _bean: Arc<dyn Any + Send + Sync>,
                 _bean_name: &str,
             ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>> {
                 Ok(None)
@@ -8909,7 +8902,6 @@ mod tests {
 
     #[test]
     fn listable_bean_post_processor_count_empty() {
-        use crate::factory::listable_bean_factory::ListableBeanFactory;
         let c = Container::new(RegistryBuilder::new().build().unwrap());
         assert_eq!(c.bean_post_processor_count(), 0);
     }
@@ -9382,7 +9374,7 @@ mod tests {
     fn resolve_qualified_in_success() {
         let mut b = RegistryBuilder::new();
         let q = Qualifier::new("primary").unwrap();
-        b.register(
+        let _ = b.register(
             ComponentDefinition::singleton::<String, _>(|_| "primary".to_string())
                 .qualified(q.clone()),
         );
@@ -9398,7 +9390,7 @@ mod tests {
     fn resolve_trait_returns_trait_object() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
         b.bind(
             TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>),
         ).unwrap();
@@ -9419,7 +9411,7 @@ mod tests {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
         let q = Qualifier::new("primary").unwrap();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
         b.bind(
             TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>)
                 .qualified(q.clone()),
@@ -9441,8 +9433,8 @@ mod tests {
     fn resolve_all_traits_returns_all_bindings_cov() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-        b.register(
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(
             ComponentDefinition::singleton::<String, _>(|_| "b".to_string())
                 .qualified(Qualifier::new("q").unwrap()),
         );
@@ -9473,7 +9465,7 @@ mod tests {
     fn resolve_trait_in_wrong_owner_cov() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
         b.bind(
             TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>),
         ).unwrap();
@@ -9489,7 +9481,7 @@ mod tests {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
         let q = Qualifier::new("q").unwrap();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
         b.bind(
             TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>)
                 .qualified(q.clone()),
@@ -9548,7 +9540,7 @@ mod tests {
     fn listable_contains_non_singleton_bean_false() {
         use crate::factory::listable_bean_factory::ListableBeanFactory;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
         let c = Container::new(b.build().unwrap());
         assert!(!c.contains_non_singleton_bean());
     }
@@ -9557,7 +9549,7 @@ mod tests {
     fn listable_contains_non_singleton_bean_true() {
         use crate::factory::listable_bean_factory::ListableBeanFactory;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::transient::<String, _>(|_| "hello".to_string()));
+        let _ = b.register(ComponentDefinition::transient::<String, _>(|_| "hello".to_string()));
         let c = Container::new(b.build().unwrap());
         assert!(c.contains_non_singleton_bean());
     }
@@ -9652,7 +9644,7 @@ mod tests {
     #[test]
     fn resolve_transient_returns_different_instances() {
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::transient::<String, _>(|_| "transient".to_string()));
+        let _ = b.register(ComponentDefinition::transient::<String, _>(|_| "transient".to_string()));
         let c = Container::new(b.build().unwrap());
         let a: Arc<String> = c.resolve().unwrap();
         let b: Arc<String> = c.resolve().unwrap();
@@ -9679,7 +9671,6 @@ mod tests {
     #[test]
     fn resolve_with_post_processor() {
         use crate::factory::config::bean_post_processor::BeanPostProcessor;
-        use std::any::TypeId;
 
         struct TestPostProcessor;
         impl BeanPostProcessor for TestPostProcessor {
@@ -9765,7 +9756,7 @@ mod tests {
         }
 
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "original".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "original".to_string()));
         let mut c = Container::new(b.build().unwrap());
         c.add_bean_post_processor(Arc::new(ProxyPostProcessor));
         let val: Arc<String> = c.resolve().unwrap();
@@ -9892,7 +9883,6 @@ mod tests {
 
     #[test]
     fn listable_bean_post_processor_count_cov() {
-        use crate::factory::listable_bean_factory::ListableBeanFactory;
         let c = make_container();
         assert_eq!(c.bean_post_processor_count(), 0);
     }
@@ -9913,8 +9903,8 @@ mod tests {
     #[test]
     fn warm_up_skips_transient() {
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
-        b.register(ComponentDefinition::transient::<i32, _>(|_| 42));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+        let _ = b.register(ComponentDefinition::transient::<i32, _>(|_| 42));
         let c = Container::new(b.build().unwrap());
         c.warm_up().unwrap();
         let unused = c.unused_definitions();
@@ -9977,10 +9967,9 @@ mod tests {
 
     #[test]
     fn resolve_definition_custom_scope_not_active_returns_error() {
-        use crate::factory::parsing::component_definition::ErasedComponent;
         // Register a component with a custom scope key
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
         let c = Container::new(b.build().unwrap());
         // Resolve without a scope context - singleton should work
         let val: Arc<String> = c.resolve().unwrap();
@@ -9997,7 +9986,7 @@ mod tests {
         impl BeanPostProcessor for NoOpPostProcessor {
             fn post_process_after_initialization(
                 &self,
-                bean: Arc<dyn Any + Send + Sync>,
+                _bean: Arc<dyn Any + Send + Sync>,
                 _bean_name: &str,
             ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>> {
                 Ok(None) // Return None means no replacement
@@ -10011,7 +10000,7 @@ mod tests {
             }
             fn post_process_before_initialization(
                 &self,
-                bean: Arc<dyn Any + Send + Sync>,
+                _bean: Arc<dyn Any + Send + Sync>,
                 _bean_name: &str,
             ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>> {
                 Ok(None)
@@ -10029,7 +10018,7 @@ mod tests {
         }
 
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "original".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "original".to_string()));
         let mut c = Container::new(b.build().unwrap());
         c.add_bean_post_processor(Arc::new(NoOpPostProcessor));
         let val: Arc<String> = c.resolve().unwrap();
@@ -10076,7 +10065,7 @@ mod tests {
         }
 
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "value".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "value".to_string()));
         let mut c = Container::new(b.build().unwrap());
         c.add_bean_post_processor(Arc::new(ErrorPostProcessor));
         // PostProcessor errors should not prevent bean creation
@@ -10126,7 +10115,7 @@ mod tests {
         }
 
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "normal".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "normal".to_string()));
         let mut c = Container::new(b.build().unwrap());
         c.add_bean_post_processor(Arc::new(ErrorBeforeInstantiation));
         // Should still create the bean normally since the error is ignored
@@ -10140,7 +10129,7 @@ mod tests {
     fn select_trait_binding_qualified_not_found() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
         let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
         b.bind(binding).unwrap();
         let c = Container::new(b.build().unwrap());
@@ -10153,8 +10142,8 @@ mod tests {
     fn select_trait_binding_ambiguous_with_qualifier_unqualified_resolve() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-        b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
         let q1 = Qualifier::new("q1").unwrap();
         let q2 = Qualifier::new("q2").unwrap();
         let binding1 = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>).qualified(q1);
@@ -10173,7 +10162,7 @@ mod tests {
     fn resolve_binding_target_found_v2() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "impl".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "impl".to_string()));
         let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
         b.bind(binding).unwrap();
         let c = Container::new(b.build().unwrap());
@@ -10520,7 +10509,7 @@ mod tests {
     #[test]
     fn transient_tracking_multiple_instances_cov2() {
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::transient::<String, _>(|_| "t".to_string()));
+        let _ = b.register(ComponentDefinition::transient::<String, _>(|_| "t".to_string()));
         let c = Container::new(b.build().unwrap());
         let _: Arc<String> = c.resolve().unwrap();
         let _: Arc<String> = c.resolve().unwrap();
@@ -10647,8 +10636,8 @@ mod tests {
     fn resolve_named_bean_ambiguous_cov2() {
         use crate::factory::config::autowire_capable_bean_factory::AutowireCapableBeanFactory;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-        b.register(
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(
             ComponentDefinition::singleton::<String, _>(|_| "b".to_string())
                 .qualified(Qualifier::new("q").unwrap()),
         );
@@ -10665,7 +10654,7 @@ mod tests {
 
     #[test]
     fn construct_with_post_processor_count() {
-        let mut c = make_container();
+        let c = make_container();
         assert_eq!(c.bean_post_processor_count(), 0);
         // We can't easily construct a real BeanPostProcessor in unit tests,
         // but we verify the count method works
@@ -10676,7 +10665,7 @@ mod tests {
     #[test]
     fn resolve_definition_custom_scope_not_active_v3() {
         let mut b = RegistryBuilder::new();
-        b.register(
+        let _ = b.register(
             ComponentDefinition::scoped::<String, i32, _>(|_| "custom".to_string()),
         );
         let c = Container::new(b.build().unwrap());
@@ -10690,7 +10679,7 @@ mod tests {
     #[test]
     fn resolve_definition_custom_scope_active() {
         let mut b = RegistryBuilder::new();
-        b.register(
+        let _ = b.register(
             ComponentDefinition::scoped::<String, i32, _>(|_| "custom_value".to_string()),
         );
         let c = Container::new(b.build().unwrap());
@@ -10706,8 +10695,8 @@ mod tests {
     fn listable_contains_non_singleton_bean_true_with_transient() {
         use crate::factory::listable_bean_factory::ListableBeanFactory;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "s".to_string()));
-        b.register(ComponentDefinition::transient::<i32, _>(|_| 42));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "s".to_string()));
+        let _ = b.register(ComponentDefinition::transient::<i32, _>(|_| 42));
         let c = Container::new(b.build().unwrap());
         assert!(c.contains_non_singleton_bean());
     }
@@ -10718,7 +10707,7 @@ mod tests {
     fn listable_contains_singleton_bean_false_empty() {
         use crate::factory::listable_bean_factory::ListableBeanFactory;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::transient::<i32, _>(|_| 42));
+        let _ = b.register(ComponentDefinition::transient::<i32, _>(|_| 42));
         let c = Container::new(b.build().unwrap());
         assert!(!c.contains_singleton_bean());
     }
@@ -10729,9 +10718,9 @@ mod tests {
     fn listable_bean_names_iterator_multiple() {
         use crate::factory::listable_bean_factory::ListableBeanFactory;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-        b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
-        b.register(ComponentDefinition::singleton::<f64, _>(|_| 3.14));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
+        let _ = b.register(ComponentDefinition::singleton::<f64, _>(|_| 3.14));
         let c = Container::new(b.build().unwrap());
         let names: Vec<String> = c.bean_names_iterator().collect();
         assert_eq!(names.len(), 3);
@@ -10918,9 +10907,9 @@ mod tests {
         use crate::factory::config::configurable_listable_bean_factory::ConfigurableListableBeanFactory;
         use crate::factory::config::singleton_bean_registry::SingletonBeanRegistry;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "s".to_string()));
-        b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
-        b.register(ComponentDefinition::singleton::<f64, _>(|_| 3.14));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "s".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
+        let _ = b.register(ComponentDefinition::singleton::<f64, _>(|_| 3.14));
         let c = Container::new(b.build().unwrap());
         c.pre_instantiate_singletons().unwrap();
         assert_eq!(c.singleton_count(), 3);
@@ -11017,8 +11006,8 @@ mod tests {
     fn resolve_dependency_multiple_matches_returns_error() {
         use crate::factory::config::autowire_capable_bean_factory::AutowireCapableBeanFactory;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-        b.register(
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(
             ComponentDefinition::singleton::<String, _>(|_| "b".to_string())
                 .qualified(Qualifier::new("q").unwrap()),
         );
@@ -11184,8 +11173,8 @@ mod tests {
     #[test]
     fn warm_up_with_only_singletons() {
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "s".to_string()));
-        b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "s".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
         let c = Container::new(b.build().unwrap());
         c.warm_up().unwrap();
         let unused = c.unused_definitions();
@@ -11212,7 +11201,7 @@ mod tests {
     #[test]
     fn resolve_typed_type_mismatch() {
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
         let c = Container::new(b.build().unwrap());
         // Try to resolve String as i32
         let result = c.resolve_typed::<i32>(&crate::Dependency::of::<i32>(), &[], None);
@@ -11241,11 +11230,11 @@ mod tests {
     #[test]
     fn select_definition_ambiguous_multiple_same_type() {
         let mut b = RegistryBuilder::new();
-        b.register(
+        let _ = b.register(
             ComponentDefinition::singleton::<String, _>(|_| "a".to_string())
                 .qualified(Qualifier::new("q1").unwrap()),
         );
-        b.register(
+        let _ = b.register(
             ComponentDefinition::singleton::<String, _>(|_| "b".to_string())
                 .qualified(Qualifier::new("q2").unwrap()),
         );
@@ -11259,7 +11248,7 @@ mod tests {
     fn select_definition_with_qualifier_matches() {
         let mut b = RegistryBuilder::new();
         let q = Qualifier::new("primary").unwrap();
-        b.register(
+        let _ = b.register(
             ComponentDefinition::singleton::<String, _>(|_| "primary".to_string())
                 .qualified(q.clone()),
         );
@@ -11275,7 +11264,7 @@ mod tests {
     fn select_trait_binding_single_match() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "impl".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "impl".to_string()));
         let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
         b.bind(binding).unwrap();
         let c = Container::new(b.build().unwrap());
@@ -11294,8 +11283,8 @@ mod tests {
     fn select_trait_binding_ambiguous_primary_tie_break() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-        b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
         let binding1 = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>).primary();
         let binding2 = TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>);
         b.bind(binding1).unwrap();
@@ -11309,8 +11298,8 @@ mod tests {
     fn select_trait_binding_ambiguous_no_primary_fails_v3() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-        b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
         let binding1 = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
         let binding2 = TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>);
         b.bind(binding1).unwrap();
@@ -11324,7 +11313,7 @@ mod tests {
     fn select_trait_binding_with_qualifier() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "q_impl".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "q_impl".to_string()));
         let q = Qualifier::new("myQ").unwrap();
         let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>).qualified(q.clone());
         b.bind(binding).unwrap();
@@ -11339,8 +11328,8 @@ mod tests {
     fn resolve_all_traits_multiple_bindings_v3() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
-        b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<i32, _>(|_| 42));
         let binding1 = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
         let binding2 = TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>);
         b.bind(binding1).unwrap();
@@ -11361,7 +11350,7 @@ mod tests {
     fn resolve_all_traits_in_same_owner() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
         let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
         b.bind(binding).unwrap();
         let c = Container::new(b.build().unwrap());
@@ -11376,7 +11365,7 @@ mod tests {
     fn resolve_trait_in_same_owner() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
         let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
         b.bind(binding).unwrap();
         let c = Container::new(b.build().unwrap());
@@ -11389,7 +11378,7 @@ mod tests {
     fn resolve_qualified_trait_in_same_owner() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
         let q = Qualifier::new("q").unwrap();
         let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>).qualified(q.clone());
         b.bind(binding).unwrap();
@@ -11457,7 +11446,7 @@ mod tests {
     #[test]
     fn transient_instances_tracked_in_tracker() {
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::transient::<String, _>(|_| "t".to_string()));
+        let _ = b.register(ComponentDefinition::transient::<String, _>(|_| "t".to_string()));
         let c = Container::new(b.build().unwrap());
         let _: Arc<String> = c.resolve().unwrap();
         // The transient tracker should have a reference
@@ -11625,7 +11614,7 @@ mod tests {
     fn is_prototype_found() {
         use crate::factory::bean_factory::BeanFactory;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::transient::<String, _>(|_| "t".to_string()));
+        let _ = b.register(ComponentDefinition::transient::<String, _>(|_| "t".to_string()));
         let c = Container::new(b.build().unwrap());
         let key = ComponentKey::of::<String>();
         assert!(c.is_prototype(&key).unwrap());
@@ -11701,11 +11690,11 @@ mod tests {
     fn get_bean_by_type_id_ambiguous() {
         use crate::factory::bean_factory::BeanFactory;
         let mut b = RegistryBuilder::new();
-        b.register(
+        let _ = b.register(
             ComponentDefinition::singleton::<String, _>(|_| "a".to_string())
                 .qualified(Qualifier::new("q1").unwrap()),
         );
-        b.register(
+        let _ = b.register(
             ComponentDefinition::singleton::<String, _>(|_| "b".to_string())
                 .qualified(Qualifier::new("q2").unwrap()),
         );
@@ -11906,11 +11895,11 @@ mod tests {
     fn resolve_named_bean_ambiguous_cov3() {
         use crate::factory::config::autowire_capable_bean_factory::AutowireCapableBeanFactory;
         let mut b = RegistryBuilder::new();
-        b.register(
+        let _ = b.register(
             ComponentDefinition::singleton::<String, _>(|_| "a".to_string())
                 .qualified(Qualifier::new("q1").unwrap()),
         );
-        b.register(
+        let _ = b.register(
             ComponentDefinition::singleton::<String, _>(|_| "b".to_string())
                 .qualified(Qualifier::new("q2").unwrap()),
         );
@@ -11963,11 +11952,11 @@ mod tests {
     fn resolve_dependency_ambiguous_v2() {
         use crate::factory::config::autowire_capable_bean_factory::AutowireCapableBeanFactory;
         let mut b = RegistryBuilder::new();
-        b.register(
+        let _ = b.register(
             ComponentDefinition::singleton::<String, _>(|_| "a".to_string())
                 .qualified(Qualifier::new("q1").unwrap()),
         );
-        b.register(
+        let _ = b.register(
             ComponentDefinition::singleton::<String, _>(|_| "b".to_string())
                 .qualified(Qualifier::new("q2").unwrap()),
         );
@@ -12052,7 +12041,6 @@ mod tests {
 
     #[test]
     fn listable_bean_post_processor_count_cov3() {
-        use crate::factory::listable_bean_factory::ListableBeanFactory;
         let c = make_container();
         assert_eq!(c.bean_post_processor_count(), 0);
     }
@@ -12068,7 +12056,7 @@ mod tests {
     fn listable_contains_non_singleton_bean_true_v2_cov3() {
         use crate::factory::listable_bean_factory::ListableBeanFactory;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::transient::<String, _>(|_| "t".to_string()));
+        let _ = b.register(ComponentDefinition::transient::<String, _>(|_| "t".to_string()));
         let c = Container::new(b.build().unwrap());
         assert!(c.contains_non_singleton_bean());
     }
@@ -12217,7 +12205,7 @@ mod tests {
     #[test]
     fn resolve_transient_returns_different_instances_v2_cov3() {
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::transient::<String, _>(|_| "t".to_string()));
+        let _ = b.register(ComponentDefinition::transient::<String, _>(|_| "t".to_string()));
         let c = Container::new(b.build().unwrap());
         let a: Arc<String> = c.resolve().unwrap();
         let b2: Arc<String> = c.resolve().unwrap();
@@ -12229,7 +12217,7 @@ mod tests {
     #[test]
     fn resolve_custom_scope_not_active() {
         let mut b = RegistryBuilder::new();
-        b.register(
+        let _ = b.register(
             ComponentDefinition::scoped::<String, String, _>(|_| "scoped".to_string()),
         );
         let c = Container::new(b.build().unwrap());
@@ -12243,7 +12231,7 @@ mod tests {
     #[test]
     fn resolve_optional_typed_type_mismatch() {
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
         let c = Container::new(b.build().unwrap());
         // Try to resolve String as i32 via optional
         let result = c.resolve_optional_typed::<i32>(&crate::Dependency::of::<String>(), &[], None);
@@ -12255,7 +12243,7 @@ mod tests {
     #[test]
     fn warm_up_with_failing_factory() {
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| {
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| {
             panic!("intentional failure")
         }));
         let c = Container::new(b.build().unwrap());
@@ -12281,7 +12269,7 @@ mod tests {
     fn resolve_trait_in_same_owner_success() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
         let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
         b.bind(binding).unwrap();
         let c = Container::new(b.build().unwrap());
@@ -12296,7 +12284,7 @@ mod tests {
     fn resolve_qualified_trait_in_same_owner_success() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
         let q = Qualifier::new("q").unwrap();
         let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>).qualified(q.clone());
         b.bind(binding).unwrap();
@@ -12312,7 +12300,7 @@ mod tests {
     fn resolve_all_traits_in_same_owner_v2_cov3() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+        let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
         let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
         b.bind(binding).unwrap();
         let c = Container::new(b.build().unwrap());

@@ -12,8 +12,6 @@
 //! - 插件架构中的服务发现
 //! - 需要通过接口获取唯一实现
 
-use std::any::Any;
-use std::sync::Arc;
 
 /// ServiceFactoryBean — Spring 风格的服务工厂 Bean。
 ///

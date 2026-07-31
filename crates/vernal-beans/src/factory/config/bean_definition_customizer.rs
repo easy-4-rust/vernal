@@ -18,6 +18,7 @@ pub struct ClosureBeanDefinitionCustomizer {
 }
 
 impl ClosureBeanDefinitionCustomizer {
+    /// 创建一个新的实例。
     pub fn new(callback: impl Fn(&str) -> Result<(), Box<dyn std::error::Error + Send + Sync>> + Send + Sync + 'static) -> Self {
         Self { callback: Box::new(callback) }
     }

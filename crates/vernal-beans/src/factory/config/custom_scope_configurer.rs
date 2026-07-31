@@ -15,18 +15,22 @@ pub struct CustomScopeConfigurer {
 }
 
 impl CustomScopeConfigurer {
+    /// 创建一个新的实例。
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// 注册作用域。
     pub fn register_scope(&mut self, name: impl Into<String>, scope_type: impl Into<String>) {
         self.scopes.insert(name.into(), scope_type.into());
     }
 
+    /// 执行scope_names操作。
     pub fn scope_names(&self) -> Vec<String> {
         self.scopes.keys().cloned().collect()
     }
 
+    /// 判断是否作用域。
     pub fn has_scope(&self, name: &str) -> bool {
         self.scopes.contains_key(name)
     }

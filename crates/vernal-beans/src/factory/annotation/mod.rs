@@ -1,6 +1,7 @@
 //! factory::annotation — 对应 Spring beans.factory.annotation 包。
 
 pub mod annotated_bean_definition;
+/// 带注解的通用Bean定义 模块。
 pub mod annotated_generic_bean_definition;
 pub mod annotation_bean_wiring_info_resolver;
 pub mod autowire;

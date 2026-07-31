@@ -7,7 +7,6 @@
 //! 在 vernal 中，此处理器负责执行 Bean 的销毁回调。
 
 use std::any::Any;
-use std::sync::Arc;
 
 use crate::factory::config::bean_post_processor::BeanPostProcessor;
 

@@ -2,8 +2,6 @@
 //!
 //! ObjectFactory 创建工厂 Bean。
 
-use std::any::Any;
-use std::sync::Arc;
 
 /// ObjectFactory 创建工厂 Bean。
 ///

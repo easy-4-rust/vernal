@@ -13,7 +13,7 @@
 //! - 与 `@Configurable` 注解配合使用
 
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 
 use crate::factory::wiring::bean_wiring_info::BeanWiringInfo;
 
@@ -191,7 +191,7 @@ mod tests {
     #[test]
     fn cached_result_returned() {
         let resolver = BeanWiringInfoResolver::new();
-        let info1 = resolver.resolve_wiring_info("bean", "Type").unwrap();
+        let _info1 = resolver.resolve_wiring_info("bean", "Type").unwrap();
         let info2 = resolver.resolve_wiring_info("bean", "OtherType").unwrap();
 
         // 第二次应返回缓存的结果

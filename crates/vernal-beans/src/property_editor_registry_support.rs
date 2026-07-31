@@ -19,6 +19,7 @@ pub struct PropertyEditorRegistrySupport {
 }
 
 impl PropertyEditorRegistrySupport {
+    /// 创建一个新的实例。
     pub fn new() -> Self {
         Self {
             custom_editors: HashMap::new(),
@@ -28,10 +29,12 @@ impl PropertyEditorRegistrySupport {
         }
     }
 
+    /// 注册默认编辑器。
     pub fn register_default_editor(&mut self, required_type: TypeId, editor: Box<dyn PropertyEditor>) {
         self.default_editors.insert(required_type, editor);
     }
 
+    /// 获取默认编辑器。
     pub fn get_default_editor(&self, required_type: TypeId) -> Option<&dyn PropertyEditor> {
         if self.default_editors_active {
             self.default_editors.get(&required_type).map(|e| e.as_ref())
@@ -40,18 +43,22 @@ impl PropertyEditorRegistrySupport {
         }
     }
 
+    /// 判断是否默认编辑器。
     pub fn has_default_editor(&self, required_type: TypeId) -> bool {
         self.default_editors_active && self.default_editors.contains_key(&required_type)
     }
 
+    /// 覆盖默认editors。
     pub fn override_default_editors(&mut self) {
         self.default_editors_active = false;
     }
 
+    /// 恢复默认editors。
     pub fn restore_default_editors(&mut self) {
         self.default_editors_active = true;
     }
 
+    /// 获取自定义编辑器数量。
     pub fn custom_editor_count(&self) -> usize {
         self.custom_editors.len() + self.custom_editors_for_path.len()
     }

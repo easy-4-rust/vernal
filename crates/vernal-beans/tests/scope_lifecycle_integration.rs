@@ -8,22 +8,22 @@ use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
 use vernal_beans::ApplicationScope;
 use vernal_beans::ComponentDefinition;
-use vernal_beans::ComponentKey;
 use vernal_beans::RegistryBuilder;
 use vernal_beans::RequestScope;
 use vernal_beans::Resolver;
 use vernal_beans::SessionScope;
-use vernal_beans::BeanFactory;
 use vernal_beans::bean_scope::BeanScope;
 
 // ── 测试类型 ─────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 struct UserContext {
     user_id: String,
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 struct ShoppingCart {
     items: Vec<String>,
 }

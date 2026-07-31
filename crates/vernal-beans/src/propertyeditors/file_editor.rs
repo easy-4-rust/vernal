@@ -14,6 +14,7 @@ pub struct FileEditor {
 }
 
 impl FileEditor {
+    /// 创建一个新的实例。
     pub fn new() -> Self {
         Self { value: None }
     }

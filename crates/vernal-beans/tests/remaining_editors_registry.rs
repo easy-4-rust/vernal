@@ -4,7 +4,6 @@ use vernal_beans::ComponentDefinition;
 use vernal_beans::ComponentKey;
 use vernal_beans::RegistryBuilder;
 use vernal_beans::Resolver;
-use vernal_beans::Scope;
 use vernal_beans::property_editor::PropertyEditor;
 
 // ── 测试类型 ─────────────────────────────────────────────────────────────

@@ -28,6 +28,7 @@
 /// | `PropertyMatches.forProperty(String, String[])` | `PropertyMatches::for_property(name, candidates)` |
 /// | `getMatches()` | `matches()` |
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct PropertyMatches {
     /// 原始属性名（未匹配到的）
     original: String,

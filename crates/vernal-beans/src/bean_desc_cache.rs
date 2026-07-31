@@ -120,7 +120,6 @@ impl Default for BeanDescCache {
 mod tests {
     use super::*;
     use crate::bean_descriptor::BeanDescriptor;
-    use std::any::TypeId;
 
     #[derive(Debug)]
     struct TestBeanDescriptor {

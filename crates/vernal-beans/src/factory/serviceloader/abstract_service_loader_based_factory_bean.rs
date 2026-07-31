@@ -10,9 +10,8 @@
 //! 在 vernal 中，`AbstractServiceLoaderBasedFactoryBean` 使用注册表
 //! 来模拟 ServiceLoader 的行为，支持动态注册服务实现。
 
-use std::any::Any;
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 
 /// 抽象 ServiceLoader 工厂 Bean。
 ///

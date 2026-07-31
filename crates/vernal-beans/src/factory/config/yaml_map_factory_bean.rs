@@ -2,9 +2,7 @@
 //!
 //! YAML Map 工厂 Bean。
 
-use std::any::Any;
 use std::collections::HashMap;
-use std::sync::Arc;
 
 /// YAML Map 工厂 Bean。
 ///

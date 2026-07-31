@@ -2,7 +2,6 @@
 //!
 //! 当有多个 Bean 匹配但期望唯一时抛出的异常。
 
-use std::any::TypeId;
 use std::fmt;
 
 /// 当有多个 Bean 匹配但期望唯一时抛出的异常。

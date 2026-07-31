@@ -30,6 +30,7 @@ pub struct DependencyDescriptor {
 }
 
 impl DependencyDescriptor {
+    /// 创建一个新的实例。
     pub fn new(type_id: TypeId, type_name: String, required: bool) -> Self {
         Self {
             type_id,
@@ -40,20 +41,24 @@ impl DependencyDescriptor {
         }
     }
 
+    /// 执行with_qualifier操作。
     pub fn with_qualifier(mut self, qualifier: String) -> Self {
         self.qualifier = Some(qualifier);
         self
     }
 
+    /// 执行with_injection_point_name操作。
     pub fn with_injection_point_name(mut self, name: String) -> Self {
         self.injection_point_name = name;
         self
     }
 
+    /// 判断是否必需的。
     pub fn is_required(&self) -> bool {
         self.required
     }
 
+    /// 判断是否限定符。
     pub fn has_qualifier(&self) -> bool {
         self.qualifier.is_some()
     }

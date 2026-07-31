@@ -1,6 +1,5 @@
-/// Tests for factory/support, factory/annotation, factory/aot implementations.
+//! Tests for factory/support, factory/annotation, factory/aot implementations.
 use std::any::TypeId;
-use std::any::Any;
 use std::sync::Arc;
 
 // ═══════════════════════════════════════════════════════════════════
@@ -233,7 +232,7 @@ fn custom_autowire_configurer_test() {
 #[test]
 fn parameter_resolution_delegate_test() {
     use vernal_beans::factory::annotation::parameter_resolution_delegate::ParameterResolutionDelegate;
-    let mut d = ParameterResolutionDelegate::new();
+    let d = ParameterResolutionDelegate::new();
     d.register_dependency("name".to_string(), TypeId::of::<String>());
     d.increment_resolved();
     assert_eq!(d.resolved_count(), 1);

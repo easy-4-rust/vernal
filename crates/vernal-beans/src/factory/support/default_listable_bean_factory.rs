@@ -13,7 +13,6 @@
 //! - 自动装配候选解析
 //! - 依赖注入描述符管理
 
-use std::any::Any;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
@@ -27,6 +26,7 @@ use crate::factory::support::dependency_descriptor::DependencyDescriptor;
 ///
 /// 完整功能的 Bean 工厂实现，支持 Bean 定义注册、
 /// 按类型查找、自动装配等。
+#[allow(dead_code)]
 pub struct DefaultListableBeanFactory {
     /// 继承自 AbstractBeanFactory
     parent: AbstractBeanFactory,
@@ -122,6 +122,7 @@ impl Default for DefaultListableBeanFactory {
 pub struct SimpleAutowireCandidateResolver;
 
 impl SimpleAutowireCandidateResolver {
+    /// 创建一个新的实例。
     pub fn new() -> Self { Self }
 }
 

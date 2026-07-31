@@ -1089,7 +1089,7 @@ impl crate::factory::support::bean_definition_registry::BeanDefinitionRegistry f
     fn register_bean_definition(
         &mut self,
         _bean_name: String,
-        definition: Box<dyn crate::factory::config::bean_definition::BeanDefinition>,
+        _definition: Box<dyn crate::factory::config::bean_definition::BeanDefinition>,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         // 将 BeanDefinition 转换为 ComponentDefinition 并注册
         // 注意：当前 BeanDefinition trait 不包含工厂闭包，所以这里只是验证逻辑
@@ -1138,7 +1138,7 @@ impl crate::factory::support::bean_definition_registry::BeanDefinitionRegistry f
 
     fn get_bean_definition(
         &self,
-        bean_name: &str,
+        _bean_name: &str,
     ) -> Option<&dyn crate::factory::config::bean_definition::BeanDefinition> {
         // 注意：由于返回引用需要生命周期匹配，
         // 这里返回 None（实际实现需要 Box 或其他方式）
@@ -1166,6 +1166,7 @@ impl crate::factory::support::bean_definition_registry::BeanDefinitionRegistry f
 
 /// 代理 BeanDefinition（用于 BeanDefinitionRegistry trait）。
 #[derive(Debug)]
+#[allow(dead_code)]
 struct ProxyBeanDefinition {
     bean_name: String,
     type_name: String,
@@ -1197,6 +1198,7 @@ impl crate::factory::config::bean_definition::BeanDefinition for ProxyBeanDefini
 
 /// 被移除的 BeanDefinition（用于 remove_bean_definition 返回值）。
 #[derive(Debug)]
+#[allow(dead_code)]
 struct RemovedBeanDefinition {
     bean_name: String,
     type_name: String,

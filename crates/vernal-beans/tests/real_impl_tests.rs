@@ -1,4 +1,4 @@
-/// 测试真实实现的核心文件。
+//! 测试真实实现的核心文件。
 use std::any::Any;
 use std::sync::Arc;
 
@@ -117,7 +117,6 @@ fn root_bean_definition_basic() {
 #[test]
 fn root_bean_definition_setters() {
     use vernal_beans::RootBeanDefinition;
-    use vernal_beans::BeanDefinition;
     let mut rbd = RootBeanDefinition::new();
     rbd.set_bean_class_name("com.example.MyService");
     assert_eq!(rbd.bean_class_name(), "com.example.MyService");
@@ -159,7 +158,6 @@ fn bean_definition_builder_generic() {
 #[test]
 fn bean_definition_builder_root() {
     use vernal_beans::BeanDefinitionBuilder;
-    use vernal_beans::BeanDefinition;
     let def = BeanDefinitionBuilder::root("com.example.Root")
         .set_primary(true)
         .build();

@@ -14,6 +14,7 @@ pub struct PropertiesEditor {
 }
 
 impl PropertiesEditor {
+    /// 创建一个新的实例。
     pub fn new() -> Self {
         Self { value: None }
     }

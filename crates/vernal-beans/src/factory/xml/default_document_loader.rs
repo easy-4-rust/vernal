@@ -5,6 +5,7 @@ use crate::factory::xml::document_loader::{Document, DocumentLoader, XmlElement}
 #[derive(Clone, Debug, Default)]
 pub struct DefaultDocumentLoader;
 impl DefaultDocumentLoader {
+    /// 创建一个新的实例。
     pub fn new() -> Self { Self }
 }
 impl DocumentLoader for DefaultDocumentLoader {

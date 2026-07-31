@@ -2,7 +2,6 @@
 //!
 //! 属性值集合接口。
 
-use std::any::Any;
 
 use crate::property_value::PropertyValue;
 

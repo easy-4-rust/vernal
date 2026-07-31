@@ -26,7 +26,7 @@ pub trait Mergeable: Any + Send + Sync {
     ///
     /// # Returns
     /// 合并后的值
-    fn merge(&self, parent_val: &(dyn Any + 'static)) -> Result<Box<dyn Any + Send + Sync>, String> {
+    fn merge(&self, _parent_val: &(dyn Any + 'static)) -> Result<Box<dyn Any + Send + Sync>, String> {
         Err(format!(
             "Merge not supported for type '{}'",
             std::any::type_name::<Self>()

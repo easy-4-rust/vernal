@@ -1,18 +1,18 @@
-/// Container 深度函数覆盖率测试 — 覆盖剩余未覆盖的函数。
+//! Container 深度函数覆盖率测试 — 覆盖剩余未覆盖的函数。
 use std::any::Any;
 use std::sync::Arc;
 
 fn make_container() -> vernal_beans::Container {
     let mut b = vernal_beans::RegistryBuilder::new();
-    b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
-    b.register(vernal_beans::ComponentDefinition::singleton::<i32, _>(|_| 42i32));
-    b.register(vernal_beans::ComponentDefinition::singleton::<f64, _>(|_| 3.14f64));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<i32, _>(|_| 42i32));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<f64, _>(|_| 3.14f64));
     vernal_beans::Container::new(b.build().unwrap())
 }
 
 fn make_transient_container() -> vernal_beans::Container {
     let mut b = vernal_beans::RegistryBuilder::new();
-    b.register(vernal_beans::ComponentDefinition::transient::<String, _>(|_| "transient".to_string()));
+    let _ = b.register(vernal_beans::ComponentDefinition::transient::<String, _>(|_| "transient".to_string()));
     vernal_beans::Container::new(b.build().unwrap())
 }
 
@@ -21,7 +21,7 @@ fn make_transient_container() -> vernal_beans::Container {
 fn resolve_qualified_in_basic() {
     let mut b = vernal_beans::RegistryBuilder::new();
     let q = vernal_beans::Qualifier::new("q1").unwrap();
-    b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "q_val".to_string()).qualified(q.clone()));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "q_val".to_string()).qualified(q.clone()));
     let c = vernal_beans::Container::new(b.build().unwrap());
     let scope = c.open_scope::<String>();
     let val: Arc<String> = c.resolve_qualified_in(&q, &scope).unwrap();
@@ -32,7 +32,7 @@ fn resolve_qualified_in_basic() {
 fn resolve_qualified_in_wrong_scope() {
     let mut b = vernal_beans::RegistryBuilder::new();
     let q = vernal_beans::Qualifier::new("q2").unwrap();
-    b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "v".to_string()).qualified(q.clone()));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "v".to_string()).qualified(q.clone()));
     let c1 = vernal_beans::Container::new(b.build().unwrap());
     let c2 = vernal_beans::Container::new(vernal_beans::RegistryBuilder::new().build().unwrap());
     let scope_from_c2 = c2.open_scope::<String>();
@@ -429,7 +429,6 @@ fn lbf_beans_of_type_id_empty() {
 
 #[test]
 fn lbf_bean_post_processor_count() {
-    use vernal_beans::ListableBeanFactory;
     let c = make_container();
     assert_eq!(c.bean_post_processor_count(), 0);
 }
@@ -695,7 +694,6 @@ fn clbf_pre_instantiate_singletons() {
 #[test]
 fn rbd_all_setters_getters() {
     use vernal_beans::RootBeanDefinition;
-    use vernal_beans::BeanDefinition;
     let mut rbd = RootBeanDefinition::new();
 
     rbd.set_bean_class_name("com.example.Service");
@@ -765,7 +763,6 @@ fn rbd_all_setters_getters() {
 fn rbd_from_generic() {
     use vernal_beans::RootBeanDefinition;
     use vernal_beans::GenericBeanDefinition;
-    use vernal_beans::BeanDefinition;
     let mut gbd = GenericBeanDefinition::new();
     gbd.set_bean_class_name("com.example.Generic");
     let rbd = RootBeanDefinition::from_generic(gbd);
@@ -775,7 +772,6 @@ fn rbd_from_generic() {
 #[test]
 fn rbd_is_primary_default() {
     use vernal_beans::RootBeanDefinition;
-    use vernal_beans::BeanDefinition;
     let rbd = RootBeanDefinition::new();
     assert!(!rbd.is_primary());
 }

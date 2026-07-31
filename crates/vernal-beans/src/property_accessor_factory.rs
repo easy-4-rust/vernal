@@ -2,7 +2,6 @@
 //!
 //! 属性访问器工厂。
 
-use crate::property_accessor::PropertyAccessor;
 use crate::bean_wrapper_impl::BeanWrapperImpl;
 
 /// 属性访问器工厂。

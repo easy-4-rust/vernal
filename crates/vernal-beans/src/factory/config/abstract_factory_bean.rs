@@ -31,10 +31,12 @@ pub struct SimpleFactoryBean<T: Any + Send + Sync> {
 }
 
 impl<T: Any + Send + Sync> SimpleFactoryBean<T> {
+    /// 创建一个新的实例。
     pub fn new(creator: impl Fn() -> T + Send + Sync + 'static, type_name: &'static str) -> Self {
         Self { creator: Box::new(creator), type_name, singleton: true }
     }
 
+    /// 执行with_singleton操作。
     pub fn with_singleton(mut self, singleton: bool) -> Self {
         self.singleton = singleton;
         self

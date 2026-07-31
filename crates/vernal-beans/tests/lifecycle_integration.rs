@@ -1,12 +1,12 @@
-/// 测试 InstantiationAwareBeanPostProcessor 和 DestructionAwareBeanPostProcessor 集成。
+//! 测试 InstantiationAwareBeanPostProcessor 和 DestructionAwareBeanPostProcessor 集成。
 use std::any::Any;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 fn make_container() -> vernal_beans::Container {
     let mut b = vernal_beans::RegistryBuilder::new();
-    b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
-    b.register(vernal_beans::ComponentDefinition::singleton::<i32, _>(|_| 42i32));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<i32, _>(|_| 42i32));
     vernal_beans::Container::new(b.build().unwrap())
 }
 
@@ -200,7 +200,8 @@ fn bean_post_processor_no_destruction() {
 fn container_with_post_processor_chain() {
     use vernal_beans::BeanPostProcessor;
 
-    struct CountingPP {
+    #[allow(dead_code)]
+        struct CountingPP {
         id: u32,
         count: AtomicU32,
     }
@@ -235,7 +236,7 @@ fn container_with_post_processor_chain() {
     let pp3 = Arc::new(CountingPP::new(3));
 
     let mut b = vernal_beans::RegistryBuilder::new();
-    b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
     let mut c = vernal_beans::Container::new(b.build().unwrap());
 
     c.add_bean_post_processor(pp1.clone());
@@ -254,8 +255,8 @@ fn container_with_post_processor_chain() {
 #[test]
 fn container_warm_up() {
     let mut b = vernal_beans::RegistryBuilder::new();
-    b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
-    b.register(vernal_beans::ComponentDefinition::singleton::<i32, _>(|_| 42i32));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<i32, _>(|_| 42i32));
     let c = vernal_beans::Container::new(b.build().unwrap());
 
     assert!(c.warm_up().is_ok());
@@ -268,7 +269,7 @@ fn container_warm_up() {
 fn container_destroy_bean_instance() {
     use vernal_beans::AutowireCapableBeanFactory;
     let mut b = vernal_beans::RegistryBuilder::new();
-    b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
     let c = vernal_beans::Container::new(b.build().unwrap());
 
     let result = c.destroy_bean_instance("test_bean", &"test");
@@ -370,7 +371,7 @@ fn aware_trait() {
 #[test]
 fn early_bean_reference_register_and_get() {
     let mut b = vernal_beans::RegistryBuilder::new();
-    b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
     let c = vernal_beans::Container::new(b.build().unwrap());
 
     let key = vernal_beans::ComponentKey::of::<String>();
@@ -385,7 +386,7 @@ fn early_bean_reference_register_and_get() {
 #[test]
 fn early_bean_reference_not_found() {
     let mut b = vernal_beans::RegistryBuilder::new();
-    b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
     let c = vernal_beans::Container::new(b.build().unwrap());
 
     let key = vernal_beans::ComponentKey::of::<i32>();
@@ -396,7 +397,7 @@ fn early_bean_reference_not_found() {
 #[test]
 fn early_bean_reference_remove() {
     let mut b = vernal_beans::RegistryBuilder::new();
-    b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
     let c = vernal_beans::Container::new(b.build().unwrap());
 
     let key = vernal_beans::ComponentKey::of::<String>();

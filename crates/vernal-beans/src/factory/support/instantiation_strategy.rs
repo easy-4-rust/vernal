@@ -47,6 +47,7 @@ pub trait InstantiationStrategy: Send + Sync + 'static {
 pub struct FactoryClosureStrategy;
 
 impl FactoryClosureStrategy {
+    /// 创建一个新的实例。
     pub fn new() -> Self { Self }
 }
 

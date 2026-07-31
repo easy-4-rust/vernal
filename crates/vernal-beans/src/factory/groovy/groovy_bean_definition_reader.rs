@@ -19,9 +19,7 @@
 //! 在 vernal 中，Groovy DSL 被映射为 Rust 的 builder 模式。
 //! `GroovyBeanDefinitionReader` 提供链式 API 来模拟 Groovy DSL 的声明式风格。
 
-use std::any::Any;
 use std::collections::HashMap;
-use std::sync::Arc;
 
 /// GroovyBeanDefinitionReader — Spring 风格的 Groovy Bean 定义读取器。
 ///
@@ -69,6 +67,7 @@ struct GroovyBeanDefinition {
 
 /// Groovy 值类型。
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 enum GroovyValue {
     /// 字面量值
     Literal(String),
@@ -337,7 +336,7 @@ mod tests {
 
     #[test]
     fn depends_on() {
-        let reader = GroovyBeanDefinitionReader::new()
+        let _reader = GroovyBeanDefinitionReader::new()
             .bean("service", "Service")
             .depends_on("dataSource")
             .depends_on("config");

@@ -1,4 +1,4 @@
-use std::any::{Any, TypeId};
+use std::any::TypeId;
 use crate::factory::annotation::annotated_bean_definition::{AnnotatedBeanDefinition, BeanMetadata};
 use crate::factory::config::bean_definition::BeanDefinition;
 use crate::component_key::ComponentKey;
@@ -8,11 +8,14 @@ use crate::factory::support::generic_bean_definition::GenericBeanDefinition;
 /// Spring 风格的注解驱动通用 Bean 定义。
 #[derive(Clone, Debug)]
 pub struct AnnotatedGenericBeanDefinition {
+    /// pub。
     pub inner: GenericBeanDefinition,
+    /// pub。
     pub annotation_metadata: Option<String>,
 }
 
 impl AnnotatedGenericBeanDefinition {
+    /// 创建一个新的实例。
     pub fn new(annotation_type: &str) -> Self {
         Self {
             inner: GenericBeanDefinition::new(),

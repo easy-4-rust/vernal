@@ -9,7 +9,6 @@ use std::sync::Arc;
 
 use vernal_beans::AutowireCapableBeanFactory;
 use vernal_beans::ComponentDefinition;
-use vernal_beans::ComponentKey;
 use vernal_beans::RegistryBuilder;
 use vernal_beans::Resolver;
 
@@ -111,7 +110,7 @@ fn autowire_bean_no_deps_returns_original() {
         host: "custom".to_string(),
         port: 9999,
     });
-    let original_ptr = Arc::as_ptr(&original);
+    let _original_ptr = Arc::as_ptr(&original);
 
     let result = container.autowire_bean(original.clone()).unwrap();
     // 无依赖时应返回原实例（或 singleton 缓存的同一实例）

@@ -10,12 +10,9 @@ fn lock_field_md() -> std::sync::MutexGuard<'static, ()> {
 }
 
 use vernal_beans::ComponentDefinition;
-use vernal_beans::ComponentKey;
 use vernal_beans::RegistryBuilder;
 use vernal_beans::Resolver;
-use vernal_beans::Scope;
 use vernal_beans::AutowireCapableBeanFactory;
-use vernal_beans::BeanFactory;
 use vernal_beans::bean_scope::BeanScope;
 use vernal_beans::field_metadata::{FieldDescriptor, TypeMetadata};
 use vernal_beans::mutable_property_values::MutablePropertyValues;
@@ -36,6 +33,7 @@ struct ConnectionPool {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 struct UserService {
     pool_url: String,
 }

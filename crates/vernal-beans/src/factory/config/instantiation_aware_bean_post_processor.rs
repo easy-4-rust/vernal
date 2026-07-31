@@ -30,8 +30,8 @@ pub trait InstantiationAwareBeanPostProcessor: Send + Sync {
     /// 默认返回 `None`（不跳过实例化）。
     fn post_process_before_instantiation(
         &self,
-        bean_class: &str,
-        bean_name: &str,
+        _bean_class: &str,
+        _bean_name: &str,
     ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>> {
         Ok(None)
     }
@@ -42,8 +42,8 @@ pub trait InstantiationAwareBeanPostProcessor: Send + Sync {
     /// 默认返回 `true`（继续属性注入）。
     fn post_process_after_instantiation(
         &self,
-        bean: &dyn Any,
-        bean_name: &str,
+        _bean: &dyn Any,
+        _bean_name: &str,
     ) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
         Ok(true)
     }
@@ -54,8 +54,8 @@ pub trait InstantiationAwareBeanPostProcessor: Send + Sync {
     /// 默认返回 `None`（不修改属性）。
     fn post_process_property_values(
         &self,
-        bean: &dyn Any,
-        bean_name: &str,
+        _bean: &dyn Any,
+        _bean_name: &str,
         properties: HashMap<String, Arc<dyn Any + Send + Sync>>,
     ) -> Result<
         Option<HashMap<String, Arc<dyn Any + Send + Sync>>>,
@@ -68,7 +68,7 @@ pub trait InstantiationAwareBeanPostProcessor: Send + Sync {
     fn post_process_before_initialization(
         &self,
         bean: Arc<dyn Any + Send + Sync>,
-        bean_name: &str,
+        _bean_name: &str,
     ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>> {
         Ok(Some(bean))
     }
@@ -77,7 +77,7 @@ pub trait InstantiationAwareBeanPostProcessor: Send + Sync {
     fn post_process_after_initialization(
         &self,
         bean: Arc<dyn Any + Send + Sync>,
-        bean_name: &str,
+        _bean_name: &str,
     ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>> {
         Ok(Some(bean))
     }

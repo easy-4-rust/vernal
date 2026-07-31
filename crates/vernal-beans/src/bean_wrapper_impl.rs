@@ -99,6 +99,7 @@ impl std::error::Error for PropertyError {}
 ///
 /// 记录单个属性的类型信息和读写权限。
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 struct PropertyMeta {
     /// 属性类型 ID。
     type_id: TypeId,

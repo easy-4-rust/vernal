@@ -2,9 +2,7 @@
 //!
 //! 服务定位器工厂 Bean。
 
-use std::any::Any;
 use std::collections::HashMap;
-use std::sync::Arc;
 
 /// 服务定位器工厂 Bean。
 ///

@@ -1,26 +1,36 @@
-/// Comprehensive coverage tests for vernal-beans crate.
-///
-/// This file targets uncovered lines in the following files:
-/// 1. container.rs - 194 uncovered lines (HIGHEST PRIORITY)
-/// 2. scope_context.rs - 37 uncovered lines
-/// 3. registry_builder.rs - 29 uncovered lines
-/// 4. standard_bean_expression_resolver.rs - 27 uncovered lines
-/// 5. property_editor_registry.rs - 15 uncovered lines
-/// 6. property_editor_registry_support.rs - 14 uncovered lines
-/// 7. property_editor_cache.rs - 14 uncovered lines
-/// 8. type_converter_delegate.rs - 13 uncovered lines
-/// 9. bean_definition_utils.rs - 11 uncovered lines
-/// 10. component_contract.rs - 10 uncovered lines
+//! Comprehensive coverage tests for vernal-beans crate.
+//!
+//! This file targets uncovered lines in the following files:
+//! 1. container.rs - 194 uncovered lines (HIGHEST PRIORITY)
+//! 2. scope_context.rs - 37 uncovered lines
+//! 3. registry_builder.rs - 29 uncovered lines
+//! 4. standard_bean_expression_resolver.rs - 27 uncovered lines
+//! 5. property_editor_registry.rs - 15 uncovered lines
+//! 6. property_editor_registry_support.rs - 14 uncovered lines
+//! 7. property_editor_cache.rs - 14 uncovered lines
+//! 8. type_converter_delegate.rs - 13 uncovered lines
+//! 9. bean_definition_utils.rs - 11 uncovered lines
+//! 10. component_contract.rs - 10 uncovered lines
 use std::any::{Any, TypeId};
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use tokio_util::sync::CancellationToken;
 use vernal_beans::{
-    BeanExpressionResolver, BeanFactory, Component, ComponentDefinition, ComponentKey, Container,
-    HierarchicalBeanFactory, ListableBeanFactory, PropertyEditorRegistry, Qualifier, RegistryBuilder,
-    ResolveError, ScopeKey, ScopeState,
+    BeanExpressionResolver,
+    BeanFactory,
+    Component,
+    ComponentDefinition,
+    ComponentKey,
+    Container,
+    HierarchicalBeanFactory,
+    ListableBeanFactory,
+    PropertyEditorRegistry,
+    Qualifier,
+    RegistryBuilder,
+    ResolveError,
+    ScopeState,
 };
+
 use vernal_beans::factory::config::autowire_capable_bean_factory::AutowireCapableBeanFactory;
 use vernal_beans::factory::config::configurable_bean_factory::ConfigurableBeanFactory;
 use vernal_beans::factory::config::configurable_listable_bean_factory::ConfigurableListableBeanFactory;

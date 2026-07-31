@@ -12,8 +12,6 @@
 //! - `ServiceListFactoryBean` — 返回所有实现的列表
 //! - `ServiceLoaderFactoryBean` — 返回 ServiceLoader 实例本身
 
-use std::any::Any;
-use std::sync::Arc;
 
 /// ServiceLoaderFactoryBean — Spring 风格的 ServiceLoader 工厂 Bean。
 ///

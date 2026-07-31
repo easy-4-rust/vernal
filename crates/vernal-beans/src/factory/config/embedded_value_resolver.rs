@@ -13,6 +13,7 @@ pub struct EmbeddedValueResolver {
 }
 
 impl EmbeddedValueResolver {
+    /// 创建一个新的实例。
     pub fn new() -> Self {
         Self {
             placeholder_prefix: "${".to_string(),

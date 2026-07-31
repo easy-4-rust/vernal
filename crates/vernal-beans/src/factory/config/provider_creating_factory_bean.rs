@@ -2,7 +2,6 @@
 //!
 //! Provider 创建工厂 Bean。
 
-use std::any::Any;
 use std::sync::Arc;
 
 /// Provider 创建工厂 Bean。

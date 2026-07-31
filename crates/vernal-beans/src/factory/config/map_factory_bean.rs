@@ -3,7 +3,6 @@
 //! Map 工厂 Bean，用于创建 Map 集合。
 
 use std::any::Any;
-use std::collections::HashMap;
 use std::sync::Arc;
 
 /// Map 工厂 Bean。

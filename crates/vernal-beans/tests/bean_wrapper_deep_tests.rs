@@ -1,4 +1,4 @@
-/// BeanWrapperImpl 和 AbstractNestablePropertyAccessor 深度测试。
+//! BeanWrapperImpl 和 AbstractNestablePropertyAccessor 深度测试。
 use std::any::Any;
 use std::sync::Arc;
 
@@ -16,7 +16,6 @@ fn bean_wrapper_new() {
 #[test]
 fn bean_wrapper_register_multiple() {
     use vernal_beans::bean_wrapper_impl::BeanWrapperImpl;
-    use vernal_beans::property_accessor::PropertyAccessor;
     let wrapper = BeanWrapperImpl::new(Arc::new("test".to_string()));
     wrapper.register_property("a", std::any::TypeId::of::<i32>());
     wrapper.register_property("b", std::any::TypeId::of::<String>());

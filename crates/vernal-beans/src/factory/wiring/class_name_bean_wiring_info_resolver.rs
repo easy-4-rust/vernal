@@ -19,7 +19,7 @@
 //! - AspectJ 织入的自动装配
 
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 
 use crate::factory::wiring::bean_wiring_info::BeanWiringInfo;
 

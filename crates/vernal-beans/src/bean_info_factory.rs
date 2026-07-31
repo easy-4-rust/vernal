@@ -35,6 +35,7 @@ pub struct PropertyDescriptorEntry {
 }
 
 impl PropertyDescriptorEntry {
+    /// 创建一个新的实例。
     pub fn new(name: impl Into<String>, property_type: TypeId, readable: bool, writable: bool) -> Self {
         Self {
             name: name.into(),
@@ -44,18 +45,22 @@ impl PropertyDescriptorEntry {
         }
     }
 
+    /// 获取名称。
     pub fn name(&self) -> &str {
         &self.name
     }
 
+    /// 获取属性类型。
     pub fn property_type(&self) -> TypeId {
         self.property_type
     }
 
+    /// 判断是否可读。
     pub fn is_readable(&self) -> bool {
         self.readable
     }
 
+    /// 判断是否可写。
     pub fn is_writable(&self) -> bool {
         self.writable
     }
@@ -69,6 +74,7 @@ pub struct MethodDescriptorEntry {
 }
 
 impl MethodDescriptorEntry {
+    /// 创建一个新的实例。
     pub fn new(name: impl Into<String>, parameter_count: usize) -> Self {
         Self {
             name: name.into(),
@@ -76,10 +82,12 @@ impl MethodDescriptorEntry {
         }
     }
 
+    /// 获取名称。
     pub fn name(&self) -> &str {
         &self.name
     }
 
+    /// 获取参数数量。
     pub fn parameter_count(&self) -> usize {
         self.parameter_count
     }

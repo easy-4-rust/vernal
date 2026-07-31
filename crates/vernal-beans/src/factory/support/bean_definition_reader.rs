@@ -11,16 +11,21 @@ use std::any::TypeId;
 /// 对应 Spring 的 `org.springframework.core.io.Resource`。
 #[derive(Debug, Clone)]
 pub struct Resource {
+    /// pub。
     pub name: String,
+    /// pub。
     pub location: String,
+    /// pub。
     pub exists: bool,
 }
 
 impl Resource {
+    /// 创建一个新的实例。
     pub fn new(name: String, location: String) -> Self {
         Self { name, location, exists: true }
     }
 
+    /// 执行description操作。
     pub fn description(&self) -> String {
         format!("Resource[{}@{}]", self.name, self.location)
     }
@@ -72,6 +77,7 @@ pub struct AbstractBeanDefinitionReaderImpl {
 }
 
 impl AbstractBeanDefinitionReaderImpl {
+    /// 创建一个新的实例。
     pub fn new(resource_loader_name: String) -> Self {
         Self {
             bean_class_count: std::sync::Mutex::new(0),
@@ -82,20 +88,24 @@ impl AbstractBeanDefinitionReaderImpl {
         }
     }
 
+    /// 获取incrementBean类数量。
     pub fn increment_bean_class_count(&self) {
         let mut count = self.bean_class_count.lock().unwrap();
         *count += 1;
     }
 
+    /// 获取incrementBean定义数量。
     pub fn increment_bean_definition_count(&self) {
         let mut count = self.bean_definition_count.lock().unwrap();
         *count += 1;
     }
 
+    /// 设置注册表size。
     pub fn set_registry_size(&self, size: usize) {
         *self.registry_size.lock().unwrap() = size;
     }
 
+    /// 设置类加载器类型id。
     pub fn set_class_loader_type_id(&self, type_id: TypeId) {
         *self.class_loader_type_id.lock().unwrap() = Some(type_id);
     }

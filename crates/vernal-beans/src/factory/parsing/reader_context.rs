@@ -12,7 +12,6 @@ use super::location::Location;
 use super::null_source_extractor::NullSourceExtractor;
 use super::problem::{Problem, ProblemSeverity};
 use super::problem_reporter::ProblemReporter;
-use super::reader_event_listener::ReaderEventListener;
 use super::source_extractor::SourceExtractor;
 
 /// 读取器上下文。

@@ -13,8 +13,6 @@
 //! - 插件系统中的多实现加载
 //! - 事件监听器的批量注册
 
-use std::any::Any;
-use std::sync::Arc;
 
 /// ServiceListFactoryBean — Spring 风格的服务列表工厂 Bean。
 ///

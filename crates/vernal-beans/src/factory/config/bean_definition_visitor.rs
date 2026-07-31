@@ -12,6 +12,7 @@ pub struct BeanDefinitionVisitor {
 }
 
 impl BeanDefinitionVisitor {
+    /// 创建一个新的实例。
     pub fn new() -> Self {
         Self { visited: Vec::new() }
     }

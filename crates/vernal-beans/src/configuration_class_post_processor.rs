@@ -4,7 +4,6 @@
 //!
 //! 处理 `@Configuration` / `@Bean` 注解，注册配置类中定义的 Bean。
 
-use std::sync::Arc;
 
 use crate::factory::support::bean_definition_registry::BeanDefinitionRegistry;
 use crate::factory::config::bean_factory_post_processor::BeanFactoryPostProcessor;

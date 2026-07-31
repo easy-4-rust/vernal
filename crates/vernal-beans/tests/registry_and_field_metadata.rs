@@ -1,13 +1,10 @@
 //! BeanDefinitionRegistry remove + FieldMetadata 编译期收集测试。
 
-use std::any::Any;
 use std::sync::Arc;
 
 use vernal_beans::ComponentDefinition;
-use vernal_beans::ComponentKey;
 use vernal_beans::RegistryBuilder;
 use vernal_beans::Resolver;
-use vernal_beans::BeanDefinition;
 use vernal_beans::BeanDefinitionRegistry;
 use vernal_beans::field_metadata::{FieldDescriptor, TypeMetadata};
 
@@ -19,6 +16,7 @@ fn lock_field_md() -> std::sync::MutexGuard<'static, ()> {
 // ── 测试类型 ─────────────────────────────────────────────────────────────
 
 #[derive(Debug)]
+#[allow(dead_code)]
 struct DatabasePool {
     url: String,
 }
@@ -29,6 +27,7 @@ struct CacheService {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 struct UserService {
     pool: Arc<DatabasePool>,
     cache: Option<Arc<CacheService>>,
@@ -359,7 +358,6 @@ fn registry_remove_and_build_integration() {
 #[test]
 fn field_metadata_with_autowire() {
     let _guard = lock_field_md();
-    use vernal_beans::AutowireCapableBeanFactory;
 
     // 手动创建元数据并验证结构
     let metadata = TypeMetadata {

@@ -10,14 +10,19 @@ pub struct CustomEditorConfigurer {
 }
 
 impl CustomEditorConfigurer {
+    /// 创建一个新的实例。
     pub fn new() -> Self { Self { editors: HashMap::new() } }
+    /// 注册自定义编辑器。
     pub fn register_custom_editor(&mut self, type_id: TypeId, editor: Box<dyn PropertyEditor>) {
         self.editors.insert(type_id, editor);
     }
+    /// 获取自定义编辑器。
     pub fn get_custom_editor(&self, type_id: TypeId) -> Option<&(dyn PropertyEditor + 'static)> {
         self.editors.get(&type_id).map(|e| e.as_ref())
     }
+    /// 判断是否自定义编辑器。
     pub fn has_custom_editor(&self, type_id: TypeId) -> bool { self.editors.contains_key(&type_id) }
+    /// 获取编辑器数量。
     pub fn editor_count(&self) -> usize { self.editors.len() }
 }
 

@@ -2,8 +2,6 @@
 //!
 //! 属性路径工厂 Bean，用于通过属性路径获取 Bean 的属性值。
 
-use std::any::Any;
-use std::sync::Arc;
 
 /// 属性路径工厂 Bean。
 ///

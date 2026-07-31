@@ -13,8 +13,6 @@
 use std::collections::HashMap;
 use std::sync::Mutex;
 
-use crate::factory::xml::bean_definition_decorator::BeanDefinitionDecorator;
-use crate::factory::xml::bean_definition_parser::BeanDefinitionParser;
 use crate::factory::xml::namespace_handler::NamespaceHandler;
 
 /// 命名空间处理器支持基类。

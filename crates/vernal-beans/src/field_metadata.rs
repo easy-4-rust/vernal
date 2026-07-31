@@ -25,8 +25,7 @@
 //! ```
 
 use std::any::TypeId;
-use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 
 /// 字段注入描述符。
 ///

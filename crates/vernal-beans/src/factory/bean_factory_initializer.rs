@@ -3,7 +3,6 @@
 //! Bean 工厂初始化器接口。
 
 use std::any::Any;
-use std::sync::Arc;
 
 /// Bean 工厂初始化器接口。
 ///
@@ -21,6 +20,7 @@ pub struct ClosureBeanFactoryInitializer<T: Any + Send + Sync> {
 }
 
 impl<T: Any + Send + Sync> ClosureBeanFactoryInitializer<T> {
+    /// 创建一个新的实例。
     pub fn new(callback: impl Fn(&mut T) -> Result<(), Box<dyn std::error::Error + Send + Sync>> + Send + Sync + 'static) -> Self {
         Self { callback: Box::new(callback) }
     }

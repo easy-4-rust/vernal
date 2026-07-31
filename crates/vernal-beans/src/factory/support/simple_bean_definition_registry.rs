@@ -62,7 +62,7 @@ impl BeanDefinitionRegistry for SimpleBeanDefinitionRegistry {
         name: &str,
     ) -> Result<Box<dyn BeanDefinition>, Box<dyn std::error::Error + Send + Sync>> {
         self.definitions.lock().unwrap().remove(name)
-            .map(|arc| {
+            .map(|_arc| {
                 // 将 Arc 转换为 Box - 创建一个空壳
                 Box::new(crate::factory::support::root_bean_definition::RootBeanDefinition::new()) as Box<dyn BeanDefinition>
             })

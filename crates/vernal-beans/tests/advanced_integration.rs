@@ -8,20 +8,19 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use vernal_beans::ComponentDefinition;
-use vernal_beans::ComponentKey;
 use vernal_beans::FactoryBean;
 use vernal_beans::GenericBeanDefinition;
 use vernal_beans::RegistryBuilder;
 use vernal_beans::Resolver;
 use vernal_beans::RootBeanDefinition;
 use vernal_beans::Scope;
-use vernal_beans::BeanFactory;
 use vernal_beans::BeanPostProcessor;
 use vernal_beans::bean_scope::BeanScope;
 
 // ── 测试类型 ─────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 struct AppConfig {
     db_url: String,
     max_connections: u32,
@@ -467,7 +466,7 @@ fn custom_scope_registration() {
         .unwrap();
 
     let registry = builder.build().unwrap();
-    let container = registry.container();
+    let _container = registry.container();
 
     // 验证 scope 的 get 方法
     let obj = scope.get("test", &|| Box::new(42i32)).unwrap();

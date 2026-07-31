@@ -1,12 +1,12 @@
-/// 深度测试 container.rs 的未覆盖方法。
+//! 深度测试 container.rs 的未覆盖方法。
 use std::any::Any;
 use std::sync::Arc;
 
 fn make_container() -> vernal_beans::Container {
     let mut b = vernal_beans::RegistryBuilder::new();
-    b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
-    b.register(vernal_beans::ComponentDefinition::singleton::<i32, _>(|_| 42i32));
-    b.register(vernal_beans::ComponentDefinition::singleton::<f64, _>(|_| 3.14f64));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<i32, _>(|_| 42i32));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<f64, _>(|_| 3.14f64));
     vernal_beans::Container::new(b.build().unwrap())
 }
 
@@ -44,7 +44,7 @@ fn container_resolve_in_scope() {
 fn container_resolve_qualified() {
     let mut b = vernal_beans::RegistryBuilder::new();
     let q = vernal_beans::Qualifier::new("primary").unwrap();
-    b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "primary".to_string()).qualified(q.clone()));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "primary".to_string()).qualified(q.clone()));
     let c = vernal_beans::Container::new(b.build().unwrap());
     let val: Arc<String> = c.resolve_qualified(&q).unwrap();
     assert_eq!(*val, "primary");
@@ -357,7 +357,6 @@ fn lbf_bean_names_for_type() {
 
 #[test]
 fn lbf_bean_post_processor_count() {
-    use vernal_beans::ListableBeanFactory;
     let c = make_container();
     assert_eq!(c.bean_post_processor_count(), 0);
 }

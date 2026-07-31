@@ -2,8 +2,6 @@
 //!
 //! 对应 Spring beans.factory.wiring 包。
 
-use std::any::Any;
-use std::sync::Arc;
 
 /// AnnotationBeanWiringInfoResolver — Spring factory.wiring 组件。
 #[derive(Debug, Clone, Default)]
@@ -12,5 +10,6 @@ pub struct AnnotationBeanWiringInfoResolver {
 }
 
 impl AnnotationBeanWiringInfoResolver {
+    /// 创建一个新的实例。
     pub fn new() -> Self { Self::default() }
 }

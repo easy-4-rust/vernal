@@ -1,12 +1,12 @@
-/// 语义测试 — Container Bean 生命周期方法（construct、destroy_bean_instance、resolve_definition）。
+//! 语义测试 — Container Bean 生命周期方法（construct、destroy_bean_instance、resolve_definition）。
 use std::any::Any;
 use std::sync::Arc;
 
 fn make_container() -> vernal_beans::Container {
     let mut b = vernal_beans::RegistryBuilder::new();
-    b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
-    b.register(vernal_beans::ComponentDefinition::singleton::<i32, _>(|_| 42i32));
-    b.register(vernal_beans::ComponentDefinition::singleton::<f64, _>(|_| 3.14f64));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<i32, _>(|_| 42i32));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<f64, _>(|_| 3.14f64));
     vernal_beans::Container::new(b.build().unwrap())
 }
 
@@ -55,7 +55,7 @@ fn resolve_definition_singleton_scope() {
 #[test]
 fn resolve_definition_transient_scope() {
     let mut b = vernal_beans::RegistryBuilder::new();
-    b.register(vernal_beans::ComponentDefinition::transient::<String, _>(|_| "transient".to_string()));
+    let _ = b.register(vernal_beans::ComponentDefinition::transient::<String, _>(|_| "transient".to_string()));
     let c = vernal_beans::Container::new(b.build().unwrap());
     let v1: Arc<String> = c.resolve().unwrap();
     let v2: Arc<String> = c.resolve().unwrap();
@@ -74,7 +74,7 @@ fn resolve_definition_custom_scope() {
 fn resolve_definition_qualified() {
     let mut b = vernal_beans::RegistryBuilder::new();
     let q = vernal_beans::Qualifier::new("primary").unwrap();
-    b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "primary".to_string()).qualified(q.clone()));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "primary".to_string()).qualified(q.clone()));
     let c = vernal_beans::Container::new(b.build().unwrap());
     let v: Arc<String> = c.resolve_qualified(&q).unwrap();
     assert_eq!(*v, "primary");
@@ -92,7 +92,7 @@ fn resolve_definition_qualified_not_found() {
 fn resolve_definition_circular_dependency() {
     // 循环依赖检测
     let mut b = vernal_beans::RegistryBuilder::new();
-    b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
     let c = vernal_beans::Container::new(b.build().unwrap());
     // 正常解析应该成功
     let v: Arc<String> = c.resolve().unwrap();
@@ -156,7 +156,8 @@ fn post_processor_chain_order() {
     use vernal_beans::BeanPostProcessor;
     use std::sync::atomic::{AtomicU32, Ordering};
 
-    struct OrderPP {
+    #[allow(dead_code)]
+        struct OrderPP {
         id: u32,
         counter: Arc<AtomicU32>,
     }

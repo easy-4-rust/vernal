@@ -8,9 +8,11 @@ pub struct BeanIsAbstractException {
 }
 
 impl BeanIsAbstractException {
+    /// 创建一个新的实例。
     pub fn new(message: impl Into<String>) -> Self {
         Self { message: message.into() }
     }
+    /// 获取消息。
     pub fn message(&self) -> &str { &self.message }
 }
 
