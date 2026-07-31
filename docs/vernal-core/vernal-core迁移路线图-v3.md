@@ -1,3 +1,7 @@
+<!-- migration-doc: authority=historical canonical=迁移路线图.md -->
+
+> 迁移文档治理：本文级别为 **historical**，历史基线提交 `9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82`。正文不得作为当前验收结论；以 [迁移路线图.md](迁移路线图.md) 为准。
+
 # spring-core → vernal-core 迁移路线图 v3.0(完整覆盖)
 
 > 版本：v3.0（2026-07-27）

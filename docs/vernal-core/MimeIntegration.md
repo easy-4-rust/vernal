@@ -1,3 +1,7 @@
+<!-- migration-doc: authority=support canonical=../迁移验收规范.md -->
+
+> 迁移文档治理：本文级别为 **support**。正文中的历史统计或完成标记不得单独作为验收结论；以 [../迁移验收规范.md](../迁移验收规范.md) 和自动审计报告为准。
+
 # MIME 类型集成对照(整合 `mime-type` + `mimetype-detector`)
 
 > 版本：v1.0(2026-07-27)

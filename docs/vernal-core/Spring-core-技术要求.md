@@ -1,3 +1,100 @@
+<!-- migration-doc: authority=authoritative canonical=../迁移验收规范.md -->
+# spring-core → vernal-core 技术要求
+> 迁移文档治理：本文级别为 **authoritative**。正文中的历史统计或完成标记不得单独作为验收结论；以 [../迁移验收规范.md](../迁移验收规范.md) 和自动审计报告为准。
+
+
+> 当前文档。验收口径以[迁移验收规范](../迁移验收规范.md)和[自动对象审计](../migration-audit/vernal-core.md)为准。基线：Spring `9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82`。
+
+## 范围与当前事实
+
+- 来源：`spring-core/src/main/java/org/springframework`，排除 `package-info.java`。
+- 目标：`crates/vernal-core/src`。
+- 自动审计识别 329 个 Java 业务对象：`IMPLEMENTED=6`、`MISPLACED=10`、`MISSING=306`、`UNVERIFIED=7`。
+- ASM、CGLIB、Objenesis、Java Agent、JFR 等不能仅凭“JVM 专属”批量豁免；逐对象具备证据后才可标为 `PLATFORM_NA`。
+- `cargo test` 通过只证明当前代码可运行，不等价于 329 个对象已经迁移。
+
+## 目标目录
+
+按去掉 `org/springframework` 及模块根包后的包路径保留末两层：
+
+```text
+crates/vernal-core/src/
+├── annotation/
+├── codec/
+├── convert/
+│   ├── converter/
+│   └── support/
+├── env/
+├── io/
+│   ├── buffer/
+│   └── support/
+├── metrics/
+│   └── jfr/
+├── retry/
+│   └── support/
+├── serializer/
+│   └── support/
+├── task/
+│   └── support/
+├── type/
+│   ├── classreading/
+│   └── filter/
+├── util/
+│   ├── concurrent/
+│   ├── function/
+│   ├── unit/
+│   └── xml/
+└── <core 根对象>.rs
+```
+
+例如 `core/convert/support/DefaultConversionService.java` 必须落到
+`convert/support/default_conversion_service.rs`，不能用根目录同名文件充数。
+
+## 必须保留的契约
+
+- 类型系统：泛型/数组/可赋值性语义须有 Rust 明确模型；不能把 `ResolvableType` 简化成字符串比较。
+- 转换系统：`ConversionService`、converter registry、条件转换器与错误传播保持可组合。
+- 资源系统：协议解析、classpath/file/URL 选择、相对资源和资源模式解析必须分层。
+- 环境系统：property source 顺序、active/default profiles、占位符与类型转换必须可验证。
+- 工具与任务：仅迁移具有跨平台语义的对象；JVM 字节码能力逐项记录 `PLATFORM_NA` 证据。
+- 每个对象一个真实 `.rs` 文件；`lib.rs`/`mod.rs` 只声明和重导出；中文来源注释与语义测试是 `IMPLEMENTED` 的必要条件。
+
+## CodeGraph 调用链基线
+
+```mermaid
+flowchart LR
+    RT["ResolvableType.forType"] --> RR["resolveClass / isAssignableFrom"]
+    CS["DefaultConversionService"] --> DC["addDefaultConverters"]
+    DC --> GC["GenericConversionService.convert"]
+    RL["DefaultResourceLoader.getResource"] --> PR["ProtocolResolver.resolve"]
+    RL --> CP["ClassPathResource / UrlResource / FileUrlResource"]
+    ENV["AbstractEnvironment"] --> PS["ConfigurablePropertyResolver"]
+    PS --> CS
+```
+
+CodeGraph 显示 `DefaultResourceLoader` 被 Context、Quartz、FreeMarker 等大量上层模块调用，
+`DefaultConversionService` 被 Beans、Expression、Context 和 Validation 复用。因此 Core 的路径和语义错误会向上层扩散，必须先完成其目录与对象门禁。
+
+## 验收
+
+```bash
+python3 scripts/audit_migration_docs.py --module vernal-core --check
+cargo test -p vernal-core
+cargo clippy -p vernal-core --all-targets -- -D warnings
+```
+
+任何 `MISSING`、`MISPLACED`、`STUB`、`PARTIAL`、`UNVERIFIED` 均仍是未完成。
+
+---
+
+<!-- restored-detail-from-head: dd20300d16a09200bd8a379ff14db1e2da99b67c -->
+
+## 原详细文档（完整保留）
+
+> 以下正文完整恢复自 Vernal 提交 `dd20300d16a09200bd8a379ff14db1e2da99b67c`。其中历史对象数量、完成状态、
+> 路径算法和依赖替代结论如与本文顶部或自动对象台账冲突，以顶部当前结论和
+> `docs/migration-audit/` 为准；其 API、设计背景、阶段拆解和测试说明继续保留。
+
 # vernal-core 技术交接文档
 
 > **对标**: Spring Framework `spring-core`（基础合同层）

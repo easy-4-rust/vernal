@@ -1,3 +1,79 @@
+<!-- migration-doc: authority=authoritative canonical=../迁移验收规范.md -->
+# spring-core-test → vernal-core-test 技术要求
+> 迁移文档治理：本文级别为 **authoritative**。正文中的历史统计或完成标记不得单独作为验收结论；以 [../迁移验收规范.md](../迁移验收规范.md) 和自动审计报告为准。
+
+
+> 当前文档。验收遵循[迁移验收规范](../迁移验收规范.md)。Spring 基线提交：
+>`9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82`。
+
+## 当前事实
+
+- 来源 `spring-core-test/src/main/java/org/springframework` 含 40 个业务对象（已排除 5 个 `package-info.java`）。
+- 当前工作区不存在 `crates/vernal-core-test`，因此 40 个对象全部为 `MISSING/PLANNED`。
+- `crates/vernal-test/src/context.rs` 的 `TestContext` 是其他测试支持能力，既不同名也不覆盖动态编译、AOT Agent 记录等语义，不能计作迁移完成。
+- 本模块尚未加入生成审计清单；在纳入 manifest 前，本目录对象表是临时权威事实源。
+
+## 目标目录
+
+```text
+crates/vernal-core-test/src/
+├── aot/
+│   └── agent/
+├── test/
+│   ├── agent/
+│   ├── generate/
+│   └── tools/
+├── io/
+│   └── support/
+└── lib.rs
+```
+
+路径示例：
+
+- `aot/agent/RuntimeHintsAgent.java` → `aot/agent/runtime_hints_agent.rs`
+- `aot/test/generate/TestGenerationContext.java` → `test/generate/test_generation_context.rs`
+- `core/test/tools/TestCompiler.java` → `test/tools/test_compiler.rs`
+- `core/test/io/support/MockSpringFactoriesLoader.java` → `io/support/mock_spring_factories_loader.rs`
+
+## 核心语义
+
+CodeGraph 给出的 Spring 主链为：
+
+```mermaid
+flowchart LR
+    TC["TestCompiler.forSystem"] --> INPUT["SourceFiles / ResourceFiles / ClassFiles"]
+    INPUT --> COMPILE["TestCompiler.compile"]
+    COMPILE --> FM["DynamicJavaFileManager"]
+    COMPILE --> CL["DynamicClassLoader"]
+    RR["RuntimeHintsRecorder.record"] --> PUB["RecordedInvocationsPublisher.addListener"]
+    PUB --> RUN["被测回调"]
+    RUN --> REMOVE["removeListener"]
+    REMOVE --> RI["RuntimeHintsInvocations"]
+```
+
+Rust 不需要复制 `JavaCompiler` 或字节码 Agent；但必须逐对象决定：
+
+- 用 `trybuild`、临时 Cargo 工程或编译器进程实现可观察的测试编译语义；
+- 由精确依赖复用并提供符号和集成测试；
+- 或记录 JVM Agent/字节码专属证据后标 `PLATFORM_NA`。
+
+## 验收要求
+
+- 新建 crate 后纳入 workspace、manifest 与自动审计。
+- 每个非 `PLATFORM_NA` Java 对象有对应真实文件、中文来源注释和语义测试。
+- 编译失败诊断、动态资源、隔离 classloader 等需有 Rust 对等错误/隔离模型。
+- 当前不得宣称任何对象完成。
+
+---
+
+<!-- restored-detail-from-head: dd20300d16a09200bd8a379ff14db1e2da99b67c -->
+
+## 原详细文档（完整保留）
+
+> 以下正文完整恢复自 Vernal 提交 `dd20300d16a09200bd8a379ff14db1e2da99b67c`。其中历史对象数量、完成状态、
+> 路径算法和依赖替代结论如与本文顶部或自动对象台账冲突，以顶部当前结论和
+> `docs/migration-audit/` 为准；其 API、设计背景、阶段拆解和测试说明继续保留。
+
 # vernal-core-test 技术要求（对标 spring-core-test）
 
 > **版本**：v1.0（2026-07-28）
