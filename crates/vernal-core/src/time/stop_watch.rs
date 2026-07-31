@@ -956,3 +956,24 @@ mod tests {
         assert_eq!(format_percent(1.5), "150%");
     }
 }
+
+    #[test]
+    fn pretty_print_zero_total_time_with_completed_task() {
+        // 对标 Spring StopWatch.prettyPrint(): total_time == 0 但有完成的 task
+        // ratio 分支走 else { 0.0 }（覆盖行 364）
+        let mut sw = StopWatch::with_id("zero-ratio");
+        sw.set_keep_task_list(true);
+        // start + stop 极快，total_time_nanos 可能为 0
+        for _ in 0..10 {
+            sw.start();
+            sw.stop();
+        }
+        let output = sw.pretty_print();
+        assert!(output.contains("zero-ratio"));
+        // total_time_seconds() 可能为 0
+        let total = sw.total_time_seconds();
+        if total == 0.0 {
+            // 触发 ratio == 0.0 分支
+            assert!(output.contains("0%"));
+        }
+    }

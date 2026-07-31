@@ -26,3 +26,34 @@ impl std::fmt::Display for CliError {
 }
 
 impl std::error::Error for CliError {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn new_from_str() {
+        // 对标 Spring: 接受 &str 消息
+        let err = CliError::new("invalid arg");
+        assert_eq!(err.message, "invalid arg");
+    }
+
+    #[test]
+    fn new_from_string() {
+        let err = CliError::new(String::from("owned"));
+        assert_eq!(err.message, "owned");
+    }
+
+    #[test]
+    fn display_includes_message() {
+        let err = CliError::new("flag missing");
+        assert_eq!(format!("{err}"), "CLI 解析错误: flag missing");
+    }
+
+    #[test]
+    fn error_trait_source_is_none() {
+        use std::error::Error as _;
+        let err = CliError::new("x");
+        assert!(err.source().is_none());
+    }
+}

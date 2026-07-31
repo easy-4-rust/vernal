@@ -440,3 +440,42 @@ k3=v3", &mut map);
         let _ = std::fs::remove_dir(&dir);
     }
 }
+
+    #[test]
+    fn read_classpath_resource_reads_existing_file() {
+        // 对标 Spring loadProperties: 当 cwd 中有 vernal.properties 时读取并解析
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        static COUNTER: AtomicUsize = AtomicUsize::new(0);
+        let n = COUNTER.fetch_add(1, Ordering::SeqCst);
+        let key = format!("classpath.read.{}.{}", std::process::id(), n);
+
+        let cwd = std::env::current_dir().unwrap();
+        let backup = cwd.join("vernal.properties");
+        let backup_existed = backup.exists();
+        let backup_content = if backup_existed {
+            Some(std::fs::read_to_string(&backup).unwrap())
+        } else {
+            None
+        };
+
+        std::fs::write(&backup, format!("{key}=value1\nother=v2\n")).unwrap();
+        let result = read_classpath_resource("vernal.properties");
+        assert!(result.is_some());
+        let map = result.unwrap();
+        assert_eq!(map.get(&key).map(String::as_str), Some("value1"));
+        assert_eq!(map.get("other").map(String::as_str), Some("v2"));
+
+        // 恢复
+        if let Some(c) = backup_content {
+            std::fs::write(&backup, c).unwrap();
+        } else {
+            let _ = std::fs::remove_file(&backup);
+        }
+    }
+
+    #[test]
+    fn read_classpath_resource_returns_none_for_nonexistent() {
+        // 对标 Spring: 文件不存在时返回 None
+        let result = read_classpath_resource("/nonexistent/path/12345.properties");
+        assert!(result.is_none());
+    }

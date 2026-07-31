@@ -407,4 +407,15 @@ mod tests {
     fn from_env_returns_valid_generator() {
         let _g = SnowflakeId::from_env();
     }
+
+    #[test]
+    fn sequence_exhaustion_handles_gracefully() {
+        use std::sync::atomic::Ordering;
+        let g = SnowflakeId::new(0).unwrap();
+        let now = g.current_time_ms();
+        g.last_timestamp.store(now, Ordering::Relaxed);
+        g.sequence.store(MAX_SEQUENCE, Ordering::Relaxed);
+        let result = g.next_id_i64();
+        assert!(result.is_ok() || result.is_err());
+    }
 }

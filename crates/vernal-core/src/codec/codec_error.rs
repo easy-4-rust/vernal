@@ -26,3 +26,36 @@ impl std::fmt::Display for CodecError {
 }
 
 impl std::error::Error for CodecError {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn encode_displays_message() {
+        // 对标 Spring EncoderException: Display 包含消息
+        let err = CodecError::Encode("bad bytes".to_string());
+        assert_eq!(format!("{err}"), "编码失败: bad bytes");
+    }
+
+    #[test]
+    fn decode_displays_message() {
+        // 对标 Spring DecoderException
+        let err = CodecError::Decode("malformed json".to_string());
+        assert_eq!(format!("{err}"), "解码失败: malformed json");
+    }
+
+    #[test]
+    fn unsupported_media_type_displays_message() {
+        let err = CodecError::UnsupportedMediaType("application/x-unknown".to_string());
+        assert_eq!(format!("{err}"), "不支持的媒体类型: application/x-unknown");
+    }
+
+    #[test]
+    fn error_trait_source_returns_none() {
+        // 对标 std::error::Error: source() 默认返回 None
+        let err = CodecError::Encode("x".to_string());
+        use std::error::Error as _;
+        assert!(err.source().is_none());
+    }
+}
