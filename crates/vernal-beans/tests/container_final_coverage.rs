@@ -1,0 +1,481 @@
+/// Container 最终覆盖率测试。
+use std::any::Any;
+use std::sync::Arc;
+
+fn make_container() -> vernal_beans::Container {
+    let mut b = vernal_beans::RegistryBuilder::new();
+    b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+    b.register(vernal_beans::ComponentDefinition::singleton::<i32, _>(|_| 42i32));
+    b.register(vernal_beans::ComponentDefinition::singleton::<f64, _>(|_| 3.14f64));
+    vernal_beans::Container::new(b.build().unwrap())
+}
+
+#[test]
+fn container_resolve_string() {
+    let c = make_container();
+    let val: Arc<String> = c.resolve().unwrap();
+    assert_eq!(*val, "hello");
+}
+
+#[test]
+fn container_resolve_i32() {
+    let c = make_container();
+    let val: Arc<i32> = c.resolve().unwrap();
+    assert_eq!(*val, 42);
+}
+
+#[test]
+fn container_resolve_f64() {
+    let c = make_container();
+    let val: Arc<f64> = c.resolve().unwrap();
+    assert!((*val - 3.14).abs() < f64::EPSILON);
+}
+
+#[test]
+fn container_resolve_not_found() {
+    let c = make_container();
+    let result: Result<Arc<bool>, _> = c.resolve();
+    assert!(result.is_err());
+}
+
+#[test]
+fn container_resolve_in_scope() {
+    let c = make_container();
+    let scope = c.open_scope::<String>();
+    let val: Arc<String> = c.resolve_in(&scope).unwrap();
+    assert_eq!(*val, "hello");
+}
+
+#[test]
+fn container_resolve_qualified() {
+    let mut b = vernal_beans::RegistryBuilder::new();
+    let q = vernal_beans::Qualifier::new("primary").unwrap();
+    b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "primary".to_string()).qualified(q.clone()));
+    let c = vernal_beans::Container::new(b.build().unwrap());
+    let val: Arc<String> = c.resolve_qualified(&q).unwrap();
+    assert_eq!(*val, "primary");
+}
+
+#[test]
+fn container_resolve_qualified_not_found() {
+    let c = make_container();
+    let q = vernal_beans::Qualifier::new("nonexistent").unwrap();
+    let result: Result<Arc<String>, _> = c.resolve_qualified(&q);
+    assert!(result.is_err());
+}
+
+#[test]
+fn container_resolve_trait_no_binding() {
+    let c = make_container();
+    let val: Result<Arc<dyn std::fmt::Debug + Send + Sync>, _> = c.resolve_trait();
+    assert!(val.is_err());
+}
+
+#[test]
+fn container_resolve_all_traits_empty() {
+    let c = make_container();
+    let val: Result<Vec<Arc<dyn std::fmt::Debug + Send + Sync>>, _> = c.resolve_all_traits();
+    assert!(val.unwrap().is_empty());
+}
+
+#[test]
+fn container_warm_up() {
+    let c = make_container();
+    assert!(c.warm_up().is_ok());
+    assert!(c.unused_definitions().is_empty());
+}
+
+#[test]
+fn container_transient_tracker() {
+    let c = make_container();
+    let _ = c.transient_tracker();
+}
+
+#[test]
+fn container_scope() {
+    let c = make_container();
+    let _scope = c.open_scope::<String>();
+}
+
+#[test]
+fn bf_get_bean_by_key() {
+    use vernal_beans::BeanFactory;
+    let c = make_container();
+    let bean = c.get_bean_by_key(&vernal_beans::ComponentKey::of::<String>());
+    assert!(bean.is_ok());
+}
+
+#[test]
+fn bf_get_bean_by_key_not_found() {
+    use vernal_beans::BeanFactory;
+    let c = make_container();
+    let bean = c.get_bean_by_key(&vernal_beans::ComponentKey::of::<bool>());
+    assert!(bean.is_err());
+}
+
+#[test]
+fn bf_contains_bean() {
+    use vernal_beans::BeanFactory;
+    let c = make_container();
+    assert!(c.contains_bean(&vernal_beans::ComponentKey::of::<String>()));
+    assert!(!c.contains_bean(&vernal_beans::ComponentKey::of::<bool>()));
+}
+
+#[test]
+fn bf_is_singleton() {
+    use vernal_beans::BeanFactory;
+    let c = make_container();
+    assert!(c.is_singleton(&vernal_beans::ComponentKey::of::<String>()).unwrap());
+}
+
+#[test]
+fn bf_is_prototype() {
+    use vernal_beans::BeanFactory;
+    let c = make_container();
+    assert!(!c.is_prototype(&vernal_beans::ComponentKey::of::<String>()).unwrap());
+}
+
+#[test]
+fn bf_get_type() {
+    use vernal_beans::BeanFactory;
+    let c = make_container();
+    let t = c.get_type(&vernal_beans::ComponentKey::of::<String>());
+    assert!(t.is_ok());
+}
+
+#[test]
+fn bf_is_type_match() {
+    use vernal_beans::BeanFactory;
+    let c = make_container();
+    assert!(c.is_type_match(&vernal_beans::ComponentKey::of::<String>(), std::any::TypeId::of::<String>()));
+}
+
+#[test]
+fn bf_get_bean_provider() {
+    use vernal_beans::BeanFactory;
+    let c = make_container();
+    let provider = c.get_bean_provider_by_type_id(std::any::TypeId::of::<String>());
+    assert!(provider.is_ok());
+}
+
+#[test]
+fn acbf_create_bean() {
+    use vernal_beans::AutowireCapableBeanFactory;
+    let c = make_container();
+    let bean = c.create_bean("alloc::string::String");
+    assert!(bean.is_ok());
+}
+
+#[test]
+fn acbf_autowire_bean() {
+    use vernal_beans::AutowireCapableBeanFactory;
+    let c = make_container();
+    let bean: Arc<dyn Any + Send + Sync> = Arc::new("test".to_string());
+    assert!(c.autowire_bean(bean).is_ok());
+}
+
+#[test]
+fn acbf_initialize_bean() {
+    use vernal_beans::AutowireCapableBeanFactory;
+    let c = make_container();
+    let bean: Arc<dyn Any + Send + Sync> = Arc::new("test".to_string());
+    assert!(c.initialize_bean(bean, "test_bean").is_ok());
+}
+
+#[test]
+fn acbf_destroy_bean_instance() {
+    use vernal_beans::AutowireCapableBeanFactory;
+    let c = make_container();
+    assert!(c.destroy_bean_instance("test_bean", &"test").is_ok());
+}
+
+#[test]
+fn acbf_autowire_modes() {
+    use vernal_beans::AutowireCapableBeanFactory;
+    let c = make_container();
+    assert!(c.autowire("alloc::string::String", 0, false).is_ok());
+    assert!(c.autowire("alloc::string::String", 1, false).is_ok());
+    assert!(c.autowire("alloc::string::String", 2, false).is_ok());
+    assert!(c.autowire("alloc::string::String", 3, false).is_ok());
+    assert!(c.autowire("alloc::string::String", 99, false).is_err());
+}
+
+#[test]
+fn bdr_register_and_remove() {
+    use vernal_beans::BeanDefinitionRegistry;
+    use vernal_beans::BeanDefinition;
+    use vernal_beans::RootBeanDefinition;
+    let mut c = vernal_beans::Container::new(vernal_beans::RegistryBuilder::new().build().unwrap());
+    let def = Box::new(RootBeanDefinition::new()) as Box<dyn BeanDefinition>;
+    c.register_bean_definition("dyn".to_string(), def).unwrap();
+    assert!(c.contains_bean_definition("dyn"));
+    assert!(c.remove_bean_definition("dyn").is_ok());
+    assert!(!c.contains_bean_definition("dyn"));
+}
+
+#[test]
+fn bdr_count_and_names() {
+    use vernal_beans::BeanDefinitionRegistry;
+    let c = make_container();
+    assert!(c.bean_definition_count() >= 2);
+    let names = c.bean_definition_names();
+    assert!(names.len() >= 2);
+}
+
+#[test]
+fn lbf_contains_bean_definition() {
+    use vernal_beans::ListableBeanFactory;
+    let c = make_container();
+    assert!(c.contains_bean_definition("alloc::string::String"));
+}
+
+#[test]
+fn lbf_bean_names_for_type() {
+    use vernal_beans::ListableBeanFactory;
+    let c = make_container();
+    let names = c.bean_names_for_type_id(std::any::TypeId::of::<String>(), true, true);
+    assert!(!names.is_empty());
+}
+
+#[test]
+fn cbf_register_alias() {
+    use vernal_beans::ConfigurableBeanFactory;
+    let mut c = make_container();
+    assert!(c.register_alias("alloc::string::String", "myAlias").is_ok());
+}
+
+#[test]
+fn cbf_set_currently_in_creation() {
+    use vernal_beans::ConfigurableBeanFactory;
+    let mut c = make_container();
+    c.set_currently_in_creation("test_bean", true);
+    assert!(c.is_currently_in_creation("test_bean"));
+    c.set_currently_in_creation("test_bean", false);
+    assert!(!c.is_currently_in_creation("test_bean"));
+}
+
+#[test]
+fn cbf_register_dependent_bean() {
+    use vernal_beans::ConfigurableBeanFactory;
+    let mut c = make_container();
+    c.register_dependent_bean("beanA", "beanB");
+    let dependents = c.get_dependent_beans("beanA");
+    assert!(dependents.contains(&"beanB".to_string()));
+}
+
+#[test]
+fn clbf_freeze_and_check() {
+    use vernal_beans::ConfigurableListableBeanFactory;
+    let mut c = make_container();
+    assert!(!c.is_configuration_frozen());
+    c.freeze_configuration();
+    assert!(c.is_configuration_frozen());
+}
+
+#[test]
+fn clbf_pre_instantiate_singletons() {
+    use vernal_beans::ConfigurableListableBeanFactory;
+    let c = make_container();
+    assert!(c.pre_instantiate_singletons().is_ok());
+}
+
+#[test]
+fn sbr_register_get_contains() {
+    use vernal_beans::SingletonBeanRegistry;
+    let c = make_container();
+    c.register_singleton("my_singleton", Arc::new(99i32));
+    assert!(c.contains_singleton("my_singleton"));
+    let v = c.get_singleton("my_singleton");
+    assert!(v.is_some());
+    assert_eq!((*v.unwrap()).downcast_ref::<i32>().copied(), Some(99));
+}
+
+#[test]
+fn sbr_mutex() {
+    use vernal_beans::SingletonBeanRegistry;
+    let c = make_container();
+    let m1 = c.singleton_mutex();
+    let m2 = c.singleton_mutex();
+    assert!(Arc::ptr_eq(&m1, &m2));
+}
+
+#[test]
+fn bean_wrapper_new() {
+    use vernal_beans::bean_wrapper_impl::BeanWrapperImpl;
+    let wrapper = BeanWrapperImpl::new(Arc::new("test".to_string()));
+    assert_eq!(wrapper.property_count(), 0);
+}
+
+#[test]
+fn bean_wrapper_register_property() {
+    use vernal_beans::bean_wrapper_impl::BeanWrapperImpl;
+    use vernal_beans::property_accessor::PropertyAccessor;
+    let wrapper = BeanWrapperImpl::new(Arc::new("test".to_string()));
+    wrapper.register_property("name", std::any::TypeId::of::<String>());
+    assert!(wrapper.is_readable("name"));
+    assert!(wrapper.is_writable("name"));
+}
+
+#[test]
+fn bean_wrapper_set_get_property() {
+    use vernal_beans::bean_wrapper_impl::BeanWrapperImpl;
+    use vernal_beans::property_accessor::PropertyAccessor;
+    let wrapper = BeanWrapperImpl::new(Arc::new("test".to_string()));
+    wrapper.register_property("name", std::any::TypeId::of::<String>());
+    wrapper.set_property_value("name", Arc::new("Alice".to_string())).unwrap();
+    let val = wrapper.get_property_value("name").unwrap();
+    assert_eq!(val.downcast_ref::<String>().unwrap(), "Alice");
+}
+
+#[test]
+fn bean_wrapper_readonly() {
+    use vernal_beans::bean_wrapper_impl::BeanWrapperImpl;
+    use vernal_beans::property_accessor::PropertyAccessor;
+    let wrapper = BeanWrapperImpl::new(Arc::new("test".to_string()));
+    wrapper.register_readonly_property("ro", std::any::TypeId::of::<i32>());
+    assert!(wrapper.is_readable("ro"));
+    assert!(!wrapper.is_writable("ro"));
+    assert!(wrapper.set_property_value("ro", Arc::new(42i32)).is_err());
+}
+
+#[test]
+fn bean_wrapper_nested_property() {
+    use vernal_beans::bean_wrapper_impl::BeanWrapperImpl;
+    use vernal_beans::property_accessor::PropertyAccessor;
+    use std::collections::HashMap;
+    let wrapper = BeanWrapperImpl::new(Arc::new("test".to_string()));
+    wrapper.register_property("address", std::any::TypeId::of::<HashMap<String, Arc<dyn Any + Send + Sync>>>());
+    let mut inner = HashMap::new();
+    inner.insert("city".to_string(), Arc::new("Beijing".to_string()) as Arc<dyn Any + Send + Sync>);
+    wrapper.set_property_value("address", Arc::new(inner)).unwrap();
+    let val = wrapper.get_property_value("address.city");
+    assert!(val.is_ok());
+    assert_eq!(val.unwrap().downcast_ref::<String>().unwrap(), "Beijing");
+}
+
+#[test]
+fn bean_wrapper_property_type() {
+    use vernal_beans::bean_wrapper_impl::BeanWrapperImpl;
+    use vernal_beans::property_accessor::PropertyAccessor;
+    let wrapper = BeanWrapperImpl::new(Arc::new("test".to_string()));
+    wrapper.register_property("name", std::any::TypeId::of::<String>());
+    assert_eq!(wrapper.get_property_type("name"), Some(std::any::TypeId::of::<String>()));
+    assert_eq!(wrapper.get_property_type("missing"), None);
+}
+
+#[test]
+fn bean_wrapper_property_names() {
+    use vernal_beans::bean_wrapper_impl::BeanWrapperImpl;
+    use vernal_beans::property_accessor::PropertyAccessor;
+    let wrapper = BeanWrapperImpl::new(Arc::new("test".to_string()));
+    wrapper.register_property("a", std::any::TypeId::of::<i32>());
+    wrapper.register_property("b", std::any::TypeId::of::<String>());
+    let mut names = wrapper.get_property_names();
+    names.sort();
+    assert_eq!(names, vec!["a", "b"]);
+}
+
+#[test]
+fn bean_wrapper_nonexistent_property() {
+    use vernal_beans::bean_wrapper_impl::BeanWrapperImpl;
+    use vernal_beans::property_accessor::PropertyAccessor;
+    let wrapper = BeanWrapperImpl::new(Arc::new("test".to_string()));
+    assert!(wrapper.get_property_value("missing").is_err());
+}
+
+#[test]
+fn root_bean_definition_basic() {
+    use vernal_beans::RootBeanDefinition;
+    use vernal_beans::BeanDefinition;
+    let rbd = RootBeanDefinition::new();
+    assert_eq!(rbd.scope(), vernal_beans::Scope::Singleton);
+    assert!(!rbd.is_abstract());
+    assert!(rbd.is_singleton());
+    assert!(!rbd.is_prototype());
+}
+
+#[test]
+fn root_bean_definition_setters() {
+    use vernal_beans::RootBeanDefinition;
+    use vernal_beans::BeanDefinition;
+    let mut rbd = RootBeanDefinition::new();
+    rbd.set_bean_class_name("com.example.MyService");
+    assert_eq!(rbd.bean_class_name(), "com.example.MyService");
+    rbd.set_scope(vernal_beans::Scope::Transient);
+    assert_eq!(rbd.scope(), vernal_beans::Scope::Transient);
+}
+
+#[test]
+fn generic_bean_definition_basic() {
+    use vernal_beans::GenericBeanDefinition;
+    let gbd = GenericBeanDefinition::new();
+    assert_eq!(gbd.scope(), vernal_beans::Scope::Singleton);
+}
+
+#[test]
+fn bean_definition_builder_generic() {
+    use vernal_beans::BeanDefinitionBuilder;
+    let def = BeanDefinitionBuilder::generic("com.example.Service")
+        .set_scope(vernal_beans::Scope::Transient)
+        .set_lazy_init(true)
+        .build();
+    assert!(def.is_lazy_init());
+}
+
+#[test]
+fn bean_definition_builder_root() {
+    use vernal_beans::BeanDefinitionBuilder;
+    use vernal_beans::BeanDefinition;
+    let def = BeanDefinitionBuilder::root("com.example.Root")
+        .set_primary(true)
+        .build();
+    assert!(def.is_primary());
+}
+
+#[test]
+fn cav_basic() {
+    use vernal_beans::ConstructorArgumentValues;
+    use vernal_beans::factory::config::constructor_argument_values::ValueHolder;
+    let mut cav = ConstructorArgumentValues::new();
+    assert!(cav.is_empty());
+    cav.add_indexed_argument_value(0, ValueHolder::new(Arc::new("first")));
+    assert!(!cav.is_empty());
+    assert!(cav.has_indexed_argument_value(0));
+}
+
+#[test]
+fn dependency_display() {
+    let d1 = vernal_beans::Dependency::of::<String>();
+    let d2 = vernal_beans::Dependency::qualified::<String>(vernal_beans::Qualifier::new("q").unwrap());
+    assert!(!format!("{}", d1).is_empty());
+    assert!(!format!("{}", d2).is_empty());
+}
+
+#[test]
+fn resolve_error_display() {
+    use vernal_beans::{ResolveError, ComponentKey, ScopeKey};
+    let errors: Vec<ResolveError> = vec![
+        ResolveError::NotFound { component: "t".into(), path: vec!["r".into()] },
+        ResolveError::CircularRuntime { path: vec!["a".into(), "b".into()] },
+        ResolveError::ScopeNotActive { component: ComponentKey::of::<String>(), scope: ScopeKey::of::<String>() },
+    ];
+    for e in &errors {
+        assert!(!format!("{}", e).is_empty());
+    }
+}
+
+#[test]
+fn qualifier_basic() {
+    let q = vernal_beans::Qualifier::new("primary").unwrap();
+    assert_eq!(q.as_str(), "primary");
+}
+
+#[test]
+fn keys_display() {
+    let ck = vernal_beans::ComponentKey::of::<String>();
+    let sk = vernal_beans::ScopeKey::of::<String>();
+    let tk = vernal_beans::TraitKey::of::<dyn std::fmt::Debug>();
+    assert!(!format!("{}", ck).is_empty());
+    assert!(!format!("{}", sk).is_empty());
+    assert!(!format!("{}", tk).is_empty());
+}
