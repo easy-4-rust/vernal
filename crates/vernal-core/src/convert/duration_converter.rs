@@ -191,4 +191,46 @@ mod tests {
         let d: Duration = super::super::ConversionService::convert("1h").unwrap();
         assert_eq!(d, Duration::from_secs(3600));
     }
+
+    #[test]
+    fn parses_iso8601_days_in_date_part() {
+        // 对标 ISO-8601 P<n>D 中日期段的 D
+        let d = Duration::from_str_value("P2D").unwrap();
+        assert_eq!(d, Duration::from_secs(2 * 24 * 3600));
+    }
+
+    #[test]
+    fn rejects_iso8601_days_in_time_part() {
+        // ISO-8601 规定: T 之后的 D 不合法 (D 仅用于日期段)
+        let err = Duration::from_str_value("PT1D").unwrap_err();
+        assert_eq!(err.target_type, "Duration");
+    }
+
+    #[test]
+    fn rejects_iso8601_unknown_suffix() {
+        // 对标 Spring `StringToDurationConverter` 拒绝未知单位
+        let err = Duration::from_str_value("P1X").unwrap_err();
+        assert_eq!(err.target_type, "Duration");
+    }
+
+    #[test]
+    fn rejects_iso8601_without_digit_before_suffix() {
+        // P 后紧接非数字字符 → parser 返回 None (current_num 空)
+        let err = Duration::from_str_value("P").unwrap_err();
+        assert_eq!(err.target_type, "Duration");
+    }
+
+    #[test]
+    fn rejects_simplified_unknown_unit() {
+        // 对标 Spring 简化语法只接受 s/m/h/d
+        let err = Duration::from_str_value("5y").unwrap_err();
+        assert_eq!(err.target_type, "Duration");
+    }
+
+    #[test]
+    fn rejects_simplified_without_unit() {
+        // 纯数字无单位: parse_simplified 返回 None
+        let err = Duration::from_str_value("42").unwrap_err();
+        assert_eq!(err.target_type, "Duration");
+    }
 }

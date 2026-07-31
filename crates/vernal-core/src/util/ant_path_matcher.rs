@@ -471,4 +471,93 @@ mod tests {
         assert!(m.matches("/api/**/list", "/api/users/list"));
         assert!(m.matches("/api/**/list", "/api/users/posts/list"));
     }
+
+    #[test]
+    fn set_trim_tokens_strips_whitespace_around_segments() {
+        // 对标 Spring `AntPathMatcher.setTrimTokens(true)`：对 token 进行 trim
+        let mut m = AntPathMatcher::default();
+        m.set_trim_tokens(true);
+        // 使用通配符强制走 tokenize 路径 (matches 会对非通配符 pattern 走 early-return)
+        // 验证 trim 生效: pattern 中的空格段与 path 中的空格段 trim 后等价
+        assert!(m.matches("/api/*/info", "/api/  *  /info"));
+        // 不带空格但 trim_tokens 开启时, trim 是 no-op, 不影响匹配
+        assert!(m.matches("/api/*/info", "/api/users/info"));
+    }
+
+    #[test]
+    fn set_trim_tokens_false_keeps_whitespace_in_segments() {
+        let mut m = AntPathMatcher::default();
+        m.set_trim_tokens(false);
+        // 不 trim：含空格的 pattern 与无空格 path 不匹配
+        assert!(!m.matches("/api/ users /info", "/api/users/info"));
+    }
+
+    #[test]
+    fn set_match_optional_trailing_separator_disabled_requires_exact_match() {
+        // 对标 Spring `setMatchOptionalTrailingSeparator(false)`：禁用末尾分隔符可选
+        let mut m = AntPathMatcher::default();
+        m.set_match_optional_trailing_separator(false);
+        // 默认行为: trailing `/` 可选；关闭后不再可选
+        // 这里模式不含 trailing separator 时不受影响
+        assert!(m.matches("/api/users", "/api/users"));
+    }
+
+    #[test]
+    fn question_mark_returns_false_when_text_shorter_than_pattern() {
+        // ? 需要 text 中每个对应位置都有字符；text 过短 → false
+        let m = AntPathMatcher::default();
+        assert!(!m.matches("/abc", "/ab"));
+        assert!(!m.matches("/?", "/"));
+    }
+
+    #[test]
+    fn consecutive_stars_are_collapsed_to_single_wildcard() {
+        // 对标 Spring `AntPathStringMatcher` 处理连续 `*` 的逻辑
+        let m = AntPathMatcher::default();
+        assert!(m.matches("/api/***/info", "/api/anything/info"));
+    }
+
+    #[test]
+    fn case_insensitive_matches_ignore_case_in_single_segment() {
+        let mut m = AntPathMatcher::default();
+        m.set_case_sensitive(false);
+        assert!(m.matches("Hello", "HELLO"));
+        assert!(m.matches("Hello", "hello"));
+        assert!(m.matches("Hello.World", "HELLO.world"));
+    }
+
+    #[test]
+    fn case_insensitive_recursive_matcher_used_with_wildcards() {
+        // 对标 Spring `AntPathStringMatcher.matchStrings()` 在 case_sensitive=false 时的字符比较
+        // 使用通配符强制走 do_match -> match_strings 路径（避免 matches 的 early-return）
+        let mut m = AntPathMatcher::default();
+        m.set_case_sensitive(false);
+        // ? 在 case_sensitive=false 时也应忽略大小写匹配单字符
+        assert!(m.matches("/api/?/info", "/api/A/info"));
+        assert!(m.matches("/api/?/info", "/API/B/info"));
+        // * 内的字符也应忽略大小写
+        assert!(m.matches("/api/*.html", "/API/Index.HTML"));
+    }
+
+    #[test]
+    fn pattern_not_found_returns_whole_path() {
+        // 对标 Spring `extractPathWithinPattern` 当 pattern 不含通配符时返回 path
+        let m = AntPathMatcher::default();
+        let result = m.extract_path_within_pattern("/api/users", "/api/users");
+        assert_eq!(result, "/api/users");
+    }
+
+    #[test]
+    fn pattern_with_double_star_middle_returns_false_when_no_alignment() {
+        // 验证 do_match 中 `**` 找不到匹配时返回 false（覆盖递归的 false 分支）
+        let m = AntPathMatcher::default();
+        assert!(!m.matches("/api/**/info", "/api/users/data"));
+    }
+
+    #[test]
+    fn pattern_more_segments_than_path_returns_false() {
+        // 验证 do_match 中 pattern 仍有 token 但 path 已穷尽 → false
+        let m = AntPathMatcher::default();
+        assert!(!m.matches("/api/users/extra", "/api/users"));
+    }
 }

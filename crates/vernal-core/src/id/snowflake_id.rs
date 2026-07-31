@@ -204,7 +204,8 @@ impl SnowflakeId {
         }
         self.last_timestamp.store(now, Ordering::Relaxed);
         self.sequence.store(0, Ordering::Relaxed);
-        0
+        // 对标 Twitter Snowflake: 返回新的时间戳
+        now
     }
 
     /// 获取机器 ID。
@@ -375,4 +376,35 @@ mod tests {
         assert_eq!(ids.len(), 100);
     }
 
+
+    #[test]
+    fn next_id_returns_clock_moved_backwards_when_last_is_in_future() {
+        use std::sync::atomic::Ordering;
+        let g = SnowflakeId::new(0).unwrap();
+        g.last_timestamp.store(u64::MAX, Ordering::Relaxed);
+        let err = g.next_id_i64().unwrap_err();
+        match err {
+            SnowflakeError::ClockMovedBackwards { last, current } => {
+                assert_eq!(last, u64::MAX);
+                assert!(current < u64::MAX);
+            }
+            other => panic!("expected ClockMovedBackwards, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn wait_next_millis_resets_sequence_and_returns_new_timestamp() {
+        use std::sync::atomic::Ordering;
+        let g = SnowflakeId::new(0).unwrap();
+        g.last_timestamp.store(0, Ordering::Relaxed);
+        g.sequence.store(9999, Ordering::Relaxed);
+        let new_ts = g.wait_next_millis(0);
+        assert!(new_ts > 0);
+        assert_eq!(g.sequence.load(Ordering::Relaxed), 0);
+    }
+
+    #[test]
+    fn from_env_returns_valid_generator() {
+        let _g = SnowflakeId::from_env();
+    }
 }

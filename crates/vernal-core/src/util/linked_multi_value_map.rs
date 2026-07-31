@@ -283,4 +283,47 @@ mod tests {
         let map: LinkedMultiValueMap<&str, i32> = LinkedMultiValueMap::default();
         assert!(map.is_empty());
     }
+
+    #[test]
+    fn iter_yields_entries_in_insertion_order() {
+        // 对标 Spring `LinkedMultiValueMap.entrySet()`：按插入顺序遍历 (k, Vec<V>)
+        let mut map = LinkedMultiValueMap::new();
+        map.add("fruit", "apple");
+        map.add("fruit", "banana");
+        map.add("color", "red");
+
+        let entries: Vec<(&&str, &Vec<&str>)> = map.iter().collect();
+        assert_eq!(entries.len(), 2);
+        assert_eq!(*entries[0].0, "fruit");
+        assert_eq!(entries[0].1, &vec!["apple", "banana"]);
+        assert_eq!(*entries[1].0, "color");
+        assert_eq!(entries[1].1, &vec!["red"]);
+    }
+
+    #[test]
+    fn set_inserts_new_key_with_single_value() {
+        // 对标 Spring `LinkedMultiValueMap.set(key, value)` 当 key 不存在时插入新条目
+        let mut map: LinkedMultiValueMap<&str, i32> = LinkedMultiValueMap::new();
+        map.set("a", 1);
+        assert!(map.contains_key(&"a"));
+        assert_eq!(map.get_all(&"a"), Some(&[1][..]));
+        assert_eq!(map.len(), 1);
+    }
+
+    #[test]
+    fn trait_len_is_empty_contains_key_use_trait_api() {
+        // 通过 trait 调用（覆盖 trait impl 而非直接方法）
+        use super::super::multi_value_map::MultiValueMapTrait;
+        let mut map: LinkedMultiValueMap<&str, i32> = LinkedMultiValueMap::new();
+        let trait_ref: &dyn MultiValueMapTrait<&str, i32> = &map;
+        assert_eq!(trait_ref.len(), 0);
+        assert!(trait_ref.is_empty());
+        assert!(!trait_ref.contains_key(&"missing"));
+
+        map.add("a", 1);
+        let trait_ref: &dyn MultiValueMapTrait<&str, i32> = &map;
+        assert_eq!(trait_ref.len(), 1);
+        assert!(!trait_ref.is_empty());
+        assert!(trait_ref.contains_key(&"a"));
+    }
 }

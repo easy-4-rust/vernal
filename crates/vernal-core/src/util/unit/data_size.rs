@@ -422,4 +422,29 @@ mod tests {
     fn default_is_zero() {
         assert_eq!(DataSize::default().to_bytes(), 0);
     }
+
+    #[test]
+    fn to_gigabytes_truncates_down() {
+        // 对标 Spring `DataSize.toGigabytes()`
+        // 1GB 边界正好
+        assert_eq!(DataSize::of_bytes(BYTES_PER_GB).to_gigabytes(), 1);
+        // 1GB - 1 字节向下取整为 0
+        assert_eq!(DataSize::of_bytes(BYTES_PER_GB - 1).to_gigabytes(), 0);
+        // 2.5GB 向下取整为 2
+        assert_eq!(
+            DataSize::of_bytes(BYTES_PER_GB * 5 / 2).to_gigabytes(),
+            2
+        );
+    }
+
+    #[test]
+    fn to_terabytes_truncates_down() {
+        // 对标 Spring `DataSize.toTerabytes()`
+        // 1TB 边界正好
+        assert_eq!(DataSize::of_bytes(BYTES_PER_TB).to_terabytes(), 1);
+        // 1TB - 1 字节向下取整为 0
+        assert_eq!(DataSize::of_bytes(BYTES_PER_TB - 1).to_terabytes(), 0);
+        // 2TB 整
+        assert_eq!(DataSize::of_terabytes(2).to_terabytes(), 2);
+    }
 }

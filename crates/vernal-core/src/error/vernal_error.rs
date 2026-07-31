@@ -628,4 +628,51 @@ mod tests {
         fn assert_send_sync<T: Send + Sync>() {}
         assert_send_sync::<VernalError>();
     }
+
+    #[test]
+    fn message_for_with_context_returns_static_part() {
+        // 对标 Spring ErrorMessage: message 仅返回静态部分, 上下文由 messageWithContext 提供
+        let err = VernalError::with_context("ioc", -1, "静态消息", "动态内容");
+        assert_eq!(err.message(), "静态消息");
+    }
+
+    #[test]
+    fn message_for_with_context_entries_returns_static_part() {
+        let ctx = ErrorContext::new().with("k", "v");
+        let err = VernalError::with_context_entries("ioc", -1, "静态消息", ctx);
+        assert_eq!(err.message(), "静态消息");
+    }
+
+    #[test]
+    fn display_with_context_empty_context_omits_bracket_suffix() {
+        // 空上下文时, Display 不附加 " []" 后缀（对标 Spring 空 cause 字符串）
+        let err = VernalError::with_context("ioc", -1, "无上下文", "");
+        let s = err.to_string();
+        assert!(s.starts_with("[ioc:-1] 无上下文"), "actual: {s}");
+        // 空字符串也被视为 empty, 不应追加空白
+        assert!(!s.ends_with(" ]"), "should not append bracket suffix: {s}");
+    }
+
+    #[test]
+    fn display_with_context_entries_empty_context_omits_suffix() {
+        // 对标 Spring StructuredErrorMessage: 空 entries 不输出
+        let err = VernalError::with_context_entries("ioc", -1, "无上下文", ErrorContext::new());
+        let s = err.to_string();
+        assert!(s.starts_with("[ioc:-1] 无上下文"), "actual: {s}");
+    }
+
+    #[test]
+    fn with_context_entries_eq_when_same_domain_and_code() {
+        // 对标 Spring 跨变体的 equality 仅按 (domain, code)
+        let a = VernalError::with_context_entries("ioc", -1, "msg-A", ErrorContext::new());
+        let b = VernalError::with_context_entries("ioc", -1, "msg-B", ErrorContext::new());
+        assert_eq!(a, b, "相同 domain+code 应相等, 即便消息和 entries 不同");
+    }
+
+    #[test]
+    fn with_context_entries_ne_when_code_differs() {
+        let a = VernalError::with_context_entries("ioc", -1, "x", ErrorContext::new());
+        let b = VernalError::with_context_entries("ioc", -2, "x", ErrorContext::new());
+        assert_ne!(a, b);
+    }
 }

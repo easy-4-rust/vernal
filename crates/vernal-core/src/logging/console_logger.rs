@@ -77,4 +77,40 @@ mod tests {
         assert!(!logger.is_enabled(LogLevel::Info));
         assert!(logger.is_enabled(LogLevel::Error));
     }
+
+    /// 对标 Spring `Log.isTraceEnabled()`: 比当前级别低的不启用
+    #[test]
+    fn is_enabled_respects_minimum_level() {
+        let mut logger = ConsoleLogger::new("threshold-test");
+        logger.set_level(LogLevel::Warn);
+        assert!(!logger.is_enabled(LogLevel::Trace));
+        assert!(!logger.is_enabled(LogLevel::Debug));
+        assert!(!logger.is_enabled(LogLevel::Info));
+        assert!(logger.is_enabled(LogLevel::Warn));
+        assert!(logger.is_enabled(LogLevel::Error));
+    }
+
+    /// 对标 Spring `Log.log(level, msg)`: 低于阈值的消息被丢弃
+    #[test]
+    fn log_below_threshold_does_not_panic() {
+        // 通过不 panic 来验证: 低级别的 log 静默返回
+        let mut logger = ConsoleLogger::new("silent");
+        logger.set_level(LogLevel::Error);
+        logger.log(LogLevel::Debug, "should be dropped");
+        logger.log(LogLevel::Trace, "should be dropped");
+        logger.log(LogLevel::Error, "should pass through");
+    }
+
+    /// 等级阈值: Debug 级别启用 Trace, 但禁用 Warn/Error? 不, Debug 启用 Debug 及以上
+    /// 对标 Spring `Log.isDebugEnabled()`
+    #[test]
+    fn debug_level_enables_debug_and_above() {
+        let mut logger = ConsoleLogger::new("debug-test");
+        logger.set_level(LogLevel::Debug);
+        assert!(!logger.is_enabled(LogLevel::Trace));
+        assert!(logger.is_enabled(LogLevel::Debug));
+        assert!(logger.is_enabled(LogLevel::Info));
+        assert!(logger.is_enabled(LogLevel::Warn));
+        assert!(logger.is_enabled(LogLevel::Error));
+    }
 }

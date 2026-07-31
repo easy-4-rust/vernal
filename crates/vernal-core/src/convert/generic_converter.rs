@@ -154,4 +154,54 @@ mod tests {
         fn assert_send_sync<T: Send + Sync>() {}
         assert_send_sync::<ClosureGenericConverter>();
     }
+
+    #[test]
+    fn convertible_types_returns_registered_pairs() {
+        // 对标 Spring `getConvertibleTypes()` 返回支持的类型对集合
+        let mut pairs = HashSet::new();
+        pairs.insert(ConvertiblePair::new::<String, i64>());
+        pairs.insert(ConvertiblePair::new::<String, bool>());
+        let converter = ClosureGenericConverter::new(pairs, |s, _| Ok(s.to_string()));
+        let returned = converter.convertible_types();
+        assert_eq!(returned.len(), 2);
+        assert!(returned.contains(&ConvertiblePair::new::<String, i64>()));
+        assert!(returned.contains(&ConvertiblePair::new::<String, bool>()));
+    }
+
+    #[test]
+    fn convertible_types_is_a_clone_independent_from_internal() {
+        // 修改返回的集合不应影响 converter 内部状态
+        let mut pairs = HashSet::new();
+        pairs.insert(ConvertiblePair::new::<String, i64>());
+        let converter = ClosureGenericConverter::new(pairs, |s, _| Ok(s.to_string()));
+        let mut returned = converter.convertible_types();
+        // 再调用一次, 集合大小不变
+        let second = converter.convertible_types();
+        assert_eq!(returned.len(), 1);
+        assert_eq!(second.len(), 1);
+        // 拿到的 HashSet 是独立副本
+        returned.insert(ConvertiblePair::new::<Vec<u8>, i64>());
+        assert_eq!(converter.convertible_types().len(), 1);
+    }
+
+    #[test]
+    fn debug_format_includes_pairs_count() {
+        // 对标 Spring `GenericConverter.toString()` 风格
+        let mut pairs = HashSet::new();
+        pairs.insert(ConvertiblePair::new::<String, i64>());
+        pairs.insert(ConvertiblePair::new::<String, bool>());
+        pairs.insert(ConvertiblePair::new::<String, f64>());
+        let converter = ClosureGenericConverter::new(pairs, |s, _| Ok(s.to_string()));
+        let s = format!("{converter:?}");
+        assert!(s.contains("ClosureGenericConverter"));
+        assert!(s.contains("3"), "should include pair count 3: {s}");
+    }
+
+    #[test]
+    fn debug_format_for_empty_pairs_shows_zero() {
+        let converter = ClosureGenericConverter::new(HashSet::new(), |s, _| Ok(s.to_string()));
+        let s = format!("{converter:?}");
+        assert!(s.contains("ClosureGenericConverter"));
+        assert!(s.contains("0"), "should include pair count 0: {s}");
+    }
 }

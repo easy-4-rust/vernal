@@ -487,6 +487,65 @@ mod tests {
         assert!(unmod.contains_key(&"k"));
     }
 
+    #[test]
+    fn trait_methods_get_all_len_is_empty_contains_key() {
+        // 通过 trait 调用所有方法（覆盖 trait impl 而非直接方法）
+        let mut m: TestMap = MultiValueMap::new();
+        let trait_ref: &dyn MultiValueMapTrait<String, String> = &m;
+        assert_eq!(trait_ref.len(), 0);
+        assert!(trait_ref.is_empty());
+        assert!(!trait_ref.contains_key(&"missing".to_string()));
 
+        m.add("h".to_string(), "v1".to_string());
+        m.add("h".to_string(), "v2".to_string());
+        m.add("o".to_string(), "other".to_string());
+
+        let trait_ref: &dyn MultiValueMapTrait<String, String> = &m;
+        assert_eq!(trait_ref.len(), 2);
+        assert!(!trait_ref.is_empty());
+        assert!(trait_ref.contains_key(&"h".to_string()));
+        assert!(!trait_ref.contains_key(&"missing".to_string()));
+        // get_all 通过 trait 返回切片的引用
+        let all = trait_ref.get_all(&"h".to_string()).unwrap();
+        assert_eq!(all, &["v1".to_string(), "v2".to_string()][..]);
+    }
+
+    #[test]
+    fn deref_mut_allows_hashmap_entry_api() {
+        // 对标 Spring `LinkedMultiValueMap` 基于 LinkedHashMap 的 mut 访问
+        let mut map: MultiValueMap<&str, i32> = MultiValueMap::new();
+        map.add("counter", 1);
+        // 通过 DerefMut 直接修改内部 HashMap
+        {
+            let inner: &mut HashMap<&str, Vec<i32>> = &mut *map;
+            inner.entry("counter").or_default().push(2);
+        }
+        assert_eq!(map.get_all(&"counter"), Some(&[1, 2][..]));
+    }
+
+    #[test]
+    fn deref_provides_hashmap_methods() {
+        let mut map: MultiValueMap<&str, i32> = MultiValueMap::new();
+        map.add("a", 1);
+        map.add("b", 2);
+        // Deref 暴露 HashMap 的 capability 方法
+        let inner: &HashMap<&str, Vec<i32>> = &*map;
+        assert_eq!(inner.len(), 2);
+        assert!(inner.contains_key(&"a"));
+        assert!(!inner.contains_key(&"c"));
+    }
+
+    #[test]
+    fn unmodifiable_trait_get_all_returns_inner_slice() {
+        // 对标 Spring `UnmodifiableMultiValueMap.getCollection()` 委托给内部
+        let mut inner: MultiValueMap<&str, i32> = MultiValueMap::new();
+        inner.add("k", 10);
+        inner.add("k", 20);
+        let unmod = UnmodifiableMultiValueMap::new(inner);
+        // 通过 trait 调用 get_all
+        let trait_ref: &dyn MultiValueMapTrait<&str, i32> = &unmod;
+        let all = trait_ref.get_all(&"k").unwrap();
+        assert_eq!(all, &[10, 20][..]);
+    }
 
 }

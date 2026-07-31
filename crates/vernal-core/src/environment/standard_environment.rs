@@ -92,3 +92,69 @@ impl Environment for StandardEnvironment {
         self.default_profiles.clone()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// 对标 Spring `StandardEnvironment()` 默认构造:
+    /// 默认 profile 为 ["default"], active 为空
+    #[test]
+    fn default_profile_is_default_and_active_is_empty() {
+        let env = StandardEnvironment::new();
+        assert_eq!(env.get_default_profiles(), vec!["default".to_string()]);
+        assert!(env.get_active_profiles().is_empty());
+    }
+
+    /// 对标 Spring `setActiveProfiles(String...)` 替换活跃 profile 列表
+    #[test]
+    fn set_active_profiles_replaces_full_list() {
+        let mut env = StandardEnvironment::new();
+        env.set_active_profiles(vec!["dev".to_string(), "debug".to_string()]);
+        assert_eq!(
+            env.get_active_profiles(),
+            vec!["dev".to_string(), "debug".to_string()]
+        );
+    }
+
+    /// 对标 Spring `Environment.getProperty(key)`: 通过 systemProperties 源
+    /// 读取到的 `user.home` / `user.name` / `user.language`
+    #[test]
+    fn get_property_reads_system_properties_via_property_sources() {
+        let env = StandardEnvironment::new();
+        // 单独读取每个系统属性以保证每个分支都被覆盖
+        let home = env.get_property("user.home");
+        let name = env.get_property("user.name");
+        let lang = env.get_property("user.language");
+        let has_any_system_prop = home.is_some() || name.is_some() || lang.is_some();
+        assert!(
+            has_any_system_prop,
+            "should populate at least one standard user.* property from environment"
+        );
+        // 显式求值所有三个属性, 保证每个 get_property 都被调用
+        let _ = (home, name, lang);
+    }
+
+    /// 对标 Spring `addPropertySource`: 用户自定义属性源优先级
+    #[test]
+    fn add_property_source_appends_custom_source() {
+        use super::super::map_property_source::MapPropertySource;
+        let mut env = StandardEnvironment::new();
+        let mut custom = HashMap::new();
+        custom.insert("custom.key".to_string(), "custom-value".to_string());
+        env.add_property_source(Box::new(MapPropertySource::new("custom", custom)));
+        assert_eq!(
+            env.get_property("custom.key"),
+            Some("custom-value".to_string())
+        );
+    }
+
+    /// `Default::default()` 与 `new()` 行为一致
+    #[test]
+    fn default_impl_matches_new() {
+        let from_new = StandardEnvironment::new();
+        let from_default = StandardEnvironment::default();
+        assert_eq!(from_new.get_default_profiles(), from_default.get_default_profiles());
+        assert_eq!(from_new.get_active_profiles(), from_default.get_active_profiles());
+    }
+}

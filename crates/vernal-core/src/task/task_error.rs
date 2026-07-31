@@ -27,3 +27,52 @@ impl std::fmt::Display for TaskError {
 }
 
 impl std::error::Error for TaskError {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// 对标 Spring `TaskRejectedException` 消息包含拒绝原因
+    #[test]
+    fn rejected_display_includes_message() {
+        let err = TaskError::Rejected("queue full".to_string());
+        assert!(err.to_string().contains("任务被拒绝"));
+        assert!(err.to_string().contains("queue full"));
+    }
+
+    /// 对标 Spring `TaskTimeoutException` 消息包含超时详情
+    #[test]
+    fn timeout_display_includes_message() {
+        let err = TaskError::Timeout("30s elapsed".to_string());
+        assert!(err.to_string().contains("任务超时"));
+        assert!(err.to_string().contains("30s elapsed"));
+    }
+
+    /// 自定义执行失败变体
+    #[test]
+    fn execution_failed_display_includes_message() {
+        let err = TaskError::ExecutionFailed("panic in worker".to_string());
+        assert!(err.to_string().contains("任务执行失败"));
+        assert!(err.to_string().contains("panic in worker"));
+    }
+
+    /// 错误实现 std::error::Error（对标 Spring 异常链）
+    #[test]
+    fn task_error_implements_std_error() {
+        fn assert_error<T: std::error::Error>() {}
+        assert_error::<TaskError>();
+    }
+
+    /// PartialEq 应能区分三种变体
+    #[test]
+    fn task_error_partial_eq_distinguishes_variants() {
+        let rejected = TaskError::Rejected("a".to_string());
+        let timeout = TaskError::Timeout("a".to_string());
+        let failed = TaskError::ExecutionFailed("a".to_string());
+        assert_ne!(rejected, timeout);
+        assert_ne!(rejected, failed);
+        assert_ne!(timeout, failed);
+        // 相同变体 + 相同消息应相等
+        assert_eq!(rejected, TaskError::Rejected("a".to_string()));
+    }
+}
