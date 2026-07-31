@@ -245,4 +245,57 @@ mod tests {
         assert!(mp.is_parameter_type::<TestType>());
         assert_eq!(mp.parameter_name(), Some("data"));
     }
+
+    #[test]
+    fn for_method_sets_default_nesting_level_to_one() {
+        // 对标 Spring: new MethodParameter(method, index) sets nestingLevel = 1
+        let mp = MethodParameter::for_method("Service", "handle", 2);
+        assert_eq!(mp.nesting_level(), 1);
+        assert_eq!(mp.parameter_index(), 2);
+        assert!(!mp.is_return_type());
+        assert!(mp.parameter_type().is_none());
+        assert!(mp.parameter_name().is_none());
+        assert!(mp.parameter_type_name().is_none());
+    }
+
+    #[test]
+    fn for_return_type_uses_index_minus_one() {
+        // 对标 Spring: MethodParameter.forReturnType(method) sets index = -1
+        let mp = MethodParameter::for_return_type("Service", "getResult");
+        assert_eq!(mp.parameter_index(), -1);
+        assert!(mp.is_return_type());
+        assert_eq!(mp.containing_class(), "Service");
+        assert_eq!(mp.executable_name(), "getResult");
+    }
+
+    #[test]
+    fn display_without_name() {
+        // 对标 Spring: toString() when no parameter name is set
+        let mp = MethodParameter::for_method("MyClass", "doWork", 0);
+        let s = format!("{mp}");
+        assert!(s.contains("MyClass"));
+        assert!(s.contains("doWork"));
+        assert!(s.contains("[0]"));
+        assert!(!s.contains("'"));
+    }
+
+    #[test]
+    fn is_parameter_type_returns_false_for_wrong_type() {
+        let mp = MethodParameter::for_method("C", "m", 0).with_parameter_type::<i32>();
+        assert!(!mp.is_parameter_type::<String>());
+        assert!(!mp.is_parameter_type::<bool>());
+    }
+
+    #[test]
+    fn display_format_with_name_and_return_type() {
+        // 对标 Spring: Display 应正确格式化返回类型参数
+        // 覆盖行 166: Display write! 宏的完整路径
+        let mp = MethodParameter::for_return_type("Service", "getResult")
+            .with_parameter_name("result");
+        let s = format!("{mp}");
+        assert!(s.contains("Service"));
+        assert!(s.contains("getResult"));
+        assert!(s.contains("[-1]"));
+        assert!(s.contains("'result'"));
+    }
 }

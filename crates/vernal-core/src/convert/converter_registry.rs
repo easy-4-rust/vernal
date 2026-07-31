@@ -260,4 +260,33 @@ mod tests {
         assert!(s.contains("TypeIdConverterRegistry"));
         assert!(s.contains("registered_count"));
     }
+
+    #[test]
+    fn default_creates_empty_registry() {
+        let registry = TypeIdConverterRegistry::default();
+        assert!(!registry.can_convert(TypeId::of::<String>(), TypeId::of::<i64>()));
+    }
+
+    #[test]
+    fn add_converter_then_remove_then_cannot_convert() {
+        // 对标 Spring: removeConvertible 后 canConvert 返回 false
+        let registry = TypeIdConverterRegistry::new();
+        let src = TypeId::of::<String>();
+        let dst = TypeId::of::<i64>();
+        registry.add_converter(src, dst, Box::new(|s| Ok(s.to_string())));
+        assert!(registry.can_convert(src, dst));
+        registry.remove_convertible(src, dst);
+        assert!(!registry.can_convert(src, dst));
+    }
+
+    #[test]
+    fn convert_after_remove_returns_error() {
+        let registry = TypeIdConverterRegistry::new();
+        let src = TypeId::of::<String>();
+        let dst = TypeId::of::<i64>();
+        registry.add_converter(src, dst, Box::new(|s| Ok(s.to_string())));
+        registry.remove_convertible(src, dst);
+        let err = registry.convert("42", src, dst).unwrap_err();
+        assert!(err.reason.contains("no converter"));
+    }
 }

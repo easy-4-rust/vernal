@@ -183,4 +183,12 @@ mod tests {
         assert!(!NumberUtils::is_number("abc"));
         assert!(!NumberUtils::is_number("12.34.56"));
     }
+
+    #[test]
+    fn parse_i32_empty_and_whitespace_returns_none() {
+        // 对标 Spring: NumberUtils.parseNumber("", Integer.class) 返回 null
+        // 覆盖行 62: parse_i32 空字符串 → return None
+        assert_eq!(NumberUtils::parse_i32(""), None);
+        assert_eq!(NumberUtils::parse_i32("   "), None);
+    }
 }

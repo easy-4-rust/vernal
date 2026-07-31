@@ -227,4 +227,56 @@ mod tests {
         assert_eq!(report.kind(), ErrorKind::Business);
     }
 
+    #[test]
+    fn display_without_context_entries() {
+        // 对标 Spring: 无上下文时 Display 不包含 "diagnostic entries"
+        let err = VernalError::business("web", -1, "bad request");
+        let report = ErrorReport::from_error(&err);
+        let s = report.to_string();
+        assert!(s.contains("[web:-1]"));
+        assert!(s.contains("bad request"));
+        assert!(!s.contains("diagnostic entries"));
+    }
+
+    #[test]
+    fn display_infrastructure_error() {
+        let io_err = std::io::Error::new(std::io::ErrorKind::Other, "timeout");
+        let err = VernalError::infrastructure(io_err);
+        let report = ErrorReport::from_error(&err);
+        let s = report.to_string();
+        assert!(s.contains("[unknown:-9999]"));
+        assert!(s.contains("internal error"));
+    }
+
+    #[test]
+    fn from_with_context_empty_string() {
+        // 对标 Spring: 空上下文字符串不计入 context_entries
+        let err = VernalError::with_context("aop", -2, "err", "");
+        let report = ErrorReport::from_error(&err);
+        assert_eq!(report.context_entries(), 0);
+    }
+
+    #[test]
+    fn display_write_macro_path_with_entries() {
+        // 对标 Spring: Display 格式化包含上下文条目的报告
+        // 覆盖行 157: Display write! 宏的完整执行路径
+        let ctx = ErrorContext::new().with("k1", "v1").with("k2", "v2");
+        let err = VernalError::with_context_entries("domain", 42, "msg", ctx);
+        let report = ErrorReport::from_error(&err);
+        let s = format!("{report}");
+        assert!(s.contains("domain"));
+        assert!(s.contains("42"));
+        assert!(s.contains("msg"));
+        assert!(s.contains("2 diagnostic entries"));
+    }
+
+    #[test]
+    fn error_report_clone_and_debug() {
+        // 对标 Spring: ErrorReport 应支持 Clone 和 Debug
+        let err = VernalError::business("d", 1, "m");
+        let report = ErrorReport::from_error(&err);
+        let cloned = report.clone();
+        assert_eq!(cloned.domain(), "d");
+        let _debug = format!("{report:?}");
+    }
 }

@@ -62,4 +62,22 @@ mod tests {
         assert_eq!(LogLevel::Warn.as_str(), "WARN");
         assert_eq!(LogLevel::Error.as_str(), "ERROR");
     }
+
+    #[test]
+    fn display_matches_as_str_for_all_variants() {
+        // 对标 Spring LogLevel: Display 输出与 as_str 一致
+        assert_eq!(LogLevel::Trace.to_string(), "TRACE");
+        assert_eq!(LogLevel::Debug.to_string(), "DEBUG");
+        assert_eq!(LogLevel::Info.to_string(), "INFO");
+        assert_eq!(LogLevel::Warn.to_string(), "WARN");
+        assert_eq!(LogLevel::Error.to_string(), "ERROR");
+    }
+
+    #[test]
+    fn log_level_copy_and_eq() {
+        let a = LogLevel::Info;
+        let b = a; // Copy
+        assert_eq!(a, b);
+        assert_ne!(LogLevel::Info, LogLevel::Warn);
+    }
 }

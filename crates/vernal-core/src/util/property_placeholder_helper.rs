@@ -483,6 +483,16 @@ mod tests {
     }
 
     #[test]
+    fn with_default_uses_colon_separator() {
+        // 对标 Spring: 默认分隔符为 ":"
+        let helper = PropertyPlaceholderHelper::with_default();
+        let result = helper
+            .replace_placeholders("${missing:fallback}", resolver_from(&[]))
+            .unwrap();
+        assert_eq!(result, "fallback");
+    }
+
+    #[test]
     fn circular_reference_detected() {
         let helper = PropertyPlaceholderHelper::with_default();
         // a 引用 b,b 引用 a
@@ -506,5 +516,23 @@ mod tests {
             reason: "test".to_string(),
         };
         assert!(err.to_string().contains("bad"));
+    }
+
+    #[test]
+    fn default_trait_impl_same_as_with_default() {
+        // 对标 Spring: new PropertyPlaceholderHelper() 使用默认前缀/后缀/分隔符
+        // 覆盖行 310-312: Default trait 实现
+        let helper = PropertyPlaceholderHelper::default();
+        let result = helper
+            .replace_placeholders("${key}", resolver_from(&[("key", "value")]))
+            .unwrap();
+        assert_eq!(result, "value");
+    }
+
+    #[test]
+    fn placeholder_error_is_std_error() {
+        // 对标 Spring: PlaceholderError 应实现 std::error::Error
+        fn assert_error<T: std::error::Error>() {}
+        assert_error::<PlaceholderError>();
     }
 }

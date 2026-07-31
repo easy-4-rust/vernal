@@ -417,4 +417,34 @@ mod tests {
         assert_eq!(items[1].name, "B");
         assert_eq!(items[2].name, "C");
     }
+
+    #[test]
+    fn priority_ordered_custom_order() {
+        // 对标 Spring: PriorityOrdered 组件可以有自定义 order
+        struct CustomPriority;
+        impl PriorityOrdered for CustomPriority {
+            fn order(&self) -> i32 {
+                42
+            }
+        }
+
+        let p = CustomPriority;
+        assert_eq!(p.order(), 42);
+        assert!(p.is_priority_ordered());
+    }
+
+    #[test]
+    fn order_comparator_same_priority_both_true() {
+        // 两个 PriorityOrdered 组件按 order 值排序
+        let ordering = OrderComparator::compare(true, 1, true, 2);
+        assert_eq!(ordering, std::cmp::Ordering::Less);
+    }
+
+    #[test]
+    fn order_comparator_default_trait() {
+        // 对标 Spring: OrderComparator 实现了 Ordered，order = LOWEST_PRECEDENCE
+        let comp = OrderComparator;
+        assert_eq!(comp.order(), LOWEST_PRECEDENCE);
+        assert!(!comp.is_priority_ordered());
+    }
 }

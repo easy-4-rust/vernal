@@ -439,38 +439,30 @@ k3=v3", &mut map);
 
         let _ = std::fs::remove_dir(&dir);
     }
-}
 
     #[test]
     fn read_classpath_resource_reads_existing_file() {
-        // 对标 Spring loadProperties: 当 cwd 中有 vernal.properties 时读取并解析
+        // 对标 Spring loadProperties: 从指定路径读取并解析属性文件
+        // 使用临时文件避免与其他并行测试竞争 cwd/vernal.properties
         use std::sync::atomic::{AtomicUsize, Ordering};
         static COUNTER: AtomicUsize = AtomicUsize::new(0);
         let n = COUNTER.fetch_add(1, Ordering::SeqCst);
         let key = format!("classpath.read.{}.{}", std::process::id(), n);
 
-        let cwd = std::env::current_dir().unwrap();
-        let backup = cwd.join("vernal.properties");
-        let backup_existed = backup.exists();
-        let backup_content = if backup_existed {
-            Some(std::fs::read_to_string(&backup).unwrap())
-        } else {
-            None
-        };
+        let dir = std::env::temp_dir().join(format!("vernal-classpath-test-{n}"));
+        std::fs::create_dir_all(&dir).unwrap();
+        let file_path = dir.join("test.properties");
+        std::fs::write(&file_path, format!("{key}=value1\nother=v2\n")).unwrap();
 
-        std::fs::write(&backup, format!("{key}=value1\nother=v2\n")).unwrap();
-        let result = read_classpath_resource("vernal.properties");
-        assert!(result.is_some());
+        let result = read_classpath_resource(&file_path.to_string_lossy());
+        assert!(result.is_some(), "should read existing file");
         let map = result.unwrap();
         assert_eq!(map.get(&key).map(String::as_str), Some("value1"));
         assert_eq!(map.get("other").map(String::as_str), Some("v2"));
 
-        // 恢复
-        if let Some(c) = backup_content {
-            std::fs::write(&backup, c).unwrap();
-        } else {
-            let _ = std::fs::remove_file(&backup);
-        }
+        // 清理
+        let _ = std::fs::remove_file(&file_path);
+        let _ = std::fs::remove_dir(&dir);
     }
 
     #[test]
@@ -479,3 +471,4 @@ k3=v3", &mut map);
         let result = read_classpath_resource("/nonexistent/path/12345.properties");
         assert!(result.is_none());
     }
+}

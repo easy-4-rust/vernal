@@ -214,4 +214,48 @@ mod tests {
             AttributeValue::string_owned("a".to_string())
         );
     }
+
+    #[test]
+    fn display_string_owned_variant() {
+        // 对标 OpenTelemetry: owned string 属性的 Display 输出
+        let v = AttributeValue::string_owned("owned value".to_string());
+        assert_eq!(v.to_string(), "owned value");
+    }
+
+    #[test]
+    fn display_float_negative() {
+        let v = AttributeValue::Float(-3.14);
+        assert_eq!(v.to_string(), "-3.14");
+    }
+
+    #[test]
+    fn display_bool_false() {
+        let v = AttributeValue::Bool(false);
+        assert_eq!(v.to_string(), "false");
+    }
+
+    #[test]
+    fn as_int_returns_none_for_non_int_types() {
+        // 对标 OpenTelemetry: 属性类型不匹配时返回 None
+        // 覆盖行 63: as_int() 的 _ => None 分支
+        assert!(AttributeValue::string("s").as_int().is_none());
+        assert!(AttributeValue::Float(1.0).as_int().is_none());
+        assert!(AttributeValue::Bool(true).as_int().is_none());
+    }
+
+    #[test]
+    fn as_float_returns_none_for_non_float_types() {
+        // 覆盖行 72: as_float() 的 _ => None 分支
+        assert!(AttributeValue::string("s").as_float().is_none());
+        assert!(AttributeValue::Int(42).as_float().is_none());
+        assert!(AttributeValue::Bool(false).as_float().is_none());
+    }
+
+    #[test]
+    fn as_bool_returns_none_for_non_bool_types() {
+        // 覆盖行 81: as_bool() 的 _ => None 分支
+        assert!(AttributeValue::string("s").as_bool().is_none());
+        assert!(AttributeValue::Int(1).as_bool().is_none());
+        assert!(AttributeValue::Float(1.0).as_bool().is_none());
+    }
 }

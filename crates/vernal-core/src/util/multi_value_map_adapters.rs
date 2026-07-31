@@ -245,4 +245,21 @@ mod tests {
         let c: MultiValueMapCollector<&str, i32> = std::iter::empty::<(&str, i32)>().collect();
         assert!(c.into_map().is_empty());
     }
+
+    #[test]
+    fn single_to_multi_trait_len_and_is_empty() {
+        // 对标 Spring: MultiValueMap trait 的 len() 和 is_empty() 方法
+        // 覆盖行 89-90: SingleToMultiValueMapAdapter 的 trait impl 方法
+        let mut single = HashMap::new();
+        single.insert("a", 1);
+        single.insert("b", 2);
+        let a = SingleToMultiValueMapAdapter::new(single);
+        // 通过 trait 方法调用（而非固有方法）
+        assert_eq!(MultiValueMapTrait::len(&a), 2);
+        assert!(!MultiValueMapTrait::is_empty(&a));
+
+        let empty = SingleToMultiValueMapAdapter::<&str, i32>::new(HashMap::new());
+        assert_eq!(MultiValueMapTrait::len(&empty), 0);
+        assert!(MultiValueMapTrait::is_empty(&empty));
+    }
 }

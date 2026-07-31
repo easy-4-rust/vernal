@@ -83,4 +83,38 @@ mod tests {
             super::super::ConversionService::convert(r"\d{4}-\d{2}-\d{2}").unwrap();
         assert!(re.is_match("2026-07-27"));
     }
+
+    #[test]
+    fn regex_builder_from_str_value() {
+        // 对标 Spring: RegexBuilder 可以从字符串构造
+        let builder = regex::RegexBuilder::from_str_value(r"\d+").unwrap();
+        let re = builder.build().unwrap();
+        assert!(re.is_match("123"));
+        assert!(!re.is_match("abc"));
+    }
+
+    #[test]
+    fn conversion_error_includes_target_type() {
+        let err = regex::Regex::from_str_value("[invalid").unwrap_err();
+        assert_eq!(err.target_type, "Regex");
+        assert!(err.value.contains("[invalid"));
+    }
+
+    #[test]
+    fn conversion_error_reason_contains_chinese_message() {
+        // 对标 Spring: 错误消息应包含中文描述
+        // 覆盖行 22-25: ConversionError 字段初始化
+        let err = regex::Regex::from_str_value("(unclosed").unwrap_err();
+        assert_eq!(err.value, "(unclosed");
+        assert_eq!(err.target_type, "Regex");
+        assert!(err.reason.contains("正则表达式解析失败"));
+    }
+
+    #[test]
+    fn conversion_error_display_shows_details() {
+        // 对标 Spring: ConversionError Display 应展示完整信息
+        let err = regex::Regex::from_str_value("***[").unwrap_err();
+        let display = err.to_string();
+        assert!(display.contains("***["));
+    }
 }

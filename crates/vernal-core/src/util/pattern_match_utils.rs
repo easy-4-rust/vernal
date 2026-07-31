@@ -264,4 +264,90 @@ mod tests {
         // str 长度不足前缀长度
         assert!(!PatternMatchUtils::simple_match("abcdef*", "abc"));
     }
+
+    #[test]
+    fn simple_match_any_first_pattern_misses_second_hits() {
+        // 对标 Spring: simpleMatch(String[], String) 逐个尝试
+        assert!(PatternMatchUtils::simple_match_any(&["xyz*", "abc*"], "abcdef"));
+    }
+
+    #[test]
+    fn simple_match_any_all_miss() {
+        assert!(!PatternMatchUtils::simple_match_any(&["foo*", "bar*", "baz*"], "qux"));
+    }
+
+    #[test]
+    fn ignore_case_suffix_with_uppercase_pattern() {
+        // 对标 Spring: simpleMatchIgnoreCase("*DEF", "abcdef")
+        assert!(PatternMatchUtils::simple_match_ignore_case("*DEF", "abcdef"));
+        assert!(!PatternMatchUtils::simple_match_ignore_case("*XYZ", "abcdef"));
+    }
+
+    #[test]
+    fn ignore_case_prefix_with_mixed_case() {
+        assert!(PatternMatchUtils::simple_match_ignore_case("HeLLo*", "hElLo world"));
+    }
+
+    // ── 覆盖 index_of 私有函数分支 ──
+
+    #[test]
+    fn index_of_ignore_case_empty_other_returns_start() {
+        // 对标 Spring: indexOf(str, "", startIndex, true) 应返回 startIndex
+        // 覆盖行 132: other.is_empty() && ignore_case → Some(start)
+        assert_eq!(
+            PatternMatchUtils::index_of("hello", "", 3, true),
+            Some(3)
+        );
+        assert_eq!(
+            PatternMatchUtils::index_of("hello", "", 0, true),
+            Some(0)
+        );
+    }
+
+    #[test]
+    fn index_of_ignore_case_remaining_too_short_returns_none() {
+        // 对标 Spring: remaining string too short for pattern
+        // 覆盖行 137: start + other_bytes.len() > str_bytes.len() → None
+        assert_eq!(
+            PatternMatchUtils::index_of("ab", "abc", 0, true),
+            None
+        );
+    }
+
+    #[test]
+    fn index_of_ignore_case_no_match_returns_none() {
+        // 对标 Spring: pattern not found with ignoreCase
+        // 覆盖行 150: for loop exhausted → None
+        assert_eq!(
+            PatternMatchUtils::index_of("hello", "xyz", 0, true),
+            None
+        );
+        assert_eq!(
+            PatternMatchUtils::index_of("abc", "def", 1, true),
+            None
+        );
+    }
+
+    // ── 覆盖多段通配符回溯搜索（行 94-95）──
+
+    #[test]
+    fn multi_segment_backtrack_first_occurrence_fails_second_succeeds() {
+        // 对标 Spring: 多段模式匹配中，中间段第一次出现时后续匹配失败，
+        // 需要回溯到第二次出现才成功。
+        // 覆盖行 93-95: while 循环中的 return true 和 search_start = part_index + 1
+        // pattern: *a*a  str: "xaxba"
+        //   第一个 "a" 在 pos=1, rest="xba", "*a" 不匹配 "xba"（不以 "a" 结尾）
+        //   回溯到第二个 "a" 在 pos=3, rest="a", "*a" 匹配 "a"（以 "a" 结尾）
+        assert!(PatternMatchUtils::simple_match("*a*a", "xaxba"));
+    }
+
+    #[test]
+    fn multi_segment_backtrack_all_occurrences_fail() {
+        // 对标 Spring: 多段模式匹配中，所有中间段出现位置都导致后续匹配失败
+        // 覆盖行 95: search_start = part_index + 1（多次执行）
+        // pattern: *a*a  str: "xaxbx"
+        //   "a" at pos=1, rest="xbx", 不以 "a" 结尾
+        //   "a" not found from pos=2 → return false
+        assert!(!PatternMatchUtils::simple_match("*a*a", "xaxbx"));
+    }
 }

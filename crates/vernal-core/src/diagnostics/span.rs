@@ -484,4 +484,27 @@ mod tests {
         assert!(s.contains("debug-test"));
         assert!(s.contains("attributes_count"));
     }
+
+    #[test]
+    fn span_report_display_format() {
+        // 对标 OTel SpanData: Display 包含 name, duration, status
+        let mut span = Span::new("http-request");
+        span.set_attribute("method", "GET");
+        let report = span.end();
+        let s = report.to_string();
+        assert!(s.contains("SpanReport"));
+        assert!(s.contains("http-request"));
+        assert!(s.contains("ms"));
+        assert!(s.contains("Ok"));
+    }
+
+    #[test]
+    fn span_report_display_with_error_status() {
+        let mut span = Span::new("db-query");
+        let err = std::io::Error::new(std::io::ErrorKind::Other, "connection refused");
+        span.record_error(&err);
+        let report = span.end();
+        let s = report.to_string();
+        assert!(s.contains("Error"));
+    }
 }

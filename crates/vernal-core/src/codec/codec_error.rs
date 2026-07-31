@@ -58,4 +58,30 @@ mod tests {
         use std::error::Error as _;
         assert!(err.source().is_none());
     }
+
+    #[test]
+    fn all_variants_implement_error_trait() {
+        use std::error::Error as _;
+        let encode = CodecError::Encode("e".to_string());
+        let decode = CodecError::Decode("d".to_string());
+        let unsupported = CodecError::UnsupportedMediaType("u".to_string());
+        assert!(encode.source().is_none());
+        assert!(decode.source().is_none());
+        assert!(unsupported.source().is_none());
+    }
+
+    #[test]
+    fn clone_preserves_variant_and_message() {
+        let original = CodecError::Encode("original".to_string());
+        let cloned = original.clone();
+        assert_eq!(format!("{original}"), format!("{cloned}"));
+    }
+
+    #[test]
+    fn debug_format_includes_variant_and_message() {
+        let err = CodecError::Decode("bad json".to_string());
+        let dbg = format!("{err:?}");
+        assert!(dbg.contains("Decode"));
+        assert!(dbg.contains("bad json"));
+    }
 }

@@ -42,4 +42,27 @@ mod tests {
         let pair = ConvertiblePair::new::<String, i64>();
         assert!(c.matches(&pair));
     }
+
+    #[test]
+    fn debug_format_is_struct_name() {
+        let c = AlwaysMatchConverter::new();
+        assert_eq!(format!("{:?}", c), "AlwaysMatchConverter");
+    }
+
+    #[test]
+    fn copy_semantics_preserve_behavior() {
+        let c1 = AlwaysMatchConverter::new();
+        let c2 = c1; // Copy
+        let pair = ConvertiblePair::new::<i32, String>();
+        assert!(c1.matches(&pair), "original still works after copy");
+        assert!(c2.matches(&pair), "copy also works");
+    }
+
+    #[test]
+    fn clone_equals_original() {
+        let c1 = AlwaysMatchConverter::new();
+        let c2 = c1.clone();
+        let pair = ConvertiblePair::new::<bool, i32>();
+        assert_eq!(c1.matches(&pair), c2.matches(&pair));
+    }
 }

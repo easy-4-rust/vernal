@@ -290,6 +290,12 @@ mod tests {
     }
 
     #[test]
+    fn has_length_single_char() {
+        assert!(StringUtils::has_length("a"));
+        assert!(StringUtils::has_length(" "));
+    }
+
+    #[test]
     fn is_blank_basic() {
         assert!(StringUtils::is_blank(""));
         assert!(StringUtils::is_blank("   "));
@@ -446,5 +452,13 @@ mod tests {
     fn capitalize_handles_unicode() {
         // 非 ASCII 字符首字符不变(对标 Spring 仅处理 ASCII)
         assert_eq!(StringUtils::capitalize("中文"), "中文");
+    }
+
+    #[test]
+    fn ends_with_ignore_case_suffix_longer_than_string() {
+        // 对标 Spring: 后缀比字符串长时应返回 false
+        // 覆盖行 81-83: s.len() < suffix.len() → return false
+        assert!(!StringUtils::ends_with_ignore_case("hi", "HELLO"));
+        assert!(!StringUtils::ends_with_ignore_case("", "a"));
     }
 }

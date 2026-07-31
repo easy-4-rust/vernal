@@ -147,6 +147,16 @@ mod tests {
     }
 
     #[test]
+    fn display_all_variants() {
+        // 对标 Java TimeUnit: Display 输出与 name_lower 一致
+        assert_eq!(StopWatchUnit::Nanos.to_string(), "nanoseconds");
+        assert_eq!(StopWatchUnit::Micros.to_string(), "microseconds");
+        assert_eq!(StopWatchUnit::Millis.to_string(), "milliseconds");
+        assert_eq!(StopWatchUnit::Seconds.to_string(), "seconds");
+        assert_eq!(StopWatchUnit::Minutes.to_string(), "minutes");
+    }
+
+    #[test]
     fn all_5_units_match_java_timeunit_subset() {
         // 验证 vernal-core 完整对齐 Java `TimeUnit` 的 5 个常用单位
         let all = [
@@ -157,5 +167,13 @@ mod tests {
             StopWatchUnit::Minutes,
         ];
         assert_eq!(all.len(), 5);
+    }
+
+    #[test]
+    fn name_title_case_micros_and_millis() {
+        // 对标 Spring: name_title_case 应覆盖所有单位
+        // 覆盖行 53-54: Micros 和 Millis 分支
+        assert_eq!(StopWatchUnit::Micros.name_title_case(), "Microseconds");
+        assert_eq!(StopWatchUnit::Millis.name_title_case(), "Milliseconds");
     }
 }

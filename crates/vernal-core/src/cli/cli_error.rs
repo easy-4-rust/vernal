@@ -56,4 +56,20 @@ mod tests {
         let err = CliError::new("x");
         assert!(err.source().is_none());
     }
+
+    #[test]
+    fn clone_preserves_message() {
+        let original = CliError::new("original message");
+        let cloned = original.clone();
+        assert_eq!(original.message, cloned.message);
+        assert_eq!(format!("{original}"), format!("{cloned}"));
+    }
+
+    #[test]
+    fn debug_format_includes_message() {
+        let err = CliError::new("debug test");
+        let dbg = format!("{err:?}");
+        assert!(dbg.contains("CliError"));
+        assert!(dbg.contains("debug test"));
+    }
 }

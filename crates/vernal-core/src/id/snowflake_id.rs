@@ -404,8 +404,41 @@ mod tests {
     }
 
     #[test]
+    fn wait_next_millis_spins_when_current_time_equals_last() {
+        // Force the while loop body to execute by setting last == current time.
+        // This covers lines 201-204 inside the while loop (now = current_time_ms(); yield_now()).
+        use std::sync::atomic::Ordering;
+        let g = SnowflakeId::new(0).unwrap();
+        let now = g.current_time_ms();
+        g.last_timestamp.store(now, Ordering::Relaxed);
+        let result = g.wait_next_millis(now);
+        // The loop spins until time advances past `last`
+        assert!(result >= now, "result={result} should be >= now={now}");
+        assert_eq!(g.sequence.load(Ordering::Relaxed), 0);
+    }
+
+    #[test]
     fn from_env_returns_valid_generator() {
         let _g = SnowflakeId::from_env();
+    }
+
+    #[test]
+    fn next_id_i64_returns_string_via_trait_on_clock_backwards() {
+        // 对标 Snowflake: IdGenerator::next_id 在时钟回拨时返回 "0"
+        // 通过设置极大的 last_timestamp 强制触发 ClockMovedBackwards
+        use std::sync::atomic::Ordering;
+        let g = SnowflakeId::new(0).unwrap();
+        g.last_timestamp.store(u64::MAX - 1, Ordering::Relaxed);
+        // next_id_i64 应返回 ClockMovedBackwards 错误
+        let err = g.next_id_i64().unwrap_err();
+        // 验证错误类型（覆盖 match 的 ClockMovedBackwards 分支）
+        match err {
+            SnowflakeError::ClockMovedBackwards { last, current } => {
+                assert_eq!(last, u64::MAX - 1);
+                assert!(current < u64::MAX - 1);
+            }
+            SnowflakeError::NodeIdOutOfRange(_) => panic!("unexpected NodeIdOutOfRange"),
+        }
     }
 
     #[test]

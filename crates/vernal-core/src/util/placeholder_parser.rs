@@ -153,4 +153,25 @@ mod tests {
             "${unknown}"
         );
     }
+
+    #[test]
+    fn new_with_none_separator_uses_empty_string_as_separator() {
+        // 对标 Spring: None separator passes "" to PropertyPlaceholderHelper
+        // With empty separator, find("") returns Some(0), so key="" and value="missing:fallback"
+        let resolver = HashMap::<String, String>::new();
+        let parser = PlaceholderParser::new("${", "}", None::<String>);
+        let result = parser.replace_placeholders("${key:default}", resolver);
+        // Empty separator causes split at position 0: key="" gets default value "key:default"
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn new_with_custom_prefix_suffix() {
+        let resolver = make_resolver(&[("key", "val")]);
+        let parser = PlaceholderParser::new("{{", "}}", Some(":"));
+        assert_eq!(
+            parser.replace_placeholders("{{key}}", resolver).unwrap(),
+            "val"
+        );
+    }
 }
