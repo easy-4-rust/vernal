@@ -1,3 +1,7 @@
+<!-- migration-doc: authority=support canonical=迁移验收规范.md -->
+
+> 迁移文档治理：本文级别为 **support**。正文中的历史统计或完成标记不得单独作为验收结论；以 [迁移验收规范.md](迁移验收规范.md) 和自动审计报告为准。
+
 # 句芒 · Vernal Framework 架构设计
 
 > **文档目的**：定义 Vernal 的品牌寓意、系统边界、IoC/AOP/ApplicationContext
@@ -10,6 +14,12 @@
 > **最后更新**：2026-07-25
 
 ## 1. 文档控制与状态
+
+### 1.0 迁移状态来源
+
+架构能力与 Spring 对象迁移是两种不同状态。所有模块完成度必须由
+[迁移验收规范](迁移验收规范.md)和 `docs/migration-audit/` 的当前源码审计汇总。
+本文所述“已提供”仅表示某项 Vernal 能力可调用，不表示对应 Spring 对象、目录和语义已完成迁移。
 
 ### 1.1 读者
 

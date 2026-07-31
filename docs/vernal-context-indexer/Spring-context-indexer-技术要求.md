@@ -1,3 +1,88 @@
+<!-- migration-doc: authority=authoritative canonical=../迁移验收规范.md -->
+# spring-context-indexer → vernal-context-indexer 技术要求
+> 迁移文档治理：本文级别为 **authoritative**。正文中的历史统计或完成标记不得单独作为验收结论；以 [../迁移验收规范.md](../迁移验收规范.md) 和自动审计报告为准。
+
+
+> 当前文档。对象事实以[自动审计](../migration-audit/vernal-context-indexer.md)为准；统一规则见[迁移验收规范](../迁移验收规范.md)。
+
+## 当前事实
+
+| 状态 | 数量 |
+|---|---:|
+| Java 业务对象 | 12 |
+| `IMPLEMENTED` | 0 |
+| `MISPLACED` | 5 |
+| `MISSING` | 7 |
+| 严格已处理 | 0 |
+
+现有 `index/` 下 5 个同名文件与 Spring `context.index.processor` 的预期 `processor/`
+目录不一致，因此全部是 `MISPLACED`。
+
+## 目标目录
+
+```text
+crates/vernal-context-indexer/src/
+├── processor/
+│   ├── candidate_components_indexer.rs
+│   ├── candidate_components_metadata.rs
+│   ├── indexed_stereotypes_provider.rs
+│   ├── item_metadata.rs
+│   ├── metadata_collector.rs
+│   ├── metadata_store.rs
+│   ├── package_info_stereotypes_provider.rs
+│   ├── properties_marshaller.rs
+│   ├── sorted_properties.rs
+│   ├── standard_stereotypes_provider.rs
+│   ├── stereotypes_provider.rs
+│   └── type_helper.rs
+└── lib.rs
+```
+
+`linked_component_index*.rs` 是 Vernal 运行时增值能力，不得抵扣上述 12 个 processor 对象。
+
+## CodeGraph 处理链
+
+```mermaid
+flowchart LR
+    INIT["CandidateComponentsIndexer.init"] --> STORE["MetadataStore.readMetadata"]
+    INIT --> COLLECT["MetadataCollector"]
+    PROCESS["process(roundEnv)"] --> PROVIDERS["StereotypesProvider"]
+    PROVIDERS --> ITEM["ItemMetadata"]
+    ITEM --> COLLECT
+    COLLECT --> META["CandidateComponentsMetadata"]
+    FINAL["processingOver"] --> STORE
+    STORE --> MARSHAL["PropertiesMarshaller.write"]
+    MARSHAL --> FILE["META-INF/spring.components"]
+```
+
+必须保留：
+
+- 多轮处理、前一轮元数据合并和已删除类型清理；
+- stereotype provider 的组合与去重；
+- properties 稳定排序、转义和确定性输出；
+- 并发/增量构建下不产生陈旧候选项；
+- 编译期生成与运行时 `LinkedComponentIndex` 读取的格式契约。
+
+Rust 可采用 `syn`/proc-macro/build script，但若使用依赖复用，必须登记精确 crate、符号和集成测试。
+
+## 验收
+
+```bash
+python3 scripts/audit_migration_docs.py --module vernal-context-indexer --check
+cargo test -p vernal-context-indexer
+cargo clippy -p vernal-context-indexer --all-targets -- -D warnings
+```
+
+---
+
+<!-- restored-detail-from-head: dd20300d16a09200bd8a379ff14db1e2da99b67c -->
+
+## 原详细文档（完整保留）
+
+> 以下正文完整恢复自 Vernal 提交 `dd20300d16a09200bd8a379ff14db1e2da99b67c`。其中历史对象数量、完成状态、
+> 路径算法和依赖替代结论如与本文顶部或自动对象台账冲突，以顶部当前结论和
+> `docs/migration-audit/` 为准；其 API、设计背景、阶段拆解和测试说明继续保留。
+
 # vernal-context-indexer 技术要求（对标 spring-context-indexer）
 
 > **版本**：v2.0（2026-07-28）

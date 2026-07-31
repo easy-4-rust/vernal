@@ -6,6 +6,8 @@
 use std::any::Any;
 use std::fmt;
 
+use crate::target_source_error::TargetSourceError;
+
 /// 目标源，提供 AOP 调用的目标对象。
 ///
 /// 对应 spring-aop `TargetSource`。
@@ -47,29 +49,6 @@ pub trait TargetSource: Send + Sync + 'static {
         Ok(())
     }
 }
-
-/// 目标源错误。
-#[derive(Debug)]
-pub enum TargetSourceError {
-    /// 目标不存在。
-    NoSuchTarget(String),
-    /// 目标创建失败。
-    CreationFailed(String),
-    /// 目标释放失败。
-    ReleaseFailed(String),
-}
-
-impl fmt::Display for TargetSourceError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            TargetSourceError::NoSuchTarget(msg) => write!(f, "NoSuchTarget: {}", msg),
-            TargetSourceError::CreationFailed(msg) => write!(f, "CreationFailed: {}", msg),
-            TargetSourceError::ReleaseFailed(msg) => write!(f, "ReleaseFailed: {}", msg),
-        }
-    }
-}
-
-impl std::error::Error for TargetSourceError {}
 
 /// 单例目标源。
 ///
@@ -211,5 +190,328 @@ mod tests {
     fn target_source_error_display() {
         let err = TargetSourceError::NoSuchTarget("test".to_string());
         assert_eq!(format!("{}", err), "NoSuchTarget: test");
+    }
+}
+
+#[cfg(test)]
+mod additional_tests {
+    use super::*;
+    use crate::target_source_error::TargetSourceError;
+
+    struct TestTargetSource {
+        target_class: Option<String>,
+        is_static: bool,
+    }
+
+    impl TestTargetSource {
+        fn new(target_class: Option<&str>, is_static: bool) -> Self {
+            Self {
+                target_class: target_class.map(|s| s.to_string()),
+                is_static,
+            }
+        }
+    }
+
+    impl TargetSource for TestTargetSource {
+        fn target_class(&self) -> Option<&str> {
+            self.target_class.as_deref()
+        }
+
+        fn is_static(&self) -> bool {
+            self.is_static
+        }
+
+        fn get_target(&self) -> Result<Box<dyn std::any::Any>, TargetSourceError> {
+            Ok(Box::new(42i32))
+        }
+
+        fn release_target(&self, _target: Box<dyn std::any::Any>) -> Result<(), TargetSourceError> {
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn target_source_target_class() {
+        let source = TestTargetSource::new(Some("MyType"), true);
+        assert_eq!(TargetSource::target_class(&source), Some("MyType"));
+    }
+
+    #[test]
+    fn target_source_target_class_none() {
+        let source = TestTargetSource::new(None, true);
+        assert!(TargetSource::target_class(&source).is_none());
+    }
+
+    #[test]
+    fn target_source_is_static() {
+        let source = TestTargetSource::new(Some("MyType"), true);
+        assert!(source.is_static());
+    }
+
+    #[test]
+    fn target_source_is_not_static() {
+        let source = TestTargetSource::new(Some("MyType"), false);
+        assert!(!source.is_static());
+    }
+
+    #[test]
+    fn target_source_get_target() {
+        let source = TestTargetSource::new(Some("MyType"), true);
+        let result = source.get_target();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn target_source_release_target() {
+        let source = TestTargetSource::new(Some("MyType"), true);
+        let target = Box::new(42i32);
+        let result = source.release_target(target);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn target_source_error_display() {
+        let err = TargetSourceError::NoSuchTarget("test".to_string());
+        assert!(format!("{}", err).contains("NoSuchTarget"));
+    }
+
+    #[test]
+    fn target_source_error_creation_failed() {
+        let err = TargetSourceError::CreationFailed("test".to_string());
+        assert!(format!("{}", err).contains("CreationFailed"));
+    }
+
+    #[test]
+    fn target_source_error_release_failed() {
+        let err = TargetSourceError::ReleaseFailed("test".to_string());
+        assert!(format!("{}", err).contains("ReleaseFailed"));
+    }
+
+    #[test]
+    fn target_source_error_debug() {
+        let err = TargetSourceError::NoSuchTarget("test".to_string());
+        let debug = format!("{:?}", err);
+        assert!(!debug.is_empty());
+    }
+
+    #[test]
+    fn target_source_error_trait() {
+        let err = TargetSourceError::NoSuchTarget("test".to_string());
+        let _: &dyn std::error::Error = &err;
+    }
+}
+
+#[cfg(test)]
+mod target_source_tests {
+    use super::*;
+    use crate::target_source_error::TargetSourceError;
+
+    struct TestTargetSource {
+        target_class: Option<String>,
+        is_static: bool,
+    }
+
+    impl TestTargetSource {
+        fn new(target_class: Option<&str>, is_static: bool) -> Self {
+            Self {
+                target_class: target_class.map(|s| s.to_string()),
+                is_static,
+            }
+        }
+    }
+
+    impl TargetSource for TestTargetSource {
+        fn target_class(&self) -> Option<&str> {
+            self.target_class.as_deref()
+        }
+
+        fn is_static(&self) -> bool {
+            self.is_static
+        }
+
+        fn get_target(&self) -> Result<Box<dyn std::any::Any>, TargetSourceError> {
+            Ok(Box::new(42i32))
+        }
+
+        fn release_target(&self, _target: Box<dyn std::any::Any>) -> Result<(), TargetSourceError> {
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn target_source_target_class() {
+        let source = TestTargetSource::new(Some("MyType"), true);
+        assert_eq!(TargetSource::target_class(&source), Some("MyType"));
+    }
+
+    #[test]
+    fn target_source_target_class_none() {
+        let source = TestTargetSource::new(None, true);
+        assert!(TargetSource::target_class(&source).is_none());
+    }
+
+    #[test]
+    fn target_source_is_static() {
+        let source = TestTargetSource::new(Some("MyType"), true);
+        assert!(source.is_static());
+    }
+
+    #[test]
+    fn target_source_is_not_static() {
+        let source = TestTargetSource::new(Some("MyType"), false);
+        assert!(!source.is_static());
+    }
+
+    #[test]
+    fn target_source_get_target() {
+        let source = TestTargetSource::new(Some("MyType"), true);
+        let result = source.get_target();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn target_source_release_target() {
+        let source = TestTargetSource::new(Some("MyType"), true);
+        let target = Box::new(42i32);
+        let result = source.release_target(target);
+        assert!(result.is_ok());
+    }
+}
+
+#[cfg(test)]
+mod target_source_coverage_tests {
+    use super::*;
+    use crate::target_source_error::TargetSourceError;
+
+    struct TestTargetSource {
+        target_class: Option<String>,
+        is_static: bool,
+    }
+
+    impl TestTargetSource {
+        fn new(target_class: Option<&str>, is_static: bool) -> Self {
+            Self {
+                target_class: target_class.map(|s| s.to_string()),
+                is_static,
+            }
+        }
+    }
+
+    impl TargetSource for TestTargetSource {
+        fn target_class(&self) -> Option<&str> {
+            self.target_class.as_deref()
+        }
+
+        fn is_static(&self) -> bool {
+            self.is_static
+        }
+
+        fn get_target(&self) -> Result<Box<dyn std::any::Any>, TargetSourceError> {
+            Ok(Box::new(42i32))
+        }
+
+        fn release_target(&self, _target: Box<dyn std::any::Any>) -> Result<(), TargetSourceError> {
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn target_source_is_not_static() {
+        let source = TestTargetSource::new(Some("MyType"), false);
+        assert!(!source.is_static());
+    }
+
+    #[test]
+    fn target_source_get_target() {
+        let source = TestTargetSource::new(Some("MyType"), true);
+        let result = source.get_target();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn target_source_release_target() {
+        let source = TestTargetSource::new(Some("MyType"), true);
+        let target = Box::new(42i32);
+        let result = source.release_target(target);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn target_source_error_creation_failed() {
+        let err = TargetSourceError::CreationFailed("test".to_string());
+        assert!(format!("{}", err).contains("CreationFailed"));
+    }
+
+    #[test]
+    fn target_source_error_release_failed() {
+        let err = TargetSourceError::ReleaseFailed("test".to_string());
+        assert!(format!("{}", err).contains("ReleaseFailed"));
+    }
+
+    #[test]
+    fn target_source_error_debug() {
+        let err = TargetSourceError::NoSuchTarget("test".to_string());
+        let debug = format!("{:?}", err);
+        assert!(!debug.is_empty());
+    }
+
+    #[test]
+    fn target_source_error_trait() {
+        let err = TargetSourceError::NoSuchTarget("test".to_string());
+        let _: &dyn std::error::Error = &err;
+    }
+
+    #[test]
+    fn singleton_target_source_with_class_name() {
+        let source = SingletonTargetSource::with_class_name(42i32, "MyType");
+        assert_eq!(TargetSource::target_class(&source), Some("MyType"));
+    }
+
+    #[test]
+    fn singleton_target_source_is_static() {
+        let source = SingletonTargetSource::new(42i32);
+        assert!(source.is_static());
+    }
+
+    #[test]
+    fn singleton_target_source_get_target() {
+        let source = SingletonTargetSource::new(42i32);
+        let result = source.get_target();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn singleton_target_source_debug() {
+        let source = SingletonTargetSource::new(42i32);
+        let debug = format!("{:?}", source);
+        assert!(!debug.is_empty());
+    }
+
+    #[test]
+    fn lazy_target_source_with_class_name() {
+        let source = LazyTargetSource::with_class_name(|| Ok(Box::new(42i32)), "MyType");
+        assert_eq!(TargetSource::target_class(&source), Some("MyType"));
+    }
+
+    #[test]
+    fn lazy_target_source_is_not_static() {
+        let source = LazyTargetSource::new(|| Ok(Box::new(42i32)));
+        assert!(!source.is_static());
+    }
+
+    #[test]
+    fn lazy_target_source_get_target() {
+        let source = LazyTargetSource::new(|| Ok(Box::new(42i32)));
+        let result = source.get_target();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn lazy_target_source_get_target_error() {
+        let source = LazyTargetSource::new(|| {
+            Err(TargetSourceError::CreationFailed("test".to_string()))
+        });
+        let result = source.get_target();
+        assert!(result.is_err());
     }
 }

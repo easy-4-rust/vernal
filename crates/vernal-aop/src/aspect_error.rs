@@ -163,3 +163,74 @@ mod tests {
         assert!(matches!(error, AspectError::Custom(_)));
     }
 }
+
+#[cfg(test)]
+mod additional_tests {
+    use super::*;
+    use std::io;
+
+    #[test]
+    fn execution_error_without_source() {
+        let error = AspectError::execution("test");
+        assert!(error.source().is_none());
+    }
+
+    #[test]
+    fn execution_error_with_source_display() {
+        let io_error = io::Error::new(io::ErrorKind::NotFound, "file not found");
+        let error = AspectError::execution_with_source("read failed", io_error);
+        assert!(format!("{}", error).contains("read failed"));
+    }
+
+    #[test]
+    fn weaving_error_source() {
+        let error = AspectError::weaving("test");
+        assert!(error.source().is_none());
+    }
+
+    #[test]
+    fn custom_error_source() {
+        let io_error = io::Error::new(io::ErrorKind::Other, "custom");
+        let error = AspectError::custom(io_error);
+        assert!(error.source().is_some());
+    }
+
+    #[test]
+    fn custom_error_display() {
+        let io_error = io::Error::new(io::ErrorKind::Other, "custom error");
+        let error = AspectError::custom(io_error);
+        assert!(format!("{}", error).contains("Custom error"));
+    }
+
+    #[test]
+    fn error_trait_implementation() {
+        let error = AspectError::execution("test");
+        let _: &dyn Error = &error;
+    }
+
+    #[test]
+    fn debug_implementation() {
+        let error = AspectError::execution("test");
+        let debug = format!("{:?}", error);
+        assert!(!debug.is_empty());
+    }
+
+    #[test]
+    fn from_string() {
+        let error: AspectError = String::from("test").into();
+        assert!(matches!(error, AspectError::ExecutionError { .. }));
+    }
+
+    #[test]
+    fn from_str() {
+        let error: AspectError = "test".into();
+        assert!(matches!(error, AspectError::ExecutionError { .. }));
+    }
+
+    #[test]
+    fn from_boxed_error() {
+        let error: Box<dyn Error + Send + Sync> = Box::new(io::Error::new(io::ErrorKind::Other, "test"));
+        let aspect_error: AspectError = error.into();
+        assert!(matches!(aspect_error, AspectError::Custom(_)));
+    }
+}

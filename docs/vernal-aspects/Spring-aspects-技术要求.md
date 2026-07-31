@@ -1,3 +1,49 @@
+<!-- migration-doc: authority=authoritative canonical=../迁移验收规范.md -->
+# vernal-aspects 技术要求
+> 迁移文档治理：本文级别为 **authoritative**。正文中的历史统计或完成标记不得单独作为验收结论；以 [../迁移验收规范.md](../迁移验收规范.md) 和自动审计报告为准。
+
+
+> 当前权威要求。统一遵循[迁移验收规范](../迁移验收规范.md)，Spring 基线为 `9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82`。
+
+## 范围与事实
+
+`spring-aspects` 是对象和包结构主线，`vernal-aop`/`aspect-rs` 只提供织入或拦截底座，不能因此豁免 Spring 对象。自动审计统计为 9 个 Java 业务对象：0 个严格完成、2 个 `MISPLACED`、6 个 `MISSING`、1 个 `UNVERIFIED`。详见[自动对象审计](../migration-audit/vernal-aspects.md)。
+
+## 目标目录
+
+按去除 `org.springframework` 后的包路径保留末两层：
+
+| Spring 来源 | 目标 Rust |
+|---|---|
+| `beans/factory/aspectj/AnnotationBeanConfigurerAspect.java` | `factory/aspectj/annotation_bean_configurer_aspect.rs` |
+| `cache/aspectj/AnnotationCacheAspect.java` | `cache/aspectj/annotation_cache_aspect.rs` |
+| `scheduling/aspectj/AnnotationAsyncExecutionAspect.java` | `scheduling/aspectj/annotation_async_execution_aspect.rs` |
+| `transaction/aspectj/AnnotationTransactionAspect.java` | `transaction/aspectj/annotation_transaction_aspect.rs` |
+
+`lib.rs`、`mod.rs` 仅声明和重导出；一个 `.rs` 文件只承载一个 Spring 对象。
+
+## 核心语义
+
+- 事务切面必须把匹配结果交给事务属性解析与提交/回滚链，不能只做 pointcut 布尔判断。
+- 缓存切面必须保持条件、key、同步加载、提前/延后淘汰和异常传播语义。
+- 异步切面必须保持执行器选择、返回值、拒绝与未捕获异常语义。
+- Bean 配置切面必须保持注入时点与对象生命周期，不允许以普通构造器注入替代后宣称等价。
+- AspectJ 编译/类加载织入若判为 `PLATFORM_NA`，必须逐对象登记 JVM 证据；过程宏只是候选实现。
+
+## 验收门禁
+
+只有 `IMPLEMENTED`、有精确证据的 `DEPENDENCY_REUSED`、逐对象证明的 `PLATFORM_NA` 算已处理。还需通过路径、中文来源注释、语义测试、无 stub 和无生产 wildcard import 检查。
+
+---
+
+<!-- restored-detail-from-head: dd20300d16a09200bd8a379ff14db1e2da99b67c -->
+
+## 原详细文档（完整保留）
+
+> 以下正文完整恢复自 Vernal 提交 `dd20300d16a09200bd8a379ff14db1e2da99b67c`。其中历史对象数量、完成状态、
+> 路径算法和依赖替代结论如与本文顶部或自动对象台账冲突，以顶部当前结论和
+> `docs/migration-audit/` 为准；其 API、设计背景、阶段拆解和测试说明继续保留。
+
 # vernal-aspects 技术交接文档
 
 > **版本**：v1.0（2026-07-28）
@@ -54,13 +100,13 @@ name = "vernal-aspects"
 description = "Vernal 内建 AOP 切面：@Transactional / @Cacheable / @Async / @Scheduled"
 
 [dependencies]
-# vernal-aop = { path = "../vernal-aop" }      # 暂时禁用：vernal-aop 有预存编译问题
+vernal-aop = { path = "../vernal-aop" }
 # vernal-context = { path = "../vernal-context" }  # 暂时禁用：依赖 vernal-aop
 # vernal-core = { path = "../vernal-core" }      # 暂时禁用：当前阶段不需要
 ```
 
-**关键说明**：vernal-aop 依赖当前处于注释状态（预存编译问题），切面的 `Interceptor` 实现
-通过 mock 引用方式完成类型定义，待 vernal-aop 编译问题修复后启用真实集成。
+**关键说明**：vernal-aop 依赖已启用，提供 `Interceptor` trait 实现。
+vernal-context 和 vernal-core 依赖暂时禁用，待相关 crate 就绪后启用。
 
 ---
 

@@ -333,7 +333,7 @@ fn autowire_bean_singleton_cached() {
 /// 验证 autowireBean 后的 bean 经过 PostProcessor 处理。
 #[test]
 fn autowire_bean_applies_post_processor() {
-    use vernal_beans::bean_post_processor::BeanPostProcessor;
+    use vernal_beans::BeanPostProcessor;
 
     static PP_CALLED: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
 
@@ -534,7 +534,7 @@ fn autowire_bean_properties_by_name_resolves() {
 /// 验证 configureBean 应用 PostProcessor + 返回实例。
 #[test]
 fn configure_bean_full_flow() {
-    use vernal_beans::bean_post_processor::BeanPostProcessor;
+    use vernal_beans::BeanPostProcessor;
 
     static PP_CALLED: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
 
@@ -587,7 +587,7 @@ fn configure_bean_full_flow() {
 /// 验证 initializeBean 执行 before + after PostProcessor。
 #[test]
 fn initialize_bean_executes_post_processor_chain() {
-    use vernal_beans::bean_post_processor::BeanPostProcessor;
+    use vernal_beans::BeanPostProcessor;
 
     static BEFORE: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
     static AFTER: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);

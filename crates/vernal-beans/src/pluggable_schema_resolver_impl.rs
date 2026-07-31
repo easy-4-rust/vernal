@@ -1,5 +1,5 @@
 //! PluggableSchemaResolverImpl — 可插拔 Schema 解析器实现。
-use crate::entity_resolver::{EntityResolver, ResolvedEntity};
+use crate::factory::xml::entity_resolver::{EntityResolver, ResolvedEntity};
 
 /// 可插拔 Schema 解析器实现。
 #[derive(Clone, Debug, Default)]

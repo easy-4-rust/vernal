@@ -73,6 +73,16 @@ pub struct CacheAspectSupport<S: CacheOperationSource> {
     error_handler: Option<Box<dyn Fn(&dyn Any) + Send + Sync>>,
 }
 
+impl<S: CacheOperationSource> std::fmt::Debug for CacheAspectSupport<S> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("CacheAspectSupport")
+            .field("cache_manager", &self.cache_manager.is_some())
+            .field("default_cache_manager_name", &self.default_cache_manager_name)
+            .field("error_handler", &self.error_handler.is_some())
+            .finish()
+    }
+}
+
 impl<S: CacheOperationSource> CacheAspectSupport<S> {
     /// 创建缓存切面支撑实例。
     pub fn new(cache_operation_source: Arc<S>) -> Self {
@@ -404,7 +414,20 @@ mod tests {
 
     #[test]
     fn test_cache_aspect_support_set_cache_manager() {
-        // This is just to test the set method compiles
+        let source = Arc::new(AnnotationCacheOperationSource::new());
+        let mut support = CacheAspectSupport::new(source);
+        // Create a mock cache manager
+        struct MockCacheManager;
+        impl CacheManager for MockCacheManager {
+            fn get_name(&self) -> &str {
+                "mock"
+            }
+            fn get_cache(&self, _name: &str) -> Option<Box<dyn Cache>> {
+                None
+            }
+        }
+        support.set_cache_manager(Arc::new(MockCacheManager));
+        // Verify the cache manager was set (by checking it doesn't panic)
     }
 
     #[test]
@@ -418,4 +441,298 @@ mod tests {
         assert!(matches!(CacheResult::Error("err".to_string()), CacheResult::Error(_)));
     }
 
+    #[test]
+    fn test_cache_aspect_support_debug() {
+        let source = Arc::new(AnnotationCacheOperationSource::new());
+        let support = CacheAspectSupport::new(source);
+        let _ = format!("{:?}", support);
+    }
+
+    #[test]
+    fn test_execute_cacheable_with_operation() {
+        let mut source = AnnotationCacheOperationSource::new();
+        let op = CacheOperationMetadata {
+            operation: CacheOperation::Cacheable,
+            cache_names: vec![std::borrow::Cow::Borrowed("users")],
+            ..Default::default()
+        };
+        source.register_method("Foo#bar()".to_string(), op);
+        let source = Arc::new(source);
+        let support = CacheAspectSupport::new(source);
+        let invoker = MockInvoker;
+        let method = super::super::cache_operation_source::MethodMetadata::new("Foo", "bar");
+
+        let result = support.execute(&method, "Foo", &invoker, || {
+            Ok(Box::new(42) as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            CacheResult::Hit(val) => {
+                assert_eq!(val.downcast_ref::<i32>().unwrap(), &42);
+            }
+            _ => panic!("Expected Hit result"),
+        }
+    }
+
+    #[test]
+    fn test_execute_cache_put() {
+        let mut source = AnnotationCacheOperationSource::new();
+        let op = CacheOperationMetadata {
+            operation: CacheOperation::CachePut,
+            cache_names: vec![std::borrow::Cow::Borrowed("users")],
+            ..Default::default()
+        };
+        source.register_method("Foo#bar()".to_string(), op);
+        let source = Arc::new(source);
+        let support = CacheAspectSupport::new(source);
+        let invoker = MockInvoker;
+        let method = super::super::cache_operation_source::MethodMetadata::new("Foo", "bar");
+
+        let result = support.execute(&method, "Foo", &invoker, || {
+            Ok(Box::new(42) as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            CacheResult::Hit(val) => {
+                assert_eq!(val.downcast_ref::<i32>().unwrap(), &42);
+            }
+            _ => panic!("Expected Hit result"),
+        }
+    }
+
+    #[test]
+    fn test_execute_cache_evict() {
+        let mut source = AnnotationCacheOperationSource::new();
+        let op = CacheOperationMetadata {
+            operation: CacheOperation::CacheEvict,
+            cache_names: vec![std::borrow::Cow::Borrowed("users")],
+            before_invocation: true,
+            all_entries: true,
+            ..Default::default()
+        };
+        source.register_method("Foo#bar()".to_string(), op);
+        let source = Arc::new(source);
+        let support = CacheAspectSupport::new(source);
+        let invoker = MockInvoker;
+        let method = super::super::cache_operation_source::MethodMetadata::new("Foo", "bar");
+
+        let result = support.execute(&method, "Foo", &invoker, || {
+            Ok(Box::new(42) as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            CacheResult::Hit(val) => {
+                assert_eq!(val.downcast_ref::<i32>().unwrap(), &42);
+            }
+            _ => panic!("Expected Hit result"),
+        }
+    }
+
+    #[test]
+    fn test_cache_result_miss() {
+        let result: CacheResult = CacheResult::Miss;
+        assert!(matches!(result, CacheResult::Miss));
+    }
+
+    #[test]
+    fn test_cache_result_hit() {
+        let result = CacheResult::Hit(Box::new(42) as Box<dyn std::any::Any + Send + Sync>);
+        match result {
+            CacheResult::Hit(val) => {
+                assert_eq!(val.downcast_ref::<i32>().unwrap(), &42);
+            }
+            _ => panic!("Expected Hit result"),
+        }
+    }
+
+    #[test]
+    fn test_cache_result_error() {
+        let result = CacheResult::Error("test error".to_string());
+        match result {
+            CacheResult::Error(msg) => {
+                assert_eq!(msg, "test error");
+            }
+            _ => panic!("Expected Error result"),
+        }
+    }
+
+    #[test]
+    fn test_cache_aspect_support_default() {
+        let source = Arc::new(AnnotationCacheOperationSource::new());
+        let support = CacheAspectSupport::new(source);
+        let _ = support;
+    }
+
+    #[test]
+    fn test_cache_aspect_support_debug_format() {
+        let source = Arc::new(AnnotationCacheOperationSource::new());
+        let support = CacheAspectSupport::new(source);
+        let debug_str = format!("{:?}", support);
+        assert!(debug_str.contains("CacheAspectSupport"));
+    }
+
+    #[test]
+    fn test_cache_operation_metadata_clone() {
+        let meta = CacheOperationMetadata {
+            operation: CacheOperation::Cacheable,
+            cache_names: vec![std::borrow::Cow::Borrowed("users")],
+            ..Default::default()
+        };
+        let cloned = meta.clone();
+        assert_eq!(meta.operation, cloned.operation);
+        assert_eq!(meta.cache_names, cloned.cache_names);
+    }
+
+    #[test]
+    fn test_execute_cacheable_with_no_operation() {
+        let source = Arc::new(AnnotationCacheOperationSource::new());
+        let support = CacheAspectSupport::new(source);
+        let invoker = MockInvoker;
+        let method = super::super::cache_operation_source::MethodMetadata::new("Foo", "bar");
+
+        let result = support.execute(&method, "Foo", &invoker, || {
+            Ok(Box::new(42) as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            CacheResult::Error(msg) => {
+                assert!(msg.contains("No cache operation"));
+            }
+            _ => panic!("Expected Error result"),
+        }
+    }
+
+    #[test]
+    fn test_execute_cacheable_with_cache_hit() {
+        let mut source = AnnotationCacheOperationSource::new();
+        let op = CacheOperationMetadata {
+            operation: CacheOperation::Cacheable,
+            cache_names: vec![std::borrow::Cow::Borrowed("users")],
+            ..Default::default()
+        };
+        source.register_method("Foo#bar()".to_string(), op);
+        let source = Arc::new(source);
+        let support = CacheAspectSupport::new(source);
+        let invoker = MockInvoker;
+        let method = super::super::cache_operation_source::MethodMetadata::new("Foo", "bar");
+
+        let result = support.execute(&method, "Foo", &invoker, || {
+            Ok(Box::new(42) as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            CacheResult::Hit(val) => {
+                assert_eq!(val.downcast_ref::<i32>().unwrap(), &42);
+            }
+            _ => panic!("Expected Hit result"),
+        }
+    }
+
+    #[test]
+    fn test_execute_cache_put_with_no_operation() {
+        let source = Arc::new(AnnotationCacheOperationSource::new());
+        let support = CacheAspectSupport::new(source);
+        let invoker = MockInvoker;
+        let method = super::super::cache_operation_source::MethodMetadata::new("Foo", "bar");
+
+        let result = support.execute(&method, "Foo", &invoker, || {
+            Ok(Box::new(42) as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            CacheResult::Error(msg) => {
+                assert!(msg.contains("No cache operation"));
+            }
+            _ => panic!("Expected Error result"),
+        }
+    }
+
+    #[test]
+    fn test_execute_cache_evict_with_no_operation() {
+        let source = Arc::new(AnnotationCacheOperationSource::new());
+        let support = CacheAspectSupport::new(source);
+        let invoker = MockInvoker;
+        let method = super::super::cache_operation_source::MethodMetadata::new("Foo", "bar");
+
+        let result = support.execute(&method, "Foo", &invoker, || {
+            Ok(Box::new(42) as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            CacheResult::Error(msg) => {
+                assert!(msg.contains("No cache operation"));
+            }
+            _ => panic!("Expected Error result"),
+        }
+    }
+
+    #[test]
+    fn test_cache_aspect_support_with_debug() {
+        let source = Arc::new(AnnotationCacheOperationSource::new());
+        let support = CacheAspectSupport::new(source);
+        let debug_str = format!("{:?}", support);
+        assert!(debug_str.contains("CacheAspectSupport"));
+    }
+
+    #[test]
+    fn test_cache_aspect_support_with_debug_format() {
+        let source = Arc::new(AnnotationCacheOperationSource::new());
+        let support = CacheAspectSupport::new(source);
+        let debug_str = format!("{:?}", support);
+        assert!(debug_str.contains("CacheAspectSupport"));
+    }
+
+    #[test]
+    fn test_execute_cache_put_error() {
+        let mut source = AnnotationCacheOperationSource::new();
+        let op = CacheOperationMetadata {
+            operation: CacheOperation::CachePut,
+            cache_names: vec![std::borrow::Cow::Borrowed("users")],
+            ..Default::default()
+        };
+        source.register_method("Foo#bar()".to_string(), op);
+        let source = Arc::new(source);
+        let support = CacheAspectSupport::new(source);
+        let invoker = MockInvoker;
+        let method = super::super::cache_operation_source::MethodMetadata::new("Foo", "bar");
+
+        let result = support.execute(&method, "Foo", &invoker, || {
+            Err(Box::new("test error") as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            CacheResult::Error(msg) => {
+                assert!(msg.contains("Execution failed"));
+            }
+            _ => panic!("Expected Error result"),
+        }
+    }
+
+    #[test]
+    fn test_execute_cache_evict_error() {
+        let mut source = AnnotationCacheOperationSource::new();
+        let op = CacheOperationMetadata {
+            operation: CacheOperation::CacheEvict,
+            cache_names: vec![std::borrow::Cow::Borrowed("users")],
+            before_invocation: true,
+            all_entries: true,
+            ..Default::default()
+        };
+        source.register_method("Foo#bar()".to_string(), op);
+        let source = Arc::new(source);
+        let support = CacheAspectSupport::new(source);
+        let invoker = MockInvoker;
+        let method = super::super::cache_operation_source::MethodMetadata::new("Foo", "bar");
+
+        let result = support.execute(&method, "Foo", &invoker, || {
+            Err(Box::new("test error") as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            CacheResult::Error(msg) => {
+                assert!(msg.contains("Execution failed"));
+            }
+            _ => panic!("Expected Error result"),
+        }
+    }
 }

@@ -19,14 +19,14 @@ struct Config {
 /// 参照 Spring `FileEditorTests`：验证文件路径解析。
 #[test]
 fn file_editor_basic() {
-    let mut editor = vernal_beans::file_editor::FileEditor::new();
+    let mut editor = vernal_beans::propertyeditors::file_editor::FileEditor::new();
     editor.set_as_text("/tmp/test.txt").unwrap();
     assert_eq!(editor.get_as_text().as_deref(), Some("/tmp/test.txt"));
 }
 
 #[test]
 fn file_editor_empty() {
-    let mut editor = vernal_beans::file_editor::FileEditor::new();
+    let mut editor = vernal_beans::propertyeditors::file_editor::FileEditor::new();
     editor.set_as_text("").unwrap();
     assert!(editor.get_value().is_none());
 }
@@ -36,14 +36,14 @@ fn file_editor_empty() {
 /// 参照 Spring `ClassEditorTests`：验证类名解析。
 #[test]
 fn class_editor_basic() {
-    let mut editor = vernal_beans::class_editor::ClassEditor::new();
+    let mut editor = vernal_beans::propertyeditors::class_editor::ClassEditor::new();
     editor.set_as_text("java.lang.String").unwrap();
     assert_eq!(editor.get_as_text().as_deref(), Some("java.lang.String"));
 }
 
 #[test]
 fn class_editor_invalid() {
-    let mut editor = vernal_beans::class_editor::ClassEditor::new();
+    let mut editor = vernal_beans::propertyeditors::class_editor::ClassEditor::new();
     let result = editor.set_as_text("invalid class name");
     assert!(result.is_err());
 }
@@ -53,14 +53,14 @@ fn class_editor_invalid() {
 /// 参照 Spring `LocaleEditorTests`：验证 locale 解析。
 #[test]
 fn locale_editor_basic() {
-    let mut editor = vernal_beans::locale_editor::LocaleEditor::new();
+    let mut editor = vernal_beans::propertyeditors::locale_editor::LocaleEditor::new();
     editor.set_as_text("en_US").unwrap();
     assert_eq!(editor.get_as_text().as_deref(), Some("en_US"));
 }
 
 #[test]
 fn locale_editor_empty() {
-    let mut editor = vernal_beans::locale_editor::LocaleEditor::new();
+    let mut editor = vernal_beans::propertyeditors::locale_editor::LocaleEditor::new();
     editor.set_as_text("").unwrap();
     assert!(editor.get_value().is_none());
 }
@@ -70,7 +70,7 @@ fn locale_editor_empty() {
 /// 参照 Spring `CharsetEditorTests`：验证 charset 解析。
 #[test]
 fn charset_editor_basic() {
-    let mut editor = vernal_beans::charset_editor::CharsetEditor::new();
+    let mut editor = vernal_beans::propertyeditors::charset_editor::CharsetEditor::new();
     editor.set_as_text("UTF-8").unwrap();
     assert_eq!(editor.get_as_text().as_deref(), Some("UTF-8"));
 }
@@ -80,7 +80,7 @@ fn charset_editor_basic() {
 /// 参照 Spring `PathEditorTests`：验证路径解析。
 #[test]
 fn path_editor_basic() {
-    let mut editor = vernal_beans::path_editor::PathEditor::new();
+    let mut editor = vernal_beans::propertyeditors::path_editor::PathEditor::new();
     editor.set_as_text("/usr/local/bin").unwrap();
     assert_eq!(editor.get_as_text().as_deref(), Some("/usr/local/bin"));
 }
@@ -90,7 +90,7 @@ fn path_editor_basic() {
 /// 参照 Spring `PatternEditorTests`：验证正则模式解析。
 #[test]
 fn pattern_editor_basic() {
-    let mut editor = vernal_beans::pattern_editor::PatternEditor::new();
+    let mut editor = vernal_beans::propertyeditors::pattern_editor::PatternEditor::new();
     editor.set_as_text("\\d+").unwrap();
     assert_eq!(editor.get_as_text().as_deref(), Some("\\d+"));
 }
@@ -110,7 +110,7 @@ fn timezone_editor_basic() {
 /// 参照 Spring `ZoneIdEditorTests`：验证 zone id 解析。
 #[test]
 fn zone_id_editor_basic() {
-    let mut editor = vernal_beans::zone_id_editor::ZoneIdEditor::new();
+    let mut editor = vernal_beans::propertyeditors::zone_id_editor::ZoneIdEditor::new();
     editor.set_as_text("Asia/Shanghai").unwrap();
     assert_eq!(editor.get_as_text().as_deref(), Some("Asia/Shanghai"));
 }
@@ -120,7 +120,7 @@ fn zone_id_editor_basic() {
 /// 验证 InputStreamEditor。
 #[test]
 fn input_stream_editor_basic() {
-    let mut editor = vernal_beans::input_stream_editor::InputStreamEditor::new();
+    let mut editor = vernal_beans::propertyeditors::input_stream_editor::InputStreamEditor::new();
     editor.set_as_text("/data/input.txt").unwrap();
     assert_eq!(editor.get_as_text().as_deref(), Some("/data/input.txt"));
 }
@@ -150,7 +150,7 @@ fn byte_array_editor_basic() {
 /// 验证 PropertiesEditor。
 #[test]
 fn properties_editor_basic() {
-    let mut editor = vernal_beans::properties_editor::PropertiesEditor::new();
+    let mut editor = vernal_beans::propertyeditors::properties_editor::PropertiesEditor::new();
     editor.set_as_text("key=value").unwrap();
     assert_eq!(editor.get_as_text().as_deref(), Some("key=value"));
 }
@@ -160,7 +160,7 @@ fn properties_editor_basic() {
 /// 验证 ReaderEditor。
 #[test]
 fn reader_editor_basic() {
-    let mut editor = vernal_beans::reader_editor::ReaderEditor::new();
+    let mut editor = vernal_beans::propertyeditors::reader_editor::ReaderEditor::new();
     editor.set_as_text("/data/reader.txt").unwrap();
     assert_eq!(editor.get_as_text().as_deref(), Some("/data/reader.txt"));
 }
@@ -180,7 +180,7 @@ fn string_array_editor_basic() {
 /// 验证 ClassArrayEditor。
 #[test]
 fn class_array_editor_basic() {
-    let mut editor = vernal_beans::class_array_editor::ClassArrayEditor::new();
+    let mut editor = vernal_beans::propertyeditors::class_array_editor::ClassArrayEditor::new();
     editor.set_as_text("String,Integer").unwrap();
     assert_eq!(editor.get_as_text().as_deref(), Some("String,Integer"));
 }
@@ -190,7 +190,7 @@ fn class_array_editor_basic() {
 /// 验证 CurrencyEditor。
 #[test]
 fn currency_editor_basic() {
-    let mut editor = vernal_beans::currency_editor::CurrencyEditor::new();
+    let mut editor = vernal_beans::propertyeditors::currency_editor::CurrencyEditor::new();
     editor.set_as_text("USD").unwrap();
     assert_eq!(editor.get_as_text().as_deref(), Some("USD"));
 }
@@ -201,27 +201,27 @@ fn currency_editor_basic() {
 #[test]
 fn all_editors_implement_trait() {
     fn assert_editor<T: PropertyEditor>() {}
-    assert_editor::<vernal_beans::string_trimmer_editor::StringTrimmerEditor>();
+    assert_editor::<vernal_beans::StringTrimmerEditor>();
     assert_editor::<vernal_beans::boolean_editor::CustomBooleanEditor>();
     assert_editor::<vernal_beans::number_editor::CustomNumberEditor>();
-    assert_editor::<vernal_beans::uri_editor::URIEditor>();
-    assert_editor::<vernal_beans::uuid_editor::UUIDEditor>();
-    assert_editor::<vernal_beans::file_editor::FileEditor>();
-    assert_editor::<vernal_beans::class_editor::ClassEditor>();
-    assert_editor::<vernal_beans::locale_editor::LocaleEditor>();
-    assert_editor::<vernal_beans::charset_editor::CharsetEditor>();
-    assert_editor::<vernal_beans::path_editor::PathEditor>();
-    assert_editor::<vernal_beans::pattern_editor::PatternEditor>();
+    assert_editor::<vernal_beans::propertyeditors::uri_editor::URIEditor>();
+    assert_editor::<vernal_beans::propertyeditors::uuid_editor::UUIDEditor>();
+    assert_editor::<vernal_beans::propertyeditors::file_editor::FileEditor>();
+    assert_editor::<vernal_beans::propertyeditors::class_editor::ClassEditor>();
+    assert_editor::<vernal_beans::propertyeditors::locale_editor::LocaleEditor>();
+    assert_editor::<vernal_beans::propertyeditors::charset_editor::CharsetEditor>();
+    assert_editor::<vernal_beans::propertyeditors::path_editor::PathEditor>();
+    assert_editor::<vernal_beans::propertyeditors::pattern_editor::PatternEditor>();
     assert_editor::<vernal_beans::timezone_editor::TimeZoneEditor>();
-    assert_editor::<vernal_beans::zone_id_editor::ZoneIdEditor>();
-    assert_editor::<vernal_beans::input_stream_editor::InputStreamEditor>();
+    assert_editor::<vernal_beans::propertyeditors::zone_id_editor::ZoneIdEditor>();
+    assert_editor::<vernal_beans::propertyeditors::input_stream_editor::InputStreamEditor>();
     assert_editor::<vernal_beans::char_array_editor::CharArrayPropertyEditor>();
     assert_editor::<vernal_beans::byte_array_editor::ByteArrayPropertyEditor>();
-    assert_editor::<vernal_beans::properties_editor::PropertiesEditor>();
-    assert_editor::<vernal_beans::reader_editor::ReaderEditor>();
+    assert_editor::<vernal_beans::propertyeditors::properties_editor::PropertiesEditor>();
+    assert_editor::<vernal_beans::propertyeditors::reader_editor::ReaderEditor>();
     assert_editor::<vernal_beans::string_array_editor::StringArrayPropertyEditor>();
-    assert_editor::<vernal_beans::class_array_editor::ClassArrayEditor>();
-    assert_editor::<vernal_beans::currency_editor::CurrencyEditor>();
+    assert_editor::<vernal_beans::propertyeditors::class_array_editor::ClassArrayEditor>();
+    assert_editor::<vernal_beans::propertyeditors::currency_editor::CurrencyEditor>();
 }
 
 // ── 18. BeanDefinitionRegistry remove 操作测试 ───────────────────────────

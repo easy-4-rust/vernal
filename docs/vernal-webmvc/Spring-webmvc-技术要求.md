@@ -1,3 +1,50 @@
+<!-- migration-doc: authority=authoritative canonical=../迁移验收规范.md -->
+# vernal-webmvc 技术要求
+> 迁移文档治理：本文级别为 **authoritative**。正文中的历史统计或完成标记不得单独作为验收结论；以 [../迁移验收规范.md](../迁移验收规范.md) 和自动审计报告为准。
+
+
+> 当前权威规范：[迁移验收规范](../迁移验收规范.md)。Spring 基线提交：
+> `9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82`。
+
+## 事实基线
+
+- 来源：`spring-webmvc/src/main/java/org/springframework`，337 个业务对象文件。
+- 目标：当前不存在 `crates/vernal-webmvc`。
+- 状态：模块整体为 `PLANNED`，所有对象必须先按 `MISSING/PLATFORM_NA` 建账，不能把
+  Axum/Actix 等已有路由功能直接算成 WebMVC 完成。
+
+## 规划目录
+
+| Java | 目标 |
+|---|---|
+| `web/servlet/DispatcherServlet.java` | `web/servlet/dispatcher_servlet.rs` |
+| `web/servlet/handler/AbstractHandlerMapping.java` | `servlet/handler/abstract_handler_mapping.rs` |
+| `web/servlet/mvc/method/annotation/RequestMappingHandlerAdapter.java` | `method/annotation/request_mapping_handler_adapter.rs` |
+| `web/servlet/view/AbstractView.java` | `servlet/view/abstract_view.rs` |
+
+保留末两层包目录；Servlet/JSP/Jakarta 类型只有提供 JVM 专属证据后才能 `PLATFORM_NA`。
+
+```mermaid
+flowchart LR
+    D["DispatcherServlet"] --> M["HandlerMapping"]
+    M --> A["HandlerAdapter"]
+    A --> V["View / Response"]
+    A --> E["ExceptionResolver"]
+    D -.规划映射.-> R["Vernal runtime dispatch contract"]
+```
+
+Rust 实现应拆分为共用 dispatch 合同与 runtime adapter，不新增伪 Servlet 抽象充数。
+
+---
+
+<!-- restored-detail-from-head: dd20300d16a09200bd8a379ff14db1e2da99b67c -->
+
+## 原详细文档（完整保留）
+
+> 以下正文完整恢复自 Vernal 提交 `dd20300d16a09200bd8a379ff14db1e2da99b67c`。其中历史对象数量、完成状态、
+> 路径算法和依赖替代结论如与本文顶部或自动对象台账冲突，以顶部当前结论和
+> `docs/migration-audit/` 为准；其 API、设计背景、阶段拆解和测试说明继续保留。
+
 # vernal-webmvc 技术要求（对标 spring-webmvc）
 
 > **版本**：v1.0（2026-07-28）

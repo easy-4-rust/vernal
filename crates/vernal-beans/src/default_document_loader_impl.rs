@@ -1,5 +1,5 @@
 //! DefaultDocumentLoaderImpl — 默认 XML 文档加载器实现。
-use crate::document_loader::{Document, DocumentLoader, Element};
+use crate::factory::xml::document_loader::{Document, DocumentLoader, Element};
 
 /// 默认 XML 文档加载器实现。
 #[derive(Clone, Debug, Default)]

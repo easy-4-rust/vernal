@@ -4,35 +4,37 @@
 //! 提供 AOP 代理和框架核心功能。
 
 pub mod adapter;
+pub mod aop_config_exception;
+pub mod aop_context;
+pub mod aop_infrastructure_bean;
 pub mod aop_proxy;
+pub mod aop_proxy_utils;
+pub mod advised;
+pub mod advised_support;
+pub mod advised_support_listener;
 pub mod advisor_chain_factory;
-pub mod aspect_instance_factory;
-pub mod constructor_interceptor;
-pub mod joinpoint;
-pub mod proxy_method_invocation;
-pub mod raw_target_access;
-pub mod target_source_creator;
+pub mod autoproxy;
+pub mod default_aop_proxy_factory;
+pub mod interceptor_and_dynamic_method_matcher;
+pub mod proxy_config;
+pub mod proxy_creator_support;
+pub mod proxy_factory;
+pub mod reflective_method_invocation;
 
 // Re-export
 pub use adapter::{AdvisorAdapter, AdvisorAdapterRegistry, DefaultAdvisorAdapterRegistry};
+pub use aop_config_exception::AopConfigException;
+pub use aop_context::AopContext;
+pub use aop_infrastructure_bean::{AopInfrastructureBean, DefaultAopInfrastructureBean};
 pub use aop_proxy::{AopProxy, AopProxyError, AopProxyFactory, FnAopProxy};
-pub use advisor_chain_factory::{Advised, AdvisorChainFactory, DefaultAdvisorChainFactory};
-pub use aspect_instance_factory::{
-    AspectInstanceError, AspectInstanceFactory, LazyAspectInstanceFactory,
-    MetadataAwareAspectInstanceFactory, SingletonAspectInstanceFactory,
-};
-pub use constructor_interceptor::{
-    ConstructorInterceptor, ConstructorInvocation, ConstructorInvocationError,
-    FnConstructorInterceptor,
-};
-pub use joinpoint::{InvocationChain, Joinpoint, MethodInvocation};
-pub use proxy_method_invocation::{
-    IntroductionAwareMethodMatcher, AspectJPrecedenceInformation,
-    ProxyMethodInvocation, SimpleProxyMethodInvocation,
-};
-pub use raw_target_access::{
-    AdvisedSupportListener, AopInfrastructureBean, AsyncUncaughtExceptionHandler,
-    InstantiationModelAwarePointcutAdvisor, MetadataAwarePointcutAdvisor, PoolingConfig,
-    RawTargetAccess, Refreshable, ScopedObject, SpringProxy, ThreadLocalTargetSourceStats,
-};
-pub use target_source_creator::{FnTargetSourceCreator, TargetSourceCreator};
+pub use aop_proxy_utils::AopProxyUtils;
+pub use advised::Advised;
+pub use advised_support::AdvisedSupport;
+pub use advised_support_listener::{AdvisedSupportListener, FnAdvisedSupportListener};
+pub use advisor_chain_factory::{AdvisorChainFactory, DefaultAdvisorChainFactory};
+pub use default_aop_proxy_factory::DefaultAopProxyFactory;
+pub use interceptor_and_dynamic_method_matcher::InterceptorAndDynamicMethodMatcher;
+pub use proxy_config::ProxyConfig;
+pub use proxy_creator_support::ProxyCreatorSupport;
+pub use proxy_factory::ProxyFactory;
+pub use reflective_method_invocation::ReflectiveMethodInvocation;

@@ -1,3 +1,39 @@
+<!-- migration-doc: authority=authoritative canonical=../迁移验收规范.md -->
+# vernal-log 技术要求
+> 迁移文档治理：本文级别为 **authoritative**。正文中的历史统计或完成标记不得单独作为验收结论；以 [../迁移验收规范.md](../迁移验收规范.md) 和自动审计报告为准。
+
+
+> 来源：`spring-core/.../core/log` 的 5 个业务对象；规则见
+> [迁移验收规范](../迁移验收规范.md)。
+
+当前 `crates/vernal-log` 只有 `LogFactory`，而 Spring 本范围没有该顶层对象；它是 Vernal
+初始化辅助，且方法仍含 TODO，不能抵消任何来源对象。目标按末两层保留：
+
+| Java | 目标 |
+|---|---|
+| `core/log/LogAccessor.java` | `core/log/log_accessor.rs` |
+| `core/log/LogMessage.java` | `core/log/log_message.rs` |
+
+后端可依赖 `tracing`，但必须为每个 Spring 对象记录精确符号和 wrapper 语义，不能用
+“tracing 已有日志”直接标 `DEPENDENCY_REUSED`。
+
+```mermaid
+flowchart LR
+    L["lazy LogMessage"] --> A["LogAccessor level check"]
+    A --> D["CompositeLog / delegate"]
+    D --> T["tracing backend"]
+```
+
+---
+
+<!-- restored-detail-from-head: dd20300d16a09200bd8a379ff14db1e2da99b67c -->
+
+## 原详细文档（完整保留）
+
+> 以下正文完整恢复自 Vernal 提交 `dd20300d16a09200bd8a379ff14db1e2da99b67c`。其中历史对象数量、完成状态、
+> 路径算法和依赖替代结论如与本文顶部或自动对象台账冲突，以顶部当前结论和
+> `docs/migration-audit/` 为准；其 API、设计背景、阶段拆解和测试说明继续保留。
+
 # vernal-log 技术要求（对标 spring-jcl）
 
 > **版本**：v1.0（2026-07-28）

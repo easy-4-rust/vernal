@@ -1,3 +1,47 @@
+<!-- migration-doc: authority=authoritative canonical=../迁移验收规范.md -->
+# vernal-test 技术要求
+> 迁移文档治理：本文级别为 **authoritative**。正文中的历史统计或完成标记不得单独作为验收结论；以 [../迁移验收规范.md](../迁移验收规范.md) 和自动审计报告为准。
+
+
+> 规则见[迁移验收规范](../迁移验收规范.md)；真实统计见
+> [vernal-test 审计](../migration-audit/vernal-test.md)。
+
+## 基线
+
+- 来源清单：`spring-test/src/main/java/org/springframework/test`，审计器识别 371 个业务对象。
+- 目标：`crates/vernal-test/src` 当前只有 `TestContext` 骨架。
+- 严格状态：371 个全部 `MISSING`；已有 `TestContext` 未构成同名、同路径和完整语义验收。
+
+## 规划目录
+
+| Java | 目标 Rust |
+|---|---|
+| `context/TestContext.java` | `context/test_context.rs` |
+| `context/TestContextManager.java` | `context/test_context_manager.rs` |
+| `context/cache/ContextCache.java` | `context/cache/context_cache.rs` |
+| `web/servlet/MockMvc.java` | `web/servlet/mock_mvc.rs` |
+
+JUnit/TestNG runner、Servlet mock 等平台对象必须逐个提供 `PLATFORM_NA` 证据；可迁移的 listener、
+context cache、事务测试语义不可整包豁免。
+
+```mermaid
+flowchart LR
+    B["bootstrap"] --> C["TestContext"]
+    C --> L["TestExecutionListener chain"]
+    L --> M["before/after method"]
+    M --> D["context cache / dirties"]
+```
+
+---
+
+<!-- restored-detail-from-head: dd20300d16a09200bd8a379ff14db1e2da99b67c -->
+
+## 原详细文档（完整保留）
+
+> 以下正文完整恢复自 Vernal 提交 `dd20300d16a09200bd8a379ff14db1e2da99b67c`。其中历史对象数量、完成状态、
+> 路径算法和依赖替代结论如与本文顶部或自动对象台账冲突，以顶部当前结论和
+> `docs/migration-audit/` 为准；其 API、设计背景、阶段拆解和测试说明继续保留。
+
 # vernal-test 技术要求（对标 spring-test）
 
 > **版本**：v1.0（2026-07-28）

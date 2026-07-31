@@ -1,3 +1,44 @@
+<!-- migration-doc: authority=authoritative canonical=../迁移验收规范.md -->
+# vernal-oxm 技术要求
+> 迁移文档治理：本文级别为 **authoritative**。正文中的历史统计或完成标记不得单独作为验收结论；以 [../迁移验收规范.md](../迁移验收规范.md) 和自动审计报告为准。
+
+
+> 来源：`spring-oxm/src/main/java/org/springframework/oxm`，22 个业务对象；规则见
+> [迁移验收规范](../迁移验收规范.md)。
+
+当前不存在 `crates/vernal-oxm`，22 个对象均未建立精确依赖复用证据，状态为
+`MISSING/UNVERIFIED`。`serde`、quick-xml 等只是候选实现技术，不等于 Spring OXM 对象已复用。
+
+## 目录示例
+
+| Java | 规划 Rust |
+|---|---|
+| `oxm/Marshaller.java` | `oxm/marshaller.rs` |
+| `oxm/support/AbstractMarshaller.java` | `oxm/support/abstract_marshaller.rs` |
+| `oxm/mime/MimeMarshaller.java` | `oxm/mime/mime_marshaller.rs` |
+| `oxm/jaxb/Jaxb2Marshaller.java` | `oxm/jaxb/jaxb2_marshaller.rs` |
+
+```mermaid
+flowchart LR
+    O["domain object"] --> M["Marshaller"]
+    M --> X["XML writer / event stream"]
+    X --> B["bytes / MIME container"]
+    B --> U["Unmarshaller + validation"]
+```
+
+JAXB、XStream、Spring XML namespace 的平台特性必须逐对象评审，不能整包标
+`PLATFORM_NA`。
+
+---
+
+<!-- restored-detail-from-head: dd20300d16a09200bd8a379ff14db1e2da99b67c -->
+
+## 原详细文档（完整保留）
+
+> 以下正文完整恢复自 Vernal 提交 `dd20300d16a09200bd8a379ff14db1e2da99b67c`。其中历史对象数量、完成状态、
+> 路径算法和依赖替代结论如与本文顶部或自动对象台账冲突，以顶部当前结论和
+> `docs/migration-audit/` 为准；其 API、设计背景、阶段拆解和测试说明继续保留。
+
 # vernal-oxm 技术要求（对标 spring-oxm）
 
 > **版本**：v1.0（2026-07-28）

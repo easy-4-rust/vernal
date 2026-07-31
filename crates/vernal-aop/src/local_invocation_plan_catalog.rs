@@ -85,3 +85,79 @@ impl Default for LocalInvocationPlanCatalog {
         Self::new(HashMap::new())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::Operation;
+
+    #[test]
+    fn local_invocation_plan_catalog_new() {
+        let catalog = LocalInvocationPlanCatalog::new(HashMap::new());
+        assert!(catalog.is_empty());
+        assert_eq!(catalog.len(), 0);
+    }
+
+    #[test]
+    fn local_invocation_plan_catalog_deferred() {
+        let catalog = LocalInvocationPlanCatalog::deferred();
+        assert!(catalog.is_empty());
+        assert_eq!(catalog.len(), 0);
+    }
+
+    #[test]
+    fn local_invocation_plan_catalog_default() {
+        let catalog = LocalInvocationPlanCatalog::default();
+        assert!(catalog.is_empty());
+        assert_eq!(catalog.len(), 0);
+    }
+
+    #[test]
+    fn local_invocation_plan_catalog_get_empty() {
+        let catalog = LocalInvocationPlanCatalog::new(HashMap::new());
+        let op = Operation::new("Service", "method");
+        assert!(catalog.get(&op).is_none());
+    }
+
+    #[test]
+    fn local_invocation_plan_catalog_len() {
+        let catalog = LocalInvocationPlanCatalog::new(HashMap::new());
+        assert_eq!(catalog.len(), 0);
+    }
+
+    #[test]
+    fn local_invocation_plan_catalog_interceptor_count() {
+        let catalog = LocalInvocationPlanCatalog::new(HashMap::new());
+        assert_eq!(catalog.interceptor_count(), 0);
+    }
+
+    #[test]
+    fn local_invocation_plan_catalog_is_empty() {
+        let catalog = LocalInvocationPlanCatalog::new(HashMap::new());
+        assert!(catalog.is_empty());
+    }
+
+    #[test]
+    fn local_invocation_plan_catalog_clone() {
+        let catalog = LocalInvocationPlanCatalog::new(HashMap::new());
+        let cloned = catalog.clone();
+        assert!(cloned.is_empty());
+    }
+
+    #[test]
+    fn local_invocation_plan_catalog_initialize_from() {
+        let deferred = LocalInvocationPlanCatalog::deferred();
+        let compiled = LocalInvocationPlanCatalog::new(HashMap::new());
+        let result = deferred.initialize_from(&compiled);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn local_invocation_plan_catalog_initialize_from_already_initialized() {
+        let deferred = LocalInvocationPlanCatalog::deferred();
+        let compiled = LocalInvocationPlanCatalog::new(HashMap::new());
+        let _ = deferred.initialize_from(&compiled);
+        let result = deferred.initialize_from(&compiled);
+        assert!(result.is_err());
+    }
+}

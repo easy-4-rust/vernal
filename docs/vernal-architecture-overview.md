@@ -1,3 +1,7 @@
+<!-- migration-doc: authority=support canonical=迁移验收规范.md -->
+
+> 迁移文档治理：本文级别为 **support**。正文中的历史统计或完成标记不得单独作为验收结论；以 [迁移验收规范.md](迁移验收规范.md) 和自动审计报告为准。
+
 # vernal-architecture-overview（中间层架构总览）
 
 > 版本：v1.0（2026-07-29）
@@ -71,7 +75,7 @@ L0  零依赖
 
 L1  仅依赖 L0（可并行）
     ├── vernal-expression  (113文件)        ✅ 已完成
-    ├── vernal-aop         (64文件)         ✅ 已完成
+    ├── vernal-aop         (以自动审计为准) ⚠️ 对象迁移未完成
     ├── vernal-async       (2文件骨架)
     ├── vernal-cache       (3文件骨架)       ✅ 技术要求 587 行
     ├── vernal-db          (2文件骨架)       🔜 通用数据库抽象层
@@ -81,7 +85,7 @@ L1  仅依赖 L0（可并行）
     └── vernal-actuator    (2文件骨架)
 
 L2  依赖 L1（可并行）
-    ├── vernal-beans       (117文件)        ✅ 已完成（IoC 内核）
+    ├── vernal-beans       (以自动审计为准) ⚠️ 对象迁移未完成
     └── vernal-macros      (12文件)         🔜 编译期过程宏（最关键）
 
 L3  依赖 L2

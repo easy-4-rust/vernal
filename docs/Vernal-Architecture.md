@@ -1,3 +1,7 @@
+<!-- migration-doc: authority=support canonical=迁移验收规范.md -->
+
+> 迁移文档治理：本文级别为 **support**。正文中的历史统计或完成标记不得单独作为验收结论；以 [迁移验收规范.md](迁移验收规范.md) 和自动审计报告为准。
+
 # 句芒 · Vernal Framework Architecture
 
 > **Purpose:** Define Vernal's brand semantics, system boundaries, IoC/AOP/
@@ -11,6 +15,13 @@
 > **Last updated:** 2026-07-25
 
 ## 1. Document control and status
+
+### 1.0 Migration status source
+
+Architectural capability and Spring object parity are separate states. Module completion is
+derived from [`迁移验收规范.md`](迁移验收规范.md) and the generated reports under
+`docs/migration-audit/`; a callable Vernal capability alone does not establish file, package,
+or semantic parity with a Spring object.
 
 ### 1.1 Readers
 

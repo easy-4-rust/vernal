@@ -104,3 +104,188 @@ impl PropertyEditor for CustomNumberEditor {
         std::any::TypeId::of::<f64>()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn new_editor_has_no_value() {
+        let editor = CustomNumberEditor::new();
+        assert!(editor.get_value().is_none());
+        assert!(editor.get_as_text().is_none());
+    }
+
+    #[test]
+    fn default_trait_creates_same_as_new() {
+        let editor = CustomNumberEditor::default();
+        assert!(editor.get_value().is_none());
+    }
+
+    #[test]
+    fn with_allow_empty_true() {
+        let mut editor = CustomNumberEditor::with_allow_empty(true);
+        editor.set_as_text("").unwrap();
+        assert!(editor.get_value().is_none());
+    }
+
+    #[test]
+    fn with_allow_empty_false_rejects_empty() {
+        let mut editor = CustomNumberEditor::with_allow_empty(false);
+        let result = editor.set_as_text("");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn set_as_text_integer() {
+        let mut editor = CustomNumberEditor::new();
+        editor.set_as_text("42").unwrap();
+        let val = editor.get_value().unwrap().downcast_ref::<f64>().unwrap();
+        assert_eq!(*val, 42.0);
+    }
+
+    #[test]
+    fn set_as_text_float() {
+        let mut editor = CustomNumberEditor::new();
+        editor.set_as_text("3.14").unwrap();
+        let val = editor.get_value().unwrap().downcast_ref::<f64>().unwrap();
+        assert!((val - 3.14).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn set_as_text_negative() {
+        let mut editor = CustomNumberEditor::new();
+        editor.set_as_text("-100").unwrap();
+        let val = editor.get_value().unwrap().downcast_ref::<f64>().unwrap();
+        assert_eq!(*val, -100.0);
+    }
+
+    #[test]
+    fn set_as_text_zero() {
+        let mut editor = CustomNumberEditor::new();
+        editor.set_as_text("0").unwrap();
+        let val = editor.get_value().unwrap().downcast_ref::<f64>().unwrap();
+        assert_eq!(*val, 0.0);
+    }
+
+    #[test]
+    fn set_as_text_whitespace_trimmed() {
+        let mut editor = CustomNumberEditor::new();
+        editor.set_as_text("  42  ").unwrap();
+        let val = editor.get_value().unwrap().downcast_ref::<f64>().unwrap();
+        assert_eq!(*val, 42.0);
+    }
+
+    #[test]
+    fn set_as_text_invalid_returns_error() {
+        let mut editor = CustomNumberEditor::new();
+        let result = editor.set_as_text("not_a_number");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn get_as_text_integer_format() {
+        let mut editor = CustomNumberEditor::new();
+        editor.set_as_text("42").unwrap();
+        assert_eq!(editor.get_as_text(), Some("42".to_string()));
+    }
+
+    #[test]
+    fn get_as_text_float_format() {
+        let mut editor = CustomNumberEditor::new();
+        editor.set_as_text("3.14").unwrap();
+        let text = editor.get_as_text().unwrap();
+        assert!(text.contains("3.14"));
+    }
+
+    #[test]
+    fn get_as_text_negative_integer() {
+        let mut editor = CustomNumberEditor::new();
+        editor.set_as_text("-5").unwrap();
+        assert_eq!(editor.get_as_text(), Some("-5".to_string()));
+    }
+
+    #[test]
+    fn set_value_from_f64() {
+        let mut editor = CustomNumberEditor::new();
+        editor.set_value(Arc::new(3.14f64));
+        let val = editor.get_value().unwrap().downcast_ref::<f64>().unwrap();
+        assert!((val - 3.14).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn set_value_from_i32() {
+        let mut editor = CustomNumberEditor::new();
+        editor.set_value(Arc::new(42i32));
+        let val = editor.get_value().unwrap().downcast_ref::<f64>().unwrap();
+        assert_eq!(*val, 42.0);
+    }
+
+    #[test]
+    fn set_value_from_i64() {
+        let mut editor = CustomNumberEditor::new();
+        editor.set_value(Arc::new(100i64));
+        let val = editor.get_value().unwrap().downcast_ref::<f64>().unwrap();
+        assert_eq!(*val, 100.0);
+    }
+
+    #[test]
+    fn set_value_from_u32() {
+        let mut editor = CustomNumberEditor::new();
+        editor.set_value(Arc::new(99u32));
+        let val = editor.get_value().unwrap().downcast_ref::<f64>().unwrap();
+        assert_eq!(*val, 99.0);
+    }
+
+    #[test]
+    fn set_value_from_u64() {
+        let mut editor = CustomNumberEditor::new();
+        editor.set_value(Arc::new(255u64));
+        let val = editor.get_value().unwrap().downcast_ref::<f64>().unwrap();
+        assert_eq!(*val, 255.0);
+    }
+
+    #[test]
+    fn set_value_from_f32() {
+        let mut editor = CustomNumberEditor::new();
+        editor.set_value(Arc::new(1.5f32));
+        let val = editor.get_value().unwrap().downcast_ref::<f64>().unwrap();
+        assert!((val - 1.5).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn set_value_from_unsupported_type_ignored() {
+        let mut editor = CustomNumberEditor::new();
+        editor.set_value(Arc::new("not a number".to_string()));
+        // Unsupported types are silently ignored
+        assert!(editor.get_value().is_none());
+    }
+
+    #[test]
+    fn target_type_is_f64() {
+        let editor = CustomNumberEditor::new();
+        assert_eq!(editor.target_type(), std::any::TypeId::of::<f64>());
+    }
+
+    #[test]
+    fn get_value_type_is_f64() {
+        let editor = CustomNumberEditor::new();
+        assert_eq!(editor.get_value_type(), std::any::TypeId::of::<f64>());
+    }
+
+    #[test]
+    fn set_as_text_large_number() {
+        let mut editor = CustomNumberEditor::new();
+        editor.set_as_text("999999999").unwrap();
+        let val = editor.get_value().unwrap().downcast_ref::<f64>().unwrap();
+        assert_eq!(*val, 999999999.0);
+    }
+
+    #[test]
+    fn set_as_text_scientific_notation() {
+        let mut editor = CustomNumberEditor::new();
+        let result = editor.set_as_text("1e10");
+        // f64::parse supports scientific notation
+        assert!(result.is_ok());
+    }
+}

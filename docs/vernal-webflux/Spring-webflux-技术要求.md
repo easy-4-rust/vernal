@@ -1,3 +1,48 @@
+<!-- migration-doc: authority=authoritative canonical=../迁移验收规范.md -->
+# vernal-webflux 技术要求
+> 迁移文档治理：本文级别为 **authoritative**。正文中的历史统计或完成标记不得单独作为验收结论；以 [../迁移验收规范.md](../迁移验收规范.md) 和自动审计报告为准。
+
+
+> 当前权威规范：[迁移验收规范](../迁移验收规范.md)。Spring 基线提交：
+> `9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82`。
+
+## 事实基线
+
+- 来源：`spring-webflux/src/main/java/org/springframework`，252 个业务对象文件。
+- 目标：当前不存在 `crates/vernal-webflux`。
+- 状态：`PLANNED`；不能用 Tokio、Tower 或某个 Web runtime “天然支持异步”来豁免对象和语义。
+
+## 规划目录
+
+| Java | 目标 |
+|---|---|
+| `web/reactive/DispatcherHandler.java` | `web/reactive/dispatcher_handler.rs` |
+| `web/reactive/handler/AbstractHandlerMapping.java` | `reactive/handler/abstract_handler_mapping.rs` |
+| `web/reactive/function/server/RouterFunction.java` | `function/server/router_function.rs` |
+| `web/reactive/result/method/annotation/RequestMappingHandlerAdapter.java` | `method/annotation/request_mapping_handler_adapter.rs` |
+
+`Mono<T>` 映射为 async `Result<T, E>`；`Flux<T>` 映射为带 `Send` 的错误流，并保留取消、
+背压、响应提交和错误恢复语义。
+
+```mermaid
+flowchart LR
+    X["ServerWebExchange"] --> D["DispatcherHandler"]
+    D --> M["HandlerMapping"]
+    M --> A["HandlerAdapter"]
+    A --> H["HandlerResultHandler"]
+    H --> O["Async response / stream"]
+```
+
+---
+
+<!-- restored-detail-from-head: dd20300d16a09200bd8a379ff14db1e2da99b67c -->
+
+## 原详细文档（完整保留）
+
+> 以下正文完整恢复自 Vernal 提交 `dd20300d16a09200bd8a379ff14db1e2da99b67c`。其中历史对象数量、完成状态、
+> 路径算法和依赖替代结论如与本文顶部或自动对象台账冲突，以顶部当前结论和
+> `docs/migration-audit/` 为准；其 API、设计背景、阶段拆解和测试说明继续保留。
+
 # vernal-webflux 技术要求（对标 spring-webflux）
 
 > **版本**：v1.0（2026-07-28）

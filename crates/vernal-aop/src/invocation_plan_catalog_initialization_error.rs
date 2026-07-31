@@ -17,3 +17,40 @@ impl fmt::Display for InvocationPlanCatalogInitializationError {
 }
 
 impl Error for InvocationPlanCatalogInitializationError {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn error_display() {
+        let err = InvocationPlanCatalogInitializationError;
+        assert_eq!(format!("{}", err), "invocation plan catalog is already initialized");
+    }
+
+    #[test]
+    fn error_debug() {
+        let err = InvocationPlanCatalogInitializationError;
+        let debug = format!("{:?}", err);
+        assert!(!debug.is_empty());
+    }
+
+    #[test]
+    fn error_clone() {
+        let err = InvocationPlanCatalogInitializationError;
+        let _cloned = err;
+    }
+
+    #[test]
+    fn error_copy() {
+        let err = InvocationPlanCatalogInitializationError;
+        let copied = err;
+        assert_eq!(err, copied);
+    }
+
+    #[test]
+    fn error_trait() {
+        let err = InvocationPlanCatalogInitializationError;
+        let _: &dyn Error = &err;
+    }
+}

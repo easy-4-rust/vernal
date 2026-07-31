@@ -112,3 +112,158 @@ impl fmt::Display for Operation {
         write!(formatter, "{}::{}", self.component, self.method)
     }
 }
+
+#[cfg(test)]
+mod additional_tests {
+    use super::*;
+
+    #[test]
+    fn operation_new() {
+        let op = Operation::new("Service", "method");
+        assert_eq!(op.component(), "Service");
+        assert_eq!(op.method(), "method");
+    }
+
+    #[test]
+    fn operation_clone() {
+        let op = Operation::new("Service", "method");
+        let cloned = op.clone();
+        assert_eq!(cloned.component(), "Service");
+        assert_eq!(cloned.method(), "method");
+    }
+
+    #[test]
+    fn operation_eq() {
+        let op1 = Operation::new("Service", "method");
+        let op2 = Operation::new("Service", "method");
+        assert_eq!(op1, op2);
+    }
+
+    #[test]
+    fn operation_ne() {
+        let op1 = Operation::new("Service", "method1");
+        let op2 = Operation::new("Service", "method2");
+        assert_ne!(op1, op2);
+    }
+
+    #[test]
+    fn operation_hash() {
+        use std::collections::HashMap;
+        let mut map = HashMap::new();
+        let op = Operation::new("Service", "method");
+        map.insert(op.clone(), "value");
+        assert_eq!(map.get(&op), Some(&"value"));
+    }
+
+    #[test]
+    fn operation_debug() {
+        let op = Operation::new("Service", "method");
+        let debug = format!("{:?}", op);
+        assert!(!debug.is_empty());
+    }
+
+    #[test]
+    fn operation_display() {
+        let op = Operation::new("Service", "method");
+        let display = format!("{}", op);
+        assert!(!display.is_empty());
+    }
+
+    #[test]
+    fn operation_metadata() {
+        let op = Operation::new("Service", "method");
+        let _metadata = op.metadata();
+    }
+
+    #[test]
+    fn operation_with_metadata() {
+        let op = Operation::new("Service", "method");
+        let metadata = crate::OperationMetadata::empty();
+        let op_with_meta = op.with_metadata(metadata);
+        assert_eq!(op_with_meta.component(), "Service");
+    }
+
+    #[test]
+    fn operation_same_declaration() {
+        let op1 = Operation::new("Service", "method");
+        let op2 = Operation::new("Service", "method");
+        assert!(op1.same_declaration(&op2));
+    }
+
+    #[test]
+    fn operation_same_declaration_different_component() {
+        let op1 = Operation::new("Service1", "method");
+        let op2 = Operation::new("Service2", "method");
+        assert!(!op1.same_declaration(&op2));
+    }
+
+    #[test]
+    fn operation_same_declaration_different_method() {
+        let op1 = Operation::new("Service", "method1");
+        let op2 = Operation::new("Service", "method2");
+        assert!(!op1.same_declaration(&op2));
+    }
+}
+
+#[cfg(test)]
+mod operation_coverage_tests {
+    use super::*;
+
+    #[test]
+    fn operation_with_tag() {
+        let op = Operation::new("Service", "method")
+            .with_tag("secured")
+            .unwrap();
+        assert!(op.metadata().has_tag("secured"));
+    }
+
+    #[test]
+    fn operation_with_qualifier() {
+        let op = Operation::new("Service", "method")
+            .with_qualifier("primary")
+            .unwrap();
+        assert_eq!(op.metadata().qualifier(), Some("primary"));
+    }
+
+    #[test]
+    fn operation_with_tag_invalid() {
+        let op = Operation::new("Service", "method");
+        let result = op.with_tag("");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn operation_with_qualifier_invalid() {
+        let op = Operation::new("Service", "method");
+        let result = op.with_qualifier("");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn operation_same_declaration_same_metadata() {
+        let op1 = Operation::new("Service", "method")
+            .with_tag("secured")
+            .unwrap();
+        let op2 = Operation::new("Service", "method")
+            .with_tag("secured")
+            .unwrap();
+        assert!(op1.same_declaration(&op2));
+    }
+
+    #[test]
+    fn operation_same_declaration_different_metadata() {
+        let op1 = Operation::new("Service", "method")
+            .with_tag("secured")
+            .unwrap();
+        let op2 = Operation::new("Service", "method")
+            .with_tag("public")
+            .unwrap();
+        assert!(!op1.same_declaration(&op2));
+    }
+
+    #[test]
+    fn operation_display_format() {
+        let op = Operation::new("MyService", "my_method");
+        assert_eq!(format!("{}", op), "MyService::my_method");
+    }
+}

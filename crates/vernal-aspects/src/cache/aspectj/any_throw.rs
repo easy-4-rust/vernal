@@ -1,6 +1,12 @@
 //! 对标 `org.springframework.cache.aspectj.AnyThrow` 工具类。
 //!
-//! checked 异常透传辅助：在 AspectJ around advice 中将 checked 异常伪装成 unchecked 异常抛出。
+//! 对应 Java：`AnyThrow.java`（`spring-aspects` 模块）
+//! 包路径：`org.springframework.cache.aspectj`
+//! 核心职责：checked 异常透传辅助——在 AspectJ around advice 中将 checked 异常伪装成 unchecked 异常抛出。
+//!
+//! Spring 原始实现利用 Java 泛型擦除机制（`AnyThrow.<RuntimeException>throwUnchecked(e)`），
+//! 将 `Throwable` 伪装成 `RuntimeException` 抛出，绕过 AspectJ around advice 的 checked exception 限制。
+//! Rust 无 checked exception 概念，此工具保留为 `catch_unwind` 集成测试的辅助层。
 
 /// checked 异常透传器。
 ///

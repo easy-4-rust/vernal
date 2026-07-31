@@ -6,7 +6,7 @@ use std::sync::Arc;
 use vernal_beans::ComponentDefinition;
 use vernal_beans::RegistryBuilder;
 use vernal_beans::Resolver;
-use vernal_beans::bean_definition_registry::BeanDefinitionRegistry;
+use vernal_beans::BeanDefinitionRegistry;
 
 // ── 测试类型 ─────────────────────────────────────────────────────────────
 
@@ -190,7 +190,7 @@ fn registry_builder_remove_then_container_query() {
 /// 验证 Container 的 BeanDefinitionRegistry trait 与 BeanFactory trait 共存。
 #[test]
 fn container_implements_both_traits() {
-    fn assert_bean_factory<T: vernal_beans::bean_factory::BeanFactory>() {}
+    fn assert_bean_factory<T: vernal_beans::BeanFactory>() {}
     fn assert_registry<T: BeanDefinitionRegistry>() {}
 
     assert_bean_factory::<vernal_beans::Container>();
@@ -233,7 +233,7 @@ fn container_registry_method() {
 #[derive(Debug)]
 struct DummyBeanDefinition;
 
-impl vernal_beans::bean_definition::BeanDefinition for DummyBeanDefinition {
+impl vernal_beans::BeanDefinition for DummyBeanDefinition {
     fn bean_name(&self) -> &vernal_beans::ComponentKey {
         unimplemented!()
     }

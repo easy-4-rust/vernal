@@ -81,3 +81,35 @@ mod tests {
         assert!(pointcut.matches(&op));
     }
 }
+
+#[cfg(test)]
+mod additional_tests {
+    use super::*;
+    use crate::Operation;
+
+    #[test]
+    fn string_expression_pointcut_get_expression() {
+        let pc = StringExpressionPointcut::new("execution(pub fn *(..))");
+        assert_eq!(pc.get_expression(), Some("execution(pub fn *(..))"));
+    }
+
+    #[test]
+    fn string_expression_pointcut_matches() {
+        let pc = StringExpressionPointcut::new("execution(pub fn *(..))");
+        let op = Operation::new("Service", "method");
+        assert!(pc.matches(&op));
+    }
+
+    #[test]
+    fn string_expression_pointcut_debug() {
+        let pc = StringExpressionPointcut::new("execution(pub fn *(..))");
+        let debug = format!("{:?}", pc);
+        assert!(debug.contains("execution(pub fn *(..))"));
+    }
+
+    #[test]
+    fn string_expression_pointcut_from_str() {
+        let pc: Box<dyn ExpressionPointcut> = "execution(pub fn *(..))".into();
+        assert_eq!(pc.get_expression(), Some("execution(pub fn *(..))"));
+    }
+}

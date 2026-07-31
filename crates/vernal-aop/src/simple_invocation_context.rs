@@ -34,3 +34,28 @@ impl SimpleInvocationContext {
         self.method
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn context_new() {
+        let ctx = SimpleInvocationContext::new("test_method");
+        assert_eq!(ctx.method(), "test_method");
+    }
+
+    #[test]
+    fn context_clone() {
+        let ctx = SimpleInvocationContext::new("test_method");
+        let cloned = ctx.clone();
+        assert_eq!(cloned.method(), "test_method");
+    }
+
+    #[test]
+    fn context_debug() {
+        let ctx = SimpleInvocationContext::new("test_method");
+        let debug = format!("{:?}", ctx);
+        assert!(debug.contains("test_method"));
+    }
+}

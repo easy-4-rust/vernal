@@ -1,5 +1,9 @@
 //! factory::aot — 对应 Spring beans.factory.aot 包。
 
+pub mod aot_bean_processing_exception;
+pub mod aot_contribution;
+pub mod aot_exception;
+pub mod aot_processing_exception;
 pub mod aot_services;
 pub mod autowired_arguments;
 pub mod autowired_arguments_code_generator;

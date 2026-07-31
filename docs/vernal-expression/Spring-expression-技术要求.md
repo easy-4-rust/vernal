@@ -1,3 +1,97 @@
+<!-- migration-doc: authority=authoritative canonical=../迁移验收规范.md -->
+# spring-expression → vernal-expression 技术要求
+> 迁移文档治理：本文级别为 **authoritative**。正文中的历史统计或完成标记不得单独作为验收结论；以 [../迁移验收规范.md](../迁移验收规范.md) 和自动审计报告为准。
+
+
+> 当前文档。对象事实以[自动审计](../migration-audit/vernal-expression.md)为准；统一规则见[迁移验收规范](../迁移验收规范.md)。
+
+## 当前基线
+
+| 指标 | 数量 |
+|---|---:|
+| Java 业务对象 | 117 |
+| `IMPLEMENTED` | 7 |
+| `MISPLACED` | 7 |
+| `MISSING` | 11 |
+| `STUB` | 3 |
+| `UNVERIFIED` | 89 |
+| 严格已处理 | 7 |
+
+现有文件数量和测试数量均不能替代逐对象验收。
+
+## 目标目录
+
+```text
+crates/vernal-expression/src/
+├── common/
+├── spel/
+│   ├── ast/
+│   ├── standard/
+│   └── support/
+└── <expression 根对象>.rs
+```
+
+路径必须按 Spring 包末两层：
+
+- `expression/spel/standard/SpelExpressionParser.java` → `spel/standard/spel_expression_parser.rs`
+- `expression/spel/ast/MethodReference.java` → `spel/ast/method_reference.rs`
+- `expression/spel/support/StandardEvaluationContext.java` → `spel/support/standard_evaluation_context.rs`
+
+当前 `spel_expression.rs`、`spel_expression_parser.rs` 等落在 `spel/` 根目录时属于
+`MISPLACED`，不能因公开重导出而算完成。
+
+## 核心语义要求
+
+- parser context 区分普通表达式和 template 表达式。
+- tokenizer/parser 必须保留运算符优先级、短路、空安全、集合 selection/projection。
+- `SpelExpression.getValue` 必须通过 evaluation state 驱动 AST 节点动态求值。
+- property/index/method/constructor resolver 的顺序、缓存和错误传播须可观察。
+- 类型转换、比较、operator overloader 与 Bean resolver 必须由 evaluation context 注入。
+- 写操作必须先验证 `isWritable`，不能隐式忽略失败。
+
+## CodeGraph 主链
+
+```mermaid
+flowchart LR
+    EP["ExpressionParser.parseExpression"] --> TAP["TemplateAwareExpressionParser"]
+    TAP --> ISP["InternalSpelExpressionParser"]
+    ISP --> AST["SpelNodeImpl AST"]
+    SE["SpelExpression.getValue"] --> STATE["ExpressionState"]
+    STATE --> AST
+    AST --> PA["PropertyAccessor / IndexAccessor"]
+    AST --> MR["MethodResolver / ConstructorResolver"]
+    STATE --> TC["TypeConverter / TypeComparator"]
+```
+
+CodeGraph 还显示 `getValueInternal` 动态分派到 21 类 AST 节点；Rust 不能用单一通用
+`Value` 分支省略各节点的求值差异。
+
+## 文件与质量
+
+- 一个 Java 主对象对应一个 `.rs` 文件；`parser_context.rs`、`property_accessor.rs`、
+  `method_filter.rs` 等当前多公开对象文件须拆分。
+- 每个对象和 pub 方法使用中文 doc 注释并标注 Java 来源。
+- parser、AST、resolver 和 conversion 必须覆盖成功、失败和边界测试。
+- 禁止 `todo!()`、`unimplemented!()`、空逻辑和生产 wildcard import。
+
+## 验收
+
+```bash
+python3 scripts/audit_migration_docs.py --module vernal-expression --check
+cargo test -p vernal-expression
+cargo clippy -p vernal-expression --all-targets -- -D warnings
+```
+
+---
+
+<!-- restored-detail-from-head: dd20300d16a09200bd8a379ff14db1e2da99b67c -->
+
+## 原详细文档（完整保留）
+
+> 以下正文完整恢复自 Vernal 提交 `dd20300d16a09200bd8a379ff14db1e2da99b67c`。其中历史对象数量、完成状态、
+> 路径算法和依赖替代结论如与本文顶部或自动对象台账冲突，以顶部当前结论和
+> `docs/migration-audit/` 为准；其 API、设计背景、阶段拆解和测试说明继续保留。
+
 # Spring Expression（SpEL）技术要求
 
 > **版本**：v1.1（2026-07-30）

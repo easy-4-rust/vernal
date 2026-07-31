@@ -616,4 +616,290 @@ mod tests {
         wrapper.register_property("y", TypeId::of::<String>());
         assert_eq!(wrapper.property_count(), 2);
     }
+
+    #[test]
+    fn test_property_error_display_no_such_property() {
+        let err = PropertyError::NoSuchProperty("name".to_string());
+        assert_eq!(format!("{}", err), "属性不存在: 'name'");
+    }
+
+    #[test]
+    fn test_property_error_display_not_readable() {
+        let err = PropertyError::NotReadable("secret".to_string());
+        assert_eq!(format!("{}", err), "属性不可读: 'secret'");
+    }
+
+    #[test]
+    fn test_property_error_display_not_writable() {
+        let err = PropertyError::NotWritable("readonly".to_string());
+        assert_eq!(format!("{}", err), "属性不可写: 'readonly'");
+    }
+
+    #[test]
+    fn test_property_error_display_type_mismatch() {
+        let err = PropertyError::TypeMismatch {
+            property: "count".to_string(),
+            expected: "i32",
+            actual: "String",
+        };
+        let msg = format!("{}", err);
+        assert!(msg.contains("count"));
+        assert!(msg.contains("i32"));
+        assert!(msg.contains("String"));
+    }
+
+    #[test]
+    fn test_property_error_display_null_nested_object() {
+        let err = PropertyError::NullNestedObject("address.city".to_string());
+        assert_eq!(format!("{}", err), "嵌套属性路径 'address.city' 中的中间对象为空");
+    }
+
+    #[test]
+    fn test_property_error_display_other() {
+        let err = PropertyError::Other("custom error".to_string());
+        assert_eq!(format!("{}", err), "custom error");
+    }
+
+    #[test]
+    fn test_property_error_is_send_sync() {
+        fn assert_send_sync<T: Send + Sync>() {}
+        assert_send_sync::<PropertyError>();
+    }
+
+    #[test]
+    fn test_nested_property_type() {
+        let mut inner = HashMap::new();
+        inner.insert(
+            "value".to_string(),
+            Arc::new(42i32) as Arc<dyn Any + Send + Sync>,
+        );
+
+        let wrapper = BeanWrapperImpl::new(Arc::new("test".to_string()));
+        wrapper.register_property(
+            "data",
+            TypeId::of::<HashMap<String, Arc<dyn Any + Send + Sync>>>(),
+        );
+        wrapper
+            .set_property_value("data", Arc::new(inner))
+            .unwrap();
+
+        let type_id = wrapper.get_property_type("data.value");
+        assert_eq!(type_id, Some(TypeId::of::<i32>()));
+    }
+
+    #[test]
+    fn test_nested_property_type_missing() {
+        let wrapper = BeanWrapperImpl::new(Arc::new("test".to_string()));
+        wrapper.register_property(
+            "data",
+            TypeId::of::<HashMap<String, Arc<dyn Any + Send + Sync>>>(),
+        );
+        assert_eq!(wrapper.get_property_type("data.missing"), None);
+    }
+
+    #[test]
+    fn test_nested_property_type_unreadable() {
+        let wrapper = BeanWrapperImpl::new(Arc::new("test".to_string()));
+        wrapper.register_readonly_property(
+            "data",
+            TypeId::of::<HashMap<String, Arc<dyn Any + Send + Sync>>>(),
+        );
+        // readonly is still readable
+        assert_eq!(wrapper.get_property_type("data.child"), None);
+    }
+
+    #[test]
+    fn test_set_property_value_unregistered() {
+        let wrapper = BeanWrapperImpl::new(Arc::new("test".to_string()));
+        let result = wrapper.set_property_value("unknown", Arc::new(1i32));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_set_property_value_readonly() {
+        let wrapper = BeanWrapperImpl::new(Arc::new("test".to_string()));
+        wrapper.register_readonly_property("ro", TypeId::of::<i32>());
+        let result = wrapper.set_property_value("ro", Arc::new(42i32));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_is_readable_unregistered() {
+        let wrapper = BeanWrapperImpl::new(Arc::new("test".to_string()));
+        assert!(!wrapper.is_readable("unknown"));
+    }
+
+    #[test]
+    fn test_is_writable_unregistered() {
+        let wrapper = BeanWrapperImpl::new(Arc::new("test".to_string()));
+        assert!(!wrapper.is_writable("unknown"));
+    }
+
+    #[test]
+    fn test_get_property_names_empty() {
+        let wrapper = BeanWrapperImpl::new(Arc::new("test".to_string()));
+        assert!(wrapper.get_property_names().is_empty());
+    }
+
+    #[test]
+    fn test_resolve_type_name_known_types() {
+        assert_eq!(resolve_type_name(TypeId::of::<String>()), "String");
+        assert_eq!(resolve_type_name(TypeId::of::<i32>()), "i32");
+        assert_eq!(resolve_type_name(TypeId::of::<i64>()), "i64");
+        assert_eq!(resolve_type_name(TypeId::of::<f64>()), "f64");
+        assert_eq!(resolve_type_name(TypeId::of::<f32>()), "f32");
+        assert_eq!(resolve_type_name(TypeId::of::<bool>()), "bool");
+        assert_eq!(resolve_type_name(TypeId::of::<u32>()), "u32");
+        assert_eq!(resolve_type_name(TypeId::of::<u64>()), "u64");
+        assert_eq!(resolve_type_name(TypeId::of::<i8>()), "i8");
+        assert_eq!(resolve_type_name(TypeId::of::<i16>()), "i16");
+        assert_eq!(resolve_type_name(TypeId::of::<u8>()), "u8");
+        assert_eq!(resolve_type_name(TypeId::of::<u16>()), "u16");
+        assert_eq!(resolve_type_name(TypeId::of::<usize>()), "usize");
+        assert_eq!(resolve_type_name(TypeId::of::<isize>()), "isize");
+    }
+
+    #[test]
+    fn test_multiple_nested_properties() {
+        // city = { name: "Beijing", code: "010" }
+        let mut city = HashMap::new();
+        city.insert(
+            "name".to_string(),
+            Arc::new("Beijing".to_string()) as Arc<dyn Any + Send + Sync>,
+        );
+        city.insert(
+            "code".to_string(),
+            Arc::new("010".to_string()) as Arc<dyn Any + Send + Sync>,
+        );
+
+        let wrapper = BeanWrapperImpl::new(Arc::new("test".to_string()));
+        wrapper.register_property(
+            "city",
+            TypeId::of::<HashMap<String, Arc<dyn Any + Send + Sync>>>(),
+        );
+        wrapper
+            .set_property_value("city", Arc::new(city))
+            .unwrap();
+
+        let name = wrapper.get_property_value("city.name").unwrap();
+        assert_eq!(*name.downcast_ref::<String>().unwrap(), "Beijing");
+
+        let code = wrapper.get_property_value("city.code").unwrap();
+        assert_eq!(*code.downcast_ref::<String>().unwrap(), "010");
+    }
+
+    #[test]
+    fn test_nested_property_missing_intermediate() {
+        let wrapper = BeanWrapperImpl::new(Arc::new("test".to_string()));
+        wrapper.register_property(
+            "data",
+            TypeId::of::<HashMap<String, Arc<dyn Any + Send + Sync>>>(),
+        );
+        // data is not set, so accessing data.child should fail
+        assert!(wrapper.get_property_value("data.child").is_err());
+    }
+
+    #[test]
+    fn test_get_property_type_for_simple_property() {
+        let wrapper = BeanWrapperImpl::new(Arc::new("test".to_string()));
+        wrapper.register_property("count", TypeId::of::<i32>());
+        assert_eq!(
+            wrapper.get_property_type("count"),
+            Some(TypeId::of::<i32>())
+        );
+    }
+
+    // ── Additional coverage tests ──────────────────────────────────────────
+
+    #[test]
+    fn test_nested_property_get_not_readable() {
+        let wrapper = BeanWrapperImpl::new(Arc::new("test".to_string()));
+        wrapper.register_readonly_property(
+            "data",
+            TypeId::of::<HashMap<String, Arc<dyn Any + Send + Sync>>>(),
+        );
+        // readonly is still readable, so this should work
+        let result = wrapper.get_property_value("data.child");
+        // data is not set, so this should fail with NoSuchProperty
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_nested_property_not_hashmap() {
+        let wrapper = BeanWrapperImpl::new(Arc::new("test".to_string()));
+        wrapper.register_property("data", TypeId::of::<String>());
+        wrapper.set_property_value("data", Arc::new("not_a_map".to_string())).unwrap();
+        let result = wrapper.get_property_value("data.child");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_nested_property_missing_key() {
+        let mut inner = HashMap::new();
+        inner.insert(
+            "existing".to_string(),
+            Arc::new("value".to_string()) as Arc<dyn Any + Send + Sync>,
+        );
+        let wrapper = BeanWrapperImpl::new(Arc::new("test".to_string()));
+        wrapper.register_property(
+            "data",
+            TypeId::of::<HashMap<String, Arc<dyn Any + Send + Sync>>>(),
+        );
+        wrapper.set_property_value("data", Arc::new(inner)).unwrap();
+        let result = wrapper.get_property_value("data.missing");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_get_property_type_nested_not_hashmap() {
+        let wrapper = BeanWrapperImpl::new(Arc::new("test".to_string()));
+        wrapper.register_property("data", TypeId::of::<String>());
+        wrapper.set_property_value("data", Arc::new("not_a_map".to_string())).unwrap();
+        assert_eq!(wrapper.get_property_type("data.child"), None);
+    }
+
+    #[test]
+    fn test_get_property_type_simple_missing() {
+        let wrapper = BeanWrapperImpl::new(Arc::new("test".to_string()));
+        assert_eq!(wrapper.get_property_type("missing"), None);
+    }
+
+    #[test]
+    fn test_property_error_is_clone() {
+        let err = PropertyError::NoSuchProperty("test".to_string());
+        let err2 = err.clone();
+        assert_eq!(format!("{}", err), format!("{}", err2));
+    }
+
+    #[test]
+    fn test_property_error_is_debug() {
+        let err = PropertyError::NoSuchProperty("test".to_string());
+        let debug = format!("{:?}", err);
+        assert!(debug.contains("NoSuchProperty"));
+    }
+
+    #[test]
+    fn test_property_error_is_std_error() {
+        let err = PropertyError::NoSuchProperty("test".to_string());
+        let _: &dyn std::error::Error = &err;
+    }
+
+    #[test]
+    fn test_batch_set_property_values_partial() {
+        let wrapper = BeanWrapperImpl::new(Arc::new("test".to_string()));
+        wrapper.register_property("name", TypeId::of::<String>());
+        // "age" is not registered, so setting it should fail
+        let mut values = HashMap::new();
+        values.insert("name".to_string(), Arc::new("Bob".to_string()) as Arc<dyn Any + Send + Sync>);
+        values.insert("age".to_string(), Arc::new(30i32) as Arc<dyn Any + Send + Sync>);
+        let result = wrapper.set_property_values(&values);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_resolve_type_name_unknown() {
+        struct CustomType;
+        let type_id = TypeId::of::<CustomType>();
+        assert_eq!(resolve_type_name(type_id), "unknown");
+    }
 }

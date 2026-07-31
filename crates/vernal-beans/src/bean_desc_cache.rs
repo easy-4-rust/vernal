@@ -115,3 +115,105 @@ impl Default for BeanDescCache {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::bean_descriptor::BeanDescriptor;
+    use std::any::TypeId;
+
+    #[derive(Debug)]
+    struct TestBeanDescriptor {
+        bean_name: &'static str,
+        props: [crate::bean_descriptor::PropertyDescriptor; 0],
+    }
+
+    impl BeanDescriptor for TestBeanDescriptor {
+        fn name(&self) -> &'static str {
+            self.bean_name
+        }
+
+        fn properties(&self) -> &[crate::bean_descriptor::PropertyDescriptor] {
+            &self.props
+        }
+    }
+
+    #[test]
+    fn new_cache_is_empty() {
+        let cache = BeanDescCache::new();
+        assert!(cache.is_empty());
+        assert_eq!(cache.len(), 0);
+    }
+
+    #[test]
+    fn default_trait() {
+        let cache = BeanDescCache::default();
+        assert!(cache.is_empty());
+    }
+
+    #[test]
+    fn global_cache_returns_same_instance() {
+        let cache1 = BeanDescCache::global();
+        let cache2 = BeanDescCache::global();
+        assert!(std::ptr::eq(cache1, cache2));
+    }
+
+    #[test]
+    fn get_or_insert_creates_and_caches() {
+        let cache = BeanDescCache::new();
+        let desc: Arc<dyn BeanDescriptor> = cache.get_or_insert::<String, _>(|| {
+            Arc::new(TestBeanDescriptor { bean_name: "String", props: [] })
+        });
+        assert_eq!(desc.name(), "String");
+        assert_eq!(cache.len(), 1);
+    }
+
+    #[test]
+    fn get_or_insert_returns_cached_on_second_call() {
+        let cache = BeanDescCache::new();
+        let desc1: Arc<dyn BeanDescriptor> = cache.get_or_insert::<i32, _>(|| {
+            Arc::new(TestBeanDescriptor { bean_name: "i32", props: [] })
+        });
+        let desc2: Arc<dyn BeanDescriptor> = cache.get_or_insert::<i32, _>(|| {
+            panic!("Factory should not be called again");
+        });
+        assert_eq!(desc1.name(), desc2.name());
+    }
+
+    #[test]
+    fn different_types_cached_separately() {
+        let cache = BeanDescCache::new();
+        let _: Arc<dyn BeanDescriptor> = cache.get_or_insert::<String, _>(|| {
+            Arc::new(TestBeanDescriptor { bean_name: "String", props: [] })
+        });
+        let _: Arc<dyn BeanDescriptor> = cache.get_or_insert::<i32, _>(|| {
+            Arc::new(TestBeanDescriptor { bean_name: "i32", props: [] })
+        });
+        assert_eq!(cache.len(), 2);
+    }
+
+    #[test]
+    fn clear_removes_all_entries() {
+        let cache = BeanDescCache::new();
+        let _: Arc<dyn BeanDescriptor> = cache.get_or_insert::<String, _>(|| {
+            Arc::new(TestBeanDescriptor { bean_name: "String", props: [] })
+        });
+        assert_eq!(cache.len(), 1);
+        cache.clear();
+        assert!(cache.is_empty());
+    }
+
+    #[test]
+    fn len_reflects_entry_count() {
+        let cache = BeanDescCache::new();
+        assert_eq!(cache.len(), 0);
+        let _: Arc<dyn BeanDescriptor> = cache.get_or_insert::<String, _>(|| {
+            Arc::new(TestBeanDescriptor { bean_name: "String", props: [] })
+        });
+        assert_eq!(cache.len(), 1);
+        let _: Arc<dyn BeanDescriptor> = cache.get_or_insert::<i32, _>(|| {
+            Arc::new(TestBeanDescriptor { bean_name: "i32", props: [] })
+        });
+        assert_eq!(cache.len(), 2);
+    }
+}

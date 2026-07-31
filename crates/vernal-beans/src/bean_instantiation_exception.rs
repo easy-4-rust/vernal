@@ -22,3 +22,54 @@ impl fmt::Display for BeanInstantiationException {
 }
 
 impl std::error::Error for BeanInstantiationException {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_new_with_string() {
+        let err = BeanInstantiationException::new("test error");
+        assert_eq!(err.message(), "test error");
+    }
+
+    #[test]
+    fn test_new_with_string_owned() {
+        let msg = String::from("owned error message");
+        let err = BeanInstantiationException::new(msg);
+        assert_eq!(err.message(), "owned error message");
+    }
+
+    #[test]
+    fn test_display() {
+        let err = BeanInstantiationException::new("display test");
+        assert_eq!(format!("{}", err), "display test");
+    }
+
+    #[test]
+    fn test_debug() {
+        let err = BeanInstantiationException::new("debug test");
+        let debug_str = format!("{:?}", err);
+        assert!(debug_str.contains("debug test"));
+    }
+
+    #[test]
+    fn test_clone() {
+        let err = BeanInstantiationException::new("clone test");
+        let cloned = err.clone();
+        assert_eq!(cloned.message(), "clone test");
+    }
+
+    #[test]
+    fn test_error_trait() {
+        let err = BeanInstantiationException::new("error trait test");
+        let error: &dyn std::error::Error = &err;
+        assert_eq!(error.to_string(), "error trait test");
+    }
+
+    #[test]
+    fn test_new_with_empty_string() {
+        let err = BeanInstantiationException::new("");
+        assert_eq!(err.message(), "");
+    }
+}

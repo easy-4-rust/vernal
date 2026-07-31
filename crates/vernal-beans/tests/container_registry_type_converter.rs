@@ -6,7 +6,7 @@ use std::sync::Arc;
 use vernal_beans::ComponentDefinition;
 use vernal_beans::RegistryBuilder;
 use vernal_beans::Resolver;
-use vernal_beans::bean_definition_registry::BeanDefinitionRegistry;
+use vernal_beans::BeanDefinitionRegistry;
 use vernal_beans::property_editor::PropertyEditor;
 use vernal_beans::type_converter_delegate::TypeConverterDelegate;
 
@@ -240,7 +240,7 @@ fn character_editor_conversion() {
 /// 验证 StringTrimmerEditor 转换。
 #[test]
 fn string_trimmer_editor_conversion() {
-    let mut editor = vernal_beans::string_trimmer_editor::StringTrimmerEditor::new();
+    let mut editor = vernal_beans::StringTrimmerEditor::new();
     editor.set_as_text("  hello  ").unwrap();
     let value = editor.get_value().unwrap();
     let str_val = value.downcast_ref::<String>().unwrap();
@@ -250,7 +250,7 @@ fn string_trimmer_editor_conversion() {
 /// 验证 URIEditor 转换。
 #[test]
 fn uri_editor_conversion() {
-    let mut editor = vernal_beans::uri_editor::URIEditor::new();
+    let mut editor = vernal_beans::URIEditor::new();
     editor.set_as_text("https://example.com").unwrap();
     let value = editor.get_value().unwrap();
     let str_val = value.downcast_ref::<String>().unwrap();
@@ -367,7 +367,7 @@ fn container_type_converter_integration() {
 #[derive(Debug)]
 struct DummyBeanDefinition;
 
-impl vernal_beans::bean_definition::BeanDefinition for DummyBeanDefinition {
+impl vernal_beans::BeanDefinition for DummyBeanDefinition {
     fn bean_name(&self) -> &vernal_beans::ComponentKey {
         unimplemented!()
     }

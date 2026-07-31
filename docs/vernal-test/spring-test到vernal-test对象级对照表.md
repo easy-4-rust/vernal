@@ -1,3 +1,9 @@
+<!-- migration-doc: authority=historical canonical=对象级对照表.md -->
+
+> 迁移文档治理：本文级别为 **historical**，历史基线提交 `9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82`。正文不得作为当前验收结论；以 [对象级对照表.md](对象级对照表.md) 为准。
+
+> **历史文档，非当前验收依据。** 当前版本见[对象级对照表](对象级对照表.md)。
+
 # spring-test → vernal-test 对象级对照表（验收清单）
 
 > 基线：Spring Framework **7.0.8**，spring-test 共 **459 个 Java 主类 + 22 个 Kotlin 主文件 + ~80 个 mock 类**（合并后约 480 个公开对象）。

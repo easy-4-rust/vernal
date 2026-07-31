@@ -1,3 +1,9 @@
+<!-- migration-doc: authority=historical canonical=对象级对照表.md -->
+
+> 迁移文档治理：本文级别为 **historical**，历史基线提交 `9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82`。正文不得作为当前验收结论；以 [对象级对照表.md](对象级对照表.md) 为准。
+
+> **历史文档，非当前验收依据。** 当前版本见[对象级对照表](对象级对照表.md)。
+
 # spring-web → vernal-web 对象级对照表
 
 > 基线：Spring Framework 7.0.8。本文是结构验收清单：每个迁移对象必须有明确 Rust 类型/文件、状态和语义差异说明。Spring `web` 下的 Servlet、WebFlux、WebSocket、client、codec 等实现按层次归类；同一语义只保留一个 Vernal 核心对象，运行时差异放在 adapter。

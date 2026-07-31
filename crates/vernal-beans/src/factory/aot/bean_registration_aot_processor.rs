@@ -78,3 +78,109 @@ impl std::fmt::Display for AotProcessingError {
 }
 
 impl std::error::Error for AotProcessingError {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn new_processor_has_no_processed() {
+        let processor = BeanRegistrationAotProcessor::new();
+        assert_eq!(processor.processed_count(), 0);
+    }
+
+    #[test]
+    fn default_trait_creates_empty_processor() {
+        let processor = BeanRegistrationAotProcessor::default();
+        assert_eq!(processor.processed_count(), 0);
+    }
+
+    #[test]
+    fn process_adds_entry() {
+        let processor = BeanRegistrationAotProcessor::new();
+        processor.process(TypeId::of::<String>(), "String".to_string()).unwrap();
+        assert_eq!(processor.processed_count(), 1);
+        assert!(processor.contains(TypeId::of::<String>()));
+    }
+
+    #[test]
+    fn process_overwrites_existing() {
+        let processor = BeanRegistrationAotProcessor::new();
+        processor.process(TypeId::of::<String>(), "first".to_string()).unwrap();
+        processor.process(TypeId::of::<String>(), "second".to_string()).unwrap();
+        assert_eq!(processor.processed_count(), 1);
+        assert_eq!(processor.get_processed(TypeId::of::<String>()).unwrap(), "second");
+    }
+
+    #[test]
+    fn get_processed_returns_none_for_missing() {
+        let processor = BeanRegistrationAotProcessor::new();
+        assert!(processor.get_processed(TypeId::of::<i32>()).is_none());
+    }
+
+    #[test]
+    fn contains_returns_false_for_missing() {
+        let processor = BeanRegistrationAotProcessor::new();
+        assert!(!processor.contains(TypeId::of::<i32>()));
+    }
+
+    #[test]
+    fn clear_removes_all() {
+        let processor = BeanRegistrationAotProcessor::new();
+        processor.process(TypeId::of::<String>(), "String".to_string()).unwrap();
+        processor.process(TypeId::of::<i32>(), "i32".to_string()).unwrap();
+        assert_eq!(processor.processed_count(), 2);
+        processor.clear();
+        assert_eq!(processor.processed_count(), 0);
+    }
+
+    #[test]
+    fn process_multiple_types() {
+        let processor = BeanRegistrationAotProcessor::new();
+        processor.process(TypeId::of::<String>(), "String".to_string()).unwrap();
+        processor.process(TypeId::of::<i32>(), "i32".to_string()).unwrap();
+        processor.process(TypeId::of::<bool>(), "bool".to_string()).unwrap();
+        assert_eq!(processor.processed_count(), 3);
+        assert!(processor.contains(TypeId::of::<String>()));
+        assert!(processor.contains(TypeId::of::<i32>()));
+        assert!(processor.contains(TypeId::of::<bool>()));
+    }
+
+    #[test]
+    fn aot_processing_error_display() {
+        let err = AotProcessingError::new("test error");
+        assert_eq!(format!("{}", err), "test error");
+    }
+
+    #[test]
+    fn aot_processing_error_message() {
+        let err = AotProcessingError::new("test message");
+        assert_eq!(err.message(), "test message");
+    }
+
+    #[test]
+    fn aot_processing_error_is_std_error() {
+        let err = AotProcessingError::new("error");
+        let _: &dyn std::error::Error = &err;
+    }
+
+    #[test]
+    fn aot_processing_error_from_string() {
+        let err = AotProcessingError::new(String::from("owned string"));
+        assert_eq!(err.message(), "owned string");
+    }
+
+    #[test]
+    fn aot_processing_error_clone() {
+        let err = AotProcessingError::new("clone me");
+        let err2 = err.clone();
+        assert_eq!(err.message(), err2.message());
+    }
+
+    #[test]
+    fn aot_processing_error_debug() {
+        let err = AotProcessingError::new("debug");
+        let debug_str = format!("{:?}", err);
+        assert!(debug_str.contains("AotProcessingError"));
+    }
+}

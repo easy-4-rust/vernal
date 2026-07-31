@@ -1,3 +1,33 @@
+<!-- migration-doc: authority=authoritative canonical=../迁移验收规范.md -->
+# vernal-jdbc 技术要求
+> 迁移文档治理：本文级别为 **authoritative**。正文中的历史统计或完成标记不得单独作为验收结论；以 [../迁移验收规范.md](../迁移验收规范.md) 和自动审计报告为准。
+
+
+> `spring-jdbc` 的一对一目标模块。目标 crate 尚未建立，当前全部是规划/缺失状态。
+
+固定提交中有 236 个业务对象，完整表见[对象级对照表](对象级对照表.md)。sqlx 是候选底座，不会自动抵扣 `JdbcTemplate`、callback、mapper、datasource、异常翻译或初始化对象。
+
+目标路径保留末两层：
+
+| Java 来源 | 目标 Rust |
+|---|---|
+| `core/JdbcTemplate.java` | `core/jdbc_template.rs` |
+| `core/namedparam/NamedParameterJdbcTemplate.java` | `core/namedparam/named_parameter_jdbc_template.rs` |
+| `datasource/init/ScriptUtils.java` | `datasource/init/script_utils.rs` |
+| `support/SQLErrorCodeSQLExceptionTranslator.java` | `support/sql_error_code_sql_exception_translator.rs` |
+
+必须保持连接获取/释放、statement/row 清理、warning、批处理、generated key、异常翻译与事务绑定语义。遵循[迁移验收规范](../迁移验收规范.md)。
+
+---
+
+<!-- restored-detail-from-head: dd20300d16a09200bd8a379ff14db1e2da99b67c -->
+
+## 原详细文档（完整保留）
+
+> 以下正文完整恢复自 Vernal 提交 `dd20300d16a09200bd8a379ff14db1e2da99b67c`。其中历史对象数量、完成状态、
+> 路径算法和依赖替代结论如与本文顶部或自动对象台账冲突，以顶部当前结论和
+> `docs/migration-audit/` 为准；其 API、设计背景、阶段拆解和测试说明继续保留。
+
 # vernal-rbdc 技术要求（对标 spring-jdbc）
 
 > **版本**：v2.0（2026-07-28）｜修正：spring-jdbc 对应 **vernal-rbdc**（通用数据库抽象层，非 rbatis 专属）

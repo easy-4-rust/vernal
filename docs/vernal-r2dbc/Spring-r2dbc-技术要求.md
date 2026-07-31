@@ -1,3 +1,31 @@
+<!-- migration-doc: authority=authoritative canonical=../迁移验收规范.md -->
+# vernal-r2dbc 技术要求
+> 迁移文档治理：本文级别为 **authoritative**。正文中的历史统计或完成标记不得单独作为验收结论；以 [../迁移验收规范.md](../迁移验收规范.md) 和自动审计报告为准。
+
+
+> `spring-r2dbc` 的一对一目标模块；目标 crate 尚未建立。
+
+固定提交中有 59 个业务对象，当前全部 `MISSING`。sqlx 的异步能力只是候选底座，不能整体豁免 Spring 的 client、connection、transaction、exception translation 与 database initialization 对象。
+
+| Java 来源 | 目标 Rust |
+|---|---|
+| `core/DatabaseClient.java` | `core/database_client.rs` |
+| `core/DefaultDatabaseClient.java` | `core/default_database_client.rs` |
+| `connection/R2dbcTransactionManager.java` | `connection/r2dbc_transaction_manager.rs` |
+| `connection/init/ScriptUtils.java` | `connection/init/script_utils.rs` |
+
+结果流用 `Stream<Item = Result<T,E>>`，必须保持取消、错误、连接释放和事务上下文。遵循[迁移验收规范](../迁移验收规范.md)。
+
+---
+
+<!-- restored-detail-from-head: dd20300d16a09200bd8a379ff14db1e2da99b67c -->
+
+## 原详细文档（完整保留）
+
+> 以下正文完整恢复自 Vernal 提交 `dd20300d16a09200bd8a379ff14db1e2da99b67c`。其中历史对象数量、完成状态、
+> 路径算法和依赖替代结论如与本文顶部或自动对象台账冲突，以顶部当前结论和
+> `docs/migration-audit/` 为准；其 API、设计背景、阶段拆解和测试说明继续保留。
+
 # vernal-r2dbc 技术要求（对标 spring-r2dbc）
 
 > **版本**：v1.0（2026-07-28）

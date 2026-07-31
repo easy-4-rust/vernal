@@ -34,3 +34,35 @@ pub trait PointcutExt: Pointcut + Sized {
 }
 
 impl<P> PointcutExt for P where P: Pointcut {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::Operation;
+
+    #[test]
+    fn pointcut_ext_and() {
+        let pc1 = |op: &Operation| op.component() == "Service";
+        let pc2 = |op: &Operation| op.method() == "method";
+        let combined = pc1.and(pc2);
+        let op = Operation::new("Service", "method");
+        assert!(combined.matches(&op));
+    }
+
+    #[test]
+    fn pointcut_ext_or() {
+        let pc1 = |op: &Operation| op.component() == "Service";
+        let pc2 = |op: &Operation| op.component() == "Other";
+        let combined = pc1.or(pc2);
+        let op = Operation::new("Service", "method");
+        assert!(combined.matches(&op));
+    }
+
+    #[test]
+    fn pointcut_ext_not() {
+        let pc = |op: &Operation| op.component() == "Other";
+        let inverted = pc.not();
+        let op = Operation::new("Service", "method");
+        assert!(inverted.matches(&op));
+    }
+}

@@ -3,7 +3,9 @@
 //! 对应 spring-aop `support` 包。
 //! 提供切点和顾问的支持类。
 
+pub mod default_pointcut_advisor;
 pub mod expression_pointcut;
 
 // Re-export
+pub use default_pointcut_advisor::DefaultPointcutAdvisor;
 pub use expression_pointcut::{ExpressionPointcut, StringExpressionPointcut};

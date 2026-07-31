@@ -1,333 +1,403 @@
-//! 针对 factory/support/、factory/annotation/、factory/aot/ 新增实现的针对性测试。
+/// Tests for factory/support, factory/annotation, factory/aot implementations.
 use std::any::TypeId;
+use std::any::Any;
+use std::sync::Arc;
 
 // ═══════════════════════════════════════════════════════════════════
-// factory/annotation/ 测试
-// ═══════════════════════════════════════════════════════════════════
-
-#[test]
-fn autowired_annotation_bean_post_processor_register_field() {
-    use vernal_beans::factory::annotation::autowired_annotation_bean_post_processor::AutowiredAnnotationBeanPostProcessor;
-    let pp = AutowiredAnnotationBeanPostProcessor::new();
-    pp.register_field(TypeId::of::<String>(), "name".to_string(), TypeId::of::<String>());
-    let points = pp.get_field_injection_points(TypeId::of::<String>());
-    assert_eq!(points, vec!["name"]);
-}
-
-#[test]
-fn autowired_annotation_bean_post_processor_register_method() {
-    use vernal_beans::factory::annotation::autowired_annotation_bean_post_processor::AutowiredAnnotationBeanPostProcessor;
-    let pp = AutowiredAnnotationBeanPostProcessor::new();
-    pp.register_method(TypeId::of::<i32>(), "setValue".to_string(), TypeId::of::<i32>());
-    let points = pp.get_method_injection_points(TypeId::of::<i32>());
-    assert_eq!(points, vec!["setValue"]);
-}
-
-#[test]
-fn autowired_annotation_bean_post_processor_initialize() {
-    use vernal_beans::factory::annotation::autowired_annotation_bean_post_processor::AutowiredAnnotationBeanPostProcessor;
-    let pp = AutowiredAnnotationBeanPostProcessor::new();
-    assert!(!pp.is_initialized());
-    pp.initialize();
-    assert!(pp.is_initialized());
-}
-
-#[test]
-fn autowired_annotation_bean_post_processor_injection_count() {
-    use vernal_beans::factory::annotation::autowired_annotation_bean_post_processor::AutowiredAnnotationBeanPostProcessor;
-    let pp = AutowiredAnnotationBeanPostProcessor::new();
-    pp.register_field(TypeId::of::<String>(), "name".to_string(), TypeId::of::<String>());
-    pp.register_method(TypeId::of::<String>(), "setName".to_string(), TypeId::of::<String>());
-    assert_eq!(pp.injection_count(TypeId::of::<String>()), 2);
-}
-
-#[test]
-fn init_destroy_annotation_bean_post_processor_register() {
-    use vernal_beans::factory::annotation::init_destroy_annotation_bean_post_processor::InitDestroyAnnotationBeanPostProcessor;
-    let pp = InitDestroyAnnotationBeanPostProcessor::new();
-    pp.register_init_method("init".to_string());
-    pp.register_destroy_method("destroy".to_string());
-    assert_eq!(pp.init_method_count(), 1);
-    assert_eq!(pp.destroy_method_count(), 1);
-    assert!(pp.has_init_method("init"));
-    assert!(pp.has_destroy_method("destroy"));
-}
-
-#[test]
-fn init_destroy_annotation_bean_post_processor_multiple() {
-    use vernal_beans::factory::annotation::init_destroy_annotation_bean_post_processor::InitDestroyAnnotationBeanPostProcessor;
-    let pp = InitDestroyAnnotationBeanPostProcessor::new();
-    pp.register_init_method("init1".to_string());
-    pp.register_init_method("init2".to_string());
-    pp.register_destroy_method("destroy1".to_string());
-    assert_eq!(pp.init_method_count(), 2);
-    assert_eq!(pp.destroy_method_count(), 1);
-}
-
-#[test]
-fn qualifier_annotation_resolver_register() {
-    use vernal_beans::factory::annotation::qualifier_annotation_autowire_candidate_resolver::QualifierAnnotationAutowireCandidateResolver;
-    let r = QualifierAnnotationAutowireCandidateResolver::new();
-    r.register_qualifier(TypeId::of::<String>(), "primary".to_string());
-    assert!(r.has_qualifier(TypeId::of::<String>(), "primary"));
-    assert_eq!(r.qualifier_count(TypeId::of::<String>()), 1);
-}
-
-#[test]
-fn qualifier_annotation_resolver_multiple() {
-    use vernal_beans::factory::annotation::qualifier_annotation_autowire_candidate_resolver::QualifierAnnotationAutowireCandidateResolver;
-    let r = QualifierAnnotationAutowireCandidateResolver::new();
-    r.register_qualifier(TypeId::of::<String>(), "primary".to_string());
-    r.register_qualifier(TypeId::of::<String>(), "secondary".to_string());
-    let qualifiers = r.get_qualifiers(TypeId::of::<String>());
-    assert_eq!(qualifiers.len(), 2);
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// factory/aot/ 测试
+// factory/support/ tests
 // ═══════════════════════════════════════════════════════════════════
 
 #[test]
-fn bean_registration_aot_processor_process() {
-    use vernal_beans::factory::aot::bean_registration_aot_processor::BeanRegistrationAotProcessor;
-    use vernal_beans::root_bean_definition::RootBeanDefinition;
-    let p = BeanRegistrationAotProcessor::new();
-    let def = "MyBean".to_string();
-    assert!(p.process(TypeId::of::<String>(), "MyBean".to_string()).is_ok());
-    assert_eq!(p.processed_count(), 1);
-    assert!(p.contains(TypeId::of::<String>()));
+fn autowire_utils_static() {
+    use vernal_beans::factory::support::autowire_utils::AutowireUtils;
+    assert!(AutowireUtils::is_autowire_type("set"));
+    assert!(AutowireUtils::is_autowire_type("get"));
+    assert!(AutowireUtils::is_autowire_type("is"));
+    assert!(!AutowireUtils::is_autowire_type("foo"));
+    assert_eq!(AutowireUtils::resolve_autowire_value("setName"), "name");
 }
 
 #[test]
-fn bean_registration_aot_processor_clear() {
-    use vernal_beans::factory::aot::bean_registration_aot_processor::BeanRegistrationAotProcessor;
-    use vernal_beans::root_bean_definition::RootBeanDefinition;
-    let p = BeanRegistrationAotProcessor::new();
-    p.process(TypeId::of::<String>(), "MyBean".to_string());
-    p.process(TypeId::of::<i32>(), "Other".to_string());
-    assert_eq!(p.processed_count(), 2);
-    p.clear();
-    assert_eq!(p.processed_count(), 0);
+fn default_singleton_registry_l1() {
+    use vernal_beans::factory::support::default_singleton_bean_registry::DefaultSingletonBeanRegistry;
+    let r = DefaultSingletonBeanRegistry::new();
+    assert_eq!(r.singleton_count(), 0);
+    r.register_singleton("b1".to_string(), Arc::new(42i32));
+    assert_eq!(r.singleton_count(), 1);
+    assert!(r.contains_singleton("b1"));
 }
 
 #[test]
-fn bean_factory_initialization_aot_processor_steps() {
-    use vernal_beans::factory::aot::bean_factory_initialization_aot_processor::BeanFactoryInitializationAotProcessor;
-    let p = BeanFactoryInitializationAotProcessor::new();
-    assert!(!p.is_initialized());
-    p.process_step("step1");
-    p.process_step("step2");
-    assert_eq!(p.step_count(), 2);
-    assert!(p.has_step("step1"));
-    p.mark_initialized();
-    assert!(p.is_initialized());
+fn default_singleton_registry_l3() {
+    use vernal_beans::factory::support::default_singleton_bean_registry::DefaultSingletonBeanRegistry;
+    let r = DefaultSingletonBeanRegistry::new();
+    r.add_singleton_factory("b1".to_string(), Arc::new(|| Arc::new(99i32) as Arc<dyn std::any::Any + Send + Sync>));
+    let early = r.get_early_bean_reference("b1");
+    assert!(early.is_some());
 }
 
 #[test]
-fn bean_factory_initialization_aot_processor_clear_steps() {
-    use vernal_beans::factory::aot::bean_factory_initialization_aot_processor::BeanFactoryInitializationAotProcessor;
-    let p = BeanFactoryInitializationAotProcessor::new();
-    p.process_step("a");
-    p.process_step("b");
-    assert_eq!(p.step_count(), 2);
-    p.clear_steps();
-    assert_eq!(p.step_count(), 0);
+fn default_singleton_registry_lifecycle() {
+    use vernal_beans::factory::support::default_singleton_bean_registry::DefaultSingletonBeanRegistry;
+    let r = DefaultSingletonBeanRegistry::new();
+    assert!(!r.is_currently_in_creation("b1"));
+    r.mark_as_in_creation("b1");
+    assert!(r.is_currently_in_creation("b1"));
 }
 
 #[test]
-fn autowired_arguments_basic() {
-    use vernal_beans::factory::aot::autowired_arguments::AutowiredArguments;
-    let args = AutowiredArguments::empty();
-    assert!(args.is_empty());
-    assert_eq!(args.count(), 0);
+fn bean_definition_defaults_test() {
+    use vernal_beans::factory::support::bean_definition_defaults::BeanDefinitionDefaults;
+    let mut d = BeanDefinitionDefaults::new();
+    assert!(!d.lazy_init);
+    d.set_lazy_init(true);
+    assert!(d.lazy_init);
 }
 
 #[test]
-fn autowired_arguments_from_arguments() {
-    use std::sync::Arc;
-    use vernal_beans::factory::aot::autowired_arguments::AutowiredArguments;
-    let args_vec: Vec<Arc<dyn std::any::Any + Send + Sync>> = vec![Arc::new(42i32)];
-    let args = AutowiredArguments::from_arguments(args_vec);
-    assert!(!args.is_empty());
-    assert_eq!(args.count(), 1);
-    assert_eq!(args.type_id_at(0), Some(TypeId::of::<i32>()));
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// factory/support/ 测试
-// ═══════════════════════════════════════════════════════════════════
-
-#[test]
-fn abstract_bean_factory_register_definition() {
-    use std::sync::Arc;
-    use vernal_beans::factory::support::abstract_bean_factory::AbstractBeanFactory;
-    let f = AbstractBeanFactory::new();
-    f.register_bean_definition("myBean".to_string(), Arc::new(42i32));
-    assert_eq!(f.bean_definition_count(), 1);
-    assert!(f.contains_bean_definition("myBean"));
-    assert_eq!(f.bean_definition_names(), vec!["myBean"]);
+fn autowire_candidate_qualifier_test() {
+    use vernal_beans::factory::support::autowire_candidate_qualifier::AutowireCandidateQualifier;
+    let q = AutowireCandidateQualifier::new("javax.inject.Qualifier".to_string());
+    assert_eq!(q.qualifier_type(), "javax.inject.Qualifier");
+    q.set_attribute("value".to_string(), "primary".to_string());
+    assert_eq!(q.get_attribute("value"), Some("primary".to_string()));
 }
 
 #[test]
-fn abstract_bean_factory_register_singleton() {
-    use std::sync::Arc;
-    use vernal_beans::factory::support::abstract_bean_factory::AbstractBeanFactory;
-    let f = AbstractBeanFactory::new();
-    f.register_singleton("s1".to_string(), Arc::new("value".to_string()));
-    assert_eq!(f.singleton_count(), 1);
-    assert!(f.contains_singleton("s1"));
-    let val = f.get_singleton("s1").unwrap();
-    assert_eq!(val.downcast_ref::<String>().unwrap(), "value");
+fn bean_definition_reader_utils_test() {
+    use vernal_beans::factory::support::bean_definition_reader_utils::BeanDefinitionReaderUtils;
+    let u = BeanDefinitionReaderUtils::new();
+    assert_eq!(u.generate_bean_name("myBean"), "myBean#1");
+    assert_eq!(u.generate_bean_name("myBean"), "myBean#2");
 }
 
 #[test]
-fn abstract_bean_factory_register_alias() {
-    use vernal_beans::factory::support::abstract_bean_factory::AbstractBeanFactory;
-    let f = AbstractBeanFactory::new();
-    assert!(f.register_alias("alias1".to_string(), "myBean".to_string()).is_ok());
-    assert_eq!(f.resolve_alias("alias1"), "myBean");
-    assert_eq!(f.alias_count(), 1);
+fn bean_definition_resource_test() {
+    use vernal_beans::factory::support::bean_definition_resource::BeanDefinitionResource;
+    let r = BeanDefinitionResource::new("test.xml".to_string(), "<beans/>".to_string());
+    assert_eq!(r.description(), "test.xml");
+    assert!(!r.is_empty());
 }
 
 #[test]
-fn abstract_bean_factory_alias_conflict() {
-    use vernal_beans::factory::support::abstract_bean_factory::AbstractBeanFactory;
-    let f = AbstractBeanFactory::new();
-    f.register_alias("alias1".to_string(), "bean1".to_string()).unwrap();
-    // 重复注册别名到不同 bean 应该失败
-    assert!(f.register_alias("alias1".to_string(), "bean2".to_string()).is_err());
-    // 重复注册到相同 bean 应该成功
-    assert!(f.register_alias("alias1".to_string(), "bean1".to_string()).is_ok());
+fn bean_definition_value_resolver_test() {
+    use vernal_beans::factory::support::bean_definition_value_resolver::BeanDefinitionValueResolver;
+    let r = BeanDefinitionValueResolver::new();
+    r.resolve("name".to_string(), "Alice".to_string());
+    assert_eq!(r.get("name"), Some("Alice".to_string()));
 }
 
 #[test]
-fn abstract_bean_factory_freeze() {
-    use vernal_beans::factory::support::abstract_bean_factory::AbstractBeanFactory;
-    let f = AbstractBeanFactory::new();
-    assert!(!f.is_configuration_frozen());
-    f.freeze_configuration();
-    assert!(f.is_configuration_frozen());
+fn default_bean_name_generator_trait() {
+    use vernal_beans::factory::support::bean_name_generator::BeanNameGenerator;
+    use vernal_beans::factory::support::default_bean_name_generator::DefaultBeanNameGenerator;
+    let g = DefaultBeanNameGenerator::new();
+    let n1 = g.generate_bean_name(TypeId::of::<String>());
+    let n2 = g.generate_bean_name(TypeId::of::<String>());
+    assert_ne!(n1, n2);
 }
 
 #[test]
-fn abstract_bean_factory_destroy_singletons() {
-    use std::sync::Arc;
-    use vernal_beans::factory::support::abstract_bean_factory::AbstractBeanFactory;
-    let f = AbstractBeanFactory::new();
-    f.register_singleton("s1".to_string(), Arc::new(1i32));
-    f.register_singleton("s2".to_string(), Arc::new(2i32));
-    assert_eq!(f.singleton_count(), 2);
-    f.destroy_singletons();
-    assert_eq!(f.singleton_count(), 0);
+fn bean_registry_adapter_test() {
+    use vernal_beans::factory::support::bean_registry_adapter::BeanRegistryAdapter;
+    let a = BeanRegistryAdapter::new();
+    assert_eq!(a.count(), 0);
+    a.register("myBean".to_string(), TypeId::of::<String>());
+    assert_eq!(a.count(), 1);
+    a.unregister("myBean");
+    assert_eq!(a.count(), 0);
 }
 
 #[test]
-fn abstract_bean_factory_parent() {
-    use vernal_beans::factory::support::abstract_bean_factory::AbstractBeanFactory;
-    use vernal_beans::ScopeKey;
-    let f = AbstractBeanFactory::new();
-    assert!(f.parent().is_none());
-    f.set_parent(Some("parent1".to_string()));
-    assert_eq!(f.parent(), Some("parent1".to_string()));
-    let _ = ScopeKey::of::<String>();
+fn abstract_autowire_capable_bean_factory_test() {
+    use vernal_beans::factory::support::abstract_autowire_capable_bean_factory::AbstractAutowireCapableBeanFactory;
+    let f = AbstractAutowireCapableBeanFactory::new();
+    f.ignore_dependency_type(TypeId::of::<String>());
+    assert!(f.is_dependency_ignored(TypeId::of::<String>()));
+    assert_eq!(f.ignored_count(), 1);
 }
 
 #[test]
-fn default_listable_bean_factory_type_mapping() {
-    use vernal_beans::factory::support::default_listable_bean_factory::DefaultListableBeanFactory;
-    let f = DefaultListableBeanFactory::new();
-    f.register_type_mapping(TypeId::of::<String>(), "bean1".to_string());
-    f.register_type_mapping(TypeId::of::<String>(), "bean2".to_string());
-    f.register_type_mapping(TypeId::of::<i32>(), "bean3".to_string());
-    let string_beans = f.get_bean_names_for_type(TypeId::of::<String>());
-    assert_eq!(string_beans.len(), 2);
-    assert_eq!(f.type_mapping_count(), 2);
+fn abstract_bean_definition_reader_test() {
+    use vernal_beans::factory::support::abstract_bean_definition_reader::AbstractBeanDefinitionReader;
+    let mut r = AbstractBeanDefinitionReader::new("classpath");
+    r.increment_bean_class_count();
+    r.increment_bean_class_count();
+    assert_eq!(r.get_bean_class_count(), 2);
 }
 
 #[test]
-fn default_listable_bean_factory_dependency_descriptor() {
-    use vernal_beans::factory::support::default_listable_bean_factory::DefaultListableBeanFactory;
-    use vernal_beans::factory::support::dependency_descriptor::DependencyDescriptor;
-    let f = DefaultListableBeanFactory::new();
-    let desc = DependencyDescriptor::new(TypeId::of::<String>(), "String".to_string(), true)
-        .with_qualifier("primary".to_string())
-        .with_injection_point_name("name".to_string());
-    f.register_dependency_descriptor("myBean".to_string(), desc);
-    let retrieved = f.get_dependency_descriptor("myBean");
-    assert!(retrieved.is_some());
-    assert_eq!(retrieved.unwrap().qualifier, Some("primary".to_string()));
+fn generic_type_aware_resolver_test() {
+    use vernal_beans::factory::support::autowire_candidate_resolver::AutowireCandidateResolver;
+    use vernal_beans::factory::support::generic_type_aware_autowire_candidate_resolver::GenericTypeAwareAutowireCandidateResolver;
+    let r = GenericTypeAwareAutowireCandidateResolver::new();
+    assert!(r.is_autowire_candidate(TypeId::of::<String>(), "bean"));
+    r.exclude_type(TypeId::of::<String>());
+    assert!(!r.is_autowire_candidate(TypeId::of::<String>(), "bean"));
 }
 
 #[test]
-fn dependency_descriptor_builder() {
-    use vernal_beans::factory::support::dependency_descriptor::DependencyDescriptor;
-    let desc = DependencyDescriptor::new(TypeId::of::<String>(), "String".to_string(), true);
-    assert!(desc.is_required());
-    assert!(!desc.has_qualifier());
-    let desc2 = desc.with_qualifier("primary".to_string());
-    assert!(desc2.has_qualifier());
+fn disposable_bean_adapter_test() {
+    use vernal_beans::factory::support::disposable_bean_adapter::DisposableBeanAdapter;
+    let adapter = DisposableBeanAdapter::new("myBean".to_string(), Arc::new(42i32));
+    assert_eq!(adapter.bean_name(), "myBean");
 }
 
 #[test]
-fn abstract_bean_factory_scope() {
-    use vernal_beans::factory::support::abstract_bean_factory::AbstractBeanFactory;
-    use vernal_beans::ScopeKey;
-    let f = AbstractBeanFactory::new();
-    f.register_scope("session".to_string(), ScopeKey::of::<String>());
-    f.register_scope("request".to_string(), ScopeKey::of::<i32>());
-    assert_eq!(f.registered_scope_count(), 2);
-    assert!(f.contains_scope("session"));
+fn managed_collections_test() {
+    use vernal_beans::factory::support::managed_list::ManagedList;
+    use vernal_beans::factory::support::managed_map::ManagedMap;
+    use vernal_beans::factory::support::managed_set::ManagedSet;
+    use vernal_beans::factory::support::managed_array::ManagedArray;
+    use vernal_beans::factory::support::managed_properties::ManagedProperties;
+    
+    let list = ManagedList::new();
+    list.add(Arc::new(1i32) as Arc<dyn std::any::Any + Send + Sync>);
+    list.add(Arc::new(2i32) as Arc<dyn std::any::Any + Send + Sync>);
+    assert_eq!(list.len(), 2);
+    
+    let map = ManagedMap::new();
+    map.put("k1".to_string(), Arc::new(1) as Arc<dyn std::any::Any + Send + Sync>);
+    assert!(map.contains_key("k1"));
+    
+    let set = ManagedSet::new();
+    set.add("a");
+    set.add("b");
+    set.add("a");
+    assert_eq!(set.len(), 2);
+    
+    let arr = ManagedArray::new();
+    arr.add(Arc::new(1) as Arc<dyn std::any::Any + Send + Sync>);
+    assert_eq!(arr.len(), 1);
+    
+    let p = ManagedProperties::new();
+    p.set("k1".to_string(), "v1".to_string());
+    assert_eq!(p.get("k1"), Some("v1".to_string()));
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// 顶层缺失文件测试
+// factory/annotation/ tests
 // ═══════════════════════════════════════════════════════════════════
 
 #[test]
-fn bean_instantiation_exception() {
-    use vernal_beans::bean_instantiation_exception::BeanInstantiationException;
-    let e = BeanInstantiationException::new("failed to create");
-    assert_eq!(e.message(), "failed to create");
+fn annotated_bean_definition_test() {
+    use vernal_beans::factory::annotation::annotated_bean_definition::{
+        AnnotatedBeanDefinition, GenericAnnotatedBeanDefinition,
+    };
+    let def = GenericAnnotatedBeanDefinition::new("com.example.Service".to_string())
+        .with_factory_method("create".to_string())
+        .with_annotation_count(3);
+    assert_eq!(def.bean_class_name(), "com.example.Service");
+    assert!(def.is_factory_method("create"));
 }
 
 #[test]
-fn fatal_bean_exception() {
-    use vernal_beans::fatal_bean_exception::FatalBeanException;
-    let e = FatalBeanException::new("fatal error");
-    assert_eq!(e.message(), "fatal error");
+fn autowired_annotation_test() {
+    use vernal_beans::factory::annotation::autowired::Autowired;
+    let mut a = Autowired::new();
+    assert!(a.required());
+    a.set_required(false);
+    a.set_primary(true);
+    assert!(a.is_primary());
+    a.add_qualifier_type(TypeId::of::<String>());
+    assert_eq!(a.qualifier_count(), 1);
 }
 
 #[test]
-fn invalid_property_exception() {
-    use vernal_beans::invalid_property_exception::InvalidPropertyException;
-    let e = InvalidPropertyException::new("invalid property");
-    assert_eq!(e.message(), "invalid property");
+fn annotation_markers_test() {
+    use vernal_beans::factory::annotation::value::Value;
+    use vernal_beans::factory::annotation::configurable::Configurable;
+    use vernal_beans::factory::annotation::lookup::Lookup;
+    
+    let v = Value::new("hello".to_string());
+    assert_eq!(v.value(), "hello");
+    
+    let mut c = Configurable::new();
+    assert!(c.enabled());
+    c.set_enabled(false);
+    assert!(!c.enabled());
+    
+    let l = Lookup::new("myBean".to_string());
+    assert_eq!(l.value(), "myBean");
 }
 
 #[test]
-fn not_readable_property_exception() {
-    use vernal_beans::not_readable_property_exception::NotReadablePropertyException;
-    let e = NotReadablePropertyException::new("not readable");
-    assert_eq!(e.message(), "not readable");
+fn custom_autowire_configurer_test() {
+    use vernal_beans::factory::annotation::custom_autowire_configurer::CustomAutowireConfigurer;
+    let c = CustomAutowireConfigurer::new();
+    c.set_required(false);
+    c.add_custom_qualifier(TypeId::of::<String>());
+    assert_eq!(c.custom_qualifier_count(), 1);
 }
 
 #[test]
-fn not_writable_property_exception() {
-    use vernal_beans::not_writable_property_exception::NotWritablePropertyException;
-    let e = NotWritablePropertyException::new("not writable");
-    assert_eq!(e.message(), "not writable");
+fn parameter_resolution_delegate_test() {
+    use vernal_beans::factory::annotation::parameter_resolution_delegate::ParameterResolutionDelegate;
+    let mut d = ParameterResolutionDelegate::new();
+    d.register_dependency("name".to_string(), TypeId::of::<String>());
+    d.increment_resolved();
+    assert_eq!(d.resolved_count(), 1);
 }
 
 #[test]
-fn null_value_in_nested_path_exception() {
-    use vernal_beans::null_value_in_nested_path_exception::NullValueInNestedPathException;
-    let e = NullValueInNestedPathException::new("null in path");
-    assert_eq!(e.message(), "null in path");
+fn jakarta_annotations_runtime_hints_test() {
+    use vernal_beans::factory::annotation::jakarta_annotations_runtime_hints::JakartaAnnotationsRuntimeHints;
+    let h = JakartaAnnotationsRuntimeHints::new();
+    h.register();
+    assert_eq!(h.registered_count(), 1);
+    h.reset();
+    assert_eq!(h.registered_count(), 0);
 }
 
 #[test]
-fn property_access_exception() {
-    use vernal_beans::property_access_exception::PropertyAccessException;
-    let e = PropertyAccessException::new("access denied");
-    assert_eq!(e.message(), "access denied");
+fn bean_factory_annotation_utils_test() {
+    use vernal_beans::factory::annotation::bean_factory_annotation_utils::BeanFactoryAnnotationUtils;
+    let u = BeanFactoryAnnotationUtils::new();
+    u.mark_processed("Autowired".to_string());
+    assert!(u.is_processed("Autowired"));
+}
+
+#[test]
+fn annotation_bean_wiring_info_resolver_test() {
+    use vernal_beans::factory::annotation::annotation_bean_wiring_info_resolver::AnnotationBeanWiringInfoResolver;
+    let r = AnnotationBeanWiringInfoResolver::new();
+    r.register_wiring_info(TypeId::of::<String>(), vec!["name".to_string()]);
+    let info = r.get_wiring_info(TypeId::of::<String>()).unwrap();
+    assert_eq!(info.len(), 1);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// factory/aot/ tests
+// ═══════════════════════════════════════════════════════════════════
+
+#[test]
+fn aot_basic_test() {
+    use vernal_beans::factory::aot::aot_services::AotServices;
+    use vernal_beans::factory::aot::autowired_arguments_code_generator::AutowiredArgumentsCodeGenerator;
+    use vernal_beans::factory::aot::code_warnings::CodeWarnings;
+    
+    let s = AotServices::new();
+    s.register("k".to_string(), "v".to_string());
+    assert_eq!(s.count(), 1);
+    
+    let g = AutowiredArgumentsCodeGenerator::new();
+    let r = g.process("test".to_string());
+    assert!(!r.is_empty());
+    
+    let w = CodeWarnings::new();
+    w.register("w1".to_string(), "msg1".to_string());
+    assert_eq!(w.cache_size(), 1);
+}
+
+#[test]
+fn bean_registration_aot_test() {
+    use vernal_beans::factory::aot::bean_registration_aot_contribution::BeanRegistrationAotContribution;
+    use vernal_beans::factory::aot::bean_registration_code::BeanRegistrationCode;
+    use vernal_beans::factory::aot::bean_registration_code_fragments::BeanRegistrationCodeFragments;
+    use vernal_beans::factory::aot::bean_registration_code_generator::BeanRegistrationCodeGenerator;
+    
+    let c = BeanRegistrationAotContribution::new();
+    c.register("bean1".to_string(), "method1".to_string());
+    assert_eq!(c.get("bean1"), Some("method1".to_string()));
+    
+    let code = BeanRegistrationCode::new();
+    code.register("code".to_string(), "body".to_string());
+    assert_eq!(code.get("code"), Some("body".to_string()));
+    
+    let f = BeanRegistrationCodeFragments::new();
+    f.register("frag".to_string(), "data".to_string());
+    assert_eq!(f.get("frag"), Some("data".to_string()));
+    
+    let g = BeanRegistrationCodeGenerator::new();
+    g.register("gen".to_string(), "code".to_string());
+    assert_eq!(g.count(), 1);
+}
+
+#[test]
+fn bean_aot_misc_test() {
+    use vernal_beans::factory::aot::bean_instance_supplier::BeanInstanceSupplier;
+    use vernal_beans::factory::aot::bean_registrations_aot_contribution::BeanRegistrationsAotContribution;
+    use vernal_beans::factory::aot::bean_registrations_aot_processor::BeanRegistrationsAotProcessor;
+    use vernal_beans::factory::aot::bean_registrations_code::BeanRegistrationsCode;
+    use vernal_beans::factory::aot::bean_definition_method_generator::BeanDefinitionMethodGenerator;
+    use vernal_beans::factory::aot::bean_definition_method_generator_factory::BeanDefinitionMethodGeneratorFactory;
+    use vernal_beans::factory::aot::autowired_field_value_resolver::AutowiredFieldValueResolver;
+    use vernal_beans::factory::aot::autowired_method_arguments_resolver::AutowiredMethodArgumentsResolver;
+    use vernal_beans::factory::aot::autowired_element_resolver::AutowiredElementResolver;
+    use vernal_beans::factory::aot::bean_definition_properties_code_generator::BeanDefinitionPropertiesCodeGenerator;
+    use vernal_beans::factory::aot::bean_factory_initialization_aot_contribution::BeanFactoryInitializationAotContribution;
+    use vernal_beans::factory::aot::bean_factory_initialization_code::BeanFactoryInitializationCode;
+    use vernal_beans::factory::aot::bean_registration_exclude_filter::BeanRegistrationExcludeFilter;
+    use vernal_beans::factory::aot::default_bean_registration_code_fragments::DefaultBeanRegistrationCodeFragments;
+    use vernal_beans::factory::aot::bean_registration_code_fragments_decorator::BeanRegistrationCodeFragmentsDecorator;
+    use vernal_beans::factory::aot::bean_definition_property_value_code_generator_delegates::BeanDefinitionPropertyValueCodeGeneratorDelegates;
+    use vernal_beans::factory::aot::instance_supplier_code_generator::InstanceSupplierCodeGenerator;
+    
+    let s = BeanInstanceSupplier::new();
+    s.register("k".to_string(), "v".to_string());
+    assert_eq!(s.count(), 1);
+    
+    let c = BeanRegistrationsAotContribution::new();
+    c.register("c".to_string(), "v".to_string());
+    assert_eq!(c.count(), 1);
+    
+    let p = BeanRegistrationsAotProcessor::new();
+    p.register("p".to_string(), "v".to_string());
+    assert_eq!(p.count(), 1);
+    
+    let r = BeanRegistrationsCode::new();
+    r.register("r".to_string(), "v".to_string());
+    assert_eq!(r.count(), 1);
+    
+    let g = BeanDefinitionMethodGenerator::new();
+    g.register("g".to_string(), "v".to_string());
+    assert_eq!(g.cache_size(), 1);
+    
+    let f = BeanDefinitionMethodGeneratorFactory::new();
+    f.register("f".to_string(), "v".to_string());
+    assert!(f.contains("f"));
+    
+    let fr = AutowiredFieldValueResolver::new();
+    fr.register("f".to_string(), "v".to_string());
+    assert_eq!(fr.count(), 1);
+    
+    let m = AutowiredMethodArgumentsResolver::new();
+    m.register("m".to_string(), "v".to_string());
+    assert_eq!(m.count(), 1);
+    
+    let e = AutowiredElementResolver::new();
+    e.register("e".to_string(), "v".to_string());
+    assert!(e.contains("e"));
+    
+    let p = BeanDefinitionPropertiesCodeGenerator::new();
+    p.register("p".to_string(), "v".to_string());
+    assert_eq!(p.get("p"), Some("v".to_string()));
+    
+    let c = BeanFactoryInitializationAotContribution::new();
+    c.register("c".to_string(), "v".to_string());
+    assert_eq!(c.get("c"), Some("v".to_string()));
+    
+    let code = BeanFactoryInitializationCode::new();
+    code.register("code".to_string(), "v".to_string());
+    assert_eq!(code.get("code"), Some("v".to_string()));
+    
+    let filter = BeanRegistrationExcludeFilter::new();
+    filter.register("f".to_string(), "criteria".to_string());
+    assert!(filter.contains("f"));
+    
+    let df = DefaultBeanRegistrationCodeFragments::new();
+    df.register("d".to_string(), "v".to_string());
+    assert_eq!(df.count(), 1);
+    
+    let dec = BeanRegistrationCodeFragmentsDecorator::new();
+    dec.register("d".to_string(), "v".to_string());
+    assert!(dec.contains("d"));
+    
+    let del = BeanDefinitionPropertyValueCodeGeneratorDelegates::new();
+    del.register("d".to_string(), "v".to_string());
+    assert_eq!(del.count(), 1);
+    
+    let g = InstanceSupplierCodeGenerator::new();
+    g.register("i".to_string(), "v".to_string());
+    assert_eq!(g.get("i"), Some("v".to_string()));
 }

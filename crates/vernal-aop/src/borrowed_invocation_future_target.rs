@@ -38,3 +38,29 @@ impl BorrowedInvocationTarget for BorrowedInvocationFutureTarget<'_> {
         Box::pin(async move { Err(InvocationError::TargetAlreadyInvoked { operation }) })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn first_invoke_returns_future() {
+        let op = Operation::new("Service", "method");
+        let future = Box::pin(async { Ok(Box::new(42i32) as crate::InvocationValue) });
+        let mut target = BorrowedInvocationFutureTarget::new(op, future);
+        let invocation = Arc::new(Invocation::new(Operation::new("Service", "method")));
+        let result = target.invoke(invocation).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn second_invoke_returns_error() {
+        let op = Operation::new("Service", "method");
+        let future = Box::pin(async { Ok(Box::new(42i32) as crate::InvocationValue) });
+        let mut target = BorrowedInvocationFutureTarget::new(op, future);
+        let invocation = Arc::new(Invocation::new(Operation::new("Service", "method")));
+        let _ = target.invoke(invocation.clone()).await;
+        let result = target.invoke(invocation).await;
+        assert!(result.is_err());
+    }
+}

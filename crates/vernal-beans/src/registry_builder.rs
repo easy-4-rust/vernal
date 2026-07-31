@@ -283,12 +283,813 @@ impl RegistryBuilder {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_new_is_empty() {
+        let builder = RegistryBuilder::new();
+        assert!(builder.is_empty());
+        assert_eq!(builder.len(), 0);
+    }
+
+    #[test]
+    fn test_default_trait() {
+        let builder = RegistryBuilder::default();
+        assert!(builder.is_empty());
+    }
+
+    #[test]
+    fn test_register_single_definition() {
+        let mut builder = RegistryBuilder::new();
+        let def = ComponentDefinition::shared_value(42i32);
+        builder.register(def).unwrap();
+        assert_eq!(builder.len(), 1);
+        assert!(!builder.is_empty());
+    }
+
+    #[test]
+    fn test_register_duplicate_returns_error() {
+        let mut builder = RegistryBuilder::new();
+        let def1 = ComponentDefinition::shared_value(42i32);
+        let def2 = ComponentDefinition::shared_value(100i32);
+        builder.register(def1).unwrap();
+        assert!(builder.register(def2).is_err());
+    }
+
+    #[test]
+    fn test_register_multiple_different_types() {
+        let mut builder = RegistryBuilder::new();
+        builder.register(ComponentDefinition::shared_value(42i32)).unwrap();
+        builder.register(ComponentDefinition::shared_value("hello".to_string())).unwrap();
+        builder.register(ComponentDefinition::shared_value(3.14f64)).unwrap();
+        assert_eq!(builder.len(), 3);
+    }
+
+    #[test]
+    fn test_register_all_empty() {
+        let mut builder = RegistryBuilder::new();
+        builder.register_all(vec![]).unwrap();
+        assert!(builder.is_empty());
+    }
+
+    #[test]
+    fn test_register_all_multiple() {
+        let mut builder = RegistryBuilder::new();
+        let defs = vec![
+            ComponentDefinition::shared_value(1i32),
+            ComponentDefinition::shared_value(2u64),
+        ];
+        builder.register_all(defs).unwrap();
+        assert_eq!(builder.len(), 2);
+    }
+
+    #[test]
+    fn test_register_all_with_internal_duplicate() {
+        let mut builder = RegistryBuilder::new();
+        let defs = vec![
+            ComponentDefinition::shared_value(1i32),
+            ComponentDefinition::shared_value(2i32),
+        ];
+        assert!(builder.register_all(defs).is_err());
+        assert!(builder.is_empty());
+    }
+
+    #[test]
+    fn test_register_all_with_existing_duplicate() {
+        let mut builder = RegistryBuilder::new();
+        builder.register(ComponentDefinition::shared_value(1i32)).unwrap();
+        let defs = vec![ComponentDefinition::shared_value(2i32)];
+        assert!(builder.register_all(defs).is_err());
+        assert_eq!(builder.len(), 1);
+    }
+
+    #[test]
+    fn test_contains() {
+        let mut builder = RegistryBuilder::new();
+        assert!(!builder.contains::<i32>());
+        builder.register(ComponentDefinition::shared_value(42i32)).unwrap();
+        assert!(builder.contains::<i32>());
+        assert!(!builder.contains::<String>());
+    }
+
+    #[test]
+    fn test_remove_by_type() {
+        let mut builder = RegistryBuilder::new();
+        builder.register(ComponentDefinition::shared_value(42i32)).unwrap();
+        builder.register(ComponentDefinition::shared_value("hello".to_string())).unwrap();
+        assert_eq!(builder.len(), 2);
+
+        builder.remove::<i32>().unwrap();
+        assert_eq!(builder.len(), 1);
+        assert!(!builder.contains::<i32>());
+        assert!(builder.contains::<String>());
+    }
+
+    #[test]
+    fn test_remove_nonexistent_returns_error() {
+        let mut builder = RegistryBuilder::new();
+        assert!(builder.remove::<i32>().is_err());
+    }
+
+    #[test]
+    fn test_remove_by_key() {
+        let mut builder = RegistryBuilder::new();
+        builder.register(ComponentDefinition::shared_value(42i32)).unwrap();
+        let key = ComponentKey::of::<i32>();
+        builder.remove_by_key(&key).unwrap();
+        assert_eq!(builder.len(), 0);
+    }
+
+    #[test]
+    fn test_remove_by_key_nonexistent() {
+        let mut builder = RegistryBuilder::new();
+        let key = ComponentKey::of::<i32>();
+        assert!(builder.remove_by_key(&key).is_err());
+    }
+
+    #[test]
+    fn test_build_empty() {
+        let builder = RegistryBuilder::new();
+        let registry = builder.build().unwrap();
+        assert!(registry.definitions().is_empty());
+    }
+
+    #[test]
+    fn test_build_with_definitions() {
+        let mut builder = RegistryBuilder::new();
+        builder.register(ComponentDefinition::shared_value(42i32)).unwrap();
+        builder.register(ComponentDefinition::shared_value("hello".to_string())).unwrap();
+        let registry = builder.build().unwrap();
+        assert_eq!(registry.definitions().len(), 2);
+    }
+
+    #[test]
+    fn test_remove_and_rebuild_indices() {
+        let mut builder = RegistryBuilder::new();
+        builder.register(ComponentDefinition::shared_value(1i32)).unwrap();
+        builder.register(ComponentDefinition::shared_value(2u64)).unwrap();
+        builder.register(ComponentDefinition::shared_value("hello".to_string())).unwrap();
+        assert_eq!(builder.len(), 3);
+
+        // Remove the first one
+        builder.remove::<i32>().unwrap();
+        assert_eq!(builder.len(), 2);
+        assert!(builder.contains::<u64>());
+        assert!(builder.contains::<String>());
+
+        // Verify we can still register after remove
+        builder.register(ComponentDefinition::shared_value(3.14f64)).unwrap();
+        assert_eq!(builder.len(), 3);
+    }
+
+    #[test]
+    fn test_register_all_preserves_order() {
+        let mut builder = RegistryBuilder::new();
+        let defs = vec![
+            ComponentDefinition::shared_value(1i32),
+            ComponentDefinition::shared_value("hello".to_string()),
+            ComponentDefinition::shared_value(3.14f64),
+        ];
+        builder.register_all(defs).unwrap();
+        assert_eq!(builder.len(), 3);
+        assert!(builder.contains::<i32>());
+        assert!(builder.contains::<String>());
+        assert!(builder.contains::<f64>());
+    }
+
+    #[test]
+    fn test_bind_all_empty() {
+        let mut builder = RegistryBuilder::new();
+        builder.bind_all(vec![]).unwrap();
+        assert!(builder.is_empty());
+    }
+
+    #[test]
+    fn test_register_bundle_empty() {
+        let mut builder = RegistryBuilder::new();
+        builder.register_bundle(vec![], vec![]).unwrap();
+        assert!(builder.is_empty());
+    }
+
+    #[test]
+    fn test_remove_middle_element() {
+        let mut builder = RegistryBuilder::new();
+        builder.register(ComponentDefinition::shared_value(1i32)).unwrap();
+        builder.register(ComponentDefinition::shared_value(2u64)).unwrap();
+        builder.register(ComponentDefinition::shared_value("hello".to_string())).unwrap();
+
+        builder.remove::<u64>().unwrap();
+        assert_eq!(builder.len(), 2);
+        assert!(builder.contains::<i32>());
+        assert!(!builder.contains::<u64>());
+        assert!(builder.contains::<String>());
+    }
+
+    #[test]
+    fn test_remove_last_element() {
+        let mut builder = RegistryBuilder::new();
+        builder.register(ComponentDefinition::shared_value(1i32)).unwrap();
+        builder.register(ComponentDefinition::shared_value(2u64)).unwrap();
+
+        builder.remove::<u64>().unwrap();
+        assert_eq!(builder.len(), 1);
+        assert!(builder.contains::<i32>());
+        assert!(!builder.contains::<u64>());
+    }
+
+    #[test]
+    fn test_remove_by_key_rebuilds_indices() {
+        let mut builder = RegistryBuilder::new();
+        builder.register(ComponentDefinition::shared_value(1i32)).unwrap();
+        builder.register(ComponentDefinition::shared_value(2u64)).unwrap();
+        builder.register(ComponentDefinition::shared_value("hello".to_string())).unwrap();
+
+        let key = ComponentKey::of::<u64>();
+        builder.remove_by_key(&key).unwrap();
+        assert_eq!(builder.len(), 2);
+        assert!(builder.contains::<i32>());
+        assert!(builder.contains::<String>());
+    }
+
+    #[test]
+    fn test_build_with_transient() {
+        let mut builder = RegistryBuilder::new();
+        builder.register(ComponentDefinition::transient::<i32, _>(|_| 42)).unwrap();
+        let registry = builder.build().unwrap();
+        assert_eq!(registry.definitions().len(), 1);
+    }
+
+    // ── BeanDefinitionRegistry trait tests ───────────────────────────────
+
+    #[test]
+    fn bean_definition_registry_contains() {
+        use crate::factory::support::bean_definition_registry::BeanDefinitionRegistry;
+        let mut builder = RegistryBuilder::new();
+        builder.register(ComponentDefinition::shared_value(42i32)).unwrap();
+        assert!(builder.contains_bean_definition("i32"));
+        assert!(!builder.contains_bean_definition("nonexistent"));
+    }
+
+    #[test]
+    fn bean_definition_registry_count() {
+        use crate::factory::support::bean_definition_registry::BeanDefinitionRegistry;
+        let mut builder = RegistryBuilder::new();
+        builder.register(ComponentDefinition::shared_value(42i32)).unwrap();
+        builder.register(ComponentDefinition::shared_value("hello".to_string())).unwrap();
+        assert_eq!(builder.bean_definition_count(), 2);
+    }
+
+    #[test]
+    fn bean_definition_registry_names() {
+        use crate::factory::support::bean_definition_registry::BeanDefinitionRegistry;
+        let mut builder = RegistryBuilder::new();
+        builder.register(ComponentDefinition::shared_value(42i32)).unwrap();
+        builder.register(ComponentDefinition::shared_value("hello".to_string())).unwrap();
+        let names = builder.bean_definition_names();
+        assert_eq!(names.len(), 2);
+    }
+
+    #[test]
+    fn bean_definition_registry_get_returns_none() {
+        use crate::factory::support::bean_definition_registry::BeanDefinitionRegistry;
+        let builder = RegistryBuilder::new();
+        // Current implementation always returns None
+        assert!(builder.get_bean_definition("anything").is_none());
+    }
+
+    #[test]
+    fn bean_definition_registry_remove_by_name() {
+        use crate::factory::support::bean_definition_registry::BeanDefinitionRegistry;
+        let mut builder = RegistryBuilder::new();
+        builder.register(ComponentDefinition::shared_value(42i32)).unwrap();
+        let removed = builder.remove_bean_definition("i32");
+        assert!(removed.is_ok());
+        assert_eq!(builder.len(), 0);
+    }
+
+    #[test]
+    fn bean_definition_registry_remove_not_found() {
+        use crate::factory::support::bean_definition_registry::BeanDefinitionRegistry;
+        let mut builder = RegistryBuilder::new();
+        let result = builder.remove_bean_definition("nonexistent");
+        assert!(result.is_err());
+    }
+
+    // ── Additional tests for coverage ───────────────────────────────────
+
+    #[test]
+    fn register_chaining() {
+        let mut builder = RegistryBuilder::new();
+        builder
+            .register(ComponentDefinition::shared_value(1i32))
+            .unwrap()
+            .register(ComponentDefinition::shared_value("hello".to_string()))
+            .unwrap()
+            .register(ComponentDefinition::shared_value(3.14f64))
+            .unwrap();
+        assert_eq!(builder.len(), 3);
+    }
+
+    #[test]
+    fn register_all_chaining() {
+        let mut builder = RegistryBuilder::new();
+        builder
+            .register_all(vec![
+                ComponentDefinition::shared_value(1i32),
+                ComponentDefinition::shared_value(2u64),
+            ])
+            .unwrap();
+        assert_eq!(builder.len(), 2);
+    }
+
+    #[test]
+    fn bind_all_chaining() {
+        let mut builder = RegistryBuilder::new();
+        // bind_all with empty is valid
+        builder.bind_all(vec![]).unwrap();
+    }
+
+    #[test]
+    fn register_bundle_with_definitions_and_bindings() {
+        let mut builder = RegistryBuilder::new();
+        builder.register_bundle(
+            vec![ComponentDefinition::shared_value(42i32)],
+            vec![],
+        ).unwrap();
+        assert_eq!(builder.len(), 1);
+    }
+
+    #[test]
+    fn register_bundle_definitions_fail_rolls_back() {
+        let mut builder = RegistryBuilder::new();
+        builder.register(ComponentDefinition::shared_value(1i32)).unwrap();
+        // Register bundle with duplicate i32 - should fail
+        let result = builder.register_bundle(
+            vec![ComponentDefinition::shared_value(2i32)],
+            vec![],
+        );
+        assert!(result.is_err());
+        assert_eq!(builder.len(), 1); // original still there
+    }
+
+    #[test]
+    fn build_with_single_definition() {
+        let mut builder = RegistryBuilder::new();
+        builder.register(ComponentDefinition::shared_value(42i32)).unwrap();
+        let registry = builder.build().unwrap();
+        assert_eq!(registry.definitions().len(), 1);
+    }
+
+    #[test]
+    fn remove_first_element() {
+        let mut builder = RegistryBuilder::new();
+        builder.register(ComponentDefinition::shared_value(1i32)).unwrap();
+        builder.register(ComponentDefinition::shared_value(2u64)).unwrap();
+        builder.remove::<i32>().unwrap();
+        assert_eq!(builder.len(), 1);
+        assert!(!builder.contains::<i32>());
+        assert!(builder.contains::<u64>());
+    }
+
+    #[test]
+    fn remove_only_element() {
+        let mut builder = RegistryBuilder::new();
+        builder.register(ComponentDefinition::shared_value(42i32)).unwrap();
+        builder.remove::<i32>().unwrap();
+        assert!(builder.is_empty());
+    }
+
+    #[test]
+    fn remove_by_key_nonexistent_returns_error() {
+        let mut builder = RegistryBuilder::new();
+        let key = ComponentKey::of::<i32>();
+        assert!(builder.remove_by_key(&key).is_err());
+    }
+
+    #[test]
+    fn register_after_remove_allows_reregister() {
+        let mut builder = RegistryBuilder::new();
+        builder.register(ComponentDefinition::shared_value(1i32)).unwrap();
+        builder.remove::<i32>().unwrap();
+        // Re-register same type
+        builder.register(ComponentDefinition::shared_value(2i32)).unwrap();
+        assert_eq!(builder.len(), 1);
+        assert!(builder.contains::<i32>());
+    }
+
+    #[test]
+    fn is_empty_with_only_bindings() {
+        let mut builder = RegistryBuilder::new();
+        // After bind_all with empty, still empty
+        builder.bind_all(vec![]).unwrap();
+        assert!(builder.is_empty());
+    }
+
+    #[test]
+    fn bean_definition_registry_register_bean_definition() {
+        use crate::factory::support::bean_definition_registry::BeanDefinitionRegistry;
+        let mut builder = RegistryBuilder::new();
+        let def = Box::new(crate::factory::support::root_bean_definition::RootBeanDefinition::new());
+        builder.register_bean_definition("myBean".to_string(), def).unwrap();
+        // Current impl is a no-op for register_bean_definition on RegistryBuilder
+    }
+
+    #[test]
+    fn bean_definition_registry_remove_by_name_found() {
+        use crate::factory::support::bean_definition_registry::BeanDefinitionRegistry;
+        let mut builder = RegistryBuilder::new();
+        builder.register(ComponentDefinition::shared_value(42i32)).unwrap();
+        let removed = builder.remove_bean_definition("i32");
+        assert!(removed.is_ok());
+        assert_eq!(builder.len(), 0);
+    }
+
+    #[test]
+    fn bean_definition_registry_remove_middle_by_name() {
+        use crate::factory::support::bean_definition_registry::BeanDefinitionRegistry;
+        let mut builder = RegistryBuilder::new();
+        builder.register(ComponentDefinition::shared_value(1i32)).unwrap();
+        builder.register(ComponentDefinition::shared_value("hello".to_string())).unwrap();
+        builder.register(ComponentDefinition::shared_value(3.14f64)).unwrap();
+        let removed = builder.remove_bean_definition("alloc::string::String");
+        assert!(removed.is_ok());
+        assert_eq!(builder.len(), 2);
+    }
+
+    #[test]
+    fn bean_definition_registry_contains_after_remove() {
+        use crate::factory::support::bean_definition_registry::BeanDefinitionRegistry;
+        let mut builder = RegistryBuilder::new();
+        builder.register(ComponentDefinition::shared_value(42i32)).unwrap();
+        assert!(builder.contains_bean_definition("i32"));
+        builder.remove_bean_definition("i32").unwrap();
+        assert!(!builder.contains_bean_definition("i32"));
+    }
+
+    #[test]
+    fn validate_bindings_duplicate_exact() {
+        let mut builder = RegistryBuilder::new();
+        let binding1 = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Debug + Send + Sync>);
+        let binding2 = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Debug + Send + Sync>);
+        builder.bind_all(vec![binding1]).unwrap();
+        // Second identical binding should fail
+        let result = builder.bind_all(vec![binding2]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn validate_bindings_duplicate_qualified() {
+        let mut builder = RegistryBuilder::new();
+        let q = crate::Qualifier::new("myqual").unwrap();
+        let binding1 = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Debug + Send + Sync>).qualified(q.clone());
+        let binding2 = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Debug + Send + Sync>).qualified(q);
+        builder.bind_all(vec![binding1]).unwrap();
+        let result = builder.bind_all(vec![binding2]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn removed_bean_definition_trait_methods() {
+        use crate::factory::config::bean_definition::BeanDefinition as BeanDefinitionTrait;
+        use crate::factory::support::bean_definition_registry::BeanDefinitionRegistry;
+        let mut builder = RegistryBuilder::new();
+        builder.register(ComponentDefinition::shared_value(42i32)).unwrap();
+        let removed = builder.remove_bean_definition("i32").unwrap();
+        assert_eq!(BeanDefinitionTrait::bean_class_name(&*removed), "i32");
+        assert_eq!(BeanDefinitionTrait::scope(&*removed), crate::component_scope::Scope::Singleton);
+        assert!(!BeanDefinitionTrait::is_lazy_init(&*removed));
+        assert!(!BeanDefinitionTrait::is_primary(&*removed));
+    }
+
+    #[test]
+    fn removed_bean_definition_last_element() {
+        use crate::factory::support::bean_definition_registry::BeanDefinitionRegistry;
+        let mut builder = RegistryBuilder::new();
+        builder.register(ComponentDefinition::shared_value(1i32)).unwrap();
+        builder.register(ComponentDefinition::shared_value(2u64)).unwrap();
+        let removed = builder.remove_bean_definition("u64");
+        assert!(removed.is_ok());
+        assert_eq!(builder.len(), 1);
+    }
+
+    #[test]
+    fn removed_bean_definition_first_element() {
+        use crate::factory::support::bean_definition_registry::BeanDefinitionRegistry;
+        let mut builder = RegistryBuilder::new();
+        builder.register(ComponentDefinition::shared_value(1i32)).unwrap();
+        builder.register(ComponentDefinition::shared_value(2u64)).unwrap();
+        let removed = builder.remove_bean_definition("i32");
+        assert!(removed.is_ok());
+        assert_eq!(builder.len(), 1);
+    }
+
+    // ── Additional coverage tests ──────────────────────────────────────
+
+    #[test]
+    fn bind_single_binding() {
+        use crate::TraitBinding;
+        let mut builder = RegistryBuilder::new();
+        let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
+        builder.bind(binding).unwrap();
+        assert!(!builder.is_empty());
+    }
+
+    #[test]
+    fn register_bundle_with_bindings() {
+        use crate::TraitBinding;
+        let mut builder = RegistryBuilder::new();
+        let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
+        builder.register_bundle(
+            vec![ComponentDefinition::shared_value("hello".to_string())],
+            vec![binding],
+        ).unwrap();
+        assert_eq!(builder.len(), 1);
+    }
+
+    #[test]
+    fn register_bundle_binding_failure_rolls_back() {
+        use crate::TraitBinding;
+        let mut builder = RegistryBuilder::new();
+        let q = crate::Qualifier::new("q").unwrap();
+        // Register two bindings with same trait+qualifier to trigger duplicate detection
+        let binding1 = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>).qualified(q.clone());
+        let binding2 = TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>).qualified(q.clone());
+        // bind_all with two same-qualified bindings should fail
+        let result = builder.bind_all(vec![binding1, binding2]);
+        assert!(result.is_err());
+        assert!(builder.is_empty());
+    }
+
+    #[test]
+    fn validate_bindings_multiple_primary_fails() {
+        use crate::TraitBinding;
+        let mut builder = RegistryBuilder::new();
+        let binding1 = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>).primary();
+        let binding2 = TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>).primary();
+        let result = builder.bind_all(vec![binding1, binding2]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn bind_all_with_multiple_unqualified() {
+        use crate::TraitBinding;
+        let mut builder = RegistryBuilder::new();
+        let binding1 = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
+        let binding2 = TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>);
+        builder.bind_all(vec![binding1, binding2]).unwrap();
+    }
+
+    #[test]
+    fn register_all_with_empty_iterator() {
+        let mut builder = RegistryBuilder::new();
+        builder.register_all(std::iter::empty()).unwrap();
+        assert!(builder.is_empty());
+    }
+
+    #[test]
+    fn bind_all_with_empty_iterator() {
+        let mut builder = RegistryBuilder::new();
+        builder.bind_all(std::iter::empty()).unwrap();
+        assert!(builder.is_empty());
+    }
+
+    #[test]
+    fn register_bundle_with_empty_both() {
+        let mut builder = RegistryBuilder::new();
+        builder.register_bundle(
+            std::iter::empty(),
+            std::iter::empty(),
+        ).unwrap();
+        assert!(builder.is_empty());
+    }
+
+    #[test]
+    fn build_with_multiple_definitions() {
+        let mut builder = RegistryBuilder::new();
+        builder.register(ComponentDefinition::shared_value(1i32)).unwrap();
+        builder.register(ComponentDefinition::shared_value("hello".to_string())).unwrap();
+        builder.register(ComponentDefinition::shared_value(3.14f64)).unwrap();
+        let registry = builder.build().unwrap();
+        assert_eq!(registry.definitions().len(), 3);
+    }
+
+    #[test]
+    fn build_with_transient_definition() {
+        let mut builder = RegistryBuilder::new();
+        builder.register(ComponentDefinition::transient::<String, _>(|_| "t".to_string())).unwrap();
+        let registry = builder.build().unwrap();
+        assert_eq!(registry.definitions().len(), 1);
+    }
+
+    #[test]
+    fn contains_after_register() {
+        let mut builder = RegistryBuilder::new();
+        assert!(!builder.contains::<i32>());
+        builder.register(ComponentDefinition::shared_value(42i32)).unwrap();
+        assert!(builder.contains::<i32>());
+    }
+
+    #[test]
+    fn remove_last_element() {
+        let mut builder = RegistryBuilder::new();
+        builder.register(ComponentDefinition::shared_value(1i32)).unwrap();
+        builder.register(ComponentDefinition::shared_value(2u64)).unwrap();
+        builder.remove::<u64>().unwrap();
+        assert_eq!(builder.len(), 1);
+        assert!(!builder.contains::<u64>());
+    }
+
+    #[test]
+    fn remove_by_key_rebuilds_indices() {
+        let mut builder = RegistryBuilder::new();
+        builder.register(ComponentDefinition::shared_value(1i32)).unwrap();
+        builder.register(ComponentDefinition::shared_value(2u64)).unwrap();
+        builder.register(ComponentDefinition::shared_value("hello".to_string())).unwrap();
+        let key = ComponentKey::of::<u64>();
+        builder.remove_by_key(&key).unwrap();
+        assert_eq!(builder.len(), 2);
+        assert!(builder.contains::<i32>());
+        assert!(builder.contains::<String>());
+    }
+
+    #[test]
+    fn bean_definition_registry_register_bean_definition_noop() {
+        use crate::factory::support::bean_definition_registry::BeanDefinitionRegistry;
+        let mut builder = RegistryBuilder::new();
+        let def = Box::new(crate::factory::support::root_bean_definition::RootBeanDefinition::new());
+        builder.register_bean_definition("myBean".to_string(), def).unwrap();
+        // Current impl is a no-op for register_bean_definition on RegistryBuilder
+    }
+
+    #[test]
+    fn bean_definition_registry_remove_middle() {
+        use crate::factory::support::bean_definition_registry::BeanDefinitionRegistry;
+        let mut builder = RegistryBuilder::new();
+        builder.register(ComponentDefinition::shared_value(1i32)).unwrap();
+        builder.register(ComponentDefinition::shared_value("hello".to_string())).unwrap();
+        builder.register(ComponentDefinition::shared_value(3.14f64)).unwrap();
+        let removed = builder.remove_bean_definition("alloc::string::String");
+        assert!(removed.is_ok());
+        assert_eq!(builder.len(), 2);
+    }
+
+    #[test]
+    fn bean_definition_registry_contains_after_remove_v2() {
+        use crate::factory::support::bean_definition_registry::BeanDefinitionRegistry;
+        let mut builder = RegistryBuilder::new();
+        builder.register(ComponentDefinition::shared_value(42i32)).unwrap();
+        assert!(builder.contains_bean_definition("i32"));
+        builder.remove_bean_definition("i32").unwrap();
+        assert!(!builder.contains_bean_definition("i32"));
+    }
+
+    // ── Additional coverage tests ──────────────────────────────────────────
+
+    #[test]
+    fn register_bundle_with_both() {
+        use crate::TraitBinding;
+        let mut builder = RegistryBuilder::new();
+        let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
+        builder.register_bundle(
+            vec![ComponentDefinition::shared_value("hello".to_string())],
+            vec![binding],
+        ).unwrap();
+        assert_eq!(builder.len(), 1);
+    }
+
+    #[test]
+    fn register_bundle_binding_failure_rolls_back_v2() {
+        use crate::TraitBinding;
+        let mut builder = RegistryBuilder::new();
+        let q = crate::Qualifier::new("q").unwrap();
+        let binding1 = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>).qualified(q.clone());
+        let binding2 = TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>).qualified(q.clone());
+        let result = builder.bind_all(vec![binding1, binding2]);
+        assert!(result.is_err());
+        assert!(builder.is_empty());
+    }
+
+    #[test]
+    fn validate_bindings_multiple_primary_fails_v2() {
+        use crate::TraitBinding;
+        let mut builder = RegistryBuilder::new();
+        let binding1 = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>).primary();
+        let binding2 = TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>).primary();
+        let result = builder.bind_all(vec![binding1, binding2]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn bind_all_with_multiple_unqualified_v2() {
+        use crate::TraitBinding;
+        let mut builder = RegistryBuilder::new();
+        let binding1 = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
+        let binding2 = TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>);
+        builder.bind_all(vec![binding1, binding2]).unwrap();
+    }
+
+    #[test]
+    fn register_all_with_empty_iterator_v2() {
+        let mut builder = RegistryBuilder::new();
+        builder.register_all(std::iter::empty()).unwrap();
+        assert!(builder.is_empty());
+    }
+
+    #[test]
+    fn bind_all_with_empty_iterator_v2() {
+        let mut builder = RegistryBuilder::new();
+        builder.bind_all(std::iter::empty()).unwrap();
+        assert!(builder.is_empty());
+    }
+
+    #[test]
+    fn register_bundle_with_empty_both_v2() {
+        let mut builder = RegistryBuilder::new();
+        builder.register_bundle(
+            std::iter::empty(),
+            std::iter::empty(),
+        ).unwrap();
+        assert!(builder.is_empty());
+    }
+
+    #[test]
+    fn build_with_multiple_definitions_v2() {
+        let mut builder = RegistryBuilder::new();
+        builder.register(ComponentDefinition::shared_value(1i32)).unwrap();
+        builder.register(ComponentDefinition::shared_value("hello".to_string())).unwrap();
+        builder.register(ComponentDefinition::shared_value(3.14f64)).unwrap();
+        let registry = builder.build().unwrap();
+        assert_eq!(registry.definitions().len(), 3);
+    }
+
+    #[test]
+    fn build_with_transient_definition_v2() {
+        let mut builder = RegistryBuilder::new();
+        builder.register(ComponentDefinition::transient::<String, _>(|_| "t".to_string())).unwrap();
+        let registry = builder.build().unwrap();
+        assert_eq!(registry.definitions().len(), 1);
+    }
+
+    #[test]
+    fn contains_after_register_v2() {
+        let mut builder = RegistryBuilder::new();
+        assert!(!builder.contains::<i32>());
+        builder.register(ComponentDefinition::shared_value(42i32)).unwrap();
+        assert!(builder.contains::<i32>());
+    }
+
+    #[test]
+    fn remove_last_element_v2() {
+        let mut builder = RegistryBuilder::new();
+        builder.register(ComponentDefinition::shared_value(1i32)).unwrap();
+        builder.register(ComponentDefinition::shared_value(2u64)).unwrap();
+        builder.remove::<u64>().unwrap();
+        assert_eq!(builder.len(), 1);
+        assert!(!builder.contains::<u64>());
+    }
+
+    #[test]
+    fn remove_by_key_rebuilds_indices_v2() {
+        let mut builder = RegistryBuilder::new();
+        builder.register(ComponentDefinition::shared_value(1i32)).unwrap();
+        builder.register(ComponentDefinition::shared_value(2u64)).unwrap();
+        builder.register(ComponentDefinition::shared_value("hello".to_string())).unwrap();
+        let key = ComponentKey::of::<u64>();
+        builder.remove_by_key(&key).unwrap();
+        assert_eq!(builder.len(), 2);
+        assert!(builder.contains::<i32>());
+        assert!(builder.contains::<String>());
+    }
+
+    #[test]
+    fn bean_definition_registry_register_bean_definition_noop_v2() {
+        use crate::factory::support::bean_definition_registry::BeanDefinitionRegistry;
+        let mut builder = RegistryBuilder::new();
+        let def = Box::new(crate::factory::support::root_bean_definition::RootBeanDefinition::new());
+        builder.register_bean_definition("myBean".to_string(), def).unwrap();
+    }
+
+    #[test]
+    fn bean_definition_registry_remove_middle_v2() {
+        use crate::factory::support::bean_definition_registry::BeanDefinitionRegistry;
+        let mut builder = RegistryBuilder::new();
+        builder.register(ComponentDefinition::shared_value(1i32)).unwrap();
+        builder.register(ComponentDefinition::shared_value("hello".to_string())).unwrap();
+        builder.register(ComponentDefinition::shared_value(3.14f64)).unwrap();
+        let removed = builder.remove_bean_definition("alloc::string::String");
+        assert!(removed.is_ok());
+        assert_eq!(builder.len(), 2);
+    }
+}
+
 /// BeanDefinitionRegistry trait 实现。
-impl crate::bean_definition_registry::BeanDefinitionRegistry for RegistryBuilder {
+impl crate::factory::support::bean_definition_registry::BeanDefinitionRegistry for RegistryBuilder {
     fn register_bean_definition(
         &mut self,
         _bean_name: String,
-        definition: Box<dyn crate::bean_definition::BeanDefinition>,
+        definition: Box<dyn crate::factory::config::bean_definition::BeanDefinition>,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         // 将 BeanDefinition 转换为 ComponentDefinition 并注册
         // 注意：当前 BeanDefinition trait 不包含工厂闭包，所以这里只是验证逻辑
@@ -300,7 +1101,7 @@ impl crate::bean_definition_registry::BeanDefinitionRegistry for RegistryBuilder
         &mut self,
         bean_name: &str,
     ) -> Result<
-        Box<dyn crate::bean_definition::BeanDefinition>,
+        Box<dyn crate::factory::config::bean_definition::BeanDefinition>,
         Box<dyn std::error::Error + Send + Sync>,
     > {
         // 按名称查找并移除
@@ -338,7 +1139,7 @@ impl crate::bean_definition_registry::BeanDefinitionRegistry for RegistryBuilder
     fn get_bean_definition(
         &self,
         bean_name: &str,
-    ) -> Option<&dyn crate::bean_definition::BeanDefinition> {
+    ) -> Option<&dyn crate::factory::config::bean_definition::BeanDefinition> {
         // 注意：由于返回引用需要生命周期匹配，
         // 这里返回 None（实际实现需要 Box 或其他方式）
         // 当前简化实现
@@ -371,7 +1172,7 @@ struct ProxyBeanDefinition {
     scope: crate::component_scope::Scope,
 }
 
-impl crate::bean_definition::BeanDefinition for ProxyBeanDefinition {
+impl crate::factory::config::bean_definition::BeanDefinition for ProxyBeanDefinition {
     fn bean_name(&self) -> &crate::component_key::ComponentKey {
         // 代理对象不持有 ComponentKey，使用一个静态占位
         // 注意：这是 BeanDefinitionRegistry trait 实现的权宜之计
@@ -401,7 +1202,7 @@ struct RemovedBeanDefinition {
     type_name: String,
 }
 
-impl crate::bean_definition::BeanDefinition for RemovedBeanDefinition {
+impl crate::factory::config::bean_definition::BeanDefinition for RemovedBeanDefinition {
     fn bean_name(&self) -> &crate::component_key::ComponentKey {
         unimplemented!("RemovedBeanDefinition does not hold ComponentKey")
     }

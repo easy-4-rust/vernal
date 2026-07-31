@@ -203,3 +203,96 @@ mod tests {
         assert!(!matcher.matches_runtime(&op, &[&user]));
     }
 }
+
+#[cfg(test)]
+mod additional_tests {
+    use super::*;
+    use crate::Operation;
+
+    #[test]
+    fn true_method_matcher_display() {
+        let matcher = TrueMethodMatcher;
+        assert_eq!(format!("{}", matcher), "MethodMatcher.TRUE");
+    }
+
+    #[test]
+    fn static_method_matcher_is_runtime() {
+        let matcher = MethodMatcherFactory::from_fn(|op: &Operation| op.method().starts_with("get"));
+        assert!(!matcher.is_runtime());
+    }
+
+    #[test]
+    fn static_method_matcher_matches() {
+        let matcher = MethodMatcherFactory::from_fn(|op: &Operation| op.method().starts_with("get"));
+        let op = Operation::new("Service", "getUser");
+        assert!(matcher.matches(&op));
+    }
+
+    #[test]
+    fn static_method_matcher_no_match() {
+        let matcher = MethodMatcherFactory::from_fn(|op: &Operation| op.method().starts_with("get"));
+        let op = Operation::new("Service", "setUser");
+        assert!(!matcher.matches(&op));
+    }
+
+    #[test]
+    fn dynamic_method_matcher_is_runtime() {
+        let matcher = MethodMatcherFactory::dynamic(
+            |_op| true,
+            |_op, _args| true,
+        );
+        assert!(matcher.is_runtime());
+    }
+
+    #[test]
+    fn dynamic_method_matcher_matches_static() {
+        let matcher = MethodMatcherFactory::dynamic(
+            |op| op.method().starts_with("get"),
+            |_op, _args| true,
+        );
+        let op = Operation::new("Service", "getUser");
+        assert!(matcher.matches(&op));
+    }
+
+    #[test]
+    fn dynamic_method_matcher_no_match_static() {
+        let matcher = MethodMatcherFactory::dynamic(
+            |op| op.method().starts_with("get"),
+            |_op, _args| true,
+        );
+        let op = Operation::new("Service", "setUser");
+        assert!(!matcher.matches(&op));
+    }
+
+    #[test]
+    fn dynamic_method_matcher_matches_runtime() {
+        let matcher = MethodMatcherFactory::dynamic(
+            |_op| true,
+            |_op, args| {
+                args.first()
+                    .and_then(|a| (*a).downcast_ref::<String>())
+                    .map(|s| s == "admin")
+                    .unwrap_or(false)
+            },
+        );
+        let op = Operation::new("Service", "method");
+        let admin = String::from("admin");
+        assert!(matcher.matches_runtime(&op, &[&admin]));
+    }
+
+    #[test]
+    fn dynamic_method_matcher_no_match_runtime() {
+        let matcher = MethodMatcherFactory::dynamic(
+            |_op| true,
+            |_op, args| {
+                args.first()
+                    .and_then(|a| (*a).downcast_ref::<String>())
+                    .map(|s| s == "admin")
+                    .unwrap_or(false)
+            },
+        );
+        let op = Operation::new("Service", "method");
+        let user = String::from("user");
+        assert!(!matcher.matches_runtime(&op, &[&user]));
+    }
+}

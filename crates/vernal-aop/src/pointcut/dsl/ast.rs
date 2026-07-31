@@ -126,3 +126,60 @@ mod tests {
         assert!(matches!(pc, PointcutExpr::Qualifier(_)));
     }
 }
+
+#[cfg(test)]
+mod additional_tests {
+    use super::*;
+
+    #[test]
+    fn pointcut_expr_parse() {
+        let pc = PointcutExpr::parse("execution(pub fn *(..))").unwrap();
+        assert!(matches!(pc, PointcutExpr::Execution(_)));
+    }
+
+    #[test]
+    fn pointcut_expr_public_functions() {
+        let pc = PointcutExpr::public_functions();
+        assert!(matches!(pc, PointcutExpr::Execution(_)));
+    }
+
+    #[test]
+    fn pointcut_expr_all_functions() {
+        let pc = PointcutExpr::all_functions();
+        assert!(matches!(pc, PointcutExpr::Execution(_)));
+    }
+
+    #[test]
+    fn pointcut_expr_within_module() {
+        let pc = PointcutExpr::within_module("crate::api");
+        assert!(matches!(pc, PointcutExpr::Within(_)));
+    }
+
+    #[test]
+    fn pointcut_expr_clone() {
+        let pc = PointcutExpr::public_functions();
+        let cloned = pc.clone();
+        assert_eq!(pc, cloned);
+    }
+
+    #[test]
+    fn pointcut_expr_debug() {
+        let pc = PointcutExpr::public_functions();
+        let debug = format!("{:?}", pc);
+        assert!(!debug.is_empty());
+    }
+
+    #[test]
+    fn pointcut_expr_partial_eq() {
+        let pc1 = PointcutExpr::public_functions();
+        let pc2 = PointcutExpr::public_functions();
+        assert_eq!(pc1, pc2);
+    }
+
+    #[test]
+    fn pointcut_expr_not_equal() {
+        let pc1 = PointcutExpr::public_functions();
+        let pc2 = PointcutExpr::all_functions();
+        assert_ne!(pc1, pc2);
+    }
+}

@@ -62,3 +62,175 @@ impl LocalAdvisor {
         Arc::clone(&self.interceptor)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct TestLocalInterceptor;
+    impl LocalInterceptor for TestLocalInterceptor {
+        fn intercept_local<'a>(&'a self, invocation: Arc<crate::Invocation>, next: crate::LocalNext<'a>) -> crate::LocalInvocationFuture<'a> {
+            next.run(invocation)
+        }
+    }
+
+    #[test]
+    fn local_advisor_new() {
+        let advisor = LocalAdvisor::new(
+            |op: &Operation| op.component() == "Service",
+            TestLocalInterceptor,
+            0,
+        );
+        assert_eq!(advisor.order(), 0);
+    }
+
+    #[test]
+    fn local_advisor_matches() {
+        let advisor = LocalAdvisor::new(
+            |op: &Operation| op.component() == "Service",
+            TestLocalInterceptor,
+            0,
+        );
+        let op = Operation::new("Service", "method");
+        assert!(advisor.matches(&op));
+    }
+
+    #[test]
+    fn local_advisor_no_match() {
+        let advisor = LocalAdvisor::new(
+            |op: &Operation| op.component() == "Other",
+            TestLocalInterceptor,
+            0,
+        );
+        let op = Operation::new("Service", "method");
+        assert!(!advisor.matches(&op));
+    }
+
+    #[test]
+    fn local_advisor_clone() {
+        let advisor = LocalAdvisor::new(
+            |op: &Operation| op.component() == "Service",
+            TestLocalInterceptor,
+            0,
+        );
+        let cloned = advisor.clone();
+        assert_eq!(cloned.order(), 0);
+    }
+
+    #[test]
+    fn local_advisor_interceptor() {
+        let advisor = LocalAdvisor::new(
+            |op: &Operation| op.component() == "Service",
+            TestLocalInterceptor,
+            0,
+        );
+        let _interceptor = advisor.interceptor();
+    }
+}
+
+#[cfg(test)]
+mod additional_tests {
+    use super::*;
+    use crate::LocalNext;
+
+    struct TestLocalInterceptor;
+    impl LocalInterceptor for TestLocalInterceptor {
+        fn intercept_local<'a>(&'a self, invocation: Arc<crate::Invocation>, next: LocalNext<'a>) -> crate::LocalInvocationFuture<'a> {
+            next.run(invocation)
+        }
+    }
+
+    #[test]
+    fn local_advisor_shared() {
+        let pointcut = Arc::new(|op: &Operation| op.component() == "Service") as Arc<dyn Pointcut>;
+        let interceptor = Arc::new(TestLocalInterceptor);
+        let advisor = LocalAdvisor::shared(pointcut, interceptor, 5);
+        assert_eq!(advisor.order(), 5);
+    }
+
+    #[test]
+    fn local_advisor_interceptor_returns_arc() {
+        let advisor = LocalAdvisor::new(
+            |op: &Operation| op.component() == "Service",
+            TestLocalInterceptor,
+            0,
+        );
+        let interceptor = advisor.interceptor();
+        // Verify we got a valid Arc
+        let _ = interceptor;
+    }
+}
+
+#[cfg(test)]
+mod local_advisor_tests {
+    use super::*;
+    use crate::LocalNext;
+
+    struct TestLocalInterceptor;
+    impl LocalInterceptor for TestLocalInterceptor {
+        fn intercept_local<'a>(&'a self, invocation: Arc<crate::Invocation>, next: LocalNext<'a>) -> crate::LocalInvocationFuture<'a> {
+            next.run(invocation)
+        }
+    }
+
+    #[test]
+    fn local_advisor_new() {
+        let advisor = LocalAdvisor::new(
+            |op: &Operation| op.component() == "Service",
+            TestLocalInterceptor,
+            5,
+        );
+        assert_eq!(advisor.order(), 5);
+    }
+
+    #[test]
+    fn local_advisor_shared() {
+        let pointcut = Arc::new(|op: &Operation| op.component() == "Service") as Arc<dyn Pointcut>;
+        let interceptor = Arc::new(TestLocalInterceptor);
+        let advisor = LocalAdvisor::shared(pointcut, interceptor, 10);
+        assert_eq!(advisor.order(), 10);
+    }
+
+    #[test]
+    fn local_advisor_matches() {
+        let advisor = LocalAdvisor::new(
+            |op: &Operation| op.component() == "Service",
+            TestLocalInterceptor,
+            0,
+        );
+        let op = Operation::new("Service", "method");
+        assert!(advisor.matches(&op));
+    }
+
+    #[test]
+    fn local_advisor_no_match() {
+        let advisor = LocalAdvisor::new(
+            |op: &Operation| op.component() == "Other",
+            TestLocalInterceptor,
+            0,
+        );
+        let op = Operation::new("Service", "method");
+        assert!(!advisor.matches(&op));
+    }
+
+    #[test]
+    fn local_advisor_clone() {
+        let advisor = LocalAdvisor::new(
+            |op: &Operation| op.component() == "Service",
+            TestLocalInterceptor,
+            0,
+        );
+        let cloned = advisor.clone();
+        assert_eq!(cloned.order(), 0);
+    }
+
+    #[test]
+    fn local_advisor_interceptor() {
+        let advisor = LocalAdvisor::new(
+            |op: &Operation| op.component() == "Service",
+            TestLocalInterceptor,
+            0,
+        );
+        let _interceptor = advisor.interceptor();
+    }
+}

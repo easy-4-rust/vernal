@@ -36,3 +36,32 @@ impl fmt::Display for OperationMetadataError {
 }
 
 impl Error for OperationMetadataError {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn invalid_tag_display() {
+        let err = OperationMetadataError::InvalidTag {
+            tag: "bad tag".to_string(),
+        };
+        assert!(format!("{}", err).contains("invalid operation tag"));
+    }
+
+    #[test]
+    fn invalid_qualifier_display() {
+        let err = OperationMetadataError::InvalidQualifier {
+            qualifier: "bad qualifier".to_string(),
+        };
+        assert!(format!("{}", err).contains("invalid operation qualifier"));
+    }
+
+    #[test]
+    fn error_trait() {
+        let err = OperationMetadataError::InvalidTag {
+            tag: "test".to_string(),
+        };
+        let _: &dyn Error = &err;
+    }
+}

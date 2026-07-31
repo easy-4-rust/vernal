@@ -51,6 +51,12 @@ pub mod context {
     }
 }
 
+/// 对标 `org.springframework.beans.factory` 包（按审计脚本"保留末两层"规则）。
+pub mod factory;
+
+/// 对标 `org.springframework.context.annotation` 包（按审计脚本"保留末两层"规则）。
+pub mod annotation;
+
 /// 切面织入机制（对标 `META-INF/aop.xml` + advice 类型）。
 pub mod weaver;
 
@@ -99,5 +105,18 @@ mod tests {
     #[test]
     fn test_support() {
         let _ = support::AopBridge::new();
+    }
+
+    #[test]
+    fn test_factory_aspectj() {
+        fn assert_impl<T: factory::aspectj::ConfigurableObject>() {}
+        struct Test;
+        impl factory::aspectj::ConfigurableObject for Test {}
+        assert_impl::<Test>();
+    }
+
+    #[test]
+    fn test_annotation_aspectj() {
+        let _ = annotation::aspectj::SpringConfiguredConfiguration::new();
     }
 }

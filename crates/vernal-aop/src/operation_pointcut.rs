@@ -31,3 +31,94 @@ impl Pointcut for OperationPointcut {
         operation == &self.operation
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::Operation;
+
+    #[test]
+    fn operation_pointcut_matches() {
+        let op = Operation::new("Service", "method");
+        let pc = OperationPointcut::new(op.clone());
+        assert!(pc.matches(&op));
+    }
+
+    #[test]
+    fn operation_pointcut_no_match() {
+        let op1 = Operation::new("Service", "method1");
+        let op2 = Operation::new("Service", "method2");
+        let pc = OperationPointcut::new(op1);
+        assert!(!pc.matches(&op2));
+    }
+}
+
+#[cfg(test)]
+mod additional_tests {
+    use super::*;
+    use crate::Operation;
+
+    #[test]
+    fn operation_pointcut_new() {
+        let op = Operation::new("Service", "method");
+        let pc = OperationPointcut::new(op.clone());
+        assert_eq!(pc.operation().component(), "Service");
+        assert_eq!(pc.operation().method(), "method");
+    }
+
+    #[test]
+    fn operation_pointcut_matches_same() {
+        let op = Operation::new("Service", "method");
+        let pc = OperationPointcut::new(op.clone());
+        assert!(pc.matches(&op));
+    }
+
+    #[test]
+    fn operation_pointcut_no_match_different_component() {
+        let op1 = Operation::new("Service1", "method");
+        let op2 = Operation::new("Service2", "method");
+        let pc = OperationPointcut::new(op1);
+        assert!(!pc.matches(&op2));
+    }
+
+    #[test]
+    fn operation_pointcut_no_match_different_method() {
+        let op1 = Operation::new("Service", "method1");
+        let op2 = Operation::new("Service", "method2");
+        let pc = OperationPointcut::new(op1);
+        assert!(!pc.matches(&op2));
+    }
+
+    #[test]
+    fn operation_pointcut_clone() {
+        let op = Operation::new("Service", "method");
+        let pc = OperationPointcut::new(op.clone());
+        let cloned = pc.clone();
+        assert_eq!(cloned.operation().component(), "Service");
+    }
+
+    #[test]
+    fn operation_pointcut_debug() {
+        let op = Operation::new("Service", "method");
+        let pc = OperationPointcut::new(op);
+        let debug = format!("{:?}", pc);
+        assert!(!debug.is_empty());
+    }
+
+    #[test]
+    fn operation_pointcut_partial_eq() {
+        let op = Operation::new("Service", "method");
+        let pc1 = OperationPointcut::new(op.clone());
+        let pc2 = OperationPointcut::new(op);
+        assert_eq!(pc1, pc2);
+    }
+
+    #[test]
+    fn operation_pointcut_not_equal() {
+        let op1 = Operation::new("Service", "method1");
+        let op2 = Operation::new("Service", "method2");
+        let pc1 = OperationPointcut::new(op1);
+        let pc2 = OperationPointcut::new(op2);
+        assert_ne!(pc1, pc2);
+    }
+}

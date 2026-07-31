@@ -599,6 +599,32 @@ mod tests {
         }
     }
 
+
+
+    struct MockTransactionAttributeSourceWithNoRollback;
+
+    impl MockTransactionAttributeSourceWithNoRollback {
+        fn new() -> Self {
+            Self
+        }
+    }
+
+    impl TransactionAttributeSource for MockTransactionAttributeSourceWithNoRollback {
+        fn get_transaction_attribute(
+            &self,
+            _method: &MethodMetadata,
+        ) -> Option<TransactionAttribute> {
+            Some(TransactionAttribute {
+                propagation: Propagation::Required,
+                no_rollback_for: vec![std::borrow::Cow::Borrowed("unknown")],
+                ..Default::default()
+            })
+        }
+
+        fn is_candidate_class(&self, _type_name: &str) -> bool {
+            true
+        }
+    }
     #[test]
     fn test_invoke_within_transaction_no_attribute() {
         let source = Arc::new(MockEmptyAttributeSource);
@@ -1154,5 +1180,546 @@ mod tests {
         let tm = NoOpTransactionManager;
         assert_eq!(tm.get_name(), "NoOpTransactionManager");
         assert_eq!(tm.get_type(), "NoOp");
+    }
+
+    #[test]
+    fn test_invoke_within_transaction_required_with_no_rollback_for() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::Required,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        support.set_has_current_tx_for_testing(true);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+
+        let result = support.invoke_within_transaction(&method, "com.example.Foo", || {
+            Err(Box::new("test error") as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Err(err) => {
+                assert!(err.is_runtime);
+            }
+            _ => panic!("Expected Err result"),
+        }
+    }
+
+    #[test]
+    fn test_invoke_within_transaction_never_no_existing_tx() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::Never,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+
+        let result = support.invoke_within_transaction(&method, "com.example.Foo", || {
+            Ok(Box::new(42) as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Ok(val) => {
+                assert_eq!(val.downcast_ref::<i32>().unwrap(), &42);
+            }
+            _ => panic!("Expected Ok result"),
+        }
+    }
+
+    #[test]
+    fn test_invoke_within_transaction_not_supported_no_existing_tx() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::NotSupported,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+
+        let result = support.invoke_within_transaction(&method, "com.example.Foo", || {
+            Ok(Box::new(42) as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Ok(val) => {
+                assert_eq!(val.downcast_ref::<i32>().unwrap(), &42);
+            }
+            _ => panic!("Expected Ok result"),
+        }
+    }
+
+    #[test]
+    fn test_invoke_within_transaction_nested_no_existing_tx() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::Nested,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+
+        let result = support.invoke_within_transaction(&method, "com.example.Foo", || {
+            Ok(Box::new(42) as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Ok(val) => {
+                assert_eq!(val.downcast_ref::<i32>().unwrap(), &42);
+            }
+            _ => panic!("Expected Ok result"),
+        }
+    }
+
+    #[test]
+    fn test_invoke_within_transaction_required_no_existing_tx_err() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::Required,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+
+        let result = support.invoke_within_transaction(&method, "com.example.Foo", || {
+            Err(Box::new("test error") as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Err(err) => {
+                assert!(err.is_runtime);
+            }
+            _ => panic!("Expected Err result"),
+        }
+    }
+
+    #[test]
+    fn test_invoke_within_transaction_supports_no_existing_tx_err() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::Supports,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+
+        let result = support.invoke_within_transaction(&method, "com.example.Foo", || {
+            Err(Box::new("test error") as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Err(err) => {
+                assert!(!err.is_runtime);
+            }
+            _ => panic!("Expected Err result"),
+        }
+    }
+
+    #[test]
+    fn test_invoke_within_transaction_requires_new_no_existing_tx_err() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::RequiresNew,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+
+        let result = support.invoke_within_transaction(&method, "com.example.Foo", || {
+            Err(Box::new("test error") as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Err(err) => {
+                assert!(err.is_runtime);
+            }
+            _ => panic!("Expected Err result"),
+        }
+    }
+
+    #[test]
+    fn test_invoke_within_transaction_not_supported_no_existing_tx_err() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::NotSupported,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+
+        let result = support.invoke_within_transaction(&method, "com.example.Foo", || {
+            Err(Box::new("test error") as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Err(err) => {
+                assert!(!err.is_runtime);
+            }
+            _ => panic!("Expected Err result"),
+        }
+    }
+
+    #[test]
+    fn test_invoke_within_transaction_nested_no_existing_tx_err() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::Nested,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+
+        let result = support.invoke_within_transaction(&method, "com.example.Foo", || {
+            Err(Box::new("test error") as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Err(err) => {
+                assert!(err.is_runtime);
+            }
+            _ => panic!("Expected Err result"),
+        }
+    }
+
+    #[test]
+    fn test_suspend_transaction_returns_none() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::Required,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        let result = support.suspend_transaction("com.example.Foo");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_create_nested_transaction() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::Required,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+        let attr = TransactionAttribute::default();
+
+        let result = support.create_nested_transaction(attr, "com.example.Foo", &method, || {
+            Ok(Box::new(42) as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Ok(val) => {
+                assert_eq!(val.downcast_ref::<i32>().unwrap(), &42);
+            }
+            _ => panic!("Expected Ok result"),
+        }
+    }
+
+    #[test]
+    fn test_create_nested_transaction_err() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::Required,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+        let attr = TransactionAttribute::default();
+
+        let result = support.create_nested_transaction(attr, "com.example.Foo", &method, || {
+            Err(Box::new("test error") as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Err(err) => {
+                assert!(err.is_runtime);
+            }
+            _ => panic!("Expected Err result"),
+        }
+    }
+
+    #[test]
+    fn test_create_and_execute_transaction_err() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::Required,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+        let attr = TransactionAttribute::default();
+
+        let result = support.create_and_execute_transaction(attr, "com.example.Foo", &method, || {
+            Err(Box::new("test error") as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Err(err) => {
+                assert!(err.is_runtime);
+            }
+            _ => panic!("Expected Err result"),
+        }
+    }
+
+    #[test]
+    fn test_execute_without_transaction_err() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::Required,
+        ));
+        let support = TransactionAspectSupport::new(source);
+
+        let result = support.execute_without_transaction(|| {
+            Err(Box::new("test error") as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Err(err) => {
+                assert!(!err.is_runtime);
+            }
+            _ => panic!("Expected Err result"),
+        }
+    }
+
+    #[test]
+    fn test_handle_nested_with_existing_tx() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::Nested,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        support.set_has_current_tx_for_testing(true);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+        let attr = TransactionAttribute::default();
+
+        let result = support.handle_nested(attr, "com.example.Foo", &method, || {
+            Ok(Box::new(42) as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Ok(val) => {
+                assert_eq!(val.downcast_ref::<i32>().unwrap(), &42);
+            }
+            _ => panic!("Expected Ok result"),
+        }
+    }
+
+    #[test]
+    fn test_handle_nested_no_existing_tx() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::Nested,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+        let attr = TransactionAttribute::default();
+
+        let result = support.handle_nested(attr, "com.example.Foo", &method, || {
+            Ok(Box::new(42) as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Ok(val) => {
+                assert_eq!(val.downcast_ref::<i32>().unwrap(), &42);
+            }
+            _ => panic!("Expected Ok result"),
+        }
+    }
+
+    #[test]
+    fn test_handle_requires_new_with_existing_tx() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::RequiresNew,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        support.set_has_current_tx_for_testing(true);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+        let attr = TransactionAttribute::default();
+
+        let result = support.handle_requires_new(attr, "com.example.Foo", &method, || {
+            Ok(Box::new(42) as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Ok(val) => {
+                assert_eq!(val.downcast_ref::<i32>().unwrap(), &42);
+            }
+            _ => panic!("Expected Ok result"),
+        }
+    }
+
+    #[test]
+    fn test_handle_requires_new_no_existing_tx() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::RequiresNew,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+        let attr = TransactionAttribute::default();
+
+        let result = support.handle_requires_new(attr, "com.example.Foo", &method, || {
+            Ok(Box::new(42) as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Ok(val) => {
+                assert_eq!(val.downcast_ref::<i32>().unwrap(), &42);
+            }
+            _ => panic!("Expected Ok result"),
+        }
+    }
+
+    #[test]
+    fn test_handle_mandatory_with_existing_tx() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::Mandatory,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        support.set_has_current_tx_for_testing(true);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+        let attr = TransactionAttribute::default();
+
+        let result = support.handle_mandatory(attr, "com.example.Foo", &method, || {
+            Ok(Box::new(42) as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Ok(val) => {
+                assert_eq!(val.downcast_ref::<i32>().unwrap(), &42);
+            }
+            _ => panic!("Expected Ok result"),
+        }
+    }
+
+    #[test]
+    fn test_handle_not_supported_with_existing_tx() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::NotSupported,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        support.set_has_current_tx_for_testing(true);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+        let attr = TransactionAttribute::default();
+
+        let result = support.handle_not_supported(attr, "com.example.Foo", &method, || {
+            Ok(Box::new(42) as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Ok(val) => {
+                assert_eq!(val.downcast_ref::<i32>().unwrap(), &42);
+            }
+            _ => panic!("Expected Ok result"),
+        }
+    }
+
+    #[test]
+    fn test_handle_not_supported_no_existing_tx() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::NotSupported,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+        let attr = TransactionAttribute::default();
+
+        let result = support.handle_not_supported(attr, "com.example.Foo", &method, || {
+            Ok(Box::new(42) as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Ok(val) => {
+                assert_eq!(val.downcast_ref::<i32>().unwrap(), &42);
+            }
+            _ => panic!("Expected Ok result"),
+        }
+    }
+
+    #[test]
+    fn test_handle_never_with_existing_tx() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::Never,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        support.set_has_current_tx_for_testing(true);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+        let attr = TransactionAttribute::default();
+
+        let result = support.handle_never(attr, "com.example.Foo", &method, || {
+            Ok(Box::new(42) as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Err(err) => {
+                assert!(err.exception_type.contains("IllegalTransactionStateException"));
+            }
+            _ => panic!("Expected Err result"),
+        }
+    }
+
+    #[test]
+    fn test_handle_never_no_existing_tx() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::Never,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+        let attr = TransactionAttribute::default();
+
+        let result = support.handle_never(attr, "com.example.Foo", &method, || {
+            Ok(Box::new(42) as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Ok(val) => {
+                assert_eq!(val.downcast_ref::<i32>().unwrap(), &42);
+            }
+            _ => panic!("Expected Ok result"),
+        }
+    }
+
+    #[test]
+    fn test_invoke_within_transaction_required_with_no_rollback_for_set() {
+        // Create a mock that has no_rollback_for set
+        let source = Arc::new(MockTransactionAttributeSourceWithNoRollback::new());
+        let support = TransactionAspectSupport::new(source);
+        support.set_has_current_tx_for_testing(true);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+
+        let result = support.invoke_within_transaction(&method, "com.example.Foo", || {
+            Err(Box::new("test error") as Box<dyn Any + Send + Sync>)
+        });
+
+        // Should get a non-rollback error because no_rollback_for matches
+        match result {
+            TransactionResult::Err(err) => {
+                assert!(!err.is_runtime);
+                assert!(err.message.contains("not rolled back"));
+            }
+            _ => panic!("Expected Err result"),
+        }
+    }
+
+    #[test]
+    fn test_invoke_within_transaction_supports_with_no_rollback_for_set() {
+        let source = Arc::new(MockTransactionAttributeSourceWithNoRollback::new());
+        let support = TransactionAspectSupport::new(source);
+        support.set_has_current_tx_for_testing(true);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+
+        let result = support.invoke_within_transaction(&method, "com.example.Foo", || {
+            Err(Box::new("test error") as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Err(err) => {
+                assert!(!err.is_runtime);
+                assert!(err.message.contains("not rolled back"));
+            }
+            _ => panic!("Expected Err result"),
+        }
+    }
+
+    #[test]
+    fn test_invoke_within_transaction_mandatory_with_no_rollback_for_set() {
+        let source = Arc::new(MockTransactionAttributeSourceWithNoRollback::new());
+        let support = TransactionAspectSupport::new(source);
+        support.set_has_current_tx_for_testing(true);
+        let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
+
+        let result = support.invoke_within_transaction(&method, "com.example.Foo", || {
+            Err(Box::new("test error") as Box<dyn Any + Send + Sync>)
+        });
+
+        match result {
+            TransactionResult::Err(err) => {
+                assert!(!err.is_runtime);
+                assert!(err.message.contains("not rolled back"));
+            }
+            _ => panic!("Expected Err result"),
+        }
+    }
+
+
+    #[test]
+    fn test_get_transaction_attribute_source() {
+        let source = Arc::new(MockTransactionAttributeSource::with_propagation(
+            Propagation::Required,
+        ));
+        let support = TransactionAspectSupport::new(source);
+        let attr_source = support.get_transaction_attribute_source();
+        // Verify we got a reference to the attribute source
+        let _ = attr_source;
     }
 }

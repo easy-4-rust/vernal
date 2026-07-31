@@ -291,3 +291,175 @@ impl Converter for BoolToStringConverter {
         Ok(Box::new(v.to_string()))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::any::TypeId;
+
+    #[test]
+    fn test_default_conversion_service_new() {
+        let service = DefaultConversionService::new();
+        assert!(service.can_convert(TypeId::of::<String>(), TypeId::of::<i32>()));
+        assert!(service.can_convert(TypeId::of::<String>(), TypeId::of::<i64>()));
+        assert!(service.can_convert(TypeId::of::<String>(), TypeId::of::<f64>()));
+        assert!(service.can_convert(TypeId::of::<String>(), TypeId::of::<bool>()));
+    }
+
+    #[test]
+    fn test_default_conversion_service_default_trait() {
+        let service = DefaultConversionService::default();
+        assert!(service.can_convert(TypeId::of::<String>(), TypeId::of::<i32>()));
+    }
+
+    #[test]
+    fn test_can_convert_returns_false_for_unsupported() {
+        let service = DefaultConversionService::new();
+        assert!(!service.can_convert(TypeId::of::<u8>(), TypeId::of::<u16>()));
+    }
+
+    #[test]
+    fn test_string_to_i32_conversion() {
+        let service = DefaultConversionService::new();
+        let source = String::from("42");
+        let result = service.convert(&source, TypeId::of::<i32>()).unwrap();
+        assert_eq!(*result.downcast_ref::<i32>().unwrap(), 42);
+    }
+
+    #[test]
+    fn test_string_to_i32_with_whitespace() {
+        let service = DefaultConversionService::new();
+        let source = String::from("  100  ");
+        let result = service.convert(&source, TypeId::of::<i32>()).unwrap();
+        assert_eq!(*result.downcast_ref::<i32>().unwrap(), 100);
+    }
+
+    #[test]
+    fn test_string_to_i32_parse_error() {
+        let service = DefaultConversionService::new();
+        let source = String::from("not_a_number");
+        assert!(service.convert(&source, TypeId::of::<i32>()).is_err());
+    }
+
+    #[test]
+    fn test_string_to_i64_conversion() {
+        let service = DefaultConversionService::new();
+        let source = String::from("123456789");
+        let result = service.convert(&source, TypeId::of::<i64>()).unwrap();
+        assert_eq!(*result.downcast_ref::<i64>().unwrap(), 123456789);
+    }
+
+    #[test]
+    fn test_string_to_i64_parse_error() {
+        let service = DefaultConversionService::new();
+        let source = String::from("abc");
+        assert!(service.convert(&source, TypeId::of::<i64>()).is_err());
+    }
+
+    #[test]
+    fn test_string_to_f64_conversion() {
+        let service = DefaultConversionService::new();
+        let source = String::from("3.14");
+        let result = service.convert(&source, TypeId::of::<f64>()).unwrap();
+        assert!((result.downcast_ref::<f64>().unwrap() - 3.14).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn test_string_to_f64_parse_error() {
+        let service = DefaultConversionService::new();
+        let source = String::from("not_a_float");
+        assert!(service.convert(&source, TypeId::of::<f64>()).is_err());
+    }
+
+    #[test]
+    fn test_string_to_bool_true_values() {
+        let service = DefaultConversionService::new();
+        for value in &["true", "yes", "1", "TRUE", "Yes", "True"] {
+            let source = String::from(*value);
+            let result = service.convert(&source, TypeId::of::<bool>()).unwrap();
+            assert!(*result.downcast_ref::<bool>().unwrap(), "Expected true for '{}'", value);
+        }
+    }
+
+    #[test]
+    fn test_string_to_bool_false_values() {
+        let service = DefaultConversionService::new();
+        for value in &["false", "no", "0", "FALSE", "No", "False"] {
+            let source = String::from(*value);
+            let result = service.convert(&source, TypeId::of::<bool>()).unwrap();
+            assert!(!*result.downcast_ref::<bool>().unwrap(), "Expected false for '{}'", value);
+        }
+    }
+
+    #[test]
+    fn test_string_to_bool_invalid() {
+        let service = DefaultConversionService::new();
+        let source = String::from("maybe");
+        assert!(service.convert(&source, TypeId::of::<bool>()).is_err());
+    }
+
+    #[test]
+    fn test_i32_to_string_conversion() {
+        let service = DefaultConversionService::new();
+        let source = 42i32;
+        let result = service.convert(&source, TypeId::of::<String>()).unwrap();
+        assert_eq!(*result.downcast_ref::<String>().unwrap(), "42");
+    }
+
+    #[test]
+    fn test_i64_to_string_conversion() {
+        let service = DefaultConversionService::new();
+        let source = 123456789i64;
+        let result = service.convert(&source, TypeId::of::<String>()).unwrap();
+        assert_eq!(*result.downcast_ref::<String>().unwrap(), "123456789");
+    }
+
+    #[test]
+    fn test_f64_to_string_conversion() {
+        let service = DefaultConversionService::new();
+        let source = 3.14f64;
+        let result = service.convert(&source, TypeId::of::<String>()).unwrap();
+        assert_eq!(*result.downcast_ref::<String>().unwrap(), "3.14");
+    }
+
+    #[test]
+    fn test_bool_to_string_conversion() {
+        let service = DefaultConversionService::new();
+        let source_true = true;
+        let result = service.convert(&source_true, TypeId::of::<String>()).unwrap();
+        assert_eq!(*result.downcast_ref::<String>().unwrap(), "true");
+
+        let source_false = false;
+        let result = service.convert(&source_false, TypeId::of::<String>()).unwrap();
+        assert_eq!(*result.downcast_ref::<String>().unwrap(), "false");
+    }
+
+    #[test]
+    fn test_convert_unsupported_type_returns_error() {
+        let service = DefaultConversionService::new();
+        let source = 42u8;
+        assert!(service.convert(&source, TypeId::of::<u16>()).is_err());
+    }
+
+    #[test]
+    fn test_register_custom_converter() {
+        struct U8ToU16Converter;
+        impl Converter for U8ToU16Converter {
+            fn source_type(&self) -> TypeId { TypeId::of::<u8>() }
+            fn target_type(&self) -> TypeId { TypeId::of::<u16>() }
+            fn convert(&self, source: &dyn Any) -> Result<Box<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> {
+                let v = source.downcast_ref::<u8>().ok_or("Not a u8")?;
+                Ok(Box::new(*v as u16))
+            }
+        }
+
+        let mut service = DefaultConversionService::new();
+        assert!(!service.can_convert(TypeId::of::<u8>(), TypeId::of::<u16>()));
+        service.register(Arc::new(U8ToU16Converter));
+        assert!(service.can_convert(TypeId::of::<u8>(), TypeId::of::<u16>()));
+
+        let source = 42u8;
+        let result = service.convert(&source, TypeId::of::<u16>()).unwrap();
+        assert_eq!(*result.downcast_ref::<u16>().unwrap(), 42);
+    }
+}

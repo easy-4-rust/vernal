@@ -126,3 +126,108 @@ impl OperationMetadata {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod operation_metadata_tests {
+    use super::*;
+
+    #[test]
+    fn operation_metadata_empty() {
+        let metadata = OperationMetadata::empty();
+        assert!(metadata.is_empty());
+        assert!(metadata.tags().is_empty());
+        assert!(metadata.qualifier().is_none());
+    }
+
+    #[test]
+    fn operation_metadata_with_tag() {
+        let metadata = OperationMetadata::empty()
+            .with_tag("secured")
+            .unwrap();
+        assert!(!metadata.is_empty());
+        assert!(metadata.has_tag("secured"));
+    }
+
+    #[test]
+    fn operation_metadata_with_qualifier() {
+        let metadata = OperationMetadata::empty()
+            .with_qualifier("primary")
+            .unwrap();
+        assert!(!metadata.is_empty());
+        assert_eq!(metadata.qualifier(), Some("primary"));
+    }
+
+    #[test]
+    fn operation_metadata_with_tag_invalid() {
+        let result = OperationMetadata::empty().with_tag("");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn operation_metadata_with_qualifier_invalid() {
+        let result = OperationMetadata::empty().with_qualifier("");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn operation_metadata_without_qualifier() {
+        let metadata = OperationMetadata::empty()
+            .with_qualifier("primary")
+            .unwrap()
+            .without_qualifier();
+        assert!(metadata.qualifier().is_none());
+    }
+
+    #[test]
+    fn operation_metadata_has_tag() {
+        let metadata = OperationMetadata::empty()
+            .with_tag("secured")
+            .unwrap();
+        assert!(metadata.has_tag("secured"));
+        assert!(!metadata.has_tag("public"));
+    }
+
+    #[test]
+    fn operation_metadata_tags_sorted() {
+        let metadata = OperationMetadata::empty()
+            .with_tag("b")
+            .unwrap()
+            .with_tag("a")
+            .unwrap();
+        let tags = metadata.tags();
+        assert_eq!(tags[0].as_ref(), "a");
+        assert_eq!(tags[1].as_ref(), "b");
+    }
+
+    #[test]
+    fn operation_metadata_tags_dedup() {
+        let metadata = OperationMetadata::empty()
+            .with_tag("secured")
+            .unwrap()
+            .with_tag("secured")
+            .unwrap();
+        assert_eq!(metadata.tags().len(), 1);
+    }
+
+    #[test]
+    fn operation_metadata_clone() {
+        let metadata = OperationMetadata::empty()
+            .with_tag("secured")
+            .unwrap();
+        let cloned = metadata.clone();
+        assert_eq!(metadata, cloned);
+    }
+
+    #[test]
+    fn operation_metadata_debug() {
+        let metadata = OperationMetadata::empty();
+        let debug = format!("{:?}", metadata);
+        assert!(!debug.is_empty());
+    }
+
+    #[test]
+    fn operation_metadata_default() {
+        let metadata = OperationMetadata::default();
+        assert!(metadata.is_empty());
+    }
+}

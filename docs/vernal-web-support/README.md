@@ -1,3 +1,10 @@
+<!-- migration-doc: authority=historical canonical=Spring-web-support-技术要求.md -->
+
+> 迁移文档治理：本文级别为 **historical**，历史基线提交 `9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82`。正文不得作为当前验收结论；以 [Spring-web-support-技术要求.md](Spring-web-support-技术要求.md) 为准。
+
+> **历史入口，非当前验收依据。** 当前五件套从
+> [Spring-web-support-技术要求](Spring-web-support-技术要求.md)开始。
+
 # vernal-web-support 迁移文档
 
 > 本目录收纳 `vernal-web` 端到端迁移到 rust 的全部规划文档。
@@ -96,4 +103,3 @@
 | `vernal-tide` | 10 |
 | `vernal-warp` | 11 |
 | `vernal-tonic` | 9 |
-

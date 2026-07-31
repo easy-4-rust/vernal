@@ -1,3 +1,7 @@
+<!-- migration-doc: authority=historical canonical=对象级对照表.md -->
+
+> 迁移文档治理：本文级别为 **historical**，历史基线提交 `9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82`。正文不得作为当前验收结论；以 [对象级对照表.md](对象级对照表.md) 为准。
+
 # spring-context-indexer → vernal-context-indexer 对象级对照表（验收清单）
 
 > 基线：Spring Framework **7.0.8** spring-context-indexer 模块，共 **11 个 Java 类**（含 1 个 `package-info`）。

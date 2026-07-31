@@ -1,3 +1,9 @@
+<!-- migration-doc: authority=historical canonical=迁移路线图.md -->
+
+> 迁移文档治理：本文级别为 **historical**，历史基线提交 `9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82`。正文不得作为当前验收结论；以 [迁移路线图.md](迁移路线图.md) 为准。
+
+> **历史文档，非当前验收依据。** 当前版本见[迁移路线图](迁移路线图.md)。
+
 # spring-test → vernal-test 全量迁移路线图
 
 > 版本：v1.0（2026-07-27）｜基线：Spring Framework **7.0.8**（spring-test）

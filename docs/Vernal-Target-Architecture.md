@@ -1,3 +1,7 @@
+<!-- migration-doc: authority=support canonical=迁移验收规范.md -->
+
+> 迁移文档治理：本文级别为 **support**。正文中的历史统计或完成标记不得单独作为验收结论；以 [迁移验收规范.md](迁移验收规范.md) 和自动审计报告为准。
+
 # Vernal 目标架构
 
 > 版本：0.1 | 日期：2026-07-26 | 状态：规划中
@@ -13,8 +17,8 @@
 | Spring 模块 | Vernal 模块 | 职责 | 状态 |
 |---|---|---|---|
 | `spring-core` | `vernal-core` | 基础契约：错误体系、类型标识、排序、快照 trait | 🔄 充实中 |
-| `spring-beans` | `vernal-beans` | IoC 内核：组件定义、注册表、容器、依赖解析、作用域 | ✅ 完备 |
-| `spring-aop` | `vernal-aop` | AOP 内核：切入点、拦截器、调用计划、简化门面 | ✅ 完备 |
+| `spring-beans` | `vernal-beans` | IoC 内核：组件定义、注册表、容器、依赖解析、作用域 | ⚠️ 对象审计未完成 |
+| `spring-aop` | `vernal-aop` | AOP 内核：统一 Advice/Interceptor、Advisor、自动代理 | ⚠️ 对象审计未完成 |
 | `spring-context` | `vernal-context` | 应用上下文：生命周期、事件总线、配置属性、条件装配 | ✅ 完备 |
 | `spring-context-indexer` | `vernal-discovery` | 编译期组件发现（linkme 分布式切片） | ✅ 完备 |
 | `spring-expression` | `vernal-expression` | 表达式语言（条件表达式、配置表达式） | ❌ 规划中 |
@@ -67,6 +71,24 @@
 | `vernal` | 统一门面 crate，re-exports 所有内核 | ✅ 完备 |
 
 ## 三、目标目录结构
+
+### 迁移进入目标架构的门禁
+
+```mermaid
+flowchart LR
+    S["Spring Java 对象"] --> P["snake_case + 保留末两层包目录"]
+    P --> L["本地真实实现"]
+    P --> D["精确依赖复用"]
+    P --> N["平台不适用证据"]
+    L --> G["路径/注释/语义测试/无 stub 门禁"]
+    D --> G
+    N --> G
+    G --> R["对象台账自动汇总模块状态"]
+```
+
+模块存在可调用能力不等于 Spring 对象迁移完成。目标态状态必须来自
+[`migration-manifest.toml`](migration-manifest.toml) 与 `migration-audit/` 报告，
+不能由架构文档手写“完备”。
 
 ```
 vernal/

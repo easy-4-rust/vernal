@@ -13,12 +13,12 @@ use vernal_beans::ComponentKey;
 use vernal_beans::RegistryBuilder;
 use vernal_beans::Resolver;
 use vernal_beans::Scope;
-use vernal_beans::autowire_capable_bean_factory::AutowireCapableBeanFactory;
-use vernal_beans::bean_factory::BeanFactory;
-use vernal_beans::bean_post_processor::BeanPostProcessor;
+use vernal_beans::AutowireCapableBeanFactory;
+use vernal_beans::BeanFactory;
+use vernal_beans::BeanPostProcessor;
 use vernal_beans::bean_scope::BeanScope;
-use vernal_beans::generic_bean_definition::GenericBeanDefinition;
-use vernal_beans::root_bean_definition::RootBeanDefinition;
+use vernal_beans::GenericBeanDefinition;
+use vernal_beans::RootBeanDefinition;
 
 // ── 测试类型 ─────────────────────────────────────────────────────────────
 

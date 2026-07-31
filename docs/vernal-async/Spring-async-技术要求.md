@@ -1,3 +1,45 @@
+<!-- migration-doc: authority=authoritative canonical=../迁移验收规范.md -->
+# vernal-async 技术要求
+> 迁移文档治理：本文级别为 **authoritative**。正文中的历史统计或完成标记不得单独作为验收结论；以 [../迁移验收规范.md](../迁移验收规范.md) 和自动审计报告为准。
+
+
+> 来源范围：`spring-core/.../core/task`，Spring 基线
+> `9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82`；规则见
+> [迁移验收规范](../迁移验收规范.md)。
+
+## 基线与目录
+
+- Java 业务对象：14 个。
+- 目标 crate：`crates/vernal-async`，当前仅 `executor.rs` 中一个 `AsyncTaskExecutor` trait。
+- 该对象文件预期为 `async_task_executor.rs`，且语义尚不完整，必须登记为未完成。
+
+| Java | 目标 |
+|---|---|
+| `task/AsyncTaskExecutor.java` | `async_task_executor.rs` |
+| `task/support/TaskExecutorAdapter.java` | `task/support/task_executor_adapter.rs` |
+| `task/support/CompositeTaskDecorator.java` | `task/support/composite_task_decorator.rs` |
+
+`CompletableFuture` 映射为 Tokio task/future；线程、虚拟线程只在有 JVM 专属证据时
+`PLATFORM_NA`，但任务提交、装饰、拒绝和超时语义仍需迁移。
+
+```mermaid
+flowchart LR
+    T["TaskExecutor"] --> D["TaskDecorator chain"]
+    D --> E["async executor"]
+    E --> O["JoinHandle / Result"]
+    E --> R["rejected / timeout error"]
+```
+
+---
+
+<!-- restored-detail-from-head: dd20300d16a09200bd8a379ff14db1e2da99b67c -->
+
+## 原详细文档（完整保留）
+
+> 以下正文完整恢复自 Vernal 提交 `dd20300d16a09200bd8a379ff14db1e2da99b67c`。其中历史对象数量、完成状态、
+> 路径算法和依赖替代结论如与本文顶部或自动对象台账冲突，以顶部当前结论和
+> `docs/migration-audit/` 为准；其 API、设计背景、阶段拆解和测试说明继续保留。
+
 # vernal-async 技术要求（对标 spring-async）
 
 > **版本**：v1.0（2026-07-28）

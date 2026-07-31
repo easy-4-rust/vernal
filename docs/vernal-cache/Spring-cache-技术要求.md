@@ -1,3 +1,45 @@
+<!-- migration-doc: authority=authoritative canonical=../迁移验收规范.md -->
+# vernal-cache 技术要求
+> 迁移文档治理：本文级别为 **authoritative**。正文中的历史统计或完成标记不得单独作为验收结论；以 [../迁移验收规范.md](../迁移验收规范.md) 和自动审计报告为准。
+
+
+> 当前权威要求。来源为 `spring-context/src/main/java/org/springframework/cache`，固定提交 `9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82`。
+
+## 当前边界
+
+Spring 源根有 63 个业务对象。目标 crate 已存在，但目前只有 `cache.rs`、`manager.rs` 两个对象文件；它们以及 `vernal-context-support` 的 Caffeine/JCache 实现都必须通过逐对象审计，不能用“缓存生态已存在”整体豁免。
+
+## 目标目录
+
+| Spring 来源 | 目标 Rust |
+|---|---|
+| `Cache.java` | `cache.rs` |
+| `interceptor/CacheAspectSupport.java` | `interceptor/cache_aspect_support.rs` |
+| `annotation/Cacheable.java` | `annotation/cacheable.rs` |
+| `support/AbstractValueAdaptingCache.java` | `support/abstract_value_adapting_cache.rs` |
+
+保留末两层目录；一对象一文件；跨 crate 复用需记录精确符号和集成测试。
+
+## 必须保持的语义
+
+- `Cache` 的命中、空值适配、`putIfAbsent`、失效与异常合同。
+- `CacheManager` 的按名解析和缓存集合稳定性。
+- 注解/操作解析、condition/unless、key generator 与 cache resolver。
+- 同步加载、缓存穿透保护、提前/延后淘汰和异步返回处理。
+- 事务感知装饰器必须与事务同步完成阶段一致。
+
+验收遵循[迁移验收规范](../迁移验收规范.md)。
+
+---
+
+<!-- restored-detail-from-head: dd20300d16a09200bd8a379ff14db1e2da99b67c -->
+
+## 原详细文档（完整保留）
+
+> 以下正文完整恢复自 Vernal 提交 `dd20300d16a09200bd8a379ff14db1e2da99b67c`。其中历史对象数量、完成状态、
+> 路径算法和依赖替代结论如与本文顶部或自动对象台账冲突，以顶部当前结论和
+> `docs/migration-audit/` 为准；其 API、设计背景、阶段拆解和测试说明继续保留。
+
 # vernal-cache 技术要求（对标 spring-cache）
 
 > **版本**：v1.0（2026-07-28）

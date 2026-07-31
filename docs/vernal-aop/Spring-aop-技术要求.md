@@ -1,3 +1,99 @@
+<!-- migration-doc: authority=authoritative canonical=../迁移验收规范.md -->
+
+> 迁移文档治理：本文级别为 **authoritative**。正文中的历史统计或完成标记不得单独作为验收结论；以 [../迁移验收规范.md](../迁移验收规范.md) 和自动审计报告为准。
+> [vernal-aop 自动审计](../migration-audit/vernal-aop.md)为准。
+
+# vernal-aop 技术要求
+
+## 1. 主线与边界
+
+- `spring-aop` 固定提交 `9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82`
+  是对象、目录和 Advice/Interceptor 语义主线，包含 Spring 与 AOP Alliance 共 208 个对象。
+- `aspect-rs` 固定提交 `89beaa9057b3f2b73093fc31d3219420e0bb6182`
+  是依赖复用边界，不是文件拆分主线。
+- `aspect-core`/`aspect-std` 已有能力只有在精确符号、版本、Cargo 证据和集成测试都存在时，
+  才能标记 `DEPENDENCY_REUSED`；不能复制一份本地实现充数。
+
+## 2. 目标目录
+
+```text
+crates/vernal-aop/src/
+├── aspectj/
+│   ├── annotation/
+│   └── autoproxy/
+├── config/
+├── framework/
+│   ├── adapter/
+│   ├── autoproxy/
+│   └── interceptor/
+├── interceptor/
+├── scope/
+└── support/
+```
+
+只保留 Java 子包最后两层。例如：
+
+| Java 对象 | Rust 目标 |
+|---|---|
+| `framework/autoproxy/target/Foo.java` | `autoproxy/target/foo.rs` |
+| `framework/adapter/MethodBeforeAdviceInterceptor.java` | `framework/adapter/method_before_advice_interceptor.rs` |
+| `interceptor/ExposeInvocationInterceptor.java` | `interceptor/expose_invocation_interceptor.rs` |
+
+## 3. Spring 统一拦截链
+
+```mermaid
+flowchart LR
+    A["调用元数据"] --> B["ClassFilter + MethodMatcher"]
+    B --> C["Advisor 选择与排序"]
+    C --> D["统一 MethodInterceptor 链"]
+    D --> E["BeforeAdvice 适配器"]
+    D --> F["Around / proceed"]
+    D --> G["AfterReturning 适配器"]
+    D --> H["Throws 适配器"]
+    E --> I["目标调用"]
+    F --> I
+    I --> G
+    I --> H
+```
+
+Vernal 可用 async trait/future 实现链式推进，但必须保留：
+
+1. Advice 到统一 Interceptor 的适配语义；
+2. Advisor/Pointcut 的匹配、排序和缓存；
+3. `proceed` 恰好一次、成功/错误通知分流以及原错误传播；
+4. 自动代理创建与 Beans 生命周期之间的桥接；
+5. Invocation 上下文、参数、目标、方法标识和用户属性传递。
+
+## 4. 平台不适用边界
+
+只有能够给出平台证据的 JVM 专属对象才可标记 `PLATFORM_NA`，包括：
+
+- JDK 动态代理类和 Java `InvocationHandler` 细节；
+- CGLIB/Objenesis 字节码代理；
+- AspectJ Weaver、Java 反射 shadow matching；
+- Spring XML namespace/parser 配置。
+
+Spring 的 Advice、Interceptor、Advisor、Pointcut、自动代理策略与支持对象不是因为实现机制不同
+就自动成为 `PLATFORM_NA`。
+
+## 5. 当前集成事实
+
+`AspectRsAdapter` 当前使用空 `JoinPoint`，成功分支没有调用 `after`，错误分支也没有执行等价
+错误通知。因此该桥接能力是 `PARTIAL`，不能据此宣称 `aspect-std` 已完整接入。
+
+限流、缓存、日志、指标、熔断和鉴权等 `aspect-std` 切面是可复用业务能力；它们并不天然等同于
+Spring 同名或相近 Interceptor。只有接口语义与集成测试精确证明后才可豁免本地对象文件。
+
+---
+
+<!-- restored-detail-from-head: dd20300d16a09200bd8a379ff14db1e2da99b67c -->
+
+## 原详细文档（完整保留）
+
+> 以下正文完整恢复自 Vernal 提交 `dd20300d16a09200bd8a379ff14db1e2da99b67c`。其中历史对象数量、完成状态、
+> 路径算法和依赖替代结论如与本文顶部或自动对象台账冲突，以顶部当前结论和
+> `docs/migration-audit/` 为准；其 API、设计背景、阶段拆解和测试说明继续保留。
+
 # vernal-aop 技术要求（对标 spring-aop）
 
 > **版本**：v2.0（2026-07-28）

@@ -73,3 +73,82 @@ impl InvocationContext {
         self.values.read().await.contains_key(&TypeId::of::<T>())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn invocation_context_new() {
+        let ctx = InvocationContext::new();
+        assert!(!ctx.contains::<i32>().await);
+    }
+
+    #[tokio::test]
+    async fn invocation_context_insert_get() {
+        let ctx = InvocationContext::new();
+        ctx.insert(42i32).await;
+        let value: Option<i32> = ctx.get().await;
+        assert_eq!(value, Some(42));
+    }
+
+    #[tokio::test]
+    async fn invocation_context_remove() {
+        let ctx = InvocationContext::new();
+        ctx.insert(42i32).await;
+        let removed: Option<i32> = ctx.remove().await;
+        assert_eq!(removed, Some(42));
+    }
+
+    #[tokio::test]
+    async fn invocation_context_contains() {
+        let ctx = InvocationContext::new();
+        assert!(!ctx.contains::<i32>().await);
+        ctx.insert(42i32).await;
+        assert!(ctx.contains::<i32>().await);
+    }
+
+    #[tokio::test]
+    async fn invocation_context_insert_returns_old() {
+        let ctx = InvocationContext::new();
+        let old = ctx.insert(1i32).await;
+        assert!(old.is_none());
+        let old = ctx.insert(2i32).await;
+        assert_eq!(old, Some(1));
+    }
+
+    #[tokio::test]
+    async fn invocation_context_get_missing_returns_none() {
+        let ctx = InvocationContext::new();
+        let value: Option<i32> = ctx.get().await;
+        assert!(value.is_none());
+    }
+
+    #[tokio::test]
+    async fn invocation_context_remove_missing_returns_none() {
+        let ctx = InvocationContext::new();
+        let removed: Option<i32> = ctx.remove().await;
+        assert!(removed.is_none());
+    }
+
+    #[tokio::test]
+    async fn invocation_context_multiple_types() {
+        let ctx = InvocationContext::new();
+        ctx.insert(42i32).await;
+        ctx.insert("hello".to_string()).await;
+        assert!(ctx.contains::<i32>().await);
+        assert!(ctx.contains::<String>().await);
+        assert_eq!(ctx.get::<i32>().await, Some(42));
+        assert_eq!(ctx.get::<String>().await, Some("hello".to_string()));
+    }
+
+    #[tokio::test]
+    async fn invocation_context_remove_only_target_type() {
+        let ctx = InvocationContext::new();
+        ctx.insert(42i32).await;
+        ctx.insert("hello".to_string()).await;
+        ctx.remove::<i32>().await;
+        assert!(!ctx.contains::<i32>().await);
+        assert!(ctx.contains::<String>().await);
+    }
+}

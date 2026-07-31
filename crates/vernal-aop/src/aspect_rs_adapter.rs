@@ -165,3 +165,65 @@ mod tests {
         assert!(!adapter.aspect.before_called.load(std::sync::atomic::Ordering::SeqCst));
     }
 }
+
+#[cfg(test)]
+mod additional_tests {
+    use super::*;
+    use crate::{Operation, InvocationValue};
+
+    struct TestSyncAspect {
+        before_called: Arc<std::sync::atomic::AtomicBool>,
+    }
+
+    impl TestSyncAspect {
+        fn new() -> Self {
+            Self {
+                before_called: Arc::new(std::sync::atomic::AtomicBool::new(false)),
+            }
+        }
+    }
+
+    impl aspect_core::Aspect for TestSyncAspect {
+        fn before(&self, _ctx: &aspect_core::JoinPoint) {
+            self.before_called.store(true, std::sync::atomic::Ordering::SeqCst);
+        }
+    }
+
+    #[test]
+    fn aspect_rs_adapter_new() {
+        let aspect = TestSyncAspect::new();
+        let adapter = AspectRsAdapter::new(aspect);
+        assert!(!adapter.aspect.before_called.load(std::sync::atomic::Ordering::SeqCst));
+    }
+
+    #[tokio::test]
+    async fn aspect_rs_adapter_intercept() {
+        let aspect = TestSyncAspect::new();
+        let adapter = AspectRsAdapter::new(aspect);
+        let inv = Arc::new(Invocation::new(Operation::new("Service", "method")));
+        let next = Next::new(&[], crate::target_ref::TargetRef::Static(&|_| {
+            Box::pin(async { Ok(Box::new(42i32) as InvocationValue) })
+        }));
+        let result = adapter.intercept(inv, next).await;
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn around_adapter_new() {
+        let aspect = TestSyncAspect::new();
+        let adapter = AroundAdapter::new(aspect);
+        assert!(!adapter.aspect.before_called.load(std::sync::atomic::Ordering::SeqCst));
+    }
+
+    #[tokio::test]
+    async fn around_adapter_intercept() {
+        let aspect = TestSyncAspect::new();
+        let adapter = AroundAdapter::new(aspect);
+        let inv = Arc::new(Invocation::new(Operation::new("Service", "method")));
+        let next = Next::new(&[], crate::target_ref::TargetRef::Static(&|_| {
+            Box::pin(async { Ok(Box::new(42i32) as InvocationValue) })
+        }));
+        let result = adapter.intercept(inv, next).await;
+        assert!(result.is_ok());
+    }
+}

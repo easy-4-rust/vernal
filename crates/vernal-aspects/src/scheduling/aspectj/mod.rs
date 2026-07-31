@@ -11,13 +11,13 @@ mod async_task_executor;
 mod async_uncaught_exception_handler;
 mod abstract_async_execution_aspect;
 mod annotation_async_execution_aspect;
-mod aspectj_async_configuration;
+mod aspect_j_async_configuration;
 
 pub use async_task_executor::AsyncTaskExecutor;
 pub use async_uncaught_exception_handler::AsyncUncaughtExceptionHandler;
 pub use abstract_async_execution_aspect::AbstractAsyncExecutionAspect;
 pub use annotation_async_execution_aspect::AnnotationAsyncExecutionAspect;
-pub use aspectj_async_configuration::AspectJAsyncConfiguration;
+pub use aspect_j_async_configuration::AspectJAsyncConfiguration;
 
 #[cfg(test)]
 mod tests {

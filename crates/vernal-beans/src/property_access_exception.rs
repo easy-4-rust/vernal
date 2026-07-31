@@ -22,3 +22,54 @@ impl fmt::Display for PropertyAccessException {
 }
 
 impl std::error::Error for PropertyAccessException {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_new_with_string() {
+        let err = PropertyAccessException::new("property access error");
+        assert_eq!(err.message(), "property access error");
+    }
+
+    #[test]
+    fn test_new_with_string_owned() {
+        let msg = String::from("owned property access error");
+        let err = PropertyAccessException::new(msg);
+        assert_eq!(err.message(), "owned property access error");
+    }
+
+    #[test]
+    fn test_display() {
+        let err = PropertyAccessException::new("display test");
+        assert_eq!(format!("{}", err), "display test");
+    }
+
+    #[test]
+    fn test_debug() {
+        let err = PropertyAccessException::new("debug test");
+        let debug_str = format!("{:?}", err);
+        assert!(debug_str.contains("debug test"));
+    }
+
+    #[test]
+    fn test_clone() {
+        let err = PropertyAccessException::new("clone test");
+        let cloned = err.clone();
+        assert_eq!(cloned.message(), "clone test");
+    }
+
+    #[test]
+    fn test_error_trait() {
+        let err = PropertyAccessException::new("error trait test");
+        let error: &dyn std::error::Error = &err;
+        assert_eq!(error.to_string(), "error trait test");
+    }
+
+    #[test]
+    fn test_new_with_empty_string() {
+        let err = PropertyAccessException::new("");
+        assert_eq!(err.message(), "");
+    }
+}

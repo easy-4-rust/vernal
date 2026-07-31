@@ -80,3 +80,74 @@ impl InvocationPlanBuilder {
         self.advisors.is_empty()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{AnyPointcut, Interceptor, Invocation, InvocationFuture, Next, Operation};
+
+    struct TestInterceptor;
+    impl Interceptor for TestInterceptor {
+        fn intercept<'a>(&'a self, invocation: std::sync::Arc<Invocation>, next: Next<'a>) -> crate::InvocationFuture<'a> {
+            next.run(invocation)
+        }
+    }
+
+    #[test]
+    fn builder_new_is_empty() {
+        let builder = InvocationPlanBuilder::new();
+        assert_eq!(builder.len(), 0);
+        assert!(builder.is_empty());
+    }
+
+    #[test]
+    fn builder_register_increases_len() {
+        let mut builder = InvocationPlanBuilder::new();
+        let advisor = Advisor::new(AnyPointcut::new(), TestInterceptor, 0);
+        builder.register(advisor);
+        assert_eq!(builder.len(), 1);
+        assert!(!builder.is_empty());
+    }
+
+    #[test]
+    fn builder_build_empty_returns_empty_plan() {
+        let builder = InvocationPlanBuilder::new();
+        let op = Operation::new("Service", "method");
+        let plan = builder.build(op.clone());
+        assert_eq!(plan.len(), 0);
+        assert!(plan.is_empty());
+        assert_eq!(plan.operation().component(), "Service");
+    }
+
+    #[test]
+    fn builder_build_matching_advisor() {
+        let mut builder = InvocationPlanBuilder::new();
+        let advisor = Advisor::new(AnyPointcut::new(), TestInterceptor, 0);
+        builder.register(advisor);
+        let op = Operation::new("Service", "method");
+        let plan = builder.build(op);
+        assert_eq!(plan.len(), 1);
+    }
+
+    #[test]
+    fn builder_build_respects_order() {
+        let mut builder = InvocationPlanBuilder::new();
+        builder.register(Advisor::new(AnyPointcut::new(), TestInterceptor, 2));
+        builder.register(Advisor::new(AnyPointcut::new(), TestInterceptor, 1));
+        let op = Operation::new("Service", "method");
+        let plan = builder.build(op);
+        assert_eq!(plan.len(), 2);
+    }
+
+    #[test]
+    fn builder_build_catalog() {
+        let mut builder = InvocationPlanBuilder::new();
+        builder.register(Advisor::new(AnyPointcut::new(), TestInterceptor, 0));
+        let ops = vec![
+            Operation::new("Service", "method1"),
+            Operation::new("Service", "method2"),
+        ];
+        let catalog = builder.build_catalog(ops);
+        assert!(catalog.is_ok());
+    }
+}

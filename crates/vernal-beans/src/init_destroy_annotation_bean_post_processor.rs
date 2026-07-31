@@ -1,5 +1,5 @@
 //! InitDestroyAnnotationBeanPostProcessor — 初始化销毁注解后处理器。
-use crate::bean_post_processor::BeanPostProcessor;
+use crate::factory::config::bean_post_processor::BeanPostProcessor;
 use std::any::Any;
 use std::sync::Arc;
 

@@ -113,3 +113,121 @@ impl Default for SimpleInterceptorChain {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    struct CountingInterceptor {
+        before_count: Arc<AtomicUsize>,
+        after_count: Arc<AtomicUsize>,
+    }
+
+    impl CountingInterceptor {
+        fn new() -> (Self, Arc<AtomicUsize>, Arc<AtomicUsize>) {
+            let before = Arc::new(AtomicUsize::new(0));
+            let after = Arc::new(AtomicUsize::new(0));
+            (
+                Self {
+                    before_count: before.clone(),
+                    after_count: after.clone(),
+                },
+                before,
+                after,
+            )
+        }
+    }
+
+    impl SimpleInterceptor for CountingInterceptor {
+        fn before(&self, _ctx: &SimpleInvocationContext) -> Result<(), BoxError> {
+            self.before_count.fetch_add(1, Ordering::SeqCst);
+            Ok(())
+        }
+
+        fn after(&self, _ctx: &SimpleInvocationContext, _result: &SimpleCallResult) {
+            self.after_count.fetch_add(1, Ordering::SeqCst);
+        }
+    }
+
+    #[test]
+    fn chain_new_is_empty() {
+        let chain = SimpleInterceptorChain::new();
+        assert!(chain.is_empty());
+        assert_eq!(chain.len(), 0);
+    }
+
+    #[test]
+    fn chain_push_increases_len() {
+        let mut chain = SimpleInterceptorChain::new();
+        let (interceptor, _, _) = CountingInterceptor::new();
+        chain.push(Arc::new(interceptor));
+        assert_eq!(chain.len(), 1);
+        assert!(!chain.is_empty());
+    }
+
+    #[test]
+    fn chain_with_interceptors() {
+        let (i1, _, _) = CountingInterceptor::new();
+        let (i2, _, _) = CountingInterceptor::new();
+        let chain = SimpleInterceptorChain::with_interceptors(vec![Arc::new(i1), Arc::new(i2)]);
+        assert_eq!(chain.len(), 2);
+    }
+
+    #[test]
+    fn before_all_calls_in_order() {
+        let mut chain = SimpleInterceptorChain::new();
+        let (i1, before1, _) = CountingInterceptor::new();
+        let (i2, before2, _) = CountingInterceptor::new();
+        chain.push(Arc::new(i1));
+        chain.push(Arc::new(i2));
+        let ctx = SimpleInvocationContext::new("test");
+        let _ = chain.before_all(&ctx);
+        assert_eq!(before1.load(Ordering::SeqCst), 1);
+        assert_eq!(before2.load(Ordering::SeqCst), 1);
+    }
+
+    #[test]
+    fn after_all_calls_in_reverse_order() {
+        let mut chain = SimpleInterceptorChain::new();
+        let (i1, _, after1) = CountingInterceptor::new();
+        let (i2, _, after2) = CountingInterceptor::new();
+        chain.push(Arc::new(i1));
+        chain.push(Arc::new(i2));
+        let ctx = SimpleInvocationContext::new("test");
+        let result = SimpleCallResult::ok();
+        chain.after_all(&ctx, &result);
+        assert_eq!(after1.load(Ordering::SeqCst), 1);
+        assert_eq!(after2.load(Ordering::SeqCst), 1);
+    }
+
+    #[test]
+    fn around_all_empty_chain() {
+        let chain = SimpleInterceptorChain::new();
+        let ctx = SimpleInvocationContext::new("test");
+        let result = chain.around_all(&ctx, || SimpleCallResult::ok());
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn around_all_with_interceptors() {
+        let mut chain = SimpleInterceptorChain::new();
+        let (i1, before1, after1) = CountingInterceptor::new();
+        let (i2, before2, after2) = CountingInterceptor::new();
+        chain.push(Arc::new(i1));
+        chain.push(Arc::new(i2));
+        let ctx = SimpleInvocationContext::new("test");
+        let result = chain.around_all(&ctx, || SimpleCallResult::ok());
+        assert!(result.is_ok());
+        assert_eq!(before1.load(Ordering::SeqCst), 1);
+        assert_eq!(before2.load(Ordering::SeqCst), 1);
+        assert_eq!(after1.load(Ordering::SeqCst), 1);
+        assert_eq!(after2.load(Ordering::SeqCst), 1);
+    }
+
+    #[test]
+    fn default_creates_empty_chain() {
+        let chain = SimpleInterceptorChain::default();
+        assert!(chain.is_empty());
+    }
+}

@@ -34,3 +34,44 @@ where
         !self.inner.matches(operation)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::Operation;
+
+    #[test]
+    fn not_pointcut_inverts_match() {
+        let pc = NotPointcut::new(|op: &Operation| op.component() == "Service");
+        let op = Operation::new("Service", "method");
+        assert!(!pc.matches(&op));
+    }
+
+    #[test]
+    fn not_pointcut_inverts_no_match() {
+        let pc = NotPointcut::new(|op: &Operation| op.component() == "Other");
+        let op = Operation::new("Service", "method");
+        assert!(pc.matches(&op));
+    }
+}
+
+#[cfg(test)]
+mod additional_tests {
+    use super::*;
+    use crate::Operation;
+
+    #[test]
+    fn not_pointcut_inner() {
+        let pc = NotPointcut::new(|op: &Operation| op.component() == "Service");
+        let op = Operation::new("Service", "method");
+        assert!(pc.inner()(&op));
+    }
+
+    #[test]
+    fn not_pointcut_clone() {
+        let pc = NotPointcut::new(|_: &Operation| true);
+        let cloned = pc.clone();
+        let op = Operation::new("test", "test");
+        assert!(!cloned.matches(&op));
+    }
+}

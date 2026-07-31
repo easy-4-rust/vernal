@@ -113,3 +113,94 @@ impl Error for LocalInvocationError {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn cancelled_display() {
+        let err = LocalInvocationError::Cancelled;
+        assert_eq!(format!("{}", err), "local invocation cancelled");
+    }
+
+    #[test]
+    fn deadline_exceeded_display() {
+        let err = LocalInvocationError::DeadlineExceeded;
+        assert_eq!(format!("{}", err), "local invocation deadline exceeded");
+    }
+
+    #[test]
+    fn plan_mismatch_display() {
+        let err = LocalInvocationError::PlanMismatch {
+            expected: Operation::new("Service", "method1"),
+            actual: Operation::new("Service", "method2"),
+        };
+        assert!(format!("{}", err).contains("plan mismatch"));
+    }
+
+    #[test]
+    fn plan_not_found_display() {
+        let err = LocalInvocationError::PlanNotFound {
+            operation: Operation::new("Service", "method"),
+        };
+        assert!(format!("{}", err).contains("plan not found"));
+    }
+
+    #[test]
+    fn target_already_invoked_display() {
+        let err = LocalInvocationError::TargetAlreadyInvoked {
+            operation: Operation::new("Service", "method"),
+        };
+        assert!(format!("{}", err).contains("already executed"));
+    }
+
+    #[test]
+    fn target_display() {
+        let err = LocalInvocationError::target(std::io::Error::new(std::io::ErrorKind::Other, "test"));
+        assert!(format!("{}", err).contains("target failed"));
+    }
+
+    #[test]
+    fn return_type_mismatch_display() {
+        let err = LocalInvocationError::ReturnTypeMismatch {
+            expected: "i32",
+        };
+        assert!(format!("{}", err).contains("return type mismatch"));
+    }
+
+    #[test]
+    fn target_source() {
+        let err = LocalInvocationError::target(std::io::Error::new(std::io::ErrorKind::Other, "test"));
+        assert!(err.source().is_some());
+    }
+
+    #[test]
+    fn cancelled_source() {
+        let err = LocalInvocationError::Cancelled;
+        assert!(err.source().is_none());
+    }
+
+    #[test]
+    fn into_target_success() {
+        let inner = std::io::Error::new(std::io::ErrorKind::Other, "test");
+        let err = LocalInvocationError::target(inner);
+        let result: Result<std::io::Error, _> = err.into_target();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn into_target_wrong_type() {
+        let inner = std::io::Error::new(std::io::ErrorKind::Other, "test");
+        let err = LocalInvocationError::target(inner);
+        let result: Result<LocalInvocationError, _> = err.into_target();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn into_target_not_target_variant() {
+        let err = LocalInvocationError::Cancelled;
+        let result: Result<std::io::Error, _> = err.into_target();
+        assert!(result.is_err());
+    }
+}

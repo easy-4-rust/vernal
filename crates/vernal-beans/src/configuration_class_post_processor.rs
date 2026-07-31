@@ -6,9 +6,9 @@
 
 use std::sync::Arc;
 
-use crate::bean_definition_registry::BeanDefinitionRegistry;
-use crate::bean_factory_post_processor::BeanFactoryPostProcessor;
-use crate::configurable_listable_bean_factory::ConfigurableListableBeanFactory;
+use crate::factory::support::bean_definition_registry::BeanDefinitionRegistry;
+use crate::factory::config::bean_factory_post_processor::BeanFactoryPostProcessor;
+use crate::factory::config::configurable_listable_bean_factory::ConfigurableListableBeanFactory;
 
 /// Spring 风格的配置类后处理器。
 ///
@@ -81,7 +81,7 @@ impl BeanFactoryPostProcessor for ConfigurationClassPostProcessor {
 }
 
 /// 扩展 BeanDefinitionRegistryPostProcessor。
-impl crate::bean_definition_registry_post_processor::BeanDefinitionRegistryPostProcessor
+impl crate::factory::support::bean_definition_registry_post_processor::BeanDefinitionRegistryPostProcessor
     for ConfigurationClassPostProcessor
 {
     /// 注册 @Bean 方法定义的 Bean。

@@ -38,3 +38,76 @@ impl Pointcut for QualifierPointcut {
         operation.metadata().qualifier() == Some(self.qualifier())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::Operation;
+
+    #[test]
+    fn qualifier_pointcut_new_valid() {
+        let pc = QualifierPointcut::new("primary");
+        assert!(pc.is_ok());
+    }
+
+    #[test]
+    fn qualifier_pointcut_new_invalid() {
+        let pc = QualifierPointcut::new("");
+        assert!(pc.is_err());
+    }
+}
+
+#[cfg(test)]
+mod additional_tests {
+    use super::*;
+    use crate::Operation;
+
+    #[test]
+    fn qualifier_pointcut_qualifier() {
+        let pc = QualifierPointcut::new("primary").unwrap();
+        assert_eq!(pc.qualifier(), "primary");
+    }
+
+    #[test]
+    fn qualifier_pointcut_matches() {
+        let pc = QualifierPointcut::new("primary").unwrap();
+        let op = Operation::new("Service", "method")
+            .with_metadata(OperationMetadata::empty().with_qualifier("primary").unwrap());
+        assert!(pc.matches(&op));
+    }
+
+    #[test]
+    fn qualifier_pointcut_no_match() {
+        let pc = QualifierPointcut::new("primary").unwrap();
+        let op = Operation::new("Service", "method");
+        assert!(!pc.matches(&op));
+    }
+
+    #[test]
+    fn qualifier_pointcut_clone() {
+        let pc = QualifierPointcut::new("primary").unwrap();
+        let cloned = pc.clone();
+        assert_eq!(cloned.qualifier(), "primary");
+    }
+
+    #[test]
+    fn qualifier_pointcut_debug() {
+        let pc = QualifierPointcut::new("primary").unwrap();
+        let debug = format!("{:?}", pc);
+        assert!(debug.contains("primary"));
+    }
+
+    #[test]
+    fn qualifier_pointcut_partial_eq() {
+        let pc1 = QualifierPointcut::new("primary").unwrap();
+        let pc2 = QualifierPointcut::new("primary").unwrap();
+        assert_eq!(pc1, pc2);
+    }
+
+    #[test]
+    fn qualifier_pointcut_not_equal() {
+        let pc1 = QualifierPointcut::new("primary").unwrap();
+        let pc2 = QualifierPointcut::new("secondary").unwrap();
+        assert_ne!(pc1, pc2);
+    }
+}

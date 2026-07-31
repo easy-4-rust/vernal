@@ -7,8 +7,8 @@ use vernal_beans::ComponentDefinition;
 use vernal_beans::ComponentKey;
 use vernal_beans::RegistryBuilder;
 use vernal_beans::Resolver;
-use vernal_beans::bean_definition::BeanDefinition;
-use vernal_beans::bean_definition_registry::BeanDefinitionRegistry;
+use vernal_beans::BeanDefinition;
+use vernal_beans::BeanDefinitionRegistry;
 use vernal_beans::field_metadata::{FieldDescriptor, TypeMetadata};
 
 fn lock_field_md() -> std::sync::MutexGuard<'static, ()> {
@@ -304,7 +304,7 @@ fn type_needs_injection_empty() {
 /// 验证 RegistryBuilder 的 BeanDefinitionRegistry trait 实现与构建流程兼容。
 #[test]
 fn registry_builder_trait_compatible_with_build() {
-    use vernal_beans::bean_definition_registry::BeanDefinitionRegistry;
+    use vernal_beans::BeanDefinitionRegistry;
 
     let mut builder = RegistryBuilder::new();
     builder

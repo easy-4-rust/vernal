@@ -117,3 +117,80 @@ impl LocalInvocationPlan {
         self.interceptors.is_empty()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::Operation;
+
+    #[test]
+    fn local_invocation_plan_operation() {
+        let op = Operation::new("Service", "method");
+        let plan = LocalInvocationPlan::new(op.clone(), vec![]);
+        assert_eq!(plan.operation().component(), "Service");
+        assert_eq!(plan.operation().method(), "method");
+    }
+
+    #[test]
+    fn local_invocation_plan_clone() {
+        let op = Operation::new("Service", "method");
+        let plan = LocalInvocationPlan::new(op.clone(), vec![]);
+        let cloned = plan.clone();
+        assert_eq!(cloned.operation().component(), "Service");
+    }
+}
+
+#[cfg(test)]
+mod additional_tests {
+    use super::*;
+    use crate::{Operation, LocalInvocationFuture};
+
+    struct TestLocalInterceptor;
+    impl LocalInterceptor for TestLocalInterceptor {
+        fn intercept_local<'a>(&'a self, invocation: Arc<Invocation>, next: LocalNext<'a>) -> LocalInvocationFuture<'a> {
+            next.run(invocation)
+        }
+    }
+
+    #[test]
+    fn local_invocation_plan_len_empty() {
+        let op = Operation::new("Service", "method");
+        let plan = LocalInvocationPlan::new(op, vec![]);
+        assert_eq!(plan.len(), 0);
+        assert!(plan.is_empty());
+    }
+
+    #[test]
+    fn local_invocation_plan_len_non_empty() {
+        let op = Operation::new("Service", "method");
+        let interceptor: Arc<dyn LocalInterceptor> = Arc::new(TestLocalInterceptor);
+        let plan = LocalInvocationPlan::new(op, vec![interceptor]);
+        assert_eq!(plan.len(), 1);
+        assert!(!plan.is_empty());
+    }
+
+    #[tokio::test]
+    async fn local_invoke_target_mismatch_returns_error() {
+        let op = Operation::new("Service", "method");
+        let plan = LocalInvocationPlan::new(op, vec![]);
+        let different_op = Operation::new("Other", "method");
+        let invocation = Arc::new(Invocation::new(different_op));
+        let target: Rc<LocalInvocationTarget> = Rc::new(|_| {
+            Box::pin(async { Ok(Box::new(42i32) as crate::LocalInvocationValue) })
+        });
+        let result = plan.invoke(invocation, target).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn local_invoke_empty_plan_returns_target_result() {
+        let op = Operation::new("Service", "method");
+        let plan = LocalInvocationPlan::new(op.clone(), vec![]);
+        let invocation = Arc::new(Invocation::new(op));
+        let target: Rc<LocalInvocationTarget> = Rc::new(|_| {
+            Box::pin(async { Ok(Box::new(42i32) as crate::LocalInvocationValue) })
+        });
+        let result = plan.invoke(invocation, target).await;
+        assert!(result.is_ok());
+    }
+}

@@ -1,3 +1,48 @@
+<!-- migration-doc: authority=authoritative canonical=../迁移验收规范.md -->
+# vernal-websocket 技术要求
+> 迁移文档治理：本文级别为 **authoritative**。正文中的历史统计或完成标记不得单独作为验收结论；以 [../迁移验收规范.md](../迁移验收规范.md) 和自动审计报告为准。
+
+
+> 规则见[迁移验收规范](../迁移验收规范.md)；真实统计见
+> [vernal-websocket 审计](../migration-audit/vernal-websocket.md)。
+
+## 基线
+
+- 来源：`spring-websocket`，149 个 Java 业务对象。
+- 当前严格状态：13 `IMPLEMENTED`、8 `MISPLACED`、125 `MISSING`、3 `UNVERIFIED`。
+- 多个现有文件定义多个公开对象，违反“一文件一对象”，必须拆分后再验收。
+
+## 目录与边界
+
+| Java | 目标 Rust |
+|---|---|
+| `web/socket/WebSocketHandler.java` | `web/socket/websocket_handler.rs` |
+| `web/socket/server/support/DefaultHandshakeHandler.java` | `server/support/default_handshake_handler.rs` |
+| `web/socket/sockjs/frame/SockJsFrame.java` | `sockjs/frame/sock_js_frame.rs` |
+| `web/socket/messaging/SubProtocolWebSocketHandler.java` | `socket/messaging/sub_protocol_web_socket_handler.rs` |
+
+WebSocket 协议、session、handler、handshake、SockJS、STOMP 都按 Spring 包末两层组织；
+底层 Tokio/WebSocket 库只能作为依赖，不可模糊豁免 Spring 对象。
+
+```mermaid
+flowchart LR
+    H["HTTP upgrade"] --> I["HandshakeInterceptor chain"]
+    I --> D["HandshakeHandler"]
+    D --> S["WebSocketSession"]
+    S --> W["WebSocketHandler lifecycle"]
+    W --> P["STOMP / SockJS subprotocol"]
+```
+
+---
+
+<!-- restored-detail-from-head: dd20300d16a09200bd8a379ff14db1e2da99b67c -->
+
+## 原详细文档（完整保留）
+
+> 以下正文完整恢复自 Vernal 提交 `dd20300d16a09200bd8a379ff14db1e2da99b67c`。其中历史对象数量、完成状态、
+> 路径算法和依赖替代结论如与本文顶部或自动对象台账冲突，以顶部当前结论和
+> `docs/migration-audit/` 为准；其 API、设计背景、阶段拆解和测试说明继续保留。
+
 # vernal-websocket 技术要求（对标 spring-websocket）
 
 > **版本**：v1.0（2026-07-28）

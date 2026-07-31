@@ -232,4 +232,12 @@ mod tests {
         let aspect = AnnotationAsyncExecutionAspect::new();
         let _ = aspect;
     }
+
+    #[test]
+    fn test_get_inner_mut() {
+        let mut aspect = AnnotationAsyncExecutionAspect::new();
+        let inner = aspect.get_inner_mut();
+        // Verify we got a mutable reference
+        let _ = inner;
+    }
 }

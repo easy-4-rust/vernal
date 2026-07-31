@@ -117,3 +117,310 @@ impl InvocationPlan {
         self.interceptors.is_empty()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::Operation;
+
+    struct TestInterceptor;
+    impl Interceptor for TestInterceptor {
+        fn intercept<'a>(&'a self, invocation: std::sync::Arc<Invocation>, next: Next<'a>) -> crate::InvocationFuture<'a> {
+            next.run(invocation)
+        }
+    }
+
+    #[test]
+    fn invocation_plan_operation() {
+        let op = Operation::new("Service", "method");
+        let plan = InvocationPlan::new(op.clone(), vec![]);
+        assert_eq!(plan.operation().component(), "Service");
+        assert_eq!(plan.operation().method(), "method");
+    }
+
+    #[test]
+    fn invocation_plan_clone() {
+        let op = Operation::new("Service", "method");
+        let plan = InvocationPlan::new(op.clone(), vec![]);
+        let cloned = plan.clone();
+        assert_eq!(cloned.operation().component(), "Service");
+    }
+
+    #[test]
+    fn invocation_plan_len_empty() {
+        let op = Operation::new("Service", "method");
+        let plan = InvocationPlan::new(op, vec![]);
+        assert_eq!(plan.len(), 0);
+        assert!(plan.is_empty());
+    }
+
+    #[test]
+    fn invocation_plan_len_non_empty() {
+        let op = Operation::new("Service", "method");
+        let interceptor: Arc<dyn Interceptor> = Arc::new(TestInterceptor);
+        let plan = InvocationPlan::new(op, vec![interceptor]);
+        assert_eq!(plan.len(), 1);
+        assert!(!plan.is_empty());
+    }
+
+    #[tokio::test]
+    async fn invoke_target_mismatch_returns_error() {
+        let op = Operation::new("Service", "method");
+        let plan = InvocationPlan::new(op, vec![]);
+        let different_op = Operation::new("Other", "method");
+        let invocation = Arc::new(Invocation::new(different_op));
+        let target: Arc<InvocationTarget> = Arc::new(|_| {
+            Box::pin(async { Ok(Box::new(42i32) as crate::InvocationValue) })
+        });
+        let result = plan.invoke(invocation, target).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn invoke_empty_plan_returns_target_result() {
+        let op = Operation::new("Service", "method");
+        let plan = InvocationPlan::new(op.clone(), vec![]);
+        let invocation = Arc::new(Invocation::new(op));
+        let target: Arc<InvocationTarget> = Arc::new(|_| {
+            Box::pin(async { Ok(Box::new(42i32) as crate::InvocationValue) })
+        });
+        let result = plan.invoke(invocation, target).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn invoke_with_interceptor_calls_chain() {
+        let op = Operation::new("Service", "method");
+        let interceptor: Arc<dyn Interceptor> = Arc::new(TestInterceptor);
+        let plan = InvocationPlan::new(op.clone(), vec![interceptor]);
+        let invocation = Arc::new(Invocation::new(op));
+        let target: Arc<InvocationTarget> = Arc::new(|_| {
+            Box::pin(async { Ok(Box::new(42i32) as crate::InvocationValue) })
+        });
+        let result = plan.invoke(invocation, target).await;
+        assert!(result.is_ok());
+    }
+}
+
+#[cfg(test)]
+mod invocation_plan_tests {
+    use super::*;
+    use crate::Operation;
+
+    struct TestInterceptor;
+    impl Interceptor for TestInterceptor {
+        fn intercept<'a>(&'a self, invocation: std::sync::Arc<Invocation>, next: Next<'a>) -> crate::InvocationFuture<'a> {
+            next.run(invocation)
+        }
+    }
+
+    #[test]
+    fn invocation_plan_new() {
+        let op = Operation::new("Service", "method");
+        let plan = InvocationPlan::new(op.clone(), vec![]);
+        assert_eq!(plan.operation().component(), "Service");
+    }
+
+    #[test]
+    fn invocation_plan_clone() {
+        let op = Operation::new("Service", "method");
+        let plan = InvocationPlan::new(op.clone(), vec![]);
+        let cloned = plan.clone();
+        assert_eq!(cloned.operation().component(), "Service");
+    }
+
+    #[test]
+    fn invocation_plan_len() {
+        let op = Operation::new("Service", "method");
+        let plan = InvocationPlan::new(op, vec![]);
+        assert_eq!(plan.len(), 0);
+    }
+
+    #[test]
+    fn invocation_plan_is_empty() {
+        let op = Operation::new("Service", "method");
+        let plan = InvocationPlan::new(op, vec![]);
+        assert!(plan.is_empty());
+    }
+
+    #[test]
+    fn invocation_plan_with_interceptor() {
+        let op = Operation::new("Service", "method");
+        let interceptor: std::sync::Arc<dyn Interceptor> = std::sync::Arc::new(TestInterceptor);
+        let plan = InvocationPlan::new(op, vec![interceptor]);
+        assert_eq!(plan.len(), 1);
+        assert!(!plan.is_empty());
+    }
+
+    #[tokio::test]
+    async fn invocation_plan_invoke() {
+        let op = Operation::new("Service", "method");
+        let plan = InvocationPlan::new(op.clone(), vec![]);
+        let invocation = std::sync::Arc::new(Invocation::new(op));
+        let target: std::sync::Arc<crate::InvocationTarget> = std::sync::Arc::new(|_| {
+            Box::pin(async { Ok(Box::new(42i32) as crate::InvocationValue) })
+        });
+        let result = plan.invoke(invocation, target).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn invocation_plan_invoke_mismatch() {
+        let op = Operation::new("Service", "method");
+        let plan = InvocationPlan::new(op, vec![]);
+        let different_op = Operation::new("Other", "method");
+        let invocation = std::sync::Arc::new(Invocation::new(different_op));
+        let target: std::sync::Arc<crate::InvocationTarget> = std::sync::Arc::new(|_| {
+            Box::pin(async { Ok(Box::new(42i32) as crate::InvocationValue) })
+        });
+        let result = plan.invoke(invocation, target).await;
+        assert!(result.is_err());
+    }
+}
+
+#[cfg(test)]
+mod invocation_plan_final_tests {
+    use super::*;
+    use crate::Operation;
+
+    struct TestInterceptor;
+    impl Interceptor for TestInterceptor {
+        fn intercept<'a>(&'a self, invocation: std::sync::Arc<Invocation>, next: Next<'a>) -> crate::InvocationFuture<'a> {
+            next.run(invocation)
+        }
+    }
+
+    #[tokio::test]
+    async fn invocation_plan_invoke_empty() {
+        let op = Operation::new("Service", "method");
+        let plan = InvocationPlan::new(op.clone(), vec![]);
+        let invocation = std::sync::Arc::new(Invocation::new(op));
+        let target: std::sync::Arc<crate::InvocationTarget> = std::sync::Arc::new(|_| {
+            Box::pin(async { Ok(Box::new(42i32) as crate::InvocationValue) })
+        });
+        let result = plan.invoke(invocation, target).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn invocation_plan_invoke_with_interceptor() {
+        let op = Operation::new("Service", "method");
+        let interceptor: std::sync::Arc<dyn Interceptor> = std::sync::Arc::new(TestInterceptor);
+        let plan = InvocationPlan::new(op.clone(), vec![interceptor]);
+        let invocation = std::sync::Arc::new(Invocation::new(op));
+        let target: std::sync::Arc<crate::InvocationTarget> = std::sync::Arc::new(|_| {
+            Box::pin(async { Ok(Box::new(42i32) as crate::InvocationValue) })
+        });
+        let result = plan.invoke(invocation, target).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn invocation_plan_invoke_mismatch() {
+        let op = Operation::new("Service", "method");
+        let plan = InvocationPlan::new(op, vec![]);
+        let different_op = Operation::new("Other", "method");
+        let invocation = std::sync::Arc::new(Invocation::new(different_op));
+        let target: std::sync::Arc<crate::InvocationTarget> = std::sync::Arc::new(|_| {
+            Box::pin(async { Ok(Box::new(42i32) as crate::InvocationValue) })
+        });
+        let result = plan.invoke(invocation, target).await;
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn invocation_plan_clone_with_interceptor() {
+        let op = Operation::new("Service", "method");
+        let interceptor: std::sync::Arc<dyn Interceptor> = std::sync::Arc::new(TestInterceptor);
+        let plan = InvocationPlan::new(op.clone(), vec![interceptor]);
+        let cloned = plan.clone();
+        assert_eq!(cloned.len(), 1);
+    }
+}
+
+#[cfg(test)]
+mod invocation_plan_coverage_tests {
+    use super::*;
+    use crate::Operation;
+
+    struct TestInterceptor;
+    impl Interceptor for TestInterceptor {
+        fn intercept<'a>(&'a self, invocation: std::sync::Arc<Invocation>, next: Next<'a>) -> crate::InvocationFuture<'a> {
+            next.run(invocation)
+        }
+    }
+
+    #[test]
+    fn invocation_plan_new_empty() {
+        let op = Operation::new("Service", "method");
+        let plan = InvocationPlan::new(op.clone(), vec![]);
+        assert_eq!(plan.operation().component(), "Service");
+        assert_eq!(plan.operation().method(), "method");
+        assert_eq!(plan.len(), 0);
+        assert!(plan.is_empty());
+    }
+
+    #[test]
+    fn invocation_plan_new_with_interceptor() {
+        let op = Operation::new("Service", "method");
+        let interceptor: std::sync::Arc<dyn Interceptor> = std::sync::Arc::new(TestInterceptor);
+        let plan = InvocationPlan::new(op, vec![interceptor]);
+        assert_eq!(plan.len(), 1);
+        assert!(!plan.is_empty());
+    }
+
+    #[test]
+    fn invocation_plan_clone() {
+        let op = Operation::new("Service", "method");
+        let plan = InvocationPlan::new(op, vec![]);
+        let cloned = plan.clone();
+        assert_eq!(cloned.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn invocation_plan_invoke_success() {
+        let op = Operation::new("Service", "method");
+        let plan = InvocationPlan::new(op.clone(), vec![]);
+        let invocation = std::sync::Arc::new(Invocation::new(op));
+        let target: std::sync::Arc<crate::InvocationTarget> = std::sync::Arc::new(|_| {
+            Box::pin(async { Ok(Box::new(42i32) as crate::InvocationValue) })
+        });
+        let result = plan.invoke(invocation, target).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn invocation_plan_invoke_with_interceptor_success() {
+        let op = Operation::new("Service", "method");
+        let interceptor: std::sync::Arc<dyn Interceptor> = std::sync::Arc::new(TestInterceptor);
+        let plan = InvocationPlan::new(op.clone(), vec![interceptor]);
+        let invocation = std::sync::Arc::new(Invocation::new(op));
+        let target: std::sync::Arc<crate::InvocationTarget> = std::sync::Arc::new(|_| {
+            Box::pin(async { Ok(Box::new(42i32) as crate::InvocationValue) })
+        });
+        let result = plan.invoke(invocation, target).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn invocation_plan_invoke_mismatch_error() {
+        let op = Operation::new("Service", "method");
+        let plan = InvocationPlan::new(op, vec![]);
+        let different_op = Operation::new("Other", "method");
+        let invocation = std::sync::Arc::new(Invocation::new(different_op));
+        let target: std::sync::Arc<crate::InvocationTarget> = std::sync::Arc::new(|_| {
+            Box::pin(async { Ok(Box::new(42i32) as crate::InvocationValue) })
+        });
+        let result = plan.invoke(invocation, target).await;
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn invocation_plan_clone_with_interceptor() {
+        let op = Operation::new("Service", "method");
+        let interceptor: std::sync::Arc<dyn Interceptor> = std::sync::Arc::new(TestInterceptor);
+        let plan = InvocationPlan::new(op, vec![interceptor]);
+        let cloned = plan.clone();
+        assert_eq!(cloned.len(), 1);
+    }
+}

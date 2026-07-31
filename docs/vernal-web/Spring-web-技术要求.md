@@ -1,3 +1,64 @@
+<!-- migration-doc: authority=authoritative canonical=../迁移验收规范.md -->
+# vernal-web 技术要求
+> 迁移文档治理：本文级别为 **authoritative**。正文中的历史统计或完成标记不得单独作为验收结论；以 [../迁移验收规范.md](../迁移验收规范.md) 和自动审计报告为准。
+
+
+> 当前权威规范：[迁移验收规范](../迁移验收规范.md)。Spring 基线：
+> `9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82`。事实统计以
+> [vernal-web 审计报告](../migration-audit/vernal-web.md)为准。
+
+## 范围与当前结论
+
+- 来源：`spring-web/src/main/java/org/springframework`，719 个 Java 业务对象。
+- 目标：`crates/vernal-web/src`，当前是框架中立的请求上下文、路由元数据、作用域和错误合同。
+- 严格台账：`MISSING=719`、严格已处理为 0。已有 Rust 能力不能按“形态相近”抵消 Spring 对象。
+- Axum、Actix Web、Warp、Rocket、Salvo、Tide 的集成属于独立 runtime crate，不得塞进 `vernal-web`。
+
+## 文件与目录
+
+去掉 `org.springframework` 后保留包路径末两层，类型名转 snake_case：
+
+| Java | 目标 Rust |
+|---|---|
+| `http/HttpHeaders.java` | `http/http_headers.rs` |
+| `web/bind/WebDataBinder.java` | `web/bind/web_data_binder.rs` |
+| `web/context/request/RequestAttributes.java` | `context/request/request_attributes.rs` |
+| `web/multipart/support/StandardMultipartHttpServletRequest.java` | `multipart/support/standard_multipart_http_servlet_request.rs` |
+
+一个 Java 顶层对象对应一个真实 `.rs` 文件；`lib.rs`、`mod.rs` 只能声明和重导出。
+
+## 分层边界
+
+```mermaid
+flowchart LR
+    S["Spring Web 对象"] --> N["末两层路径规范化"]
+    N --> C["vernal-web 核心合同"]
+    N --> R["vernal-{runtime} 原生适配"]
+    N --> P["JVM 专属证据 / PLATFORM_NA"]
+    C --> G["对象、语义、测试门禁"]
+    R --> G
+    P --> G
+```
+
+核心合同必须保持 HTTP/runtime 中立；运行时 adapter 负责从已匹配路由读取低基数模板、建立
+`RequestContext`/`WebRequestScope`、执行 AOP plan，并让 scope 跟随响应 body 关闭。
+
+## 验收
+
+- 每个对象必须是 `IMPLEMENTED`、有精确证据的 `DEPENDENCY_REUSED` 或 `PLATFORM_NA`。
+- `MISPLACED`、`MISSING`、`PARTIAL`、`STUB`、`UNVERIFIED` 都未完成。
+- 必须保留中文 Java 来源注释和语义测试；Cargo 测试通过不能替代对象级验收。
+
+---
+
+<!-- restored-detail-from-head: dd20300d16a09200bd8a379ff14db1e2da99b67c -->
+
+## 原详细文档（完整保留）
+
+> 以下正文完整恢复自 Vernal 提交 `dd20300d16a09200bd8a379ff14db1e2da99b67c`。其中历史对象数量、完成状态、
+> 路径算法和依赖替代结论如与本文顶部或自动对象台账冲突，以顶部当前结论和
+> `docs/migration-audit/` 为准；其 API、设计背景、阶段拆解和测试说明继续保留。
+
 # vernal-web 技术要求（对标 spring-web）
 
 > **版本**：v1.0（2026-07-28）

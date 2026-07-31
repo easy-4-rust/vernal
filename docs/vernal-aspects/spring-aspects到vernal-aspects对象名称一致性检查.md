@@ -1,3 +1,8 @@
+<!-- migration-doc: authority=historical canonical=对象名称一致性检查.md -->
+
+> 迁移文档治理：本文级别为 **historical**，历史基线提交 `9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82`。正文不得作为当前验收结论；以 [对象名称一致性检查.md](对象名称一致性检查.md) 为准。
+
+<!-- restored-detail-from-head: dd20300d16a09200bd8a379ff14db1e2da99b67c -->
 # spring-aspects → vernal-aspects 对象名称一致性检查
 
 > 检查时间：2026-07-27

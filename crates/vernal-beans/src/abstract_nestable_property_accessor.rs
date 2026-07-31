@@ -467,4 +467,167 @@ mod tests {
             Some(TypeId::of::<i64>())
         );
     }
+
+    #[test]
+    fn test_default_trait() {
+        let accessor = AbstractNestablePropertyAccessor::default();
+        assert_eq!(accessor.property_count(), 0);
+    }
+
+    #[test]
+    fn test_property_count() {
+        let accessor = AbstractNestablePropertyAccessor::new();
+        assert_eq!(accessor.property_count(), 0);
+        accessor.register_property("a", TypeId::of::<i32>());
+        assert_eq!(accessor.property_count(), 1);
+        accessor.register_property("b", TypeId::of::<String>());
+        assert_eq!(accessor.property_count(), 2);
+    }
+
+    #[test]
+    fn test_has_property_nested() {
+        let accessor = AbstractNestablePropertyAccessor::new();
+        accessor.register_property("address", TypeId::of::<HashMap<String, Arc<dyn Any + Send + Sync>>>());
+        assert!(accessor.has_property("address.city"));
+        assert!(accessor.has_property("address"));
+    }
+
+    #[test]
+    fn test_has_property_unregistered() {
+        let accessor = AbstractNestablePropertyAccessor::new();
+        assert!(!accessor.has_property("unknown"));
+    }
+
+    #[test]
+    fn test_is_readable_registered() {
+        let accessor = AbstractNestablePropertyAccessor::new();
+        accessor.register_property("name", TypeId::of::<String>());
+        assert!(accessor.is_readable("name"));
+    }
+
+    #[test]
+    fn test_is_readable_unregistered() {
+        let accessor = AbstractNestablePropertyAccessor::new();
+        assert!(!accessor.is_readable("unknown"));
+    }
+
+    #[test]
+    fn test_is_writable_registered() {
+        let accessor = AbstractNestablePropertyAccessor::new();
+        accessor.register_property("name", TypeId::of::<String>());
+        assert!(accessor.is_writable("name"));
+    }
+
+    #[test]
+    fn test_is_writable_nested_path_returns_false() {
+        let accessor = AbstractNestablePropertyAccessor::new();
+        accessor.register_property("address", TypeId::of::<HashMap<String, Arc<dyn Any + Send + Sync>>>());
+        assert!(!accessor.is_writable("address.city"));
+    }
+
+    #[test]
+    fn test_is_readable_nested_path() {
+        let accessor = AbstractNestablePropertyAccessor::new();
+        accessor.register_property("address", TypeId::of::<HashMap<String, Arc<dyn Any + Send + Sync>>>());
+        assert!(accessor.is_readable("address.city"));
+    }
+
+    #[test]
+    fn test_set_property_value_not_registered() {
+        let accessor = AbstractNestablePropertyAccessor::new();
+        let result = accessor.set_property_value("unknown", Arc::new(42i32));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_get_property_value_not_registered() {
+        let accessor = AbstractNestablePropertyAccessor::new();
+        let result = accessor.get_property_value("unknown");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_get_property_value_not_set() {
+        let accessor = AbstractNestablePropertyAccessor::new();
+        accessor.register_property("name", TypeId::of::<String>());
+        let result = accessor.get_property_value("name");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_get_property_value_readonly() {
+        let accessor = AbstractNestablePropertyAccessor::new();
+        accessor.register_readonly_property("ro", TypeId::of::<i32>());
+        accessor.set_property_value("ro", Arc::new(42i32)).unwrap_err();
+    }
+
+    #[test]
+    fn test_get_property_type_simple() {
+        let accessor = AbstractNestablePropertyAccessor::new();
+        accessor.register_property("count", TypeId::of::<i32>());
+        assert_eq!(accessor.get_property_type("count"), Some(TypeId::of::<i32>()));
+    }
+
+    #[test]
+    fn test_get_property_type_unregistered() {
+        let accessor = AbstractNestablePropertyAccessor::new();
+        assert!(accessor.get_property_type("unknown").is_none());
+    }
+
+    #[test]
+    fn test_get_property_type_nested_not_found() {
+        let accessor = AbstractNestablePropertyAccessor::new();
+        accessor.register_property("data", TypeId::of::<HashMap<String, Arc<dyn Any + Send + Sync>>>());
+        let mut data: HashMap<String, Arc<dyn Any + Send + Sync>> = HashMap::new();
+        data.insert("key".to_string(), Arc::new("val".to_string()));
+        accessor.set_property_value("data", Arc::new(data)).unwrap();
+        assert!(accessor.get_property_type("data.nonexistent").is_none());
+    }
+
+    #[test]
+    fn test_nested_non_hashmap_type() {
+        let accessor = AbstractNestablePropertyAccessor::new();
+        accessor.register_property("name", TypeId::of::<String>());
+        accessor.set_property_value("name", Arc::new("hello".to_string())).unwrap();
+        let result = accessor.get_property_value("name.inner");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_get_property_type_nested_non_hashmap() {
+        let accessor = AbstractNestablePropertyAccessor::new();
+        accessor.register_property("name", TypeId::of::<String>());
+        accessor.set_property_value("name", Arc::new("hello".to_string())).unwrap();
+        assert!(accessor.get_property_type("name.inner").is_none());
+    }
+
+    #[test]
+    fn test_deeply_nested_three_levels() {
+        let accessor = AbstractNestablePropertyAccessor::new();
+        accessor.register_property("root", TypeId::of::<HashMap<String, Arc<dyn Any + Send + Sync>>>());
+
+        let mut level3: HashMap<String, Arc<dyn Any + Send + Sync>> = HashMap::new();
+        level3.insert("value".to_string(), Arc::new(42i32));
+
+        let mut level2: HashMap<String, Arc<dyn Any + Send + Sync>> = HashMap::new();
+        level2.insert("inner".to_string(), Arc::new(level3));
+
+        let mut level1: HashMap<String, Arc<dyn Any + Send + Sync>> = HashMap::new();
+        level1.insert("mid".to_string(), Arc::new(level2));
+
+        accessor.set_property_value("root", Arc::new(level1)).unwrap();
+
+        let val = accessor.get_property_value("root.mid.inner.value").unwrap();
+        assert_eq!(*val.downcast_ref::<i32>().unwrap(), 42);
+    }
+
+    #[test]
+    fn test_register_readonly_then_try_write() {
+        let accessor = AbstractNestablePropertyAccessor::new();
+        accessor.register_readonly_property("config", TypeId::of::<String>());
+        assert!(accessor.is_readable("config"));
+        assert!(!accessor.is_writable("config"));
+        let result = accessor.set_property_value("config", Arc::new("value".to_string()));
+        assert!(result.is_err());
+    }
 }

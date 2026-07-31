@@ -1,5 +1,5 @@
 //! CommonAnnotationBeanPostProcessor — 通用注解后处理器。
-use crate::bean_post_processor::BeanPostProcessor;
+use crate::factory::config::bean_post_processor::BeanPostProcessor;
 use std::any::Any;
 use std::sync::Arc;
 

@@ -1,3 +1,100 @@
+<!-- migration-doc: authority=authoritative canonical=../迁移验收规范.md -->
+# spring-context → vernal-context 技术要求
+> 迁移文档治理：本文级别为 **authoritative**。正文中的历史统计或完成标记不得单独作为验收结论；以 [../迁移验收规范.md](../迁移验收规范.md) 和自动审计报告为准。
+
+
+> 当前文档。对象事实以[自动审计](../migration-audit/vernal-context.md)为准；统一路径和验收规则见[迁移验收规范](../迁移验收规范.md)。
+
+## 当前事实
+
+- 审计范围：`spring-context/src/main/java/org/springframework/context`。
+- Java 业务对象 196 个：`IMPLEMENTED=0`、`MISPLACED=3`、`MISSING=190`、`UNVERIFIED=3`。
+- `vernal-context` 当前已有 Application builder、事件总线、生命周期协调、任务监督等 Rust 原生能力，
+  但非同名对象、不同路径或缺少 Spring 语义证据时不能计入 196 对象完成。
+
+## 目标目录
+
+```text
+crates/vernal-context/src/
+├── annotation/
+├── aot/
+├── config/
+├── event/
+├── expression/
+├── i18n/
+├── index/
+├── support/
+├── weaving/
+└── <context 根对象>.rs
+```
+
+例如：
+
+- `context/event/SimpleApplicationEventMulticaster.java` → `event/simple_application_event_multicaster.rs`
+- `context/support/AbstractApplicationContext.java` → `support/abstract_application_context.rs`
+- `context/annotation/ConfigurationClassPostProcessor.java` → `annotation/configuration_class_post_processor.rs`
+
+## Spring 刷新语义
+
+CodeGraph 确认 `AbstractApplicationContext.refresh` 是有序事务式流程：
+
+```mermaid
+flowchart TD
+    A["prepareRefresh"] --> B["obtainFreshBeanFactory"]
+    B --> C["prepareBeanFactory"]
+    C --> D["postProcessBeanFactory"]
+    D --> E["invokeBeanFactoryPostProcessors"]
+    E --> F["registerBeanPostProcessors"]
+    F --> G["initMessageSource"]
+    G --> H["initApplicationEventMulticaster"]
+    H --> I["onRefresh"]
+    I --> J["registerListeners"]
+    J --> K["finishBeanFactoryInitialization"]
+    K --> L["finishRefresh"]
+    X["异常"] --> Y["destroyBeans + cancelRefresh"]
+```
+
+Rust 可以采用 builder/startup coordinator，但必须证明：
+
+- 阶段顺序、失败回滚和状态转换对应；
+- BeanFactoryPostProcessor 与 BeanPostProcessor 在实例化前后位置正确；
+- early event、listener 注册、事件多播和错误策略一致；
+- singleton 初始化、Lifecycle 启动、关闭/销毁顺序可重复且并发安全；
+- AOP plan 构建发生在业务调用前，不能替代 Spring Context 对象文件台账。
+
+## Vernal 现有链
+
+CodeGraph 显示 `ApplicationContextBuilder::build` 收集组件、listener、advisor 和运行计划；
+`ApplicationStartupCoordinator` 与 `ApplicationCloseCoordinator` 管理生命周期；
+`ApplicationContext` 向 Web 请求作用域暴露 Beans container。它们是有价值的 Rust 原生能力，
+但需在语义表中逐链对照，而不是统一标为 Spring 对象完成。
+
+## 文件和质量门禁
+
+- 一个 Java 对象一个真实文件，末两层目录对齐。
+- `application_context_event.rs`、`event_listener_registration.rs`、`resource/resource.rs`
+  等多公开对象文件必须拆分。
+- 每个 pub API 有中文参数、返回和错误说明，并标注 Java 来源。
+- refresh 每阶段、失败回滚、事件顺序、生命周期关闭必须有集成测试。
+
+## 验收
+
+```bash
+python3 scripts/audit_migration_docs.py --module vernal-context --check
+cargo test -p vernal-context
+cargo clippy -p vernal-context --all-targets -- -D warnings
+```
+
+---
+
+<!-- restored-detail-from-head: dd20300d16a09200bd8a379ff14db1e2da99b67c -->
+
+## 原详细文档（完整保留）
+
+> 以下正文完整恢复自 Vernal 提交 `dd20300d16a09200bd8a379ff14db1e2da99b67c`。其中历史对象数量、完成状态、
+> 路径算法和依赖替代结论如与本文顶部或自动对象台账冲突，以顶部当前结论和
+> `docs/migration-audit/` 为准；其 API、设计背景、阶段拆解和测试说明继续保留。
+
 # vernal-context 技术要求文档
 
 > **对标**：Spring Framework `spring-context`（应用上下文模块）

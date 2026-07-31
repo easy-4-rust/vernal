@@ -13,7 +13,7 @@ use vernal_beans::RegistryBuilder;
 use vernal_beans::RequestScope;
 use vernal_beans::Resolver;
 use vernal_beans::SessionScope;
-use vernal_beans::bean_factory::BeanFactory;
+use vernal_beans::BeanFactory;
 use vernal_beans::bean_scope::BeanScope;
 
 // ── 测试类型 ─────────────────────────────────────────────────────────────

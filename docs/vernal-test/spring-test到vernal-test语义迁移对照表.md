@@ -1,3 +1,9 @@
+<!-- migration-doc: authority=historical canonical=语义迁移对照表.md -->
+
+> 迁移文档治理：本文级别为 **historical**，历史基线提交 `9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82`。正文不得作为当前验收结论；以 [语义迁移对照表.md](语义迁移对照表.md) 为准。
+
+> **历史文档，非当前验收依据。** 当前版本见[语义迁移对照表](语义迁移对照表.md)。
+
 # spring-test → vernal-test 功能语义迁移对照表
 
 > 基线：Spring Framework **7.0.8**（spring-test），共 459 个主 Java 类 + 22 个 Kotlin DSL 文件 + ~80 个 Mock 类。

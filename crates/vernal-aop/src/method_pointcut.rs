@@ -36,3 +36,23 @@ impl Pointcut for MethodPointcut {
         operation.method() == self.method()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::Operation;
+
+    #[test]
+    fn method_pointcut_matches() {
+        let pc = MethodPointcut::new("method");
+        let op = Operation::new("Service", "method");
+        assert!(pc.matches(&op));
+    }
+
+    #[test]
+    fn method_pointcut_no_match() {
+        let pc = MethodPointcut::new("method");
+        let op = Operation::new("Service", "other");
+        assert!(!pc.matches(&op));
+    }
+}

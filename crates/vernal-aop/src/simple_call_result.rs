@@ -59,3 +59,32 @@ impl SimpleCallResult {
         self.error.as_ref()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn ok_result() {
+        let result = SimpleCallResult::ok();
+        assert!(result.is_ok());
+        assert!(!result.is_err());
+        assert!(result.error().is_none());
+    }
+
+    #[test]
+    fn err_result() {
+        let error: BoxError = Box::new(std::io::Error::new(std::io::ErrorKind::Other, "test"));
+        let result = SimpleCallResult::err(error);
+        assert!(!result.is_ok());
+        assert!(result.is_err());
+        assert!(result.error().is_some());
+    }
+
+    #[test]
+    fn debug_format() {
+        let result = SimpleCallResult::ok();
+        let debug = format!("{:?}", result);
+        assert!(!debug.is_empty());
+    }
+}

@@ -1,3 +1,98 @@
+<!-- migration-doc: authority=authoritative canonical=../迁移验收规范.md -->
+
+> 迁移文档治理：本文级别为 **authoritative**。正文中的历史统计或完成标记不得单独作为验收结论；以 [../迁移验收规范.md](../迁移验收规范.md) 和自动审计报告为准。
+> [vernal-beans 自动审计](../migration-audit/vernal-beans.md)为准。
+
+# vernal-beans 技术要求
+
+## 1. 对标范围
+
+- 结构与对象主线：Spring Framework `spring-beans`，固定提交
+  `9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82`。
+- 当前审计对象：323 个 Java class/interface/enum/record；`package-info.java` 不计入。
+- 目标：保留 Spring 对象边界和最后两层子包，转换为符合 Rust 习惯的文件、类型和方法名。
+- 本文不以 `cargo test` 通过替代对象验收，也不允许用“合并实现”消除应有文件。
+
+## 2. 目标目录
+
+```text
+crates/vernal-beans/src/
+├── propertyeditors/
+├── support/
+└── factory/
+    ├── annotation/
+    ├── config/
+    ├── support/
+    └── xml/
+```
+
+当 Java 包层级更深时只保留最后两层。例如：
+
+| Java 对象 | Rust 目标 |
+|---|---|
+| `factory/config/BeanDefinition.java` | `factory/config/bean_definition.rs` |
+| `factory/xml/support/Foo.java` | `xml/support/foo.rs` |
+| `propertyeditors/PatternEditor.java` | `propertyeditors/pattern_editor.rs` |
+
+`lib.rs` 与 `mod.rs` 只能写模块说明、`mod` 声明和显式 `pub use`。
+
+## 3. Bean 生命周期语义
+
+CodeGraph 对固定 Spring 提交和当前 Vernal 工作树的调用链核对结果如下：
+
+```mermaid
+flowchart LR
+    A["get_bean / doGetBean"] --> B["合并 BeanDefinition"]
+    B --> C["create_bean / doCreateBean"]
+    C --> D["构造器或工厂方法实例化"]
+    D --> E["populate_bean：属性与依赖注入"]
+    E --> F["BeanPostProcessor before"]
+    F --> G["初始化回调"]
+    G --> H["BeanPostProcessor after"]
+    H --> I["注册销毁回调"]
+    I --> J["作用域缓存并返回"]
+```
+
+迁移必须保留下列不变量：
+
+1. 单例创建、早期引用和循环依赖处理的时序必须明确，不可用普通缓存替代。
+2. 实例化、属性填充、初始化、后处理和销毁是不同阶段，错误传播需保留阶段信息。
+3. `BeanFactoryPostProcessor` 操作元数据；`BeanPostProcessor` 操作实例，两者不得混用。
+4. `FactoryBean` 的工厂对象与产品对象缓存语义必须分离。
+5. 父子工厂、别名、作用域、依赖排序和销毁顺序需要语义测试。
+
+## 4. Rust 实现约束
+
+- 一个 Java 对象对应一个 `.rs` 文件；内部类型和 Builder 可与主对象同文件。
+- 文件/目录、方法和参数使用 `snake_case`；类型使用 `PascalCase`。
+- Java `nullable` 映射为 `Option<T>`，checked exception 映射为
+  `thiserror` 错误枚举与 `Result`。
+- 共享缓存按语义使用 `Arc<RwLock<HashMap<...>>>` 或 `DashMap`。
+- 每个对象和 `pub` 方法必须有中文文档注释，并注明 Java FQN/方法来源。
+- 生产代码禁止 wildcard import；禁止 `todo!()`、`unimplemented!()` 和空业务逻辑。
+
+## 5. 当前事实
+
+当前工作树的权威数量由审计器生成，不在本文手写。运行：
+
+```bash
+python3 scripts/audit_migration_docs.py --module vernal-beans --check
+```
+
+截至本次生成，323 个对象中只有 42 个满足严格 `IMPLEMENTED`；其余包含
+`MISPLACED`、`MISSING`、`STUB` 和 `UNVERIFIED`。因此 `vernal-beans`
+不得标记为“完成”或“完备”。具体对象见[对象级对照表](对象级对照表.md)。
+
+---
+
+<!-- restored-detail-from-head: dd20300d16a09200bd8a379ff14db1e2da99b67c -->
+
+## 原详细文档（完整保留）
+
+> 以下正文完整恢复自 Vernal 提交 `dd20300d16a09200bd8a379ff14db1e2da99b67c`。其中历史对象数量、完成状态、
+> 路径算法和依赖替代结论如与本文顶部或自动对象台账冲突，以顶部当前结论和
+> `docs/migration-audit/` 为准；其 API、设计背景、阶段拆解和测试说明继续保留。
+
 # vernal-beans 技术要求文档
 
 > **对标**：`spring-beans`（IoC 容器内核）  

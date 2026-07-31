@@ -1,3 +1,44 @@
+<!-- migration-doc: authority=authoritative canonical=../迁移验收规范.md -->
+# vernal-messaging 技术要求
+> 迁移文档治理：本文级别为 **authoritative**。正文中的历史统计或完成标记不得单独作为验收结论；以 [../迁移验收规范.md](../迁移验收规范.md) 和自动审计报告为准。
+
+
+> 当前权威要求；遵循[迁移验收规范](../迁移验收规范.md)，Spring 基线为 `9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82`。
+
+## 当前事实
+
+[自动对象审计](../migration-audit/vernal-messaging.md)识别 222 个业务对象：0 个严格完成、2 个 `MISPLACED`、219 个 `MISSING`、1 个 `UNVERIFIED`。现有消息和通道骨架不能代表 converter、template、handler、SIMP、STOMP、RSocket 与 TCP 已迁移。
+
+## 目标结构
+
+| Spring 来源 | 目标 Rust |
+|---|---|
+| `support/AbstractMessageChannel.java` | `support/abstract_message_channel.rs` |
+| `handler/invocation/AbstractMethodMessageHandler.java` | `handler/invocation/abstract_method_message_handler.rs` |
+| `simp/broker/AbstractBrokerMessageHandler.java` | `simp/broker/abstract_broker_message_handler.rs` |
+| `simp/stomp/StompDecoder.java` | `simp/stomp/stomp_decoder.rs` |
+| `rsocket/service/RSocketServiceMethod.java` | `rsocket/service/r_socket_service_method.rs` |
+
+只保留末两层包目录；一对象一文件；`mod.rs`、`lib.rs` 只声明和重导出。
+
+## 语义要求
+
+- 消息必须保持 payload、只读 headers、ID/timestamp 与错误消息追踪语义。
+- 通道必须保持 interceptor 的 pre/post/completion 顺序及倒序异常完成。
+- 订阅通道必须保持同步/异步执行、拒绝回退、每个 handler 的 before/after。
+- 模板、转换器、目标解析与注解方法调用必须保持超时、类型转换和异常包装。
+- 协议 companion crate 不是对象豁免；只有精确依赖符号和集成测试可标 `DEPENDENCY_REUSED`。
+
+---
+
+<!-- restored-detail-from-head: dd20300d16a09200bd8a379ff14db1e2da99b67c -->
+
+## 原详细文档（完整保留）
+
+> 以下正文完整恢复自 Vernal 提交 `dd20300d16a09200bd8a379ff14db1e2da99b67c`。其中历史对象数量、完成状态、
+> 路径算法和依赖替代结论如与本文顶部或自动对象台账冲突，以顶部当前结论和
+> `docs/migration-audit/` 为准；其 API、设计背景、阶段拆解和测试说明继续保留。
+
 # vernal-messaging 技术要求（对标 spring-messaging）
 
 > **版本**：v1.0（2026-07-28）

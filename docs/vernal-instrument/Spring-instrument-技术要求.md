@@ -1,3 +1,37 @@
+<!-- migration-doc: authority=authoritative canonical=../迁移验收规范.md -->
+# vernal-instrument 技术要求
+> 迁移文档治理：本文级别为 **authoritative**。正文中的历史统计或完成标记不得单独作为验收结论；以 [../迁移验收规范.md](../迁移验收规范.md) 和自动审计报告为准。
+
+
+> 来源：`spring-instrument`，基线提交
+> `9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82`；规则见
+> [迁移验收规范](../迁移验收规范.md)。
+
+Spring 生产源码只有 `InstrumentationSavingAgent` 一个业务对象。当前不存在
+`crates/vernal-instrument`。该对象依赖 JVM `java.lang.instrument.Instrumentation`、
+Java agent `premain` 入口以及 JVM 类重定义机制，Rust 原生进程没有同构运行时，因此可在
+证据保留后标记 `PLATFORM_NA`，无需创建空 crate。
+
+规划路径若未来提供 JVM host bridge：`instrument/instrumentation_saving_agent.rs`。
+
+```mermaid
+flowchart LR
+    J["JVM -javaagent"] --> P["premain"]
+    P --> I["java.lang.instrument.Instrumentation"]
+    I --> C["class redefine / transform"]
+    R["Rust native process"] -.无同构 JVM 入口.-> N["PLATFORM_NA"]
+```
+
+---
+
+<!-- restored-detail-from-head: dd20300d16a09200bd8a379ff14db1e2da99b67c -->
+
+## 原详细文档（完整保留）
+
+> 以下正文完整恢复自 Vernal 提交 `dd20300d16a09200bd8a379ff14db1e2da99b67c`。其中历史对象数量、完成状态、
+> 路径算法和依赖替代结论如与本文顶部或自动对象台账冲突，以顶部当前结论和
+> `docs/migration-audit/` 为准；其 API、设计背景、阶段拆解和测试说明继续保留。
+
 # vernal-instrument 技术要求（对标 spring-instrument）
 
 > **版本**：v1.0（2026-07-28）

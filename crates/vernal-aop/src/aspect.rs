@@ -149,3 +149,209 @@ mod tests {
         assert_sync::<Box<dyn Aspect>>();
     }
 }
+
+#[cfg(test)]
+mod additional_tests {
+    use super::*;
+    use crate::Operation;
+
+    struct DefaultAspect;
+    impl Aspect for DefaultAspect {}
+
+    #[tokio::test]
+    async fn default_before_returns_ok() {
+        let aspect = DefaultAspect;
+        let inv = Invocation::new(Operation::new("Service", "method"));
+        let result = aspect.before(&inv).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn default_after_does_nothing() {
+        let aspect = DefaultAspect;
+        let inv = Invocation::new(Operation::new("Service", "method"));
+        let value: InvocationValue = Box::new(42i32);
+        aspect.after(&inv, &value).await;
+    }
+
+    #[tokio::test]
+    async fn default_after_error_does_nothing() {
+        let aspect = DefaultAspect;
+        let inv = Invocation::new(Operation::new("Service", "method"));
+        let error = InvocationError::Cancelled;
+        aspect.after_error(&inv, &error).await;
+    }
+
+    struct BeforeFailsAspect;
+    impl Aspect for BeforeFailsAspect {
+        fn before<'a>(
+            &'a self,
+            _inv: &'a Invocation,
+        ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), InvocationError>> + Send + 'a>> {
+            Box::pin(async { Err(InvocationError::Cancelled) })
+        }
+    }
+
+    #[tokio::test]
+    async fn around_before_fails_shortcuts() {
+        let aspect = BeforeFailsAspect;
+        let inv = Arc::new(Invocation::new(Operation::new("Service", "method")));
+        let next = Next::new(&[], crate::target_ref::TargetRef::Static(&|_| {
+            Box::pin(async { Ok(Box::new(42i32) as InvocationValue) })
+        }));
+        let result = aspect.around(inv, next).await;
+        assert!(result.is_err());
+    }
+}
+
+#[cfg(test)]
+mod aspect_coverage_tests {
+    use super::*;
+    use crate::Operation;
+
+    struct CustomAspect;
+    impl Aspect for CustomAspect {
+        fn before<'a>(
+            &'a self,
+            _inv: &'a Invocation,
+        ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), InvocationError>> + Send + 'a>> {
+            Box::pin(async { Ok(()) })
+        }
+
+        fn after<'a>(
+            &'a self,
+            _inv: &'a Invocation,
+            _result: &'a InvocationValue,
+        ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send + 'a>> {
+            Box::pin(async {})
+        }
+
+        fn after_error<'a>(
+            &'a self,
+            _inv: &'a Invocation,
+            _error: &'a InvocationError,
+        ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send + 'a>> {
+            Box::pin(async {})
+        }
+    }
+
+    #[tokio::test]
+    async fn custom_aspect_before() {
+        let aspect = CustomAspect;
+        let inv = Invocation::new(Operation::new("Service", "method"));
+        let result = aspect.before(&inv).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn custom_aspect_after() {
+        let aspect = CustomAspect;
+        let inv = Invocation::new(Operation::new("Service", "method"));
+        let value: InvocationValue = Box::new(42i32);
+        aspect.after(&inv, &value).await;
+    }
+
+    #[tokio::test]
+    async fn custom_aspect_after_error() {
+        let aspect = CustomAspect;
+        let inv = Invocation::new(Operation::new("Service", "method"));
+        let error = InvocationError::Cancelled;
+        aspect.after_error(&inv, &error).await;
+    }
+
+    #[tokio::test]
+    async fn custom_aspect_around_success() {
+        let aspect = CustomAspect;
+        let inv = Arc::new(Invocation::new(Operation::new("Service", "method")));
+        let next = Next::new(&[], crate::target_ref::TargetRef::Static(&|_| {
+            Box::pin(async { Ok(Box::new(42i32) as InvocationValue) })
+        }));
+        let result = aspect.around(inv, next).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn custom_aspect_around_failure() {
+        let aspect = CustomAspect;
+        let inv = Arc::new(Invocation::new(Operation::new("Service", "method")));
+        let next = Next::new(&[], crate::target_ref::TargetRef::Static(&|_| {
+            Box::pin(async { Err(InvocationError::Cancelled) })
+        }));
+        let result = aspect.around(inv, next).await;
+        assert!(result.is_err());
+    }
+}
+
+#[cfg(test)]
+mod aspect_final_tests {
+    use super::*;
+    use crate::Operation;
+
+    struct CustomAspect;
+    impl Aspect for CustomAspect {
+        fn before<'a>(
+            &'a self,
+            _inv: &'a Invocation,
+        ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), InvocationError>> + Send + 'a>> {
+            Box::pin(async { Ok(()) })
+        }
+
+        fn after<'a>(
+            &'a self,
+            _inv: &'a Invocation,
+            _result: &'a InvocationValue,
+        ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send + 'a>> {
+            Box::pin(async {})
+        }
+
+        fn after_error<'a>(
+            &'a self,
+            _inv: &'a Invocation,
+            _error: &'a InvocationError,
+        ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send + 'a>> {
+            Box::pin(async {})
+        }
+    }
+
+    #[tokio::test]
+    async fn custom_aspect_around_success() {
+        let aspect = CustomAspect;
+        let inv = Arc::new(Invocation::new(Operation::new("Service", "method")));
+        let next = Next::new(&[], crate::target_ref::TargetRef::Static(&|_| {
+            Box::pin(async { Ok(Box::new(42i32) as InvocationValue) })
+        }));
+        let result = aspect.around(inv, next).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn custom_aspect_around_failure() {
+        let aspect = CustomAspect;
+        let inv = Arc::new(Invocation::new(Operation::new("Service", "method")));
+        let next = Next::new(&[], crate::target_ref::TargetRef::Static(&|_| {
+            Box::pin(async { Err(InvocationError::Cancelled) })
+        }));
+        let result = aspect.around(inv, next).await;
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn aspect_is_send_sync() {
+        fn assert_send<T: Send>() {}
+        fn assert_sync<T: Sync>() {}
+        fn assert_static<T: 'static>() {}
+
+        assert_send::<CustomAspect>();
+        assert_sync::<CustomAspect>();
+        assert_static::<CustomAspect>();
+    }
+
+    #[test]
+    fn aspect_trait_object_is_send_sync() {
+        fn assert_send<T: Send>() {}
+        fn assert_sync<T: Sync>() {}
+
+        assert_send::<Box<dyn Aspect>>();
+        assert_sync::<Box<dyn Aspect>>();
+    }
+}

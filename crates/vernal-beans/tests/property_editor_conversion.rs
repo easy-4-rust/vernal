@@ -9,9 +9,9 @@ use vernal_beans::boolean_editor::CustomBooleanEditor;
 use vernal_beans::conversion_service::{ConversionService, Converter, DefaultConversionService};
 use vernal_beans::number_editor::CustomNumberEditor;
 use vernal_beans::property_editor::PropertyEditor;
-use vernal_beans::string_trimmer_editor::StringTrimmerEditor;
-use vernal_beans::uri_editor::URIEditor;
-use vernal_beans::uuid_editor::UUIDEditor;
+use vernal_beans::StringTrimmerEditor;
+use vernal_beans::URIEditor;
+use vernal_beans::UUIDEditor;
 
 // ── StringTrimmerEditor 测试 ─────────────────────────────────────────────
 

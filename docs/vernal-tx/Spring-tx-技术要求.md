@@ -1,3 +1,48 @@
+<!-- migration-doc: authority=authoritative canonical=../迁移验收规范.md -->
+# vernal-tx 技术要求
+> 迁移文档治理：本文级别为 **authoritative**。正文中的历史统计或完成标记不得单独作为验收结论；以 [../迁移验收规范.md](../迁移验收规范.md) 和自动审计报告为准。
+
+
+> 当前权威要求。基线提交 `9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82`，遵循[迁移验收规范](../迁移验收规范.md)。
+
+## 当前事实
+
+[自动对象审计](../migration-audit/vernal-tx.md)识别 121 个 Spring 业务对象；严格完成数为 0，121 个均为 `MISSING`。现有 `definition.rs`、`manager.rs`、`status.rs` 是聚合抽象，不能抵扣一对象一文件要求。
+
+## 目标结构
+
+| Spring 路径 | 目标 Rust 路径 |
+|---|---|
+| `interceptor/TransactionInterceptor.java` | `interceptor/transaction_interceptor.rs` |
+| `annotation/Transactional.java` | `annotation/transactional.rs` |
+| `support/AbstractPlatformTransactionManager.java` | `support/abstract_platform_transaction_manager.rs` |
+| `reactive/TransactionSynchronizationManager.java` | `reactive/transaction_synchronization_manager.rs` |
+| `jta/JtaTransactionManager.java` | `jta/jta_transaction_manager.rs` |
+
+包层级超过两层时只保留末两层；根包对象留在 crate 根目录。`mod.rs`、`lib.rs` 不定义类型。
+
+## 语义边界
+
+- 同步事务：传播、隔离、超时、只读、保存点、挂起/恢复、同步回调、提交/回滚。
+- 声明式事务：属性解析、管理器选择、目标调用、rollback rule 与异常传播。
+- 异步事务：使用 future/stream 与任务局部上下文，不以 Reactor 类型为由整体豁免。
+- JTA/JCA/JVM 专属能力只能逐对象证明 `PLATFORM_NA`。
+- sqlx、Diesel、SeaORM、RBatis 只是后端候选；只有精确符号和集成测试才能标 `DEPENDENCY_REUSED`。
+
+## 门禁
+
+对象路径、中文来源注释、公开方法文档和语义测试同时满足才可标 `IMPLEMENTED`。stub、聚合对象、形态近似、仅编译通过均属于未完成。
+
+---
+
+<!-- restored-detail-from-head: dd20300d16a09200bd8a379ff14db1e2da99b67c -->
+
+## 原详细文档（完整保留）
+
+> 以下正文完整恢复自 Vernal 提交 `dd20300d16a09200bd8a379ff14db1e2da99b67c`。其中历史对象数量、完成状态、
+> 路径算法和依赖替代结论如与本文顶部或自动对象台账冲突，以顶部当前结论和
+> `docs/migration-audit/` 为准；其 API、设计背景、阶段拆解和测试说明继续保留。
+
 # vernal-tx 技术要求（对标 spring-tx）
 
 > **版本**：v3.0（2026-07-28）

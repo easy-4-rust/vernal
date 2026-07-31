@@ -42,3 +42,97 @@ where
         self.left.matches(operation) && self.right.matches(operation)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::Operation;
+
+    #[test]
+    fn and_pointcut_matches_both() {
+        let pc = AndPointcut::new(
+            |op: &Operation| op.component() == "Service",
+            |op: &Operation| op.method() == "method",
+        );
+        let op = Operation::new("Service", "method");
+        assert!(pc.matches(&op));
+    }
+
+    #[test]
+    fn and_pointcut_fails_first() {
+        let pc = AndPointcut::new(
+            |op: &Operation| op.component() == "Other",
+            |op: &Operation| op.method() == "method",
+        );
+        let op = Operation::new("Service", "method");
+        assert!(!pc.matches(&op));
+    }
+
+    #[test]
+    fn and_pointcut_fails_second() {
+        let pc = AndPointcut::new(
+            |op: &Operation| op.component() == "Service",
+            |op: &Operation| op.method() == "other",
+        );
+        let op = Operation::new("Service", "method");
+        assert!(!pc.matches(&op));
+    }
+}
+
+#[cfg(test)]
+mod additional_tests {
+    use super::*;
+    use crate::Operation;
+
+    #[test]
+    fn and_pointcut_left() {
+        let pc = AndPointcut::new(
+            |op: &Operation| op.component() == "Service",
+            |op: &Operation| op.method() == "method",
+        );
+        let op = Operation::new("Service", "method");
+        assert!(pc.left()(&op));
+    }
+
+    #[test]
+    fn and_pointcut_right() {
+        let pc = AndPointcut::new(
+            |op: &Operation| op.component() == "Service",
+            |op: &Operation| op.method() == "method",
+        );
+        let op = Operation::new("Service", "method");
+        assert!(pc.right()(&op));
+    }
+
+    #[test]
+    fn and_pointcut_clone() {
+        let pc = AndPointcut::new(
+            |op: &Operation| op.component() == "Service",
+            |op: &Operation| op.method() == "method",
+        );
+        let cloned = pc.clone();
+        let op = Operation::new("Service", "method");
+        assert!(cloned.matches(&op));
+    }
+
+    #[test]
+    fn and_pointcut_debug() {
+        let pc = AndPointcut::new(true, true);
+        let debug = format!("{:?}", pc);
+        assert!(!debug.is_empty());
+    }
+
+    #[test]
+    fn and_pointcut_partial_eq() {
+        let pc1 = AndPointcut::new(true, true);
+        let pc2 = AndPointcut::new(true, true);
+        assert_eq!(pc1, pc2);
+    }
+
+    #[test]
+    fn and_pointcut_not_equal() {
+        let pc1 = AndPointcut::new(true, true);
+        let pc2 = AndPointcut::new(true, false);
+        assert_ne!(pc1, pc2);
+    }
+}

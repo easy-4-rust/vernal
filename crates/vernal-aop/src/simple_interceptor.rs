@@ -77,3 +77,81 @@ pub trait SimpleInterceptor: Send + Sync + 'static {
         result
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct TestInterceptor {
+        before_called: std::sync::atomic::AtomicBool,
+        after_called: std::sync::atomic::AtomicBool,
+    }
+
+    impl TestInterceptor {
+        fn new() -> Self {
+            Self {
+                before_called: std::sync::atomic::AtomicBool::new(false),
+                after_called: std::sync::atomic::AtomicBool::new(false),
+            }
+        }
+    }
+
+    impl SimpleInterceptor for TestInterceptor {
+        fn before(&self, _ctx: &SimpleInvocationContext) -> Result<(), BoxError> {
+            self.before_called.store(true, std::sync::atomic::Ordering::SeqCst);
+            Ok(())
+        }
+
+        fn after(&self, _ctx: &SimpleInvocationContext, _result: &SimpleCallResult) {
+            self.after_called.store(true, std::sync::atomic::Ordering::SeqCst);
+        }
+    }
+
+    #[test]
+    fn default_before_returns_ok() {
+        struct NoopInterceptor;
+        impl SimpleInterceptor for NoopInterceptor {}
+
+        let interceptor = NoopInterceptor;
+        let ctx = SimpleInvocationContext::new("test");
+        assert!(interceptor.before(&ctx).is_ok());
+    }
+
+    #[test]
+    fn default_after_does_nothing() {
+        struct NoopInterceptor;
+        impl SimpleInterceptor for NoopInterceptor {}
+
+        let interceptor = NoopInterceptor;
+        let ctx = SimpleInvocationContext::new("test");
+        let result = SimpleCallResult::ok();
+        interceptor.after(&ctx, &result);
+    }
+
+    #[test]
+    fn custom_before_called() {
+        let interceptor = TestInterceptor::new();
+        let ctx = SimpleInvocationContext::new("test");
+        let _ = interceptor.before(&ctx);
+        assert!(interceptor.before_called.load(std::sync::atomic::Ordering::SeqCst));
+    }
+
+    #[test]
+    fn custom_after_called() {
+        let interceptor = TestInterceptor::new();
+        let ctx = SimpleInvocationContext::new("test");
+        let result = SimpleCallResult::ok();
+        interceptor.after(&ctx, &result);
+        assert!(interceptor.after_called.load(std::sync::atomic::Ordering::SeqCst));
+    }
+
+    #[test]
+    fn around_calls_before_proceed_after() {
+        let interceptor = TestInterceptor::new();
+        let ctx = SimpleInvocationContext::new("test");
+        let result = interceptor.around(&ctx, Box::new(|| SimpleCallResult::ok()));
+        assert!(result.is_ok());
+        assert!(interceptor.before_called.load(std::sync::atomic::Ordering::SeqCst));
+        assert!(interceptor.after_called.load(std::sync::atomic::Ordering::SeqCst));
+    }
+}

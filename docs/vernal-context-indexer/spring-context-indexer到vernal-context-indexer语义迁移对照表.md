@@ -1,3 +1,7 @@
+<!-- migration-doc: authority=historical canonical=语义迁移对照表.md -->
+
+> 迁移文档治理：本文级别为 **historical**，历史基线提交 `9e8cea3ef8ae02efb7956b071cd7bbef7c22cb82`。正文不得作为当前验收结论；以 [语义迁移对照表.md](语义迁移对照表.md) 为准。
+
 # spring-context-indexer → vernal-context-indexer 功能语义迁移对照表
 
 > 基线：Spring Framework **7.0.8** spring-context-indexer 模块（11 个 Java 类 + 2 个运行期消费类）。

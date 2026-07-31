@@ -16,8 +16,8 @@ mod cache_aspect_support;
 mod abstract_cache_aspect;
 mod annotation_cache_aspect;
 mod jcache_cache_aspect;
-mod aspectj_caching_configuration;
-mod aspectj_jcache_configuration;
+mod aspect_j_caching_configuration;
+mod aspect_jj_cache_configuration;
 mod any_throw;
 
 pub use cache_operation::CacheOperation;
@@ -26,8 +26,8 @@ pub use cache_aspect_support::CacheAspectSupport;
 pub use abstract_cache_aspect::AbstractCacheAspect;
 pub use annotation_cache_aspect::AnnotationCacheAspect;
 pub use jcache_cache_aspect::JCacheCacheAspect;
-pub use aspectj_caching_configuration::AspectJCachingConfiguration;
-pub use aspectj_jcache_configuration::AspectJJCacheConfiguration;
+pub use aspect_j_caching_configuration::AspectJCachingConfiguration;
+pub use aspect_jj_cache_configuration::AspectJJCacheConfiguration;
 pub use any_throw::AnyThrow;
 
 #[cfg(test)]

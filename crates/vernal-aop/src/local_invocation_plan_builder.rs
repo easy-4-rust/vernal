@@ -77,3 +77,14 @@ impl LocalInvocationPlanBuilder {
         self.advisors.is_empty()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn local_invocation_plan_builder_register() {
+        let mut builder = LocalInvocationPlanBuilder::new();
+        assert_eq!(builder.build(crate::Operation::new("Service", "method")).operation().component(), "Service");
+    }
+}

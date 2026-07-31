@@ -61,3 +61,85 @@ impl fmt::Display for OperationMetadataConflictError {
 }
 
 impl Error for OperationMetadataConflictError {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn conflict_error_creation() {
+        let op = Operation::new("Service", "method");
+        let existing = OperationMetadata::empty();
+        let duplicate = OperationMetadata::empty();
+        let err = OperationMetadataConflictError::new(op.clone(), existing, duplicate);
+        assert_eq!(err.operation().component(), "Service");
+    }
+
+    #[test]
+    fn conflict_error_display() {
+        let op = Operation::new("Service", "method");
+        let err = OperationMetadataConflictError::new(
+            op,
+            OperationMetadata::empty(),
+            OperationMetadata::empty(),
+        );
+        assert!(format!("{}", err).contains("conflicting metadata"));
+    }
+
+    #[test]
+    fn conflict_error_existing() {
+        let op = Operation::new("Service", "method");
+        let err = OperationMetadataConflictError::new(
+            op,
+            OperationMetadata::empty(),
+            OperationMetadata::empty(),
+        );
+        let _ = err.existing();
+    }
+
+    #[test]
+    fn conflict_error_duplicate() {
+        let op = Operation::new("Service", "method");
+        let err = OperationMetadataConflictError::new(
+            op,
+            OperationMetadata::empty(),
+            OperationMetadata::empty(),
+        );
+        let _ = err.duplicate();
+    }
+
+    #[test]
+    fn conflict_error_clone() {
+        let op = Operation::new("Service", "method");
+        let err = OperationMetadataConflictError::new(
+            op,
+            OperationMetadata::empty(),
+            OperationMetadata::empty(),
+        );
+        let cloned = err.clone();
+        assert_eq!(err, cloned);
+    }
+
+    #[test]
+    fn conflict_error_debug() {
+        let op = Operation::new("Service", "method");
+        let err = OperationMetadataConflictError::new(
+            op,
+            OperationMetadata::empty(),
+            OperationMetadata::empty(),
+        );
+        let debug = format!("{:?}", err);
+        assert!(!debug.is_empty());
+    }
+
+    #[test]
+    fn error_trait() {
+        let op = Operation::new("Service", "method");
+        let err = OperationMetadataConflictError::new(
+            op,
+            OperationMetadata::empty(),
+            OperationMetadata::empty(),
+        );
+        let _: &dyn Error = &err;
+    }
+}

@@ -1,7 +1,6 @@
 #![forbid(unsafe_code)]
 #![doc = "Vernal 的 Tokio-first 异步切面与拦截内核。"]
 
-mod advised;
 mod advisor;
 mod and_pointcut;
 mod any_pointcut;
@@ -13,16 +12,17 @@ mod aspect_rs_adapter;
 mod class_filter;
 mod method_matcher;
 mod target_source;
+pub mod target_source_error;
+mod singleton_target_source;
+mod lazy_target_source;
 mod borrowed_invocation_argument;
 mod borrowed_invocation_future_target;
 mod borrowed_invocation_target;
 mod borrowed_local_invocation_target;
 mod component_pointcut;
-mod default_pointcut_advisor;
 mod interceptor;
 mod introduction_advisor;
 mod introduction_info;
-mod invocation;
 mod invocation_context;
 mod invocation_error;
 mod invocation_id;
@@ -61,13 +61,21 @@ mod simple_call_result;
 mod simple_interceptor;
 mod simple_interceptor_chain;
 mod simple_invocation_context;
+mod proxy_method_invocation;
+mod spring_proxy;
 mod tag_pointcut;
 mod target_ref;
+mod true_class_filter;
+mod true_method_matcher;
+mod true_pointcut;
 
+pub mod aop;
+pub mod aspectj;
 pub mod framework;
+pub mod intercept;
 pub mod support;
 
-pub use advised::Advised;
+pub use framework::Advised;
 pub use advisor::Advisor;
 pub use and_pointcut::AndPointcut;
 pub use any_pointcut::AnyPointcut;
@@ -78,13 +86,16 @@ pub use aspect_error::AspectError;
 pub use aspect_rs_adapter::AspectRsAdapter;
 pub use class_filter::{ClassFilter, ClassFilterFactory, TrueClassFilter, FnClassFilter};
 pub use method_matcher::{MethodMatcher, MethodMatcherFactory, TrueMethodMatcher, StaticMethodMatcher, DynamicMethodMatcher};
-pub use target_source::{TargetSource, TargetSourceError, SingletonTargetSource, LazyTargetSource, TargetClassAware};
+pub use target_source::{TargetSource, TargetClassAware};
+pub use target_source_error::TargetSourceError;
+pub use singleton_target_source::SingletonTargetSource;
+pub use lazy_target_source::LazyTargetSource;
 pub use borrowed_invocation_argument::BorrowedInvocationArgument;
 pub use borrowed_invocation_future_target::BorrowedInvocationFutureTarget;
 pub use borrowed_invocation_target::BorrowedInvocationTarget;
 pub use borrowed_local_invocation_target::BorrowedLocalInvocationTarget;
 pub use component_pointcut::ComponentPointcut;
-pub use default_pointcut_advisor::DefaultPointcutAdvisor;
+pub use support::DefaultPointcutAdvisor;
 pub use interceptor::Interceptor;
 
 // 业务切面直接 re-export（基于 aspect-rs aspect-std）
@@ -97,7 +108,7 @@ pub use aspect_std::{
 pub use aspect_std::validation::{NotEmptyValidator, RangeValidator, CustomValidator};
 pub use introduction_advisor::IntroductionAdvisor;
 pub use introduction_info::IntroductionInfo;
-pub use invocation::Invocation;
+pub use intercept::Invocation;
 pub use invocation_context::InvocationContext;
 pub use invocation_error::InvocationError;
 pub use invocation_id::InvocationId;

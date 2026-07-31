@@ -1,3 +1,31 @@
+<!-- migration-doc: authority=authoritative canonical=../迁移验收规范.md -->
+# vernal-orm 技术要求
+> 迁移文档治理：本文级别为 **authoritative**。正文中的历史统计或完成标记不得单独作为验收结论；以 [../迁移验收规范.md](../迁移验收规范.md) 和自动审计报告为准。
+
+
+> 本模块只对标当前仓库的 `spring-orm`，不把 Spring Data JPA 或 Toasty 自身对象混入 Spring 对象计数。目标 crate 尚未建立。
+
+固定提交中有 59 个 Spring ORM 业务对象，当前全部 `MISSING`。Toasty、SeaORM、Diesel 等只有逐对象精确符号及集成测试时才可标 `DEPENDENCY_REUSED`。
+
+| Java 来源 | 目标 Rust |
+|---|---|
+| `jpa/JpaTransactionManager.java` | `jpa/jpa_transaction_manager.rs` |
+| `jpa/EntityManagerFactoryUtils.java` | `jpa/entity_manager_factory_utils.rs` |
+| `jpa/support/OpenEntityManagerInViewInterceptor.java` | `jpa/support/open_entity_manager_in_view_interceptor.rs` |
+| `jpa/hibernate/HibernateExceptionTranslator.java` | `jpa/hibernate/hibernate_exception_translator.rs` |
+
+Provider 专属对象仍需逐项迁移、精确复用或以平台证据标记。遵循[迁移验收规范](../迁移验收规范.md)。
+
+---
+
+<!-- restored-detail-from-head: dd20300d16a09200bd8a379ff14db1e2da99b67c -->
+
+## 原详细文档（完整保留）
+
+> 以下正文完整恢复自 Vernal 提交 `dd20300d16a09200bd8a379ff14db1e2da99b67c`。其中历史对象数量、完成状态、
+> 路径算法和依赖替代结论如与本文顶部或自动对象台账冲突，以顶部当前结论和
+> `docs/migration-audit/` 为准；其 API、设计背景、阶段拆解和测试说明继续保留。
+
 # vernal-orm 技术要求（对标 spring-orm / spring-data-jpa）
 
 > **版本**：v2.0（2026-07-28）

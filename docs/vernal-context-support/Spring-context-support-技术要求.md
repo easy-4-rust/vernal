@@ -1,3 +1,97 @@
+<!-- migration-doc: authority=authoritative canonical=../迁移验收规范.md -->
+# spring-context-support → vernal-context-support 技术要求
+> 迁移文档治理：本文级别为 **authoritative**。正文中的历史统计或完成标记不得单独作为验收结论；以 [../迁移验收规范.md](../迁移验收规范.md) 和自动审计报告为准。
+
+
+> 当前文档。对象事实见[自动审计](../migration-audit/vernal-context-support.md)，统一规则见[迁移验收规范](../迁移验收规范.md)。
+
+## 当前事实
+
+| 状态 | 数量 |
+|---|---:|
+| Java 业务对象 | 78 |
+| `IMPLEMENTED` | 0 |
+| `MISPLACED` | 6 |
+| `MISSING` | 39 |
+| `UNVERIFIED` | 33 |
+| 严格已处理 | 0 |
+
+现有 cache、Quartz、mail 与 FreeMarker 风格对象只是候选实现；没有来源注释、路径或集成测试时仍未完成。
+
+## 目标目录
+
+```text
+crates/vernal-context-support/src/
+├── cache/
+│   ├── caffeine/
+│   └── transaction/
+├── jcache/
+│   ├── config/
+│   └── interceptor/
+├── mail/
+│   └── javamail/
+├── scheduling/
+│   └── quartz/
+└── ui/
+    └── freemarker/
+```
+
+路径按包末两层，不按当前实现方便性：
+
+- `cache/jcache/interceptor/JCacheInterceptor.java` → `jcache/interceptor/jcache_interceptor.rs`
+- `scheduling/quartz/SchedulerFactoryBean.java` → `scheduling/quartz/scheduler_factory_bean.rs`
+- `ui/freemarker/FreeMarkerConfigurationFactory.java` → `ui/freemarker/free_marker_configuration_factory.rs`
+
+## 集成边界
+
+- Caffeine → Rust cache backend（如 moka）可复用，但 Spring wrapper 对象仍须精确记录。
+- JCache → Rust cache operation/advisor，不复制 Jakarta API；必须保留 key、resolver、exception cache、put/remove 时序。
+- Quartz → Tokio scheduler/精确 scheduler 依赖；保留 trigger、job factory、context、lifecycle 和 data source 语义。
+- JavaMail → lettre 等依赖；保留 message builder、sender、mime helper 与异常层次。
+- FreeMarker → Tera 等依赖；保留 template loader、configuration factory 和资源解析契约。
+- Jakarta Validation 对象若属于本模块基线，采用 Rust validator/serde 校验时仍逐对象登记精确复用。
+
+## CodeGraph 关键链
+
+```mermaid
+flowchart TD
+    JC["JCacheInterceptor.invoke"] --> JA["JCacheAspectSupport.execute"]
+    JA --> OP["JCacheOperationSource"]
+    JA --> CACHE["CacheResolver / Cache"]
+    SF["SchedulerFactoryBean"] --> Q["Scheduler create/start/stop"]
+    MAIL["JavaMailSenderImpl.send"] --> MIME["MimeMessage / Transport"]
+    VAL["LocalValidatorFactoryBean.initialize"] --> VF["ValidatorFactory"]
+    FM["FreeMarkerConfigurationFactory.createConfiguration"] --> TL["TemplateLoader"]
+```
+
+CodeGraph 在 Vernal 中识别到 `SchedulerFactoryBean`、`JCacheAspectSupport` 和多个 cache adapter，
+但也发现空清理逻辑、多对象同文件等证据，因此不能推断完整。
+
+## 质量门禁
+
+- 依赖复用必须记录 crate、版本/commit、上游符号和 Vernal 集成测试。
+- 单文件单对象；现有 Quartz、mail、JCache 多公开对象文件必须拆分。
+- cache 并发/错误，scheduler 关闭，mail transport 失败和 template 加载失败均须有测试。
+- 禁止使用“生态已有”或“语义类似”标为完成。
+
+## 验收
+
+```bash
+python3 scripts/audit_migration_docs.py --module vernal-context-support --check
+cargo test -p vernal-context-support
+cargo clippy -p vernal-context-support --all-targets -- -D warnings
+```
+
+---
+
+<!-- restored-detail-from-head: dd20300d16a09200bd8a379ff14db1e2da99b67c -->
+
+## 原详细文档（完整保留）
+
+> 以下正文完整恢复自 Vernal 提交 `dd20300d16a09200bd8a379ff14db1e2da99b67c`。其中历史对象数量、完成状态、
+> 路径算法和依赖替代结论如与本文顶部或自动对象台账冲突，以顶部当前结论和
+> `docs/migration-audit/` 为准；其 API、设计背景、阶段拆解和测试说明继续保留。
+
 # vernal-context-support 技术交接文档
 
 > **对标**: Spring Framework `spring-context-support`（上下文支持层）

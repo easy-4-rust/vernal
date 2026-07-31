@@ -1,8 +1,19 @@
+<!-- migration-doc: authority=support canonical=迁移验收规范.md -->
+
+> 迁移文档治理：本文级别为 **support**。正文中的历史统计或完成标记不得单独作为验收结论；以 [迁移验收规范.md](迁移验收规范.md) 和自动审计报告为准。
+
 # Vernal 完全整合设计方案（修订版）
 
 > 版本：0.3 | 日期：2026-07-26 | 状态：待办清单
 
 ## 一、核心设计原则
+
+### 1.0 迁移与集成的统一门禁
+
+本计划中的“集成完成”只描述 Vernal 内部连接可用。Spring 对象迁移完成度必须由
+[迁移验收规范](迁移验收规范.md)、`migration-manifest.toml` 和自动生成对象台账判定。
+任何历史文件数、测试数或阶段勾选都不能覆盖 `MISSING`、`MISPLACED`、`STUB`、
+`PARTIAL` 与 `UNVERIFIED`。
 
 ### 1.1 框架边界原则
 
