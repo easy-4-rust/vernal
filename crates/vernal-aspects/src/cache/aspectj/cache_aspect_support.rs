@@ -129,7 +129,7 @@ impl<S: CacheOperationSource> CacheAspectSupport<S> {
     pub fn execute<F>(
         &self,
         method: &MethodMetadata,
-        target_type_name: &str,
+        _target_type_name: &str,
         invoker: &dyn CacheOperationInvoker,
         callback: F,
     ) -> CacheResult

@@ -1,3 +1,5 @@
+//! 类型化值测试（`TypedValue` / `ExpressionValue` / `TypeDescriptor`）。
+
 use vernal_expression::{
     TypedValue, ExpressionValue, TypeDescriptor, PrimitiveKind,
 };

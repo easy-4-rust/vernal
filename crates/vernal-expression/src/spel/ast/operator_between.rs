@@ -17,6 +17,7 @@ pub struct OperatorBetween {
 }
 
 impl OperatorBetween {
+    /// 创建 between 运算符节点。
     #[must_use]
     pub fn new(value: Box<dyn SpelNode>, low: Box<dyn SpelNode>, high: Box<dyn SpelNode>) -> Self {
         Self { value, low, high }

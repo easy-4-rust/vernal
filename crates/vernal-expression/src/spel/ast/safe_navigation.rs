@@ -19,7 +19,7 @@
 use super::spel_node::SpelNode;
 use crate::evaluation_context::EvaluationContext;
 use crate::evaluation_exception::EvaluationException;
-use crate::typed_value::{ExpressionValue, TypedValue};
+use crate::typed_value::TypedValue;
 
 /// 安全导航运算符节点。
 ///
@@ -89,6 +89,7 @@ mod tests {
     use crate::spel::ast::null_literal::NullLiteral;
     use crate::spel::ast::int_literal::IntLiteral;
     use crate::spel::support::standard_evaluation_context::StandardEvaluationContext;
+    use crate::typed_value::ExpressionValue;
 
     #[test]
     fn safe_nav_with_null() {

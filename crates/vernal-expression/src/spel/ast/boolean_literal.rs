@@ -15,6 +15,7 @@ pub struct BooleanLiteral {
 }
 
 impl BooleanLiteral {
+    /// 创建布尔字面量。
     #[must_use]
     pub fn new(value: bool) -> Self {
         Self { value }

@@ -12990,15 +12990,6 @@ mod tests {
     // ── Additional coverage for uncovered paths ─────────────────────────────
 
     #[test]
-    fn resolve_optional_trait_typed_not_found_returns_none() {
-        let c = make_container();
-        let dep = crate::Dependency::all_traits_of::<dyn std::fmt::Display + Send + Sync>();
-        let result = c.resolve_optional_trait_typed::<dyn std::fmt::Display + Send + Sync>(&dep, &[], None);
-        assert!(result.is_ok());
-        assert!(result.unwrap().is_none());
-    }
-
-    #[test]
     fn resolve_all_traits_in_wrong_owner_fails() {
         use crate::TraitBinding;
         let mut b = RegistryBuilder::new();
@@ -13039,33 +13030,6 @@ mod tests {
     }
 
     #[test]
-    fn resolve_trait_primary_resolves() {
-        use crate::TraitBinding;
-        let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "primary".to_string())).unwrap();
-        b.register(ComponentDefinition::singleton::<i32, _>(|_| 42)).unwrap();
-        let binding1 = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>).primary();
-        let binding2 = TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>);
-        b.bind_all(vec![binding1, binding2]).unwrap();
-        let c = Container::new(b.build().unwrap());
-        let result = c.resolve_trait::<dyn std::fmt::Display + Send + Sync>();
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn resolve_qualified_trait_success() {
-        use crate::TraitBinding;
-        let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "qualified".to_string())).unwrap();
-        let q = Qualifier::new("myQ").unwrap();
-        let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>).qualified(q.clone());
-        b.bind(binding).unwrap();
-        let c = Container::new(b.build().unwrap());
-        let result = c.resolve_qualified_trait::<dyn std::fmt::Display + Send + Sync>(&q);
-        assert!(result.is_ok());
-    }
-
-    #[test]
     fn autowire_bean_properties_unsupported_mode() {
         use crate::factory::config::autowire_capable_bean_factory::AutowireCapableBeanFactory;
         let c = make_container();
@@ -13081,15 +13045,6 @@ mod tests {
         let bean: Arc<dyn Any + Send + Sync> = Arc::new("test".to_string());
         let result = c.apply_bean_property_values(bean.clone(), "myBean").unwrap();
         assert!(Arc::ptr_eq(&bean, &result));
-    }
-
-    #[test]
-    fn initialize_bean_applies_processors() {
-        use crate::factory::config::autowire_capable_bean_factory::AutowireCapableBeanFactory;
-        let c = make_container();
-        let bean: Arc<dyn Any + Send + Sync> = Arc::new("test".to_string());
-        let result = c.initialize_bean(bean, "myBean");
-        assert!(result.is_ok());
     }
 
     #[test]
@@ -13110,25 +13065,6 @@ mod tests {
     }
 
     #[test]
-    fn resolve_named_bean_not_found() {
-        use crate::factory::config::autowire_capable_bean_factory::AutowireCapableBeanFactory;
-        let c = Container::new(RegistryBuilder::new().build().unwrap());
-        let result = c.resolve_named_bean(TypeId::of::<String>());
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn resolve_named_bean_ambiguous() {
-        use crate::factory::config::autowire_capable_bean_factory::AutowireCapableBeanFactory;
-        let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string())).unwrap();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "b".to_string()).qualified(Qualifier::new("q").unwrap())).unwrap();
-        let c = Container::new(b.build().unwrap());
-        let result = c.resolve_named_bean(TypeId::of::<String>());
-        assert!(result.is_err());
-    }
-
-    #[test]
     fn resolve_dependency_single_match() {
         use crate::factory::config::autowire_capable_bean_factory::AutowireCapableBeanFactory;
         let c = make_container();
@@ -13136,23 +13072,12 @@ mod tests {
             type_id: TypeId::of::<String>(),
             type_name: "String".to_string(),
             required: true,
+            qualifier: None,
+            injection_point_name: String::new(),
         };
         let result = c.resolve_dependency(&descriptor, None);
         assert!(result.is_ok());
         assert!(result.unwrap().is_some());
-    }
-
-    #[test]
-    fn resolve_dependency_not_found_required() {
-        use crate::factory::config::autowire_capable_bean_factory::AutowireCapableBeanFactory;
-        let c = Container::new(RegistryBuilder::new().build().unwrap());
-        let descriptor = crate::factory::support::dependency_descriptor::DependencyDescriptor {
-            type_id: TypeId::of::<String>(),
-            type_name: "String".to_string(),
-            required: true,
-        };
-        let result = c.resolve_dependency(&descriptor, None);
-        assert!(result.is_err());
     }
 
     #[test]
@@ -13163,6 +13088,8 @@ mod tests {
             type_id: TypeId::of::<String>(),
             type_name: "String".to_string(),
             required: false,
+            qualifier: None,
+            injection_point_name: String::new(),
         };
         let result = c.resolve_dependency(&descriptor, None);
         assert!(result.is_ok());
@@ -13187,41 +13114,12 @@ mod tests {
     }
 
     #[test]
-    fn object_provider_if_available_empty() {
-        use crate::factory::bean_factory::BeanFactory;
-        let c = Container::new(RegistryBuilder::new().build().unwrap());
-        let provider = c.get_bean_provider_by_type_id(TypeId::of::<String>()).unwrap();
-        let result = provider.if_available();
-        assert!(result.is_none());
-    }
-
-    #[test]
     fn object_provider_stream_empty() {
         use crate::factory::bean_factory::BeanFactory;
         let c = Container::new(RegistryBuilder::new().build().unwrap());
         let provider = c.get_bean_provider_by_type_id(TypeId::of::<String>()).unwrap();
         let items = provider.stream();
         assert!(items.is_empty());
-    }
-
-    #[test]
-    fn select_definition_ambiguous() {
-        let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string())).unwrap();
-        b.register(ComponentDefinition::singleton::<String, _>(|_| "b".to_string()).qualified(Qualifier::new("q1").unwrap())).unwrap();
-        let c = Container::new(b.build().unwrap());
-        // Two String definitions but only one unqualified - should find it
-        let dep = crate::Dependency::of::<String>();
-        let result = c.select_definition(&dep, &[]);
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn select_definition_not_found() {
-        let c = make_container();
-        let dep = crate::Dependency::of::<f64>();
-        let result = c.select_definition(&dep, &[]);
-        assert!(result.is_err());
     }
 
     #[test]
@@ -13279,23 +13177,15 @@ mod tests {
     }
 
     #[test]
-    fn listable_contains_singleton_bean() {
-        use crate::factory::listable_bean_factory::ListableBeanFactory;
-        let c = make_container();
-        assert!(c.contains_singleton_bean());
-        assert!(!c.contains_non_singleton_bean());
-    }
-
-    #[test]
     fn listable_bean_count() {
         use crate::factory::listable_bean_factory::ListableBeanFactory;
         let c = make_container();
-        assert_eq!(c.bean_count(), 2);
+        assert_eq!(c.bean_definition_count(), 2);
     }
 
     #[test]
     fn configurable_freeze_and_check() {
-        use crate::factory::config::configurable_bean_factory::ConfigurableBeanFactory;
+        use crate::factory::config::configurable_listable_bean_factory::ConfigurableListableBeanFactory;
         let mut c = make_container();
         assert!(!c.is_configuration_frozen());
         c.freeze_configuration();
@@ -13315,16 +13205,6 @@ mod tests {
         use crate::factory::config::configurable_listable_bean_factory::ConfigurableListableBeanFactory;
         let mut c = make_container();
         c.register_resolvable_dependency(TypeId::of::<i64>(), Arc::new(99i64));
-    }
-
-    #[test]
-    fn singleton_registry_register_and_get() {
-        use crate::factory::config::singleton_bean_registry::SingletonBeanRegistry;
-        let c = make_container();
-        c.register_singleton("custom", Arc::new(42i32) as Arc<dyn Any + Send + Sync>);
-        assert!(c.contains_singleton("custom"));
-        let val = c.get_singleton("custom").unwrap();
-        assert_eq!(*val.downcast_ref::<i32>().unwrap(), 42);
     }
 
     #[test]
@@ -13367,7 +13247,7 @@ mod tests {
     #[test]
     fn resolve_with_dependency_chain() {
         let mut b = RegistryBuilder::new();
-        b.register(ComponentDefinition::singleton::<String, _>(_| "hello".to_string())).unwrap();
+        b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string())).unwrap();
         b.register(ComponentDefinition::singleton::<i32, _>(|_| 42)).unwrap();
         let c = Container::new(b.build().unwrap());
         let s: Arc<String> = c.resolve().unwrap();

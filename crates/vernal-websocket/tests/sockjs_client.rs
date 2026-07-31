@@ -5,7 +5,7 @@ use std::sync::Arc;
 use http::HeaderMap;
 use vernal_websocket::sockjs::client::{
     ClientSessionState, ClientSockJsSession, DefaultTransportRequest, HttpRequestExecutor,
-    InfoReceiver, ServerInfo, SockJsClient, SockJsUrlInfo, Transport, WebSocketClientTransport,
+    InfoReceiver, SockJsClient, SockJsUrlInfo, Transport, WebSocketClientTransport,
     XhrTransportImpl, parse_info_json,
 };
 use vernal_websocket::sockjs::frame::json_sockjs_message_codec::JsonSockJsMessageCodec;

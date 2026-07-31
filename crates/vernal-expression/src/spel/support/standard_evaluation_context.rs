@@ -16,9 +16,7 @@ use crate::method_executor::MethodExecutor;
 use crate::method_resolver::MethodResolver;
 use crate::operator_overloader::OperatorOverloader;
 use crate::property_accessor::PropertyAccessor;
-use crate::spel::support::reflective_method_resolver::{
-    ArcReflectiveMethodExecutor, ReflectiveMethodResolver,
-};
+use crate::spel::support::reflective_method_resolver::ReflectiveMethodResolver;
 use crate::spel::support::reflective_property_accessor::ReflectivePropertyAccessor;
 use crate::type_comparator::TypeComparator;
 use crate::type_converter::TypeConverter;

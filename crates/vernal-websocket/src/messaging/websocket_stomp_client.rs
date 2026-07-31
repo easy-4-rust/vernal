@@ -101,7 +101,7 @@ impl StompSession {
             _ => return Ok(Vec::new()),
         };
         let frames = self.decoder.decode(&payload)?;
-        let mut responses = Vec::new();
+        let responses = Vec::new();
         for frame in frames {
             match frame.command {
                 StompCommand::Connected => {

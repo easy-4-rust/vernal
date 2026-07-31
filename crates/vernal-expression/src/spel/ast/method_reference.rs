@@ -14,10 +14,12 @@ use crate::typed_value::TypedValue;
 pub struct MethodReference {
     name: String,
     arguments: Vec<Box<dyn SpelNode>>,
+    #[allow(dead_code)] // 对标 Spring MethodReference.nullSafe，供后续 null-safe 调用实现使用。
     null_safe: bool,
 }
 
 impl MethodReference {
+    /// 创建方法调用节点。
     #[must_use]
     pub fn new(name: String, arguments: Vec<Box<dyn SpelNode>>, null_safe: bool) -> Self {
         Self {

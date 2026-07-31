@@ -5,13 +5,11 @@
 
 use std::any::Any;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 use vernal_cache::{Cache, CacheExt, CacheManager, SimpleCache};
-use vernal_context_support::cache::transaction::{
-    TransactionAwareCacheDecorator, TransactionStatus,
-};
+use vernal_context_support::cache::transaction::TransactionAwareCacheDecorator;
 
 // ═══════════════════════════════════════════════════════════════════════════
 // 1. TransactionAwareCacheDecorator 语义测试
@@ -492,7 +490,7 @@ async fn spring_scheduler_factory_bean_pause() {
 /// Spring 语义：resume 恢复调度器。
 #[tokio::test]
 async fn spring_scheduler_factory_bean_resume() {
-    use vernal_context_support::scheduling::quartz::{SchedulerFactoryBean, SchedulerState};
+    use vernal_context_support::scheduling::quartz::SchedulerFactoryBean;
     let bean = SchedulerFactoryBean::new();
     bean.start().await.unwrap();
     bean.pause().await.unwrap();
@@ -606,7 +604,7 @@ fn spring_mime_message() {
 #[test]
 fn spring_mime_message_helper() {
     use vernal_context_support::mail::javamail::{MimeMessage, MimeMessageHelper};
-    let mut msg = MimeMessage::new();
+    let msg = MimeMessage::new();
     let mut helper = MimeMessageHelper::new(msg);
     helper.set_from("sender@example.com");
     helper.add_to("recipient@example.com");
@@ -721,6 +719,7 @@ fn spring_mime_message_preparator() {
 // ═══════════════════════════════════════════════════════════════════════════
 
 /// Spring 语义：FreeMarkerTemplateUtils 模板渲染。
+#[cfg(feature = "freemarker")]
 #[test]
 fn spring_free_marker_template_utils() {
     use std::collections::HashMap;
@@ -739,6 +738,7 @@ fn spring_free_marker_template_utils() {
 }
 
 /// Spring 语义：SpringTemplateLoader 基础路径。
+#[cfg(feature = "freemarker")]
 #[test]
 fn spring_template_loader() {
     use std::path::PathBuf;

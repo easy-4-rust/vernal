@@ -14,8 +14,10 @@ pub struct SpelParserConfiguration {
     /// 是否自动增长空引用
     auto_grow_null_references: bool,
     /// 是否自动增长集合
+    #[allow(dead_code)] // 对标 Spring autoGrowCollections，供后续 Indexer 自动增长实现使用。
     auto_grow_collections: bool,
     /// 最大自动增长大小
+    #[allow(dead_code)] // 对标 Spring maximumAutoGrowSize，供后续 Indexer 自动增长实现使用。
     maximum_auto_grow_size: usize,
 }
 

@@ -37,16 +37,18 @@ pub mod scheduling {
 
 /// 对标 `org.springframework.beans.factory.aspectj` 包。
 pub mod beans {
+    /// Bean 工厂子包（镜像 Spring `beans.factory` 包路径）。
     pub mod factory {
-        /// 对标 `org.springframework.beans.factory.aspectj` 包。
+        /// 对标 `org.springframework.beans.factory.aspectj` 包（Bean 工厂 AspectJ 切面）。
         pub mod aspectj;
     }
 }
 
 /// 对标 `org.springframework.context.annotation.aspectj` 包。
 pub mod context {
+    /// 上下文注解子包（镜像 Spring `context.annotation` 包路径）。
     pub mod annotation {
-        /// 对标 `org.springframework.context.annotation.aspectj` 包。
+        /// 对标 `org.springframework.context.annotation.aspectj` 包（上下文注解 AspectJ 配置）。
         pub mod aspectj;
     }
 }

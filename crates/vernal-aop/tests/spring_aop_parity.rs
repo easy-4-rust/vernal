@@ -23,10 +23,6 @@ use vernal_aop::{
     OperationPointcut, OrPointcut, Pointcut, PointcutAdvisor, PointcutExt, QualifierPointcut,
     SimpleCallResult, SimpleInterceptor, SimpleInterceptorChain, SimpleInvocationContext,
     TagPointcut,
-    // 业务切面（来自 aspect-std）
-    CachingAspect, CircuitBreakerAspect, CircuitState, LoggingAspect, TimingAspect,
-    MetricsAspect, RateLimitAspect, AuthorizationAspect, AllowlistAspect, AuthMode,
-    ValidationAspect, ValidationRule, NotEmptyValidator, RangeValidator, CustomValidator,
 };
 use vernal_aop::pointcut::dsl::{
     ExecutionPattern, FunctionDescriptor, ModulePattern, NamePattern, PointcutExpr,

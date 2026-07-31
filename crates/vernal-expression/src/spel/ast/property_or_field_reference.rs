@@ -18,16 +18,19 @@ pub struct PropertyOrFieldReference {
 }
 
 impl PropertyOrFieldReference {
+    /// 创建属性/字段引用节点。
     #[must_use]
     pub fn new(name: String, null_safe: bool) -> Self {
         Self { name, null_safe }
     }
 
+    /// 获取属性名。
     #[must_use]
     pub fn name(&self) -> &str {
         &self.name
     }
 
+    /// 是否启用 null-safe 访问。
     #[must_use]
     pub fn is_null_safe(&self) -> bool {
         self.null_safe

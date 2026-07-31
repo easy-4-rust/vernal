@@ -241,7 +241,13 @@ pub(crate) struct ComponentOptionsParts {
     pub async_run_hook: Option<LitStr>,
     pub shutdown_hook: Option<LitStr>,
     pub init_order: Option<LitInt>,
+    /// 是否自动绑定 ConfigurationProperties（对标 tx_di 的 `conf`）。
+    /// 代码生成阶段当前未消费该标志，保留供后续配置绑定实现使用。
+    #[allow(dead_code)]
     pub config_mode: bool,
+    /// 配置前缀（`#[component(config = "prefix")]`），None 时使用类型名 snake_case。
+    /// 代码生成阶段当前未消费该前缀，保留供后续配置绑定实现使用。
+    #[allow(dead_code)]
     pub config_prefix: Option<LitStr>,
     pub as_trait: Option<Path>,
     /// stereotype 标签

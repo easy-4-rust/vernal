@@ -2,6 +2,7 @@
 use super::jcache_operation_source::{JCacheOperation, JCacheOperationSource};
 use std::any::Any;
 
+/// 注解操作源。
 pub struct AnnotationJCacheOperationSource;
 impl JCacheOperationSource for AnnotationJCacheOperationSource {
     fn get_jcache_operation(&self, _method: &dyn Any) -> Option<Box<dyn JCacheOperation>> {

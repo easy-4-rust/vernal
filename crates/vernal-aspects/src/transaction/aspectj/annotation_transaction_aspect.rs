@@ -91,7 +91,7 @@ impl<S: TransactionAttributeSource> AnnotationTransactionAspect<S> {
     /// 3. 类型必须在 `@Transactional` 类型范围内（`within` 约束）
     pub fn matches_execution_of_any_public_method_in_at_transactional_type(
         &self,
-        method: &MethodMetadata,
+        _method: &MethodMetadata,
         type_has_transactional_annotation: bool,
         type_in_transactional_scope: bool,
     ) -> bool {

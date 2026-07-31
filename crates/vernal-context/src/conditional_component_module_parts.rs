@@ -12,10 +12,16 @@ use crate::{
 ///
 /// 命名字段避免四元组随贡献种类增长而发生顺序错误；本对象只存在于应用构建阶段。
 pub struct ConditionalComponentModuleParts {
+    /// 组件定义集合。
     pub definitions: Vec<ComponentDefinition>,
+    /// Trait 绑定集合。
     pub bindings: Vec<TraitBinding>,
+    /// 生命周期登记器集合。
     pub lifecycle_registrars: Vec<Box<LifecycleRegistrar>>,
+    /// 事件监听器登记器集合。
     pub event_listener_registrars: Vec<Box<EventListenerRegistrar>>,
+    /// 应用 Runner 登记器集合。
     pub application_runner_registrars: Vec<Box<ApplicationRunnerRegistrar>>,
+    /// 周期任务登记器集合。
     pub scheduled_task_registrars: Vec<Box<ScheduledTaskRegistrar>>,
 }

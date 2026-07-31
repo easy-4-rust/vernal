@@ -223,8 +223,8 @@ fn test_registrar_bind_all() {
 #[tokio::test]
 async fn test_lifecycle_via_build() {
     let mut builder = VernalApplicationBuilder::new(tokio::runtime::Handle::current());
-    builder.register(SimpleComponent::definition());
-    builder.register(TestLifecycle::definition());
+    let _ = builder.register(SimpleComponent::definition());
+    let _ = builder.register(TestLifecycle::definition());
     builder.lifecycle::<TestLifecycle>();
     let result = builder.build();
     assert!(result.is_ok(), "build with lifecycle should succeed: {:?}", result.err());
@@ -234,8 +234,8 @@ async fn test_lifecycle_via_build() {
 #[tokio::test]
 async fn test_event_listener_via_build() {
     let mut builder = VernalApplicationBuilder::new(tokio::runtime::Handle::current());
-    builder.register(SimpleComponent::definition());
-    builder.register(TestEventListener::definition());
+    let _ = builder.register(SimpleComponent::definition());
+    let _ = builder.register(TestEventListener::definition());
     builder.event_listener::<TestEvent, TestEventListener>();
     let result = builder.build();
     assert!(result.is_ok(), "build with event_listener should succeed: {:?}", result.err());
@@ -245,8 +245,8 @@ async fn test_event_listener_via_build() {
 #[tokio::test]
 async fn test_application_runner_via_build() {
     let mut builder = VernalApplicationBuilder::new(tokio::runtime::Handle::current());
-    builder.register(SimpleComponent::definition());
-    builder.register(TestRunner::definition());
+    let _ = builder.register(SimpleComponent::definition());
+    let _ = builder.register(TestRunner::definition());
     builder.application_runner::<TestRunner>();
     let result = builder.build();
     assert!(result.is_ok(), "build with application_runner should succeed: {:?}", result.err());
@@ -256,8 +256,8 @@ async fn test_application_runner_via_build() {
 #[tokio::test]
 async fn test_scheduled_task_via_build() {
     let mut builder = VernalApplicationBuilder::new(tokio::runtime::Handle::current());
-    builder.register(SimpleComponent::definition());
-    builder.register(TestTask::definition());
+    let _ = builder.register(SimpleComponent::definition());
+    let _ = builder.register(TestTask::definition());
     builder.scheduled_task::<TestTask>();
     let result = builder.build();
     assert!(result.is_ok(), "build with scheduled_task should succeed: {:?}", result.err());

@@ -9,6 +9,8 @@ use crate::class_filter::ClassFilter;
 /// 对应 spring-aop `TrueClassFilter`。
 ///
 /// 这是一个单例，始终返回 `true`。
+// 对标 Spring AOP 的 API 脚手架：TrueClassFilter 为 TruePointcut 的类过滤单例，暂未被内部调用。
+#[allow(dead_code)]
 pub struct TrueClassFilter;
 
 impl ClassFilter for TrueClassFilter {
@@ -30,6 +32,8 @@ impl std::fmt::Display for TrueClassFilter {
 }
 
 /// 获取 TrueClassFilter 单例。
+// 对标 Spring AOP 的 API 脚手架：true_class_filter 返回 TrueClassFilter 单例引用，暂未被内部调用。
+#[allow(dead_code)]
 pub fn true_class_filter() -> &'static TrueClassFilter {
     &TrueClassFilter
 }

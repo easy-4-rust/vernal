@@ -7,6 +7,9 @@ use crate::managed_local_advisor::ManagedLocalAdvisor;
 /// 保留直接 Local Advisor 与 `IoC` 管理 Local Advisor 的统一登记顺序。
 ///
 /// 该声明只存在于应用构建阶段；目录封存后不参与 Worker-local 调用热路径。
+///
+/// `ManagedLocalAdvisor` 有意保持 `pub(crate)`（仅构建期使用），此处放宽容许。
+#[allow(private_interfaces)]
 pub enum LocalAdvisorRegistration {
     /// 调用方已经构造完成的本地 Advisor。
     Instance(LocalAdvisor),

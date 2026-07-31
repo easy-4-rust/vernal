@@ -6,7 +6,6 @@ use crate::access_exception::AccessException;
 use crate::evaluation_context::EvaluationContext;
 use crate::property_accessor::PropertyAccessor;
 use crate::typed_value::{ExpressionValue, TypeDescriptor, TypedValue};
-use std::collections::HashMap;
 
 /// Map 键访问器。
 ///

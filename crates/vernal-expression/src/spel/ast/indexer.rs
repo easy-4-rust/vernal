@@ -22,6 +22,7 @@ pub struct Indexer {
 }
 
 impl Indexer {
+    /// 创建索引访问节点。
     #[must_use]
     pub fn new(index: Box<dyn SpelNode>) -> Self {
         Self { index, null_safe: false }

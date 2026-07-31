@@ -12,7 +12,7 @@ use std::fmt;
 // `ExpressionValue` 与 `TypeDescriptor` 真正的定义在 expression_value.rs / type_descriptor.rs
 // （13 变体 + 富描述符，Phase A 引入）。这里重导出以兼容。
 pub use crate::expression_value::ExpressionValue;
-pub use crate::type_descriptor::{PrimitiveKind, TypeDescriptor};
+pub use crate::type_descriptor::TypeDescriptor;
 
 /// 类型化值（对标 Spring `TypedValue`）。
 ///

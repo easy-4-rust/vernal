@@ -62,6 +62,7 @@ struct OrderCreatedEvent {
 }
 
 impl OrderCreatedEvent {
+    #[allow(dead_code)] // 测试辅助构造器：与 with_timestamp 对称，当前测试仅使用后者。
     fn new(source: Arc<dyn Any + Send + Sync>, order_id: u64) -> Self {
         Self {
             base: ApplicationContextEventBase::new(source),

@@ -12,19 +12,26 @@ pub struct MultiValueMapAdapter<K: Eq + Hash, V> {
 }
 
 impl<K: Eq + Hash, V> MultiValueMapAdapter<K, V> {
+    /// 使用给定的底层 Map 创建适配器。
     #[must_use]
     pub fn new(target: HashMap<K, Vec<V>>) -> Self { Self { target } }
+    /// 返回键的个数。
     #[must_use]
     pub fn len(&self) -> usize { self.target.len() }
+    /// 判断底层 Map 是否为空。
     #[must_use]
     pub fn is_empty(&self) -> bool { self.target.is_empty() }
+    /// 取每个键的第一个值，转换为单值 Map。
     #[must_use]
     pub fn to_single_value_map(&self) -> HashMap<K, V> where K: Clone, V: Clone {
         self.target.iter().filter_map(|(k, vs)| vs.first().map(|v| (k.clone(), v.clone()))).collect()
     }
+    /// 获取底层 Map 的不可变引用。
     #[must_use]
     pub fn as_inner(&self) -> &HashMap<K, Vec<V>> { &self.target }
+    /// 获取底层 Map 的可变引用。
     pub fn as_inner_mut(&mut self) -> &mut HashMap<K, Vec<V>> { &mut self.target }
+    /// 消耗自身，返回底层 Map。
     #[must_use]
     pub fn into_inner(self) -> HashMap<K, Vec<V>> { self.target }
 }
@@ -51,16 +58,21 @@ pub struct MultiToSingleValueMapAdapter<'a, K: Eq + Hash, V, M: MultiValueMapTra
 }
 
 impl<'a, K: Eq + Hash, V, M: MultiValueMapTrait<K, V>> MultiToSingleValueMapAdapter<'a, K, V, M> {
+    /// 基于给定的多值 Map 创建只读视图。
     #[must_use]
     pub fn new(delegate: &'a M) -> Self {
         Self { delegate, _k: std::marker::PhantomData, _v: std::marker::PhantomData }
     }
+    /// 返回键对应的第一个值。
     #[must_use]
     pub fn get(&self, key: &K) -> Option<&V> { self.delegate.get_first(key) }
+    /// 返回键的个数。
     #[must_use]
     pub fn len(&self) -> usize { self.delegate.len() }
+    /// 判断底层 Map 是否为空。
     #[must_use]
     pub fn is_empty(&self) -> bool { self.delegate.is_empty() }
+    /// 判断是否包含指定键。
     #[must_use]
     pub fn contains_key(&self, key: &K) -> bool { self.delegate.contains_key(key) }
 }
@@ -71,12 +83,16 @@ pub struct SingleToMultiValueMapAdapter<K: Eq + Hash, V> {
 }
 
 impl<K: Eq + Hash, V> SingleToMultiValueMapAdapter<K, V> {
+    /// 使用给定的单值 Map 创建包装。
     #[must_use]
     pub fn new(target: HashMap<K, V>) -> Self { Self { target } }
+    /// 返回键的个数。
     #[must_use]
     pub fn len(&self) -> usize { self.target.len() }
+    /// 判断底层 Map 是否为空。
     #[must_use]
     pub fn is_empty(&self) -> bool { self.target.is_empty() }
+    /// 消耗自身，返回底层单值 Map。
     #[must_use]
     pub fn into_single_value_map(self) -> HashMap<K, V> { self.target }
 }
@@ -97,6 +113,7 @@ pub struct MultiValueMapCollector<K: Eq + Hash, V> {
 }
 
 impl<K: Eq + Hash, V> MultiValueMapCollector<K, V> {
+    /// 消耗收集器，返回收集到的多值 Map。
     #[must_use]
     pub fn into_map(self) -> HashMap<K, Vec<V>> { self.map }
 }

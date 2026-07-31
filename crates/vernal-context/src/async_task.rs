@@ -40,7 +40,6 @@
 use std::any::type_name;
 
 use tokio_util::sync::CancellationToken;
-use vernal_core::BoxError;
 
 use crate::LifecycleFuture;
 

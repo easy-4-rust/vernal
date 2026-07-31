@@ -159,7 +159,7 @@ mod tests {
         let left = VariableReference::new("myVar".to_string());
         let right = IntLiteral::new(99, "99".to_string());
         let node = Assign::new(Box::new(left), Box::new(right));
-        let mut ctx = StandardEvaluationContext::new(TypedValue::null());
+        let ctx = StandardEvaluationContext::new(TypedValue::null());
         let result = node.get_value(&ctx).unwrap();
         assert_eq!(*result.value(), ExpressionValue::Int(99));
     }

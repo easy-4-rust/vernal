@@ -101,6 +101,10 @@ impl ValueBinding {
 /// 协调 `BeanExpressionResolver` 和属性源（`Environment`）执行表达式求值。
 pub struct ValueExpressionResolver {
     /// Bean 表达式解析器引用。
+    ///
+    /// 目前为 Java 镜像脚手架预留：求值逻辑由 `ApplicationContext` 集成路径
+    /// 在 populateBean 阶段直接委托，暂未从此字段读取。
+    #[allow(dead_code)]
     bean_expression_resolver: Arc<dyn value_expression_resolver_trait::BeanExpressionResolverBridge>,
 }
 
@@ -111,6 +115,7 @@ pub mod value_expression_resolver_trait {
 
     /// 桥接 trait：表达式求值 → `Arc<dyn Any>`。
     pub trait BeanExpressionResolverBridge: Send + Sync + 'static {
+        /// 求值表达式，返回任意类型的结果（`None` 表示无值）。
         fn evaluate(
             &self,
             expression: &str,

@@ -7,6 +7,8 @@
 /// 对应 spring-aop `SpringProxy`。
 ///
 /// 标记一个对象为 Spring AOP 代理。用于识别代理对象。
+// 对标 Spring AOP 的 API 脚手架：SpringProxy 提供代理标记，暂未被内部调用。
+#[allow(dead_code)]
 pub trait SpringProxy: Send + Sync + 'static {
     /// 获取代理类型名。
     fn get_proxy_type(&self) -> &str;
@@ -18,10 +20,13 @@ pub trait SpringProxy: Send + Sync + 'static {
 }
 
 /// 默认 Spring 代理实现。
+// 对标 Spring AOP 的 API 脚手架：DefaultSpringProxy 提供默认实现，暂未被内部调用。
+#[allow(dead_code)]
 pub struct DefaultSpringProxy {
     proxy_type: String,
 }
 
+#[allow(dead_code)]
 impl DefaultSpringProxy {
     /// 创建新的 Spring 代理。
     pub fn new(proxy_type: impl Into<String>) -> Self {

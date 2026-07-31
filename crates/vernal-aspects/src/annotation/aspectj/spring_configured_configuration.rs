@@ -6,7 +6,7 @@
 //!
 //! 注意：按审计脚本"保留末两层"规则，本文件位于 `annotation/aspectj/` 而非 `context/annotation/aspectj/`。
 
-use std::sync::{Arc, RwLock};
+use std::sync::RwLock;
 
 /// Spring Configured 配置。
 ///

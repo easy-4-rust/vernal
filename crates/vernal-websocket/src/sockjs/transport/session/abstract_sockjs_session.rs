@@ -4,14 +4,10 @@
 //! 持有消息缓存、心跳定时器与 responseLock（对标 Spring `responseLock`）。
 
 use std::collections::VecDeque;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 
 use tokio::sync::Mutex;
-
-use crate::sockjs::frame::sockjs_frame::SockJsFrame;
-use crate::sockjs::transport::sockjs_session::SockJsSessionState;
 
 /// SockJS session 状态。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -30,6 +26,8 @@ pub struct AbstractSockJsSession {
     lifecycle: Mutex<SessionLifecycle>,
     message_cache: Mutex<VecDeque<String>>,
     heartbeat_disabled: AtomicBool,
+    /// 创建时间（对标 Spring `getCreationTime`，暂未使用）。
+    #[allow(dead_code)]
     created_at: Instant,
     last_active: Mutex<Instant>,
     heartbeat_time: Duration,

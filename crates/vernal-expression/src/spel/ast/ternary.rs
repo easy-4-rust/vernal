@@ -15,6 +15,7 @@ pub struct Ternary {
 }
 
 impl Ternary {
+    /// 创建三元表达式节点。
     #[must_use]
     pub fn new(
         condition: Box<dyn SpelNode>,

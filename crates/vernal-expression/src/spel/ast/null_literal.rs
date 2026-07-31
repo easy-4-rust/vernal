@@ -6,13 +6,14 @@ use super::literal::LiteralNode;
 use super::spel_node::SpelNode;
 use crate::evaluation_context::EvaluationContext;
 use crate::evaluation_exception::EvaluationException;
-use crate::typed_value::{ExpressionValue, TypeDescriptor, TypedValue};
+use crate::typed_value::TypedValue;
 
 /// 空值字面量节点。
 #[derive(Debug, Clone)]
 pub struct NullLiteral;
 
 impl NullLiteral {
+    /// 创建空值字面量节点。
     #[must_use]
     pub fn new() -> Self {
         Self

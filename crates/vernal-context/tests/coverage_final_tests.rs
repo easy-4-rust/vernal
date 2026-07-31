@@ -5,10 +5,7 @@ use std::time::Duration;
 
 use vernal_context::{
     ApplicationRunner, Lifecycle, ScheduledTask, TaskSchedule,
-    VernalApplicationBuilder, ApplicationContext, EventBus,
-    ApplicationEventListener, ApplicationModuleRegistrar,
-    ApplicationModule, ConditionalComponentModule, ComponentCondition,
-    ApplicationEnvironment, ConfigurationPhase,
+    VernalApplicationBuilder, ApplicationContext, ApplicationEventListener,
 };
 use vernal_beans::{Component, ComponentDefinition, Qualifier};
 use vernal_aop::{Interceptor, LocalInterceptor, Invocation, InvocationFuture,
@@ -76,6 +73,8 @@ impl ApplicationEventListener<TestEvent> for TestEventListener {
     }
 }
 
+// 测试桩：未在本文件直接构造（用于 trait 实现覆盖），保留以镜像其他测试文件结构。
+#[allow(dead_code)]
 struct NopInterceptor;
 impl Component for NopInterceptor {
     fn definition() -> ComponentDefinition {
@@ -88,6 +87,8 @@ impl Interceptor for NopInterceptor {
     }
 }
 
+// 测试桩：未在本文件直接构造（用于 trait 实现覆盖），保留以镜像其他测试文件结构。
+#[allow(dead_code)]
 struct NopLocalInterceptor;
 impl Component for NopLocalInterceptor {
     fn definition() -> ComponentDefinition {
@@ -100,6 +101,8 @@ impl LocalInterceptor for NopLocalInterceptor {
     }
 }
 
+// 测试桩：未在本文件直接构造（用于 trait 实现覆盖），保留以镜像其他测试文件结构。
+#[allow(dead_code)]
 struct AlwaysPointcut;
 impl Pointcut for AlwaysPointcut {
     fn matches(&self, _: &Operation) -> bool { true }
@@ -108,7 +111,7 @@ impl Pointcut for AlwaysPointcut {
 /// 创建测试用 ApplicationContext
 fn build_context() -> Arc<ApplicationContext> {
     let mut builder = VernalApplicationBuilder::new(tokio::runtime::Handle::current());
-    builder.register(SimpleComponent::definition());
+    let _ = builder.register(SimpleComponent::definition());
     Arc::new(builder.build().unwrap())
 }
 

@@ -6,10 +6,8 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 
-use super::async_task_executor::{AsyncTaskExecutor, AsyncTaskResult, DefaultAsyncTaskExecutor};
-use super::async_uncaught_exception_handler::{
-    AsyncUncaughtExceptionHandler, DefaultAsyncUncaughtExceptionHandler,
-};
+use super::async_task_executor::{AsyncTaskExecutor, AsyncTaskResult};
+use super::async_uncaught_exception_handler::AsyncUncaughtExceptionHandler;
 
 /// 方法元数据（异步模块用）。
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -162,7 +160,7 @@ mod tests {
     #[test]
     fn test_determine_async_executor_with_executor() {
         let mut aspect = AbstractAsyncExecutionAspect::new();
-        let executor = Arc::new(DefaultAsyncTaskExecutor::new("test"));
+        let executor = Arc::new(super::super::async_task_executor::DefaultAsyncTaskExecutor::new("test"));
         aspect.set_executor(executor.clone());
         let method = MethodMetadata::new("Foo", "bar", "void");
         let found = aspect.determine_async_executor(&method);

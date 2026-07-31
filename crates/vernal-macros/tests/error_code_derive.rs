@@ -80,7 +80,10 @@ pub enum ContextErrorCode {
 
     /// 带命名字段的变体
     #[error(-2, "生命周期失败")]
-    LifecycleFailed { phase: &'static str },
+    LifecycleFailed {
+        /// 生命周期阶段名称
+        phase: &'static str,
+    },
 
     /// 单元变体
     #[error(-3, "事件总线已关闭")]

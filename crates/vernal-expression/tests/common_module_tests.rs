@@ -1,3 +1,7 @@
+//! common 模块测试。
+//!
+//! 覆盖模板解析（`#{...}`）、`LiteralExpression` 与 `CompositeStringExpression`。
+
 use vernal_expression::common::literal_expression::LiteralExpression;
 use vernal_expression::common::composite_string_expression::CompositeStringExpression;
 use vernal_expression::common::template_aware_expression_parser::TemplateAwareExpressionParser;

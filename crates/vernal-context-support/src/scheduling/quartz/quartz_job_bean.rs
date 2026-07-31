@@ -1,7 +1,5 @@
 //! Quartz 任务 Bean 基类 — 对标 `org.springframework.scheduling.quartz.QuartzJobBean`。
 
-use std::sync::Arc;
-
 /// Quartz 任务 trait。
 ///
 /// 对标 Spring 的 `QuartzJobBean`，所有通过 Spring 管理的 Quartz 任务都实现此 trait。

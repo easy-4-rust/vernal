@@ -13,6 +13,7 @@ pub struct InlineList {
 }
 
 impl InlineList {
+    /// 创建内联列表节点。
     #[must_use]
     pub fn new(elements: Vec<Box<dyn SpelNode>>) -> Self {
         Self { elements }

@@ -13,6 +13,7 @@ pub struct QualifiedIdentifier {
 }
 
 impl QualifiedIdentifier {
+    /// 创建限定标识符节点。
     #[must_use]
     pub fn new(name: String) -> Self {
         Self { name }

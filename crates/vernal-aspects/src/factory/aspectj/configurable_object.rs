@@ -62,6 +62,7 @@ mod tests {
 
     #[test]
     fn test_configurable_object_with_lifetime() {
+        #[allow(dead_code)] // 测试脚手架：仅用于验证带生命周期的标记 trait
         struct TestDomainObjectWithLifetime<'a> {
             name: &'a str,
         }
@@ -91,6 +92,7 @@ mod tests {
     #[test]
     fn test_configurable_object_with_lifetime_trait() {
         fn assert_impl<T: ConfigurableObjectWithLifetime>() {}
+        #[allow(dead_code)] // 测试脚手架：仅用于验证带生命周期的标记 trait
         struct Test<'a>(&'a str);
         impl<'a> ConfigurableObjectWithLifetime for Test<'a> {}
         assert_impl::<Test<'_>>();

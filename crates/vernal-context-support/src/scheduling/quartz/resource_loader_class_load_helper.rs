@@ -17,6 +17,7 @@ pub struct FileSystemResourceLoader {
 }
 
 impl FileSystemResourceLoader {
+    /// 创建基于文件系统的资源加载器。
     pub fn new(base_path: std::path::PathBuf) -> Self {
         Self { base_path }
     }
@@ -43,12 +44,15 @@ pub struct ResourceLoaderClassLoadHelper {
     resource_loader: Box<dyn ResourceLoader>,
 }
 impl ResourceLoaderClassLoadHelper {
+    /// 创建资源加载器类加载助手。
     pub fn new(resource_loader: Box<dyn ResourceLoader>) -> Self {
         Self { resource_loader }
     }
+    /// 获取资源内容。
     pub fn get_resource(&self, name: &str) -> Option<Vec<u8>> {
         self.resource_loader.get_resource(name)
     }
+    /// 加载类。
     pub fn load_class(&self, name: &str) -> Result<Box<dyn std::any::Any + Send + Sync>, String> {
         self.resource_loader.load_class(name)
     }

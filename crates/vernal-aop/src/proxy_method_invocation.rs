@@ -8,6 +8,8 @@ use crate::Operation;
 /// 代理方法调用接口。
 ///
 /// 对应 spring-aop `ProxyMethodInvocation`。
+// 对标 Spring AOP 的 API 脚手架：ProxyMethodInvocation 提供代理调用扩展，暂未被内部调用。
+#[allow(dead_code)]
 pub trait ProxyMethodInvocation: Send + Sync + 'static {
     /// 获取代理对象类型名。
     fn get_proxy_type(&self) -> &str;
@@ -23,12 +25,15 @@ pub trait ProxyMethodInvocation: Send + Sync + 'static {
 }
 
 /// 简单的代理方法调用实现。
+// 对标 Spring AOP 的 API 脚手架：SimpleProxyMethodInvocation 提供默认实现，暂未被内部调用。
+#[allow(dead_code)]
 pub struct SimpleProxyMethodInvocation {
     operation: Operation,
     proxy_type: String,
     user_attributes: std::collections::HashMap<String, String>,
 }
 
+#[allow(dead_code)]
 impl SimpleProxyMethodInvocation {
     /// 创建新的简单代理方法调用。
     pub fn new(operation: Operation, proxy_type: impl Into<String>) -> Self {
@@ -71,6 +76,8 @@ impl std::fmt::Debug for SimpleProxyMethodInvocation {
 /// 引入感知方法匹配器。
 ///
 /// 对应 spring-aop `IntroductionAwareMethodMatcher`。
+// 对标 Spring AOP 的 API 脚手架：IntroductionAwareMethodMatcher 提供引入匹配扩展，暂未被内部调用。
+#[allow(dead_code)]
 pub trait IntroductionAwareMethodMatcher: crate::MethodMatcher {
     /// 是否匹配引入的方法。
     fn matches_introduction(&self, operation: &Operation) -> bool;
@@ -79,6 +86,8 @@ pub trait IntroductionAwareMethodMatcher: crate::MethodMatcher {
 /// AspectJ 优先级信息。
 ///
 /// 对应 spring-aop `AspectJPrecedenceInformation`。
+// 对标 Spring AOP 的 API 脚手架：AspectJPrecedenceInformation 提供切面优先级信息，暂未被内部调用。
+#[allow(dead_code)]
 pub trait AspectJPrecedenceInformation: Send + Sync + 'static {
     /// 获取切面名称。
     fn get_aspect_name(&self) -> &str;

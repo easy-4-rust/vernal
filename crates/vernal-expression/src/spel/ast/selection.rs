@@ -15,7 +15,6 @@ use super::spel_node::SpelNode;
 use super::super::expression_state::ExpressionState;
 use crate::evaluation_context::EvaluationContext;
 use crate::evaluation_exception::EvaluationException;
-use crate::spel::spel_message::SpelMessage;
 use crate::typed_value::{ExpressionValue, TypeDescriptor, TypedValue};
 
 /// 选择变体（对标 Spring `SELECT` / `SELECT_FIRST` / `SELECT_LAST`）。

@@ -34,6 +34,8 @@ pub struct ClientSockJsSession {
     codec: Arc<dyn SockJsMessageCodec>,
     handler: Arc<dyn WebSocketHandler>,
     heartbeat_disabled: AtomicBool,
+    /// 创建时间（对标 Spring `getCreationTime`，暂未使用）。
+    #[allow(dead_code)]
     created_at: Instant,
     last_active: Mutex<Instant>,
 }

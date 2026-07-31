@@ -3,9 +3,8 @@
 //! 对标 Spring 的 `Operator` 抽象类。
 
 use super::spel_node::SpelNode;
-use crate::evaluation_context::EvaluationContext;
 use crate::evaluation_exception::EvaluationException;
-use crate::typed_value::{ExpressionValue, TypedValue};
+use crate::typed_value::TypedValue;
 
 /// 二元运算符 trait。
 ///

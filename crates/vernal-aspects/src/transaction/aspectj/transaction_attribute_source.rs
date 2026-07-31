@@ -3,7 +3,6 @@
 //! 事务属性源负责从方法元数据中获取事务属性。
 
 use std::collections::HashMap;
-use std::sync::Arc;
 
 use super::transaction_attribute::TransactionAttribute;
 
@@ -117,6 +116,7 @@ pub trait TransactionAttributeSource: Send + Sync + 'static {
 /// let source = AnnotationTransactionAttributeSource::new();
 /// // source 可以用于查找方法的事务属性
 /// ```
+#[allow(dead_code)] // Java 镜像脚手架：当前阶段未在切面中实际构造，供后续集成使用
 pub struct AnnotationTransactionAttributeSource {
     /// 方法名 → 事务属性的映射（静态注册表）。
     attributes: HashMap<String, TransactionAttribute>,
@@ -130,6 +130,7 @@ pub struct AnnotationTransactionAttributeSource {
     pub only_public: bool,
 }
 
+#[allow(dead_code)] // Java 镜像脚手架：注册/查找方法目前仅在测试中直接调用
 impl AnnotationTransactionAttributeSource {
     /// 创建新的注解事务属性源。
     ///
@@ -310,7 +311,6 @@ mod tests {
     fn test_transaction_attribute_source_trait_is_send_sync() {
         fn assert_send<T: Send>() {}
         fn assert_sync<T: Sync>() {}
-        fn assert_dyn_send_sync<T: TransactionAttributeSource>() {}
         assert_send::<AnnotationTransactionAttributeSource>();
         assert_sync::<AnnotationTransactionAttributeSource>();
     }
@@ -410,8 +410,6 @@ mod tests {
         let meta = MethodMetadata::new("Foo", "bar", vec![], "void");
         assert!(source.get_transaction_attribute(&meta).is_none());
     }
-
-    #[test]
 
     #[test]
     fn test_annotation_transaction_attribute_source_is_send_sync() {

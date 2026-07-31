@@ -16,6 +16,7 @@ pub struct OpLt {
 }
 
 impl OpLt {
+    /// 创建小于运算符节点。
     #[must_use]
     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
         Self { left, right }

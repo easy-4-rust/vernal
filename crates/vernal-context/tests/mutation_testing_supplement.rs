@@ -5,10 +5,7 @@
 
 use std::sync::Arc;
 
-use vernal_context::{
-    ApplicationContext, ApplicationEnvironment, VernalApplicationBuilder,
-    ContextState,
-};
+use vernal_context::{ApplicationContext, VernalApplicationBuilder};
 use vernal_beans::{Component, ComponentDefinition};
 
 // ════════════════════════════════════════════════════════════════════
@@ -25,7 +22,7 @@ impl Component for SimpleComponent {
 /// 创建测试用 ApplicationContext
 fn build_context() -> Arc<ApplicationContext> {
     let mut builder = VernalApplicationBuilder::new(tokio::runtime::Handle::current());
-    builder.register(SimpleComponent::definition());
+    let _ = builder.register(SimpleComponent::definition());
     Arc::new(builder.build().unwrap())
 }
 

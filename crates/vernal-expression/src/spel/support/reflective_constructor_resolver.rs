@@ -148,7 +148,7 @@ impl ConstructorResolver for ReflectiveConstructorResolver {
     /// 构造器执行器（如果找到），否则 `None`。
     fn resolve(
         &self,
-        context: &dyn EvaluationContext,
+        _context: &dyn EvaluationContext,
         type_name: &str,
         argument_types: &[TypeDescriptor],
     ) -> Result<Option<Box<dyn ConstructorExecutor>>, AccessException> {

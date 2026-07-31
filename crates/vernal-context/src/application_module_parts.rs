@@ -17,16 +17,27 @@ use crate::{
 /// 该对象只在 `register_module` 调用栈内存在，不进入运行期 Context。使用命名字段
 /// 而不是大型元组，确保后续增加贡献种类时不会误换提交顺序。
 pub struct ApplicationModuleParts {
+    /// 组件定义集合。
     pub definitions: Vec<ComponentDefinition>,
+    /// Trait 绑定集合。
     pub bindings: Vec<TraitBinding>,
+    /// 生命周期登记器集合。
     pub lifecycle_registrars: Vec<Box<LifecycleRegistrar>>,
+    /// 事件监听器登记器集合。
     pub event_listener_registrars: Vec<Box<EventListenerRegistrar>>,
+    /// 应用 Runner 登记器集合。
     pub application_runner_registrars: Vec<Box<ApplicationRunnerRegistrar>>,
+    /// 周期任务登记器集合。
     pub scheduled_task_registrars: Vec<Box<ScheduledTaskRegistrar>>,
+    /// 切面顾问登记集合。
     pub advisor_registrations: Vec<AdvisorRegistration>,
+    /// 本地切面顾问登记集合。
     pub local_advisor_registrations: Vec<LocalAdvisorRegistration>,
+    /// 切面操作集合。
     pub operations: Vec<Operation>,
+    /// 环境贡献集合。
     pub environment_contributions: Vec<ModuleEnvironmentContribution>,
+    /// 条件组件模块集合。
     pub conditional_modules: Vec<ConditionalComponentModule>,
 }
 

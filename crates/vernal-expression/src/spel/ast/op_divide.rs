@@ -16,6 +16,7 @@ pub struct OpDivide {
 }
 
 impl OpDivide {
+    /// 创建除法运算符节点。
     #[must_use]
     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
         Self { left, right }

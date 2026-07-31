@@ -72,6 +72,7 @@ pub trait TransactionManager: Send + Sync + 'static {
 /// 默认的空事务管理器（用于测试或占位）。
 ///
 /// 所有事务操作都会直接抛出错误。
+#[allow(dead_code)] // Java 镜像脚手架：占位管理器，供测试与后续接入真实 TransactionManager 使用
 pub struct NoOpTransactionManager;
 
 impl TransactionManager for NoOpTransactionManager {
@@ -87,6 +88,7 @@ impl TransactionManager for NoOpTransactionManager {
 /// 事务挂起信息。
 ///
 /// 对标 Spring 的 `TransactionSynchronizationManager` 中的挂起事务信息。
+#[allow(dead_code)] // Java 镜像脚手架：挂起事务的数据模型，后续接入真实事务同步管理器时使用
 #[derive(Debug, Clone)]
 pub struct SuspendedTransactionInfo {
     /// 挂起的事务名称。

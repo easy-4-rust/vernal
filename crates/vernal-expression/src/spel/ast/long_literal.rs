@@ -18,6 +18,7 @@ pub struct LongLiteral {
 }
 
 impl LongLiteral {
+    /// 创建长整数字面量。
     #[must_use]
     pub fn new(value: i64, original: String) -> Self {
         Self { value, original }

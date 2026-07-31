@@ -2,8 +2,7 @@
 //!
 //! 对标 Spring `org.springframework.core.io.Resource`。
 
-use std::io::{self, Read};
-use std::path::PathBuf;
+use std::io;
 
 /// 资源抽象 trait。
 ///

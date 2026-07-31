@@ -14,6 +14,7 @@ pub struct FunctionReference {
 }
 
 impl FunctionReference {
+    /// 创建函数引用节点。
     #[must_use]
     pub fn new(name: String, arguments: Vec<Box<dyn SpelNode>>) -> Self {
         Self { name, arguments }

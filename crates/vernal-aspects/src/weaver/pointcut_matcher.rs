@@ -70,7 +70,7 @@ impl PointcutMatcher {
     }
 
     /// 匹配 `this(Object)` pointcut。
-    pub fn match_this(method: &MethodMetadata, _type_name: &str) -> bool {
+    pub fn match_this(_method: &MethodMetadata, _type_name: &str) -> bool {
         // 实际实现需要运行时类型检查
         true
     }

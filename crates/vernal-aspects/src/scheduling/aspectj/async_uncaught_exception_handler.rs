@@ -27,6 +27,7 @@ pub trait AsyncUncaughtExceptionHandler: Send + Sync + 'static {
 }
 
 /// 默认的异步异常处理器（打印异常信息）。
+#[allow(dead_code)] // Java 镜像脚手架：当前阶段未在切面中实际构造，供测试使用
 pub struct DefaultAsyncUncaughtExceptionHandler;
 
 impl AsyncUncaughtExceptionHandler for DefaultAsyncUncaughtExceptionHandler {

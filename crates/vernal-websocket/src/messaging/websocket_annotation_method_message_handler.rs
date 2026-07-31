@@ -17,6 +17,8 @@ pub type DestinationHandler = Arc<dyn Fn(Arc<dyn Message>) -> SendFuture<'static
 /// destination 前缀路由处理器。对标 `WebSocketAnnotationMethodMessageHandler`。
 pub struct WebSocketAnnotationMethodMessageHandler {
     handlers: Mutex<HashMap<String, DestinationHandler>>,
+    /// 入站消息通道（对标 Spring `inboundChannel`，暂未使用）。
+    #[allow(dead_code)]
     inbound_channel: Arc<dyn MessageChannel>,
 }
 

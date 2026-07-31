@@ -16,7 +16,7 @@
 use std::sync::{Arc, Mutex};
 
 use tokio::time::{Duration, timeout};
-use vernal_beans::{ComponentDefinition, RegistryBuilder};
+use vernal_beans::ComponentDefinition;
 use vernal_context::{
     ApplicationRunner, Lifecycle, LifecycleFuture, ScheduledTask, TaskSchedule,
     VernalApplicationBuilder,
@@ -81,6 +81,7 @@ impl ApplicationRunner for IndexLoaderRunner {
 }
 
 /// 测试用 Runner：故意失败。
+#[allow(dead_code)] // 镜像 Spring 失败 Runner 测试桩；本文件仅通过类型参数引用。
 struct FailingRunner;
 
 impl ApplicationRunner for FailingRunner {
@@ -99,6 +100,7 @@ impl ApplicationRunner for FailingRunner {
 }
 
 /// 测试用 Lifecycle：等待 Runner 启动前 trace。
+#[allow(dead_code)] // 镜像 Spring 空实现 Lifecycle 测试桩；本文件未直接构造。
 struct NoopLifecycle;
 
 impl Lifecycle for NoopLifecycle {}

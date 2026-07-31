@@ -12,7 +12,7 @@ use super::super::expression_state::ExpressionState;
 use crate::evaluation_context::EvaluationContext;
 use crate::evaluation_exception::EvaluationException;
 use crate::spel::spel_message::SpelMessage;
-use crate::typed_value::{ExpressionValue, TypeDescriptor, TypedValue};
+use crate::typed_value::{ExpressionValue, TypedValue};
 
 /// 自增运算符节点。
 pub struct OpInc {
@@ -22,6 +22,7 @@ pub struct OpInc {
 }
 
 impl OpInc {
+    /// 创建自增运算符节点。
     #[must_use]
     pub fn new(operand: Box<dyn SpelNode>, prefix: bool) -> Self {
         Self { operand, prefix }

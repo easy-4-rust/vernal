@@ -14,6 +14,7 @@ pub struct OperatorNot {
 }
 
 impl OperatorNot {
+    /// 创建逻辑非运算符节点。
     #[must_use]
     pub fn new(operand: Box<dyn SpelNode>) -> Self {
         Self { operand }

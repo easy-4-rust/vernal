@@ -32,10 +32,8 @@ use super::ast::compound_expression::CompoundExpression;
 use super::ast::constructor_reference::ConstructorReference;
 use super::ast::elvis::Elvis;
 use super::ast::function_reference::FunctionReference;
-use super::ast::identifier::Identifier;
 use super::ast::indexer::Indexer;
 use super::ast::inline_list::InlineList;
-use super::ast::inline_map::InlineMap;
 use super::ast::int_literal::IntLiteral;
 use super::ast::method_reference::MethodReference;
 use super::ast::null_literal::NullLiteral;
@@ -712,7 +710,7 @@ impl InternalSpelExpressionParser {
     /// maybe_eat_indexer → [expr]
     ///
     /// 对标 Java `maybeEatIndexer()`（lines 693-705）。
-    fn maybe_eat_indexer(&mut self, null_safe: bool) -> Option<Box<dyn SpelNode>> {
+    fn maybe_eat_indexer(&mut self, _null_safe: bool) -> Option<Box<dyn SpelNode>> {
         if !self.peek_token_kind(&[TokenKind::LSquare]) {
             return None;
         }
@@ -758,15 +756,15 @@ impl InternalSpelExpressionParser {
                 let name = t.string_value().to_lowercase();
                 match name.as_str() {
                     "instanceof" => {
-                        let mut t = self.next_token().unwrap();
+                        let t = self.next_token().unwrap();
                         Some(t.as_instanceof_token())
                     }
                     "matches" => {
-                        let mut t = self.next_token().unwrap();
+                        let t = self.next_token().unwrap();
                         Some(t.as_matches_token())
                     }
                     "between" => {
-                        let mut t = self.next_token().unwrap();
+                        let t = self.next_token().unwrap();
                         Some(t.as_between_token())
                     }
                     _ => None,
@@ -815,7 +813,6 @@ impl Default for InternalSpelExpressionParser {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::expression::Expression;
     use crate::spel::support::standard_evaluation_context::StandardEvaluationContext;
     use crate::typed_value::{ExpressionValue, TypedValue};
 

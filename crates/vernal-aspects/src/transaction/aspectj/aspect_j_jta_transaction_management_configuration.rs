@@ -46,7 +46,7 @@ impl<S: TransactionAttributeSource + 'static> AspectJJtaTransactionManagementCon
             // 使用与基础配置相同的属性源
             let source = self.base.get_aspect()
                 .map(|a| a.get_attribute_source().clone())
-                .unwrap_or_else(|| Arc::new(panic!("Base aspect not registered")));
+                .unwrap_or_else(|| panic!("Base aspect not registered"));
             *guard = Some(Arc::new(JtaAnnotationTransactionAspect::new(source)));
         }
         guard.as_ref().unwrap().clone()
@@ -119,7 +119,6 @@ mod tests {
         let _ = config;
     }
 
-    #[test]
     #[test]
     fn test_jta_configuration_register_jta_aspect_multiple() {
         let config = AspectJJtaTransactionManagementConfiguration::new(Arc::new(MockSource));

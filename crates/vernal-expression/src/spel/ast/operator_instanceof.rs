@@ -12,7 +12,6 @@
 use super::spel_node::SpelNode;
 use crate::evaluation_context::EvaluationContext;
 use crate::evaluation_exception::EvaluationException;
-use crate::spel::spel_message::SpelMessage;
 use crate::typed_value::{ExpressionValue, TypeDescriptor, TypedValue};
 
 /// instanceof 运算符节点。
@@ -155,7 +154,7 @@ mod tests {
     use super::*;
     use crate::typed_value::TypedValue;
 
-    fn eval_instanceof(expr_str: &str, type_name: &str) -> bool {
+    fn eval_instanceof(_expr_str: &str, type_name: &str) -> bool {
         let node = OperatorInstanceof::new(
             Box::new(crate::spel::ast::int_literal::IntLiteral::new(5, "5".to_string())),
             type_name.to_string(),

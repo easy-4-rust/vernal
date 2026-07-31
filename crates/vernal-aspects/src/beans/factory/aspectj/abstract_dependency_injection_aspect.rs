@@ -6,6 +6,7 @@ use super::configurable_object::ConfigurableObject;
 
 /// 方法元数据（DI 模块用）。
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[allow(dead_code)] // Java 镜像脚手架：当前阶段未在切面中实际构造，供测试使用
 pub struct MethodMetadata {
     /// 方法所属类型的完全限定名。
     pub type_name: &'static str,
@@ -13,6 +14,7 @@ pub struct MethodMetadata {
     pub method_name: &'static str,
 }
 
+#[allow(dead_code)] // Java 镜像脚手架：构造函数供测试与后续集成使用
 impl MethodMetadata {
     /// 创建新的方法元数据。
     pub fn new(type_name: &'static str, method_name: &'static str) -> Self {
@@ -104,6 +106,7 @@ mod tests {
     use super::*;
     use super::super::configurable_object::ConfigurableObject;
 
+    #[allow(dead_code)] // 测试脚手架：字段仅用于构造，不参与断言
     struct TestDomainObject {
         name: String,
     }

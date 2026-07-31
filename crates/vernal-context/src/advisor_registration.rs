@@ -8,6 +8,9 @@ use crate::managed_advisor::ManagedAdvisor;
 ///
 /// 相同 `order` 的拦截器依赖稳定注册顺序决定嵌套关系，因此不能把两类声明分别
 /// 存储后再拼接。该枚举只存在于应用构建阶段，计划封存后不会进入运行时热路径。
+///
+/// `ManagedAdvisor` 有意保持 `pub(crate)`（仅构建期使用），此处放宽容许。
+#[allow(private_interfaces)]
 pub enum AdvisorRegistration {
     /// 调用方已经构造完成的普通 Advisor。
     Instance(Advisor),

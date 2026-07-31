@@ -169,6 +169,7 @@ mod tests {
     use super::*;
 
     #[derive(Debug)]
+    #[allow(dead_code)] // 测试辅助结构：字段仅用于构造 Object 值，无需读取。
     struct Point {
         x: i32,
     }

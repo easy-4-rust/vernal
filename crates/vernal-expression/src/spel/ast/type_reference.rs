@@ -18,6 +18,7 @@ pub struct TypeReference {
 }
 
 impl TypeReference {
+    /// 创建类型引用节点。
     #[must_use]
     pub fn new(type_name: String) -> Self {
         Self { type_name }

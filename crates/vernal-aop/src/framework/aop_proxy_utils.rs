@@ -23,7 +23,7 @@ impl AopProxyUtils {
     /// 检查顾问是否完成。
     pub fn complete_proxied_interfaces(advisors: &[&Advisor]) -> Vec<String> {
         let mut interfaces = Vec::new();
-        for advisor in advisors {
+        for _advisor in advisors {
             // 简化实现：添加默认接口
             interfaces.push("org.springframework.aop.SpringProxy".to_string());
             interfaces.push("org.springframework.aop.framework.Advised".to_string());

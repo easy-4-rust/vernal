@@ -113,8 +113,8 @@ impl Pointcut for AlwaysPointcut {
 #[tokio::test]
 async fn test_lifecycle_closure_via_build() {
     let mut builder = VernalApplicationBuilder::new(tokio::runtime::Handle::current());
-    builder.register(SimpleComponent::definition());
-    builder.register(TestLifecycle::definition());
+    let _ = builder.register(SimpleComponent::definition());
+    let _ = builder.register(TestLifecycle::definition());
     builder.lifecycle::<TestLifecycle>();
     let result = builder.build();
     assert!(result.is_ok(), "build with lifecycle should succeed: {:?}", result.err());
@@ -128,8 +128,8 @@ async fn test_lifecycle_closure_via_build() {
 #[tokio::test]
 async fn test_event_listener_closure_via_build() {
     let mut builder = VernalApplicationBuilder::new(tokio::runtime::Handle::current());
-    builder.register(SimpleComponent::definition());
-    builder.register(TestEventListener::definition());
+    let _ = builder.register(SimpleComponent::definition());
+    let _ = builder.register(TestEventListener::definition());
     builder.event_listener::<TestEvent, TestEventListener>();
     let result = builder.build();
     assert!(result.is_ok(), "build with event_listener should succeed: {:?}", result.err());
@@ -143,8 +143,8 @@ async fn test_event_listener_closure_via_build() {
 #[tokio::test]
 async fn test_application_runner_closure_via_build() {
     let mut builder = VernalApplicationBuilder::new(tokio::runtime::Handle::current());
-    builder.register(SimpleComponent::definition());
-    builder.register(TestRunner::definition());
+    let _ = builder.register(SimpleComponent::definition());
+    let _ = builder.register(TestRunner::definition());
     builder.application_runner::<TestRunner>();
     let result = builder.build();
     assert!(result.is_ok(), "build with application_runner should succeed: {:?}", result.err());
@@ -158,8 +158,8 @@ async fn test_application_runner_closure_via_build() {
 #[tokio::test]
 async fn test_scheduled_task_closure_via_build() {
     let mut builder = VernalApplicationBuilder::new(tokio::runtime::Handle::current());
-    builder.register(SimpleComponent::definition());
-    builder.register(TestTask::definition());
+    let _ = builder.register(SimpleComponent::definition());
+    let _ = builder.register(TestTask::definition());
     builder.scheduled_task::<TestTask>();
     let result = builder.build();
     assert!(result.is_ok(), "build with scheduled_task should succeed: {:?}", result.err());
@@ -173,8 +173,8 @@ async fn test_scheduled_task_closure_via_build() {
 #[tokio::test]
 async fn test_advisor_component_via_build() {
     let mut builder = VernalApplicationBuilder::new(tokio::runtime::Handle::current());
-    builder.register(SimpleComponent::definition());
-    builder.register(NopInterceptor::definition());
+    let _ = builder.register(SimpleComponent::definition());
+    let _ = builder.register(NopInterceptor::definition());
     builder.advisor_component::<NopInterceptor, AlwaysPointcut>(AlwaysPointcut, 0);
     let result = builder.build();
     assert!(result.is_ok(), "build with advisor_component should succeed: {:?}", result.err());
@@ -184,8 +184,8 @@ async fn test_advisor_component_via_build() {
 #[tokio::test]
 async fn test_local_advisor_component_via_build() {
     let mut builder = VernalApplicationBuilder::new(tokio::runtime::Handle::current());
-    builder.register(SimpleComponent::definition());
-    builder.register(NopLocalInterceptor::definition());
+    let _ = builder.register(SimpleComponent::definition());
+    let _ = builder.register(NopLocalInterceptor::definition());
     builder.local_advisor_component::<NopLocalInterceptor, AlwaysPointcut>(AlwaysPointcut, 0);
     let result = builder.build();
     assert!(result.is_ok(), "build with local_advisor_component should succeed: {:?}", result.err());
@@ -201,12 +201,12 @@ async fn test_combined_registration_via_build() {
     let mut builder = VernalApplicationBuilder::new(tokio::runtime::Handle::current());
 
     // 注册组件
-    builder.register(SimpleComponent::definition());
-    builder.register(TestEventListener::definition());
-    builder.register(TestRunner::definition());
-    builder.register(TestTask::definition());
-    builder.register(TestLifecycle::definition());
-    builder.register(NopInterceptor::definition());
+    let _ = builder.register(SimpleComponent::definition());
+    let _ = builder.register(TestEventListener::definition());
+    let _ = builder.register(TestRunner::definition());
+    let _ = builder.register(TestTask::definition());
+    let _ = builder.register(TestLifecycle::definition());
+    let _ = builder.register(NopInterceptor::definition());
 
     // 注册生命周期
     builder.lifecycle::<TestLifecycle>();

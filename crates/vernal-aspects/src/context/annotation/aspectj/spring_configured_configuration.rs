@@ -2,7 +2,7 @@
 //!
 //! `@Configuration` 类：注册 `AnnotationBeanConfigurerAspect` 单例 Bean。
 
-use std::sync::{Arc, RwLock};
+use std::sync::RwLock;
 
 /// Spring Configured 配置。
 ///

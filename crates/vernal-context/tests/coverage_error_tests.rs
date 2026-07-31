@@ -1,7 +1,6 @@
 //! 覆盖率提升测试 - 覆盖 ApplicationBuildError 和其他错误类型
 
 use std::error::Error;
-use std::sync::Arc;
 
 use vernal_context::{
     ApplicationBuildError, ConditionError, ContextError, ContextState,

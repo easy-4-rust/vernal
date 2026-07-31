@@ -15,6 +15,7 @@ pub struct VariableReference {
 }
 
 impl VariableReference {
+    /// 创建变量引用节点。
     #[must_use]
     pub fn new(name: String) -> Self {
         Self { name }

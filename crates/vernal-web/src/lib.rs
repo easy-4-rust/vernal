@@ -27,6 +27,6 @@ pub use request_id::RequestId;
 pub use route_metadata::RouteMetadata;
 pub use security_principal::SecurityPrincipal;
 pub use transport_kind::TransportKind;
-pub use vernal_beans::{ScopeError, ScopeFuture, ScopeState};
+pub use vernal_beans::{ScopeError, ScopeState};
 pub use web_failure::WebFailure;
 pub use web_request_scope::WebRequestScope;

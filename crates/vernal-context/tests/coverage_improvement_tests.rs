@@ -4,8 +4,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use vernal_context::{
-    ApplicationEnvironment, ApplicationRunner, ConfigurationProperties,
-    ConfigurationPropertiesError, Lifecycle, ScheduledTask, TaskSchedule,
+    ApplicationRunner, Lifecycle, ScheduledTask, TaskSchedule,
     VernalApplicationBuilder, ApplicationContext,
 };
 use vernal_beans::{Component, ComponentDefinition, Qualifier, TraitBinding};
@@ -70,7 +69,7 @@ impl vernal_context::ApplicationEventListener<TestEvent> for TestEventListener {
 /// 创建测试用 ApplicationContext
 fn build_context() -> Arc<ApplicationContext> {
     let mut builder = VernalApplicationBuilder::new(tokio::runtime::Handle::current());
-    builder.register(SimpleComponent::definition());
+    let _ = builder.register(SimpleComponent::definition());
     Arc::new(builder.build().unwrap())
 }
 

@@ -2,7 +2,6 @@
 //!
 //! 把应用层错误编码为 STOMP ERROR 帧。
 
-use crate::WebSocketError;
 use crate::messaging::sub_protocol_error_handler::{
     SubProtocolErrorFuture, SubProtocolErrorHandler,
 };

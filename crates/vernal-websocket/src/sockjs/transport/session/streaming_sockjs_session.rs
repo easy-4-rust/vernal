@@ -12,9 +12,7 @@ use std::time::Duration;
 use crate::sockjs::frame::sockjs_frame::SockJsFrame;
 use crate::sockjs::frame::sockjs_frame_format::SockJsFrameFormat;
 use crate::sockjs::frame::sockjs_message_codec::SockJsMessageCodec;
-use crate::sockjs::transport::session::abstract_sockjs_session::{
-    AbstractSockJsSession, SessionLifecycle,
-};
+use crate::sockjs::transport::session::abstract_sockjs_session::AbstractSockJsSession;
 
 /// StreamingSockJsSession。对标 Spring `StreamingSockJsSession`。
 ///

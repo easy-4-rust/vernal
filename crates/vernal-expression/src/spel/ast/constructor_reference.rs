@@ -14,6 +14,7 @@ pub struct ConstructorReference {
 }
 
 impl ConstructorReference {
+    /// 创建构造器调用节点。
     #[must_use]
     pub fn new(type_name: String, arguments: Vec<Box<dyn SpelNode>>) -> Self {
         Self {

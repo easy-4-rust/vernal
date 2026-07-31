@@ -29,6 +29,8 @@ use super::cache_operation_source::{CacheOperationSource, MethodMetadata};
 /// ```
 pub struct AnnotationCacheAspect<S: CacheOperationSource> {
     inner: AbstractCacheAspect<S>,
+    /// 缓存操作源（Java 镜像字段，当前阶段由 `inner` 持有，后续直接使用）。
+    #[allow(dead_code)]
     cache_operation_source: Arc<S>,
 }
 

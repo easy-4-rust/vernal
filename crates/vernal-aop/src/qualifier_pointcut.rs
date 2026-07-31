@@ -42,7 +42,6 @@ impl Pointcut for QualifierPointcut {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::Operation;
 
     #[test]
     fn qualifier_pointcut_new_valid() {

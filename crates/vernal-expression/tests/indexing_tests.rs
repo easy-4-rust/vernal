@@ -1,3 +1,5 @@
+//! 索引访问表达式测试（`[index]` / `[key]`）。
+
 use vernal_expression::spel::spel_expression_parser::SpelExpressionParser;
 use vernal_expression::spel::support::standard_evaluation_context::StandardEvaluationContext;
 use vernal_expression::*;

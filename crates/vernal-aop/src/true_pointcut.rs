@@ -10,6 +10,8 @@ use crate::pointcut::Pointcut;
 /// 对应 spring-aop `TruePointcut`。
 ///
 /// 这是一个单例，始终返回 `true`。
+// 对标 Spring AOP 的 API 脚手架：TruePointcut 为始终匹配的切点单例，暂未被内部调用。
+#[allow(dead_code)]
 pub struct TruePointcut;
 
 impl Pointcut for TruePointcut {
@@ -31,6 +33,8 @@ impl std::fmt::Display for TruePointcut {
 }
 
 /// 获取 TruePointcut 单例。
+// 对标 Spring AOP 的 API 脚手架：true_pointcut 返回 TruePointcut 单例引用，暂未被内部调用。
+#[allow(dead_code)]
 pub fn true_pointcut() -> &'static TruePointcut {
     &TruePointcut
 }

@@ -15,6 +15,7 @@ pub struct StringLiteral {
 }
 
 impl StringLiteral {
+    /// 创建字符串字面量。
     #[must_use]
     pub fn new(value: String) -> Self {
         Self { value }

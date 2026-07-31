@@ -263,7 +263,6 @@ mod additional_tests {
 #[cfg(test)]
 mod proxy_creator_tests {
     use super::*;
-    use crate::any_pointcut::AnyPointcut;
 
     struct TestInterceptor;
     impl crate::Interceptor for TestInterceptor {

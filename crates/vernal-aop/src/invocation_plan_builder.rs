@@ -84,7 +84,7 @@ impl InvocationPlanBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{AnyPointcut, Interceptor, Invocation, InvocationFuture, Next, Operation};
+    use crate::{AnyPointcut, Interceptor, Invocation, Next, Operation};
 
     struct TestInterceptor;
     impl Interceptor for TestInterceptor {

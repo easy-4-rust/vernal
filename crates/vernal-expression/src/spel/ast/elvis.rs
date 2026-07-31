@@ -16,6 +16,7 @@ pub struct Elvis {
 }
 
 impl Elvis {
+    /// 创建 Elvis 运算符节点。
     #[must_use]
     pub fn new(expression: Box<dyn SpelNode>, default: Box<dyn SpelNode>) -> Self {
         Self {

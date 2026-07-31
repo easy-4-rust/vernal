@@ -2,10 +2,12 @@
 use super::abstract_jcache_operation::AbstractJCacheOperation;
 use super::jcache_operation_source::{JCacheOperation, JCacheOperationType};
 
+/// @CachePut 操作。
 pub struct CachePutOperation {
     inner: AbstractJCacheOperation,
 }
 impl CachePutOperation {
+    /// 创建 @CachePut 操作。
     pub fn new(cache_name: String) -> Self {
         Self {
             inner: AbstractJCacheOperation::new(cache_name, JCacheOperationType::CachePut),

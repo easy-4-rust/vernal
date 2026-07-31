@@ -64,7 +64,7 @@ impl<S: TransactionAttributeSource> JtaAnnotationTransactionAspect<S> {
     /// 对应 Spring 的 `transactionalMethodExecution(Object txObject)`。
     pub fn transactional_method_execution(
         &self,
-        method: &MethodMetadata,
+        _method: &MethodMetadata,
         type_has_jta: bool,
         type_in_scope: bool,
         method_has_jta: bool,

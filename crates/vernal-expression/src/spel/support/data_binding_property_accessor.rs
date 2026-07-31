@@ -11,7 +11,7 @@
 use crate::access_exception::AccessException;
 use crate::evaluation_context::EvaluationContext;
 use crate::property_accessor::PropertyAccessor;
-use crate::typed_value::{TypeDescriptor, TypedValue};
+use crate::typed_value::TypedValue;
 
 use super::reflective_property_accessor::ReflectivePropertyAccessor;
 
@@ -42,7 +42,7 @@ impl DataBindingPropertyAccessor {
     /// # 参数
     ///
     /// - `allow_write` — 是否允许写操作
-    fn new(allow_write: bool) -> Self {
+    fn new(_allow_write: bool) -> Self {
         Self {
             delegate: ReflectivePropertyAccessor::new(),
         }
@@ -156,7 +156,7 @@ impl PropertyAccessor for DataBindingPropertyAccessor {
 mod tests {
     use super::*;
     use crate::spel::support::standard_evaluation_context::StandardEvaluationContext;
-    use crate::typed_value::ExpressionValue;
+    use crate::typed_value::{ExpressionValue, TypeDescriptor};
 
     #[test]
     fn for_read_only_access() {

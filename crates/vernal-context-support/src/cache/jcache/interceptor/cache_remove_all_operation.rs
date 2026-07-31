@@ -2,10 +2,12 @@
 use super::abstract_jcache_operation::AbstractJCacheOperation;
 use super::jcache_operation_source::{JCacheOperation, JCacheOperationType};
 
+/// @CacheRemoveAll 操作。
 pub struct CacheRemoveAllOperation {
     inner: AbstractJCacheOperation,
 }
 impl CacheRemoveAllOperation {
+    /// 创建 @CacheRemoveAll 操作。
     pub fn new(cache_name: String) -> Self {
         Self {
             inner: AbstractJCacheOperation::new(cache_name, JCacheOperationType::CacheRemoveAll),

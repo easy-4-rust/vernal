@@ -53,6 +53,8 @@ impl std::error::Error for AspectInstanceError {}
 
 /// 单例切面实例工厂。
 pub struct SingletonAspectInstanceFactory {
+    // 对标 Spring AOP 的 API 脚手架：保留切面实例引用，当前 get_aspect_instance 不返回克隆实例。
+    #[allow(dead_code)]
     instance: Box<dyn Any + Send + Sync>,
     aspect_type: String,
 }

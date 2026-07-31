@@ -4,7 +4,7 @@
 //! 在 Rust 中使用 tokio 任务模拟调度器。
 
 use std::sync::Arc;
-use tokio::sync::{Mutex, mpsc, oneshot};
+use tokio::sync::{Mutex, oneshot};
 
 /// 调度器状态。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

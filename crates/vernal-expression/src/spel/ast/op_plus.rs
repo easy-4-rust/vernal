@@ -21,6 +21,7 @@ pub struct OpPlus {
 }
 
 impl OpPlus {
+    /// 创建加法运算符节点。
     #[must_use]
     pub fn new(left: Box<dyn SpelNode>, right: Box<dyn SpelNode>) -> Self {
         Self { left, right }

@@ -53,11 +53,14 @@ pub trait TargetSource: Send + Sync + 'static {
 /// 单例目标源。
 ///
 /// 始终返回同一个目标对象。
+// 对标 Spring AOP 的 API 脚手架：SingletonTargetSource 保留目标引用，暂未被内部调用。
+#[allow(dead_code)]
 pub struct SingletonTargetSource {
     target: Box<dyn Any + Send + Sync>,
     target_class: Option<String>,
 }
 
+#[allow(dead_code)]
 impl SingletonTargetSource {
     /// 创建单例目标源。
     pub fn new<T: Any + Send + Sync + 'static>(target: T) -> Self {
@@ -109,11 +112,14 @@ impl fmt::Debug for SingletonTargetSource {
 /// 基于闭包的目标源。
 ///
 /// 每次调用 `get_target()` 时通过闭包创建新目标。
+// 对标 Spring AOP 的 API 脚手架：LazyTargetSource 提供惰性目标源，暂未被内部调用。
+#[allow(dead_code)]
 pub struct LazyTargetSource<F: Fn() -> Result<Box<dyn Any + Send + Sync>, TargetSourceError> + Send + Sync + 'static> {
     factory: F,
     target_class: Option<String>,
 }
 
+#[allow(dead_code)]
 impl<F: Fn() -> Result<Box<dyn Any + Send + Sync>, TargetSourceError> + Send + Sync + 'static>
     LazyTargetSource<F>
 {

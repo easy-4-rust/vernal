@@ -12,7 +12,7 @@ use crate::sockjs::client::abstract_client_sockjs_session::ClientSockJsSession;
 use crate::sockjs::client::default_transport_request::DefaultTransportRequest;
 use crate::sockjs::client::info_receiver::InfoReceiver;
 use crate::sockjs::client::sockjs_url_info::SockJsUrlInfo;
-use crate::sockjs::client::transport::{Transport, TransportRequest};
+use crate::sockjs::client::transport::Transport;
 use crate::sockjs::frame::json_sockjs_message_codec::JsonSockJsMessageCodec;
 use crate::sockjs::frame::sockjs_message_codec::SockJsMessageCodec;
 use crate::sockjs::transport::transport_type::TransportType;

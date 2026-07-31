@@ -1,3 +1,7 @@
+//! 构造器引用表达式测试（`new Foo(...)`）。
+//!
+//! 覆盖构造器表达式的解析与求值路径。
+
 use vernal_expression::spel::spel_expression_parser::SpelExpressionParser;
 use vernal_expression::spel::support::standard_evaluation_context::StandardEvaluationContext;
 use vernal_expression::*;

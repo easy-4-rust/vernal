@@ -5,7 +5,6 @@
 use std::sync::Arc;
 
 use crate::sockjs::transport::SockJsServiceConfig;
-use crate::sockjs::transport::sockjs_session::SockJsSession;
 
 /// 共享配置持有者。
 pub struct AbstractTransportHandler {

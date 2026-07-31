@@ -42,7 +42,6 @@ impl Pointcut for TagPointcut {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::Operation;
 
     #[test]
     fn tag_pointcut_new_valid() {

@@ -28,6 +28,8 @@ pub struct ReflectiveMethodInvocation {
     /// 代理类型名。
     proxy_type: String,
     /// 用户属性。
+    // 对标 Spring AOP 的 API 脚手架：保留用户属性映射，反射调用暂未被内部使用。
+    #[allow(dead_code)]
     user_attributes: HashMap<String, String>,
     /// 当前拦截器索引。
     current_index: usize,

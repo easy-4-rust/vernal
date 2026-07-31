@@ -5,7 +5,6 @@
 use std::any::Any;
 use std::future::Future;
 use std::pin::Pin;
-use std::sync::Arc;
 
 /// 异步任务执行结果。
 #[derive(Debug)]
@@ -43,10 +42,12 @@ pub trait AsyncTaskExecutor: Send + Sync + 'static {
 
 /// 默认的阻塞执行器（不真正异步，用于测试或回退）。
 #[derive(Debug)]
+#[allow(dead_code)] // Java 镜像脚手架：当前阶段未在切面中实际构造，供测试与回退使用
 pub struct DefaultAsyncTaskExecutor {
     name: String,
 }
 
+#[allow(dead_code)] // Java 镜像脚手架：构造函数供测试与后续集成使用
 impl DefaultAsyncTaskExecutor {
     /// 创建默认执行器。
     pub fn new(name: impl Into<String>) -> Self {

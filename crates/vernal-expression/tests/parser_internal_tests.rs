@@ -15,6 +15,7 @@ fn eval(expr: &str) -> ExpressionValue {
     result.value().clone()
 }
 
+#[allow(dead_code)] // 测试辅助函数：供后续带根对象求值用例复用。
 fn eval_with_root(expr: &str, root: TypedValue) -> ExpressionValue {
     let parser = SpelExpressionParser::new();
     let parsed = parser.parse_expression(expr).unwrap();

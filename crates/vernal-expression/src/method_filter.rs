@@ -3,8 +3,6 @@
 //! Spring 用 `MethodFilter` 限定 `ReflectiveMethodResolver` 在某类型上能解析哪些方法。
 //! 在 Rust 中通过 `dyn Fn` 或 trait 对象实现。
 
-use crate::method_resolver::MethodResolver;
-
 /// 方法过滤器（对标 `org.springframework.expression.MethodFilter`）。
 pub trait MethodFilter: Send + Sync {
     /// 决定是否允许该方法（名称 + 参数类型匹配）。
@@ -15,4 +13,5 @@ pub trait MethodFilter: Send + Sync {
 /// `ReflectiveMethodResolver` 注册表（按类型）。
 ///
 /// 对标 Spring `StandardEvaluationContext.registerMethodFilter(Class<?>, MethodFilter)`。
+#[allow(dead_code)] // 保留作为 Spring MethodFilter 注册表的 Rust 镜像，供后续实现注册方法过滤器使用。
 pub type MethodFilterRegistry = std::collections::HashMap<std::any::TypeId, Vec<Box<dyn MethodFilter>>>;

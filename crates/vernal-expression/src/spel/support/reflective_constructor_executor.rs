@@ -12,7 +12,7 @@
 use crate::access_exception::AccessException;
 use crate::constructor_executor::ConstructorExecutor;
 use crate::evaluation_context::EvaluationContext;
-use crate::typed_value::{ExpressionValue, TypeDescriptor, TypedValue};
+use crate::typed_value::TypedValue;
 
 /// 反射构造器执行器（对标 Spring `ReflectiveConstructorExecutor`）。
 ///
@@ -57,6 +57,7 @@ impl ConstructorExecutor for ReflectiveConstructorExecutor {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::typed_value::{ExpressionValue, TypeDescriptor};
 
     #[test]
     fn create_executor() {

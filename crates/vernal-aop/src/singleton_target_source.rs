@@ -13,6 +13,8 @@ use crate::target_source_error::TargetSourceError;
 ///
 /// 始终返回同一个目标对象。
 pub struct SingletonTargetSource {
+    // 对标 Spring AOP 的 API 脚手架：保留目标对象引用，当前 get_target 不返回克隆目标。
+    #[allow(dead_code)]
     target: Box<dyn Any + Send + Sync>,
     target_class: Option<String>,
 }

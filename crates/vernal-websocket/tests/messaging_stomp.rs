@@ -2,11 +2,9 @@
 
 use std::sync::Arc;
 
-use bytes::Bytes;
 use http::HeaderMap;
 use vernal_messaging::{
-    DefaultSimpUserRegistry, GenericMessage, InMemoryChannel, Message, MessageChannel,
-    SimpSubscription,
+    DefaultSimpUserRegistry, GenericMessage, InMemoryChannel, MessageChannel, SimpSubscription,
 };
 use vernal_websocket::MemoryWebSocketSession;
 use vernal_websocket::messaging::{
@@ -14,7 +12,7 @@ use vernal_websocket::messaging::{
     StompSubProtocolErrorHandler, StompSubProtocolHandler, SubProtocolErrorHandler,
     SubProtocolEvent, SubProtocolHandler, WebSocketStompClient,
 };
-use vernal_websocket::{WebSocketMessage, WebSocketSession};
+use vernal_websocket::WebSocketMessage;
 
 #[tokio::test]
 async fn stomp_sub_protocol_handler_decodes_connect_and_sends_to_inbound_channel() {

@@ -1,10 +1,8 @@
 //! 对标 Spring `spring-websocket` SockJS 测试矩阵：session 状态机、transport handler、HTTP 请求处理。
 
-use std::sync::Arc;
 use std::time::Duration;
 
 use vernal_websocket::sockjs::frame::default_sockjs_frame_format::DefaultSockJsFrameFormat;
-use vernal_websocket::sockjs::frame::json_sockjs_message_codec::JsonSockJsMessageCodec;
 use vernal_websocket::sockjs::frame::sockjs_frame::SockJsFrame;
 use vernal_websocket::sockjs::frame::sockjs_frame_type::SockJsFrameType;
 use vernal_websocket::sockjs::transport::SockJsServiceConfig;
@@ -13,7 +11,7 @@ use vernal_websocket::sockjs::transport::handler::{
     HttpReceivingTransportHandler, HttpSendingTransportHandler, WebSocketTransportHandler,
 };
 use vernal_websocket::sockjs::transport::session::{
-    AbstractSockJsSession, HttpSockJsSession, SessionLifecycle, WebSocketServerSockJsSession,
+    AbstractSockJsSession, HttpSockJsSession, WebSocketServerSockJsSession,
 };
 use vernal_websocket::sockjs::transport::transport_handler::TransportHandler;
 

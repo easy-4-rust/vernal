@@ -13,11 +13,13 @@ pub struct Identifier {
 }
 
 impl Identifier {
+    /// 创建标识符节点。
     #[must_use]
     pub fn new(name: String) -> Self {
         Self { name }
     }
 
+    /// 获取标识符名称。
     #[must_use]
     pub fn name(&self) -> &str {
         &self.name

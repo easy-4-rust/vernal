@@ -6,6 +6,8 @@ use super::abstract_jcache_configuration::AbstractJCacheConfiguration;
 ///
 /// 对标 Spring 的 `ProxyJCacheConfiguration`，启用 @CacheResult 等注解支持。
 pub struct ProxyJCacheConfiguration {
+    // 对标 Spring 的内部配置，暂未读取（Java 镜像脚手架）。
+    #[allow(dead_code)]
     inner: AbstractJCacheConfiguration,
 }
 

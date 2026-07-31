@@ -14,7 +14,9 @@ pub enum HealthStatus {
 /// 健康信息。
 #[derive(Debug, Clone)]
 pub struct Health {
+    /// 健康状态。
     pub status: HealthStatus,
+    /// 检查细节（指标名称到描述字符串的映射）。
     pub details: Vec<(&'static str, String)>,
 }
 

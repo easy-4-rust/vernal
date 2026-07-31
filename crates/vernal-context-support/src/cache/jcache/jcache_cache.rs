@@ -19,6 +19,8 @@ pub struct JCacheCache {
     /// 简单的缓存存储
     store: Arc<RwLock<HashMap<String, Arc<dyn Any + Send + Sync>>>>,
     /// 是否允许 null 值
+    // 对标 Spring 的 allowNullValues 属性，暂未读取（Java 镜像脚手架）。
+    #[allow(dead_code)]
     allow_null_values: bool,
 }
 

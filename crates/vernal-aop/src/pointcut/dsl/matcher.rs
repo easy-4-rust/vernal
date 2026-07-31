@@ -7,7 +7,7 @@
 use crate::Operation;
 
 use super::ast::PointcutExpr;
-use super::pattern::{ExecutionPattern, ModulePattern};
+use super::pattern::ExecutionPattern;
 
 /// 函数描述符（用于切点匹配的中间结构）。
 ///
@@ -149,7 +149,7 @@ impl ExecutionPattern {
 mod tests {
     use super::*;
     use crate::OperationMetadata;
-    use crate::pointcut::dsl::pattern::{NamePattern, Visibility};
+    use crate::pointcut::dsl::pattern::{ModulePattern, NamePattern, Visibility};
 
     #[test]
     fn execution_pattern_matches_public_exact_name() {

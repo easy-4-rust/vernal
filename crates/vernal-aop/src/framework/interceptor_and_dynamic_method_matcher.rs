@@ -63,7 +63,6 @@ impl std::fmt::Debug for InterceptorAndDynamicMethodMatcher {
 mod tests {
     use super::*;
     use crate::true_method_matcher::TrueMethodMatcher;
-    use crate::simple_interceptor::SimpleInterceptor;
 
     struct TestInterceptor;
     impl crate::Interceptor for TestInterceptor {
@@ -95,7 +94,6 @@ mod tests {
 #[cfg(test)]
 mod additional_tests {
     use super::*;
-    use crate::Operation;
     use crate::true_method_matcher::TrueMethodMatcher;
 
     struct TestInterceptor;

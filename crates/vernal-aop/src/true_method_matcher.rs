@@ -10,6 +10,8 @@ use crate::Operation;
 /// 对应 spring-aop `TrueMethodMatcher`。
 ///
 /// 这是一个单例，始终返回 `true`。
+// 对标 Spring AOP 的 API 脚手架：TrueMethodMatcher 为 TruePointcut 的方法匹配单例，暂未被内部调用。
+#[allow(dead_code)]
 pub struct TrueMethodMatcher;
 
 impl MethodMatcher for TrueMethodMatcher {
@@ -35,6 +37,8 @@ impl std::fmt::Display for TrueMethodMatcher {
 }
 
 /// 获取 TrueMethodMatcher 单例。
+// 对标 Spring AOP 的 API 脚手架：true_method_matcher 返回 TrueMethodMatcher 单例引用，暂未被内部调用。
+#[allow(dead_code)]
 pub fn true_method_matcher() -> &'static TrueMethodMatcher {
     &TrueMethodMatcher
 }

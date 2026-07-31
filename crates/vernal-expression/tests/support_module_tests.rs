@@ -27,7 +27,7 @@ use vernal_expression::spel::token::Token;
 use vernal_expression::spel::token_kind::TokenKind;
 // Re-exported types from the crate root (modules are private)
 use vernal_expression::{
-    AccessException, BeanResolver, ConstructorResolver, EvaluationContext,
+    BeanResolver, ConstructorResolver, EvaluationContext,
     EvaluationException, IndexAccessor, MethodResolver, OperatorOverloader,
     PropertyAccessor, TypeComparator, TypeConverter, TypeDescriptor,
     PrimitiveKind, TypeLocator, TypedValue,
@@ -545,9 +545,9 @@ mod expression_state_tests {
         let ctx = DummyCtx::null_root();
         let mut state = ExpressionState::new(&ctx);
         // operation_count is private, but track_operation should not panic
-        state.track_operation();
-        state.track_operation();
-        state.track_operation();
+        let _ = state.track_operation();
+        let _ = state.track_operation();
+        let _ = state.track_operation();
     }
 
     #[test]

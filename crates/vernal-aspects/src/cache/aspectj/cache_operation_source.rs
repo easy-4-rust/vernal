@@ -48,6 +48,7 @@ pub trait CacheOperationSource: Send + Sync + 'static {
 /// 基于注解的缓存操作源。
 ///
 /// 对标 Spring 的 `AnnotationCacheOperationSource`。
+#[allow(dead_code)] // Java 镜像脚手架：当前阶段未在切面中实际构造，供后续集成使用
 pub struct AnnotationCacheOperationSource {
     /// 方法名 → 缓存操作元数据的映射。
     operations: std::collections::HashMap<String, CacheOperationMetadata>,
@@ -55,6 +56,7 @@ pub struct AnnotationCacheOperationSource {
     class_operations: std::collections::HashMap<String, CacheOperationMetadata>,
 }
 
+#[allow(dead_code)] // Java 镜像脚手架：注册操作目前仅在测试中直接调用
 impl AnnotationCacheOperationSource {
     /// 创建新的注解缓存操作源。
     pub fn new() -> Self {
@@ -98,7 +100,6 @@ impl CacheOperationSource for AnnotationCacheOperationSource {
 mod tests {
     use super::*;
     use crate::cache::aspectj::cache_operation::{CacheOperation, CacheOperationMetadata};
-    use std::sync::Arc;
 
     #[test]
     fn test_method_metadata() {
@@ -186,7 +187,6 @@ mod tests {
     fn test_cache_operation_source_trait_is_send_sync() {
         fn assert_send<T: Send>() {}
         fn assert_sync<T: Sync>() {}
-        fn assert_dyn_send_sync<T: CacheOperationSource>() {}
         assert_send::<AnnotationCacheOperationSource>();
         assert_sync::<AnnotationCacheOperationSource>();
     }

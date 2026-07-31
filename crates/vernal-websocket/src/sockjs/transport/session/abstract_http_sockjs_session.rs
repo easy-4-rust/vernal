@@ -4,17 +4,13 @@
 //! HTTP 传输 SockJS session：接收 POST 消息、按 transport 格式推送帧。
 //! 对标 Spring `AbstractHttpSockJsSession` + `PollingSockJsSession` + `StreamingSockJsSession`。
 
-use std::sync::Arc;
 use std::time::Duration;
 
 use tokio::sync::Mutex;
 
 use crate::sockjs::frame::sockjs_frame::SockJsFrame;
 use crate::sockjs::frame::sockjs_frame_format::SockJsFrameFormat;
-use crate::sockjs::frame::sockjs_message_codec::SockJsMessageCodec;
-use crate::sockjs::transport::session::abstract_sockjs_session::{
-    AbstractSockJsSession, SessionLifecycle,
-};
+use crate::sockjs::transport::session::abstract_sockjs_session::AbstractSockJsSession;
 
 /// HTTP SockJS session。合并 AbstractHttpSockJsSession + PollingSockJsSession + StreamingSockJsSession。
 pub struct HttpSockJsSession {

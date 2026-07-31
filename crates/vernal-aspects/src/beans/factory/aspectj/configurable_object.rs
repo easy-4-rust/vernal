@@ -30,6 +30,7 @@ pub trait ConfigurableObject: Send + Sync + 'static {
 }
 
 /// 可配置对象标记 trait（带生命周期）。
+#[allow(dead_code)] // Java 镜像脚手架：带生命周期的标记 trait，供引用类型的场景使用
 pub trait ConfigurableObjectWithLifetime: Send + Sync {
     /// 获取对象的配置信息。
     fn get_config_info(&self) -> Option<String> {
@@ -58,6 +59,7 @@ mod tests {
 
     #[test]
     fn test_configurable_object_with_lifetime() {
+        #[allow(dead_code)] // 测试脚手架：仅用于验证带生命周期的标记 trait
         struct TestDomainObjectWithLifetime<'a> {
             name: &'a str,
         }
@@ -87,6 +89,7 @@ mod tests {
     #[test]
     fn test_configurable_object_with_lifetime_trait() {
         fn assert_impl<T: ConfigurableObjectWithLifetime>() {}
+        #[allow(dead_code)] // 测试脚手架：仅用于验证带生命周期的标记 trait
         struct Test<'a>(&'a str);
         impl<'a> ConfigurableObjectWithLifetime for Test<'a> {}
         assert_impl::<Test<'_>>();

@@ -485,7 +485,6 @@ mod tests {
     }
 
     #[test]
-    #[test]
     fn test_transaction_attribute_with_all_fields() {
         let attr = TransactionAttribute {
             propagation: Propagation::RequiresNew,

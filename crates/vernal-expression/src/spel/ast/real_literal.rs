@@ -16,6 +16,7 @@ pub struct RealLiteral {
 }
 
 impl RealLiteral {
+    /// 创建双精度浮点字面量。
     #[must_use]
     pub fn new(value: f64, original: String) -> Self {
         Self { value, original }

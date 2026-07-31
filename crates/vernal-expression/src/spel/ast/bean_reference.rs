@@ -13,6 +13,7 @@ pub struct BeanReference {
 }
 
 impl BeanReference {
+    /// 创建 Bean 引用节点。
     #[must_use]
     pub fn new(name: String) -> Self {
         Self { name }

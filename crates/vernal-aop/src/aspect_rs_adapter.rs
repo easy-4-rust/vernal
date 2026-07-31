@@ -5,7 +5,7 @@
 
 use std::sync::Arc;
 
-use crate::{Interceptor, Invocation, InvocationError, InvocationFuture, Next};
+use crate::{Interceptor, Invocation, InvocationFuture, Next};
 
 /// 将 aspect-rs 的同步 Aspect 适配为 vernal-aop 的异步 Interceptor。
 ///
@@ -86,10 +86,13 @@ impl<A: aspect_core::Aspect + Clone + 'static> Clone for AspectRsAdapter<A> {
 /// 将 aspect-rs 的 Around 实现适配为 vernal-aop 的 Interceptor。
 ///
 /// 这个适配器更完整，支持 aspect-rs 的 `around` 方法。
+// 对标 Spring AOP 的 API 脚手架：AroundAdapter 提供 around 语义的适配占位，暂未被内部调用。
+#[allow(dead_code)]
 pub struct AroundAdapter<A: aspect_core::Aspect + 'static> {
     aspect: A,
 }
 
+#[allow(dead_code)]
 impl<A: aspect_core::Aspect + 'static> AroundAdapter<A> {
     /// 创建新的 around 适配器。
     pub fn new(aspect: A) -> Self {

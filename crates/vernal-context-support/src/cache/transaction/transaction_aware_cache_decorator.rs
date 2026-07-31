@@ -362,44 +362,6 @@ impl CacheExt for TransactionAwareCacheDecorator {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
-
-    /// 测试用的事务感知回调注册器。
-    struct TestRegistrar {
-        status: Mutex<TransactionStatus>,
-    }
-
-    impl TestRegistrar {
-        fn new(status: TransactionStatus) -> Self {
-            Self {
-                status: Mutex::new(status),
-            }
-        }
-    }
-
-    impl TransactionCallbackRegistrar for TestRegistrar {
-        fn after_commit(&self, callback: Box<dyn FnOnce() + Send + 'static>) {
-            match *self.status.lock().unwrap() {
-                TransactionStatus::Active => {
-                    // 延迟执行——在测试中我们会手动调用 execute_deferred
-                    // 这里我们只是保存回调，实际测试会通过 execute_deferred 执行
-                    eprintln!("回调已注册，等待事务提交后执行");
-                }
-                _ => {
-                    callback();
-                }
-            }
-        }
-
-        fn after_completion(&self, callback: Box<dyn FnOnce(TransactionStatus) + Send + 'static>) {
-            let status = *self.status.lock().unwrap();
-            callback(status);
-        }
-
-        fn status(&self) -> TransactionStatus {
-            *self.status.lock().unwrap()
-        }
-    }
 
     #[test]
     fn test_immediate_registrar() {

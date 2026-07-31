@@ -16,7 +16,12 @@ pub enum CaffeineSpecParseError {
 
     /// 无效的配置值。
     #[error("无效的配置值（key={key}）：{value}")]
-    InvalidValue { key: String, value: String },
+    InvalidValue {
+        /// 配置键。
+        key: String,
+        /// 配置值。
+        value: String,
+    },
 
     /// 无效的时间格式。
     #[error("无效的时间格式：{0}")]

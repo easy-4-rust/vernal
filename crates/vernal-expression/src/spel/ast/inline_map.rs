@@ -14,6 +14,7 @@ pub struct InlineMap {
 }
 
 impl InlineMap {
+    /// 创建内联映射节点。
     #[must_use]
     pub fn new(keys: Vec<Box<dyn SpelNode>>, values: Vec<Box<dyn SpelNode>>) -> Self {
         Self { keys, values }

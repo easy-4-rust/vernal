@@ -164,7 +164,6 @@ impl TypeConverter for StandardTypeConverter {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::type_descriptor::PrimitiveKind;
 
     #[test]
     fn int_to_string() {

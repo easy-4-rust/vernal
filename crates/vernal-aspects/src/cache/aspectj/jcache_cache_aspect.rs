@@ -22,6 +22,8 @@ use super::cache_operation_source::{CacheOperationSource, MethodMetadata};
 ///     && this(cachedObject)
 /// ```
 pub struct JCacheCacheAspect<S: CacheOperationSource> {
+    /// 缓存操作源（Java 镜像字段，当前阶段暂未直接读取）。
+    #[allow(dead_code)]
     cache_operation_source: Arc<S>,
 }
 
@@ -74,9 +76,9 @@ impl<S: CacheOperationSource> JCacheCacheAspect<S> {
     /// 执行缓存操作。
     pub fn execute<F>(
         &self,
-        method: &MethodMetadata,
-        target_type_name: &str,
-        invoker: &dyn CacheOperationInvoker,
+        _method: &MethodMetadata,
+        _target_type_name: &str,
+        _invoker: &dyn CacheOperationInvoker,
         callback: F,
     ) -> CacheResult
     where

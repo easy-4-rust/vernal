@@ -13,7 +13,7 @@ use std::sync::{Arc, RwLock};
 use crate::access_exception::AccessException;
 use crate::evaluation_context::EvaluationContext;
 use crate::property_accessor::PropertyAccessor;
-use crate::typed_value::{ExpressionValue, TypeDescriptor, TypedValue};
+use crate::typed_value::TypedValue;
 
 /// 属性读取闭包类型。
 type PropertyReadFn = Arc<dyn Fn(&str) -> Result<TypedValue, AccessException> + Send + Sync>;
@@ -202,6 +202,7 @@ impl PropertyAccessor for VernalPropertyAccessor {
 mod tests {
     use super::*;
     use crate::spel::support::standard_evaluation_context::StandardEvaluationContext;
+    use crate::typed_value::{ExpressionValue, TypeDescriptor};
 
     #[test]
     fn new_read_only() {

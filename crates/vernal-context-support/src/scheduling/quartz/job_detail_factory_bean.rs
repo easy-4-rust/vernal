@@ -22,6 +22,8 @@ pub struct JobDetailFactoryBean {
     name: String,
     group: String,
     description: Option<String>,
+    // 对标 Spring 的 jobClassName 属性，暂未读取（Java 镜像脚手架）。
+    #[allow(dead_code)]
     job_class_name: String,
 }
 
