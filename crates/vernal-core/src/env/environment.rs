@@ -2,29 +2,15 @@
 //!
 //! 对标 Spring `org.springframework.core.env.Environment`。
 
+use super::PropertyResolver;
+
 /// 环境抽象 trait。
 ///
 /// 对应 Java: org.springframework.core.env.Environment
-pub trait Environment: Send + Sync {
-    /// 获取属性值。
-    ///
-    /// 对应 Java: `Environment#getProperty`
-    fn get_property(&self, key: &str) -> Option<String>;
-
-    /// 获取属性值，如果不存在则返回默认值。
-    ///
-    /// 对应 Java: `Environment#getProperty(String, String)`
-    fn get_property_with_default(&self, key: &str, default: &str) -> String {
-        self.get_property(key).unwrap_or_else(|| default.to_string())
-    }
-
-    /// 检查属性是否存在。
-    ///
-    /// 对应 Java: `Environment#containsProperty`
-    fn contains_property(&self, key: &str) -> bool {
-        self.get_property(key).is_some()
-    }
-
+///
+/// Spring 层次：`Environment extends PropertyResolver`——属性查找与占位符
+/// 解析继承自 [`PropertyResolver`]，此处补充 profile 语义。
+pub trait Environment: PropertyResolver {
     /// 获取活跃 profile 列表。
     ///
     /// 对应 Java: `Environment#getActiveProfiles`

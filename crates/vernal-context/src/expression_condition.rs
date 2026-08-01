@@ -8,7 +8,9 @@
 //! 使用 vernal-expression 的递归下降解析器执行真实 SpEL 表达式求值。
 
 use vernal_core::BoxError;
-use vernal_expression::{ExpressionParser, EvaluationContext};
+use vernal_expression::{
+    ExpressionParser, EvaluationContext, ExpressionValue, TypeDescriptor, TypedValue,
+};
 
 use crate::{ApplicationEnvironment, component_condition::ComponentCondition};
 
@@ -47,14 +49,15 @@ impl ExpressionCondition {
 
     /// 解析表达式中的环境属性引用。
     ///
-    /// 将 `${key}` 替换为 `#env_key` 变量引用，避免表达式注入。
-    /// 返回（转换后的表达式，环境变量键值对列表）。
+    /// 将 `${key}` 替换为 `#env_key` 变量引用，避免表达式注入；
+    /// 引号包裹的占位符（`'${key}'`）连同引号整体替换（对标 Spring
+    /// 占位符先于 SpEL 求值的语义）。返回（转换后的表达式，变量绑定）。
     fn resolve_expression(
         &self,
         environment: &ApplicationEnvironment,
-    ) -> Result<(String, Vec<(String, String)>), BoxError> {
+    ) -> Result<(String, Vec<(String, TypedValue)>), BoxError> {
         let mut resolved = self.expression.clone();
-        let mut env_vars: Vec<(String, String)> = Vec::new();
+        let mut env_vars: Vec<(String, TypedValue)> = Vec::new();
 
         // 查找所有 ${key} 模式，替换为 #env_key 变量引用
         while let Some(start) = resolved.find("${") {
@@ -68,19 +71,42 @@ impl ExpressionCondition {
                 // 将 ${key} 替换为 #env_key（变量引用，不是值拼接）
                 let var_name = format!("env_{}", key.replace('.', "_"));
                 let replacement = format!("#{}", var_name);
+                // 引号包裹的占位符连引号一起替换，避免生成字面量字符串
+                let (span_start, span_end) = if resolved[..start].ends_with('\'')
+                    && resolved[start + end + 1..].starts_with('\'')
+                {
+                    (start - 1, start + end + 2)
+                } else {
+                    (start, start + end + 1)
+                };
                 resolved = format!(
                     "{}{}{}",
-                    &resolved[..start],
+                    &resolved[..span_start],
                     replacement,
-                    &resolved[start + end + 1..]
+                    &resolved[span_end..]
                 );
-                env_vars.push((var_name, value));
+                env_vars.push((var_name, typed_value(&value)));
             } else {
                 break;
             }
         }
 
         Ok((resolved, env_vars))
+    }
+}
+
+/// 把环境值绑定为类型化值：整数 → `Int`、浮点 → `Float`、其余 → `String`
+/// （对标 Spring 占位符替换后字面量的类型推断）。
+fn typed_value(raw: &str) -> TypedValue {
+    if let Ok(int) = raw.parse::<i64>() {
+        TypedValue::new(ExpressionValue::Int(int), TypeDescriptor::INT)
+    } else if let Ok(float) = raw.parse::<f64>() {
+        TypedValue::new(ExpressionValue::Float(float), TypeDescriptor::FLOAT)
+    } else {
+        TypedValue::new(
+            ExpressionValue::String(raw.to_string()),
+            TypeDescriptor::STRING,
+        )
     }
 }
 
@@ -101,13 +127,7 @@ impl ComponentCondition for ExpressionCondition {
 
         // 将环境变量绑定到上下文（值不会被注入到表达式源码中）
         for (var_name, value) in env_vars {
-            ctx.set_variable(
-                &var_name,
-                vernal_expression::TypedValue::new(
-                    vernal_expression::ExpressionValue::String(value),
-                    vernal_expression::TypeDescriptor::STRING,
-                ),
-            );
+            ctx.set_variable(&var_name, value);
         }
 
         let expr = parser

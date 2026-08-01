@@ -5,6 +5,7 @@
 use std::collections::HashMap;
 
 use super::environment::Environment;
+use super::property_resolver::PropertyResolver;
 use super::map_property_source::MapPropertySource;
 use super::property_source::PropertySource;
 use super::system_environment_property_source::SystemEnvironmentPropertySource;
@@ -14,7 +15,7 @@ use super::system_environment_property_source::SystemEnvironmentPropertySource;
 /// 对应 Java: org.springframework.core.env.StandardEnvironment
 pub struct StandardEnvironment {
     /// 属性源集合
-    property_sources: super::property_sources::PropertySources,
+    property_sources: super::mutable_property_sources::MutablePropertySources,
     /// 活跃 profile
     active_profiles: Vec<String>,
     /// 默认 profile
@@ -27,7 +28,7 @@ impl StandardEnvironment {
     /// 对应 Java: `StandardEnvironment()`
     #[must_use]
     pub fn new() -> Self {
-        let mut property_sources = super::property_sources::PropertySources::new();
+        let mut property_sources = super::mutable_property_sources::MutablePropertySources::new();
 
         // 添加系统属性（对标 Spring 的 SystemPropertiesPropertySource）
         property_sources.add_last(Box::new(MapPropertySource::new(
@@ -79,11 +80,20 @@ impl Default for StandardEnvironment {
     }
 }
 
-impl Environment for StandardEnvironment {
+impl PropertyResolver for StandardEnvironment {
     fn get_property(&self, key: &str) -> Option<String> {
         self.property_sources.get_property(key)
     }
 
+    fn resolve_placeholders_inner(&self, text: &str, ignore_unresolvable: bool) -> String {
+        let mut helper = crate::util::PropertyPlaceholderHelper::with_default();
+        helper.set_ignore_unresolvable(ignore_unresolvable);
+        let adapter = super::property_resolver::LookupAdapter::new(self);
+        helper.replace_placeholders_lenient(text, adapter)
+    }
+}
+
+impl Environment for StandardEnvironment {
     fn get_active_profiles(&self) -> Vec<String> {
         self.active_profiles.clone()
     }

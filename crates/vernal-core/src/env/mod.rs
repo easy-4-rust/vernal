@@ -3,17 +3,53 @@
 //! 对标 Spring `org.springframework.core.env` 包：PropertySource 抽象、Environment 抽象、
 //! Profile/Properties 语义。本模块仅定义 trait/struct，不实现细节策略。
 
+mod abstract_environment;
+mod abstract_property_resolver;
+mod command_line_args;
+mod command_line_property_source;
+mod composite_property_source;
+mod configurable_environment;
+mod configurable_property_resolver;
 mod environment;
+mod environment_capable;
+mod enumerable_property_source;
 mod map_property_source;
+mod missing_required_properties_exception;
+mod mutable_property_sources;
+mod profiles;
+mod profiles_parser;
+mod properties_property_source;
+mod property_resolver;
 mod property_source;
 mod property_sources;
+mod property_sources_property_resolver;
+mod simple_command_line_args_parser;
+mod simple_command_line_property_source;
 mod standard_environment;
 mod system_environment_property_source;
 
+pub use abstract_environment::AbstractEnvironment;
+pub use abstract_property_resolver::AbstractPropertyResolver;
+pub use command_line_args::CommandLineArgs;
+pub use command_line_property_source::CommandLinePropertySource;
+pub use composite_property_source::CompositePropertySource;
+pub use configurable_environment::ConfigurableEnvironment;
+pub use configurable_property_resolver::ConfigurablePropertyResolver;
 pub use environment::Environment;
+pub use environment_capable::EnvironmentCapable;
+pub use enumerable_property_source::EnumerablePropertySource;
 pub use map_property_source::MapPropertySource;
+pub use missing_required_properties_exception::MissingRequiredPropertiesException;
+pub use mutable_property_sources::MutablePropertySources;
+pub use profiles::Profiles;
+pub use profiles_parser::ProfilesParser;
+pub use properties_property_source::PropertiesPropertySource;
+pub use property_resolver::PropertyResolver;
 pub use property_source::PropertySource;
 pub use property_sources::PropertySources;
+pub use property_sources_property_resolver::PropertySourcesPropertyResolver;
+pub use simple_command_line_args_parser::SimpleCommandLineArgsParser;
+pub use simple_command_line_property_source::SimpleCommandLinePropertySource;
 pub use standard_environment::StandardEnvironment;
 pub use system_environment_property_source::SystemEnvironmentPropertySource;
 
@@ -44,7 +80,7 @@ mod tests {
 
     #[test]
     fn property_sources_priority() {
-        let mut sources = PropertySources::new();
+        let mut sources = MutablePropertySources::new();
 
         let mut low = HashMap::new();
         low.insert("key".to_string(), "low".to_string());
@@ -81,7 +117,7 @@ mod tests {
 
     #[test]
     fn property_sources_add_first() {
-        let mut sources = PropertySources::new();
+        let mut sources = MutablePropertySources::new();
         let mut low = HashMap::new();
         low.insert("key".to_string(), "low".to_string());
         sources.add_last(Box::new(MapPropertySource::new("low", low)));
@@ -95,7 +131,7 @@ mod tests {
 
     #[test]
     fn property_sources_add_last() {
-        let mut sources = PropertySources::new();
+        let mut sources = MutablePropertySources::new();
         let mut first = HashMap::new();
         first.insert("key".to_string(), "first".to_string());
         sources.add_last(Box::new(MapPropertySource::new("first", first)));
@@ -110,7 +146,7 @@ mod tests {
 
     #[test]
     fn property_sources_len() {
-        let mut sources = PropertySources::new();
+        let mut sources = MutablePropertySources::new();
         assert_eq!(sources.len(), 0);
         assert!(sources.is_empty());
 
@@ -123,7 +159,7 @@ mod tests {
 
     #[test]
     fn property_sources_contains_property() {
-        let mut sources = PropertySources::new();
+        let mut sources = MutablePropertySources::new();
         let mut props = HashMap::new();
         props.insert("key".to_string(), "value".to_string());
         sources.add_last(Box::new(MapPropertySource::new("test", props)));
@@ -134,7 +170,7 @@ mod tests {
 
     #[test]
     fn property_sources_get_property_missing() {
-        let sources = PropertySources::new();
+        let sources = MutablePropertySources::new();
         assert_eq!(sources.get_property("missing"), None);
     }
 

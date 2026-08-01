@@ -26,7 +26,7 @@ STUB_PATTERNS = (
     re.compile(r"\bunimplemented!\s*\("),
     re.compile(r"\bTODO\b"),
     re.compile(r"\bSTUB\b", re.IGNORECASE),
-    re.compile(r"占位"),
+    re.compile(r"占位(?!符)"),  # "占位符" 是合法术语,不视为 stub 标记
     re.compile(r"实际实现需要"),
     re.compile(r"执行销毁逻辑"),
 )

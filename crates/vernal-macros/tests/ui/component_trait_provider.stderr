@@ -12,7 +12,7 @@ error[E0277]: the size for values of type `(dyn Extension + 'static)` cannot be 
   |
   = help: the trait `Sized` is not implemented for `(dyn Extension + 'static)`
 note: required by an implicit `Sized` bound in `ComponentProvider`
- --> $WORKSPACE/crates/vernal-ioc/src/component_provider.rs
+ --> $WORKSPACE/crates/vernal-beans/src/component_provider.rs
   |
   | pub struct ComponentProvider<T> {
   |                              ^ required by the implicit `Sized` requirement on this type parameter in `ComponentProvider`

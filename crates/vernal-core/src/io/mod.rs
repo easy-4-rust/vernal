@@ -4,6 +4,7 @@
 
 mod abstract_file_resolving_resource;
 mod abstract_resource;
+pub mod buffer;
 mod byte_array_resource;
 mod class_path_resource;
 mod class_relative_resource_loader;

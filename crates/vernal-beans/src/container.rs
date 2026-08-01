@@ -1365,7 +1365,7 @@ impl crate::factory::config::autowire_capable_bean_factory::AutowireCapableBeanF
             .registry
             .definitions()
             .iter()
-            .filter(|d| d.key().type_id == descriptor.type_id())
+            .filter(|d| d.key().type_id == descriptor.type_id)
             .collect();
 
         match definitions.as_slice() {

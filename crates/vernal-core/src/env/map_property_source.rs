@@ -41,6 +41,14 @@ impl MapPropertySource {
     }
 }
 
+impl super::EnumerablePropertySource for MapPropertySource {
+    fn property_names(&self) -> Vec<String> {
+        let mut names: Vec<String> = self.properties.keys().cloned().collect();
+        names.sort();
+        names
+    }
+}
+
 impl PropertySource for MapPropertySource {
     fn name(&self) -> &str {
         &self.name
