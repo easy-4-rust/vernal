@@ -36,11 +36,11 @@ mod tests {
         assert!(!converter.matches(&ConvertiblePair::new::<Vec<u8>, String>()));
     }
 
-    /// Default 实例与 new() 等价
+    /// Default 实例与 `new()` 等价
     #[test]
     fn default_equivalent_to_new() {
         let from_new = NeverMatchConverter::new();
-        let from_default = NeverMatchConverter::default();
+        let from_default = NeverMatchConverter;
         // 都不匹配任何 pair
         let pair = ConvertiblePair::new::<String, i64>();
         assert!(!from_new.matches(&pair));

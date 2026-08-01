@@ -38,6 +38,7 @@ static PROCESS_RANDOM: LazyLock<[u8; 5]> = LazyLock::new(compute_process_random)
 static COUNTER: AtomicU32 = AtomicU32::new(0x00AB_CDEF);
 
 /// 进程启动时间(秒级),用于生成 `process_random`。
+#[allow(clippy::cast_possible_truncation)] // 对标 Java: 取低 8 位字节
 fn compute_process_random() -> [u8; 5] {
     // 用 PID (4 bytes) + 启动时间低字节 (1 byte) 拼出 5 bytes
     let pid = std::process::id();
@@ -76,6 +77,7 @@ impl ObjectId {
     ///
     /// 内部使用原子操作,可在多线程并发调用。
     #[must_use]
+    #[allow(clippy::cast_possible_truncation)] // 对标 Java: 秒级时间戳截断到 u32
     pub fn new() -> Self {
         let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -93,7 +95,11 @@ impl ObjectId {
         // 3 bytes counter (BE,取低 24 位)
         bytes[9..12].copy_from_slice(&counter.to_be_bytes()[1..4]);
 
-        let hex: String = bytes.iter().map(|b| format!("{b:02x}")).collect();
+        let mut hex = String::with_capacity(bytes.len() * 2);
+        for byte in bytes {
+            use std::fmt::Write as _;
+            let _ = write!(hex, "{byte:02x}");
+        }
         ObjectId(hex)
     }
 
@@ -189,6 +195,7 @@ impl IdGenerator for ObjectId {
 // ─── 单元测试 ────────────────────────────────────────────────────────
 
 #[cfg(test)]
+#[allow(clippy::cast_possible_truncation)] // 测试中的时间戳截断对标 Java 语义
 mod tests {
     use super::*;
     use std::collections::HashSet;

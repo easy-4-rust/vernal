@@ -14,11 +14,10 @@
 //! props.insert("name".to_string(), "vernal".to_string());
 //! props.insert("version".to_string(), "1.0".to_string());
 //!
+//! // `HashMap<String, String>` 直接实现 `PlaceholderResolver`
 //! let helper = PropertyPlaceholderHelper::with_default();
-//! let result = helper.replace_placeholders("Hello, ${name} v${version}!", |key| {
-//!     props.get(key).cloned()
-//! });
-//! assert_eq!(result, "Hello, vernal v1.0!");
+//! let result = helper.replace_placeholders("Hello, ${name} v${version}!", props);
+//! assert_eq!(result.unwrap(), "Hello, vernal v1.0!");
 //! ```
 
 use std::collections::HashMap;
@@ -76,6 +75,7 @@ where
 }
 
 /// 为 `HashMap` 实现 `PlaceholderResolver`。
+#[allow(clippy::implicit_hasher)] // HashMap 直接作为解析器,不强制指定 hasher
 impl PlaceholderResolver for HashMap<String, String> {
     fn resolve_placeholder(&self, placeholder_name: &str) -> Option<String> {
         self.get(placeholder_name).cloned()
@@ -147,6 +147,7 @@ impl PropertyPlaceholderHelper {
     /// # 错误
     ///
     /// 当 `ignore_unresolvable = false` 且存在未解析的占位符时返回 `Err`。
+    #[allow(clippy::needless_pass_by_value)] // R 按值传入,闭包/集合可直接传递
     pub fn replace_placeholders<R: PlaceholderResolver>(
         &self,
         value: &str,
@@ -188,12 +189,12 @@ impl PropertyPlaceholderHelper {
                 match self.find_matching_suffix(value, i + prefix_len) {
                     Some(end_idx) => {
                         let placeholder_content = &value[i + prefix_len..end_idx];
-                        let resolved = self.resolve_placeholder_content(
+                        let resolved_value = self.resolve_placeholder_content(
                             placeholder_content,
                             resolver,
                             visited,
                         )?;
-                        result.push_str(&resolved);
+                        result.push_str(&resolved_value);
                         i = end_idx + suffix.len();
                     }
                     None => {

@@ -6,7 +6,7 @@
 //! # 示例
 //!
 //! ```rust
-//! use vernal_core::util::{DataSize, DataUnit};
+//! use vernal_core::util::unit::{DataSize, DataUnit};
 //!
 //! // 构造
 //! let size = DataSize::of_megabytes(5);
@@ -401,11 +401,9 @@ mod tests {
 
     #[test]
     fn comparable_via_ord() {
-        let mut sizes = vec![
-            DataSize::of_megabytes(5),
+        let mut sizes = [DataSize::of_megabytes(5),
             DataSize::of_bytes(100),
-            DataSize::of_kilobytes(1),
-        ];
+            DataSize::of_kilobytes(1)];
         sizes.sort();
         assert_eq!(sizes[0].to_bytes(), 100);
         assert_eq!(sizes[1].to_bytes(), 1024);

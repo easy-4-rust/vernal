@@ -44,6 +44,7 @@
 //! | `TaskInfo.getTime(TimeUnit)` | [`TaskInfo::time`] |
 
 use std::fmt;
+use std::fmt::Write as _;
 use std::time::{Duration, Instant};
 
 use super::StopWatchUnit;
@@ -353,7 +354,7 @@ impl StopWatch {
             for task in list {
                 let task_time = format_task_time(task.time(unit), digits, max_frac);
                 // 左对齐 14 字符(对标 Spring `%-14s`)
-                sb.push_str(&format!("{task_time:<14}"));
+                let _ = write!(sb, "{task_time:<14}");
 
                 // 百分比:Spring 用 `pf.format(ratio)`,最小 2 位整数,无分组
                 // 例:0.5 -> "50%",0.123 -> "12%"
@@ -364,7 +365,7 @@ impl StopWatch {
                     0.0
                 };
                 let percent_str = format_percent(ratio);
-                sb.push_str(&format!("{percent_str:<8}"));
+                let _ = write!(sb, "{percent_str:<8}");
 
                 sb.push_str(task.task_name());
                 sb.push('\n');
@@ -395,6 +396,7 @@ impl Default for StopWatch {
     }
 }
 
+#[allow(clippy::cast_possible_truncation)] // 对标 Java `(long) Math.round(...)`
 impl fmt::Display for StopWatch {
     /// 生成描述所有任务的字符串(以秒为单位)。
     ///
@@ -542,6 +544,7 @@ fn format_task_time(value: f64, min_integer_digits: usize, max_frac: usize) -> S
 /// + `setMinimumIntegerDigits(2)` + `setGroupingUsed(false)`。
 ///
 /// 例:0.5 -> "50%",0.123 -> "12%",0.05 -> "5%"(Spring 实际是"5%",不是"05%")
+#[allow(clippy::cast_possible_truncation)] // 对标 Java `(long) Math.round(...)`
 fn format_percent(ratio: f64) -> String {
     // Spring percent: 0.5 * 100 = 50; 最小整数 2 位但允许更多
     // 注意:Java setMinimumIntegerDigits(2) 会让 5% 变成 05%,但 Spring 测试用例中
@@ -553,6 +556,7 @@ fn format_percent(ratio: f64) -> String {
 // ─── 单元测试 ────────────────────────────────────────────────────────
 
 #[cfg(test)]
+#[allow(clippy::cast_precision_loss, clippy::float_cmp, clippy::approx_constant)]
 mod tests {
     use super::*;
     use std::thread;
@@ -915,7 +919,7 @@ mod tests {
         let sw = StopWatch::with_id("display-zero");
         let s = sw.to_string();
         assert!(s.contains("display-zero"));
-        assert!(s.contains("no task info kept") || s.contains("0"));
+        assert!(s.contains("no task info kept") || s.contains('0'));
     }
 
     #[test]
@@ -927,7 +931,7 @@ mod tests {
         let output = sw.pretty_print();
         assert!(output.contains("zero-test"));
         // total_time_seconds() == 0.0
-        assert_eq!(sw.total_time_seconds(), 0.0);
+        assert!(sw.total_time_seconds().abs() < 1e-12);
     }
 
     #[test]
@@ -1028,7 +1032,7 @@ mod tests {
         sw.stop().unwrap();
         let output = sw.pretty_print();
         assert!(output.contains("minimal"));
-        assert!(output.contains("t"));
+        assert!(output.contains('t'));
         // 即使 total_time 非零，输出也应包含百分比
         assert!(output.contains('%'));
     }

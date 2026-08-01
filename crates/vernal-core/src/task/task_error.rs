@@ -56,14 +56,14 @@ mod tests {
         assert!(err.to_string().contains("panic in worker"));
     }
 
-    /// 错误实现 std::error::Error（对标 Spring 异常链）
+    /// 错误实现 `std::error::Error（对标` Spring 异常链）
     #[test]
     fn task_error_implements_std_error() {
         fn assert_error<T: std::error::Error>() {}
         assert_error::<TaskError>();
     }
 
-    /// PartialEq 应能区分三种变体
+    /// `PartialEq` 应能区分三种变体
     #[test]
     fn task_error_partial_eq_distinguishes_variants() {
         let rejected = TaskError::Rejected("a".to_string());

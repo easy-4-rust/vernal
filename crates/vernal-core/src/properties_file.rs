@@ -50,10 +50,10 @@ impl FrameworkProperties {
     /// 对应语义（Spring 迁移）：`SpringProperties.getFlag(String)`
     #[must_use]
     pub fn get_flag(key: &str) -> bool {
-        match Self::get_property(key).as_deref() {
-            Some("true") | Some("1") | Some("yes") | Some("on") => true,
-            _ => false,
-        }
+        matches!(
+            Self::get_property(key).as_deref(),
+            Some("true" | "1" | "yes" | "on")
+        )
     }
 
     /// 设置布尔标志为 true。
@@ -123,6 +123,7 @@ impl From<std::io::Error> for PropertiesFileError {
 /// 解析 .properties 格式文本。
 ///
 /// 格式：`key=value` 每行一对，`#`/`!` 开头为注释。
+#[allow(clippy::implicit_hasher)] // 保持签名与调用点简洁,不强制指定 hasher
 pub fn parse_properties(content: &str, map: &mut HashMap<String, String>) {
     for line in content.lines() {
         let line = line.trim();
@@ -150,6 +151,12 @@ fn read_classpath_resource(name: &str) -> Option<HashMap<String, String>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// 串行化访问全局 PROPERTIES 静态的测试。
+    ///
+    /// `load_properties_from_file` / `load_properties_from_classpath` 会整体替换全局表,
+    /// 与 set/get 并行测试存在竞态;这些测试共享一把测试专用锁。
+    static GLOBAL_STATE_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
     #[test]
     fn parse_properties_basic() {
@@ -187,6 +194,7 @@ k3=v3", &mut map);
 
     #[test]
     fn set_then_get_then_clear() {
+        let _guard = GLOBAL_STATE_LOCK.lock().unwrap();
         // 先设置值
         FrameworkProperties::set_property("test.prop.local", Some("original"));
         assert_eq!(
@@ -206,6 +214,7 @@ k3=v3", &mut map);
 
     #[test]
     fn set_property_then_get() {
+        let _guard = GLOBAL_STATE_LOCK.lock().unwrap();
         FrameworkProperties::set_property("test.prop.key", Some("value123"));
         assert_eq!(
             FrameworkProperties::get_property("test.prop.key"),
@@ -216,6 +225,7 @@ k3=v3", &mut map);
 
     #[test]
     fn remove_property() {
+        let _guard = GLOBAL_STATE_LOCK.lock().unwrap();
         FrameworkProperties::set_property("test.prop.remove", Some("x"));
         assert!(FrameworkProperties::get_property("test.prop.remove").is_some());
         FrameworkProperties::set_property("test.prop.remove", None);
@@ -229,6 +239,7 @@ k3=v3", &mut map);
 
     #[test]
     fn flag_set_and_get() {
+        let _guard = GLOBAL_STATE_LOCK.lock().unwrap();
         // 对标 Spring Boolean.getBoolean
         // 使用进程内唯一前缀避免与并行测试共享全局 PROPERTIES 状态
         let pid = std::process::id();
@@ -244,6 +255,7 @@ k3=v3", &mut map);
 
     #[test]
     fn flag_recognizes_truthy_aliases() {
+        let _guard = GLOBAL_STATE_LOCK.lock().unwrap();
         // 对标 Spring `getFlag`：`true`/`1`/`yes`/`on` 都视作 true
         // 使用进程内唯一前缀（线程 ID + 测试名）避免并行测试的全局状态相互覆盖
         let prefix = format!("flag.alias.{}.", std::process::id());
@@ -263,6 +275,7 @@ k3=v3", &mut map);
 
     #[test]
     fn flag_rejects_other_strings() {
+        let _guard = GLOBAL_STATE_LOCK.lock().unwrap();
         let key = format!("flag.other.alias.{}", std::process::id());
         FrameworkProperties::set_property(&key, Some("enabled"));
         // 不是 `true`/`1`/`yes`/`on`，应返回 false
@@ -298,6 +311,7 @@ k3=v3", &mut map);
 
     #[test]
     fn load_properties_from_file_reads_and_overwrites_global() {
+        let _guard = GLOBAL_STATE_LOCK.lock().unwrap();
         // 使用进程内唯一前缀避免与其他并行测试的全局状态相互覆盖
         let suffix = std::process::id().to_string();
         let key_target = format!("overwrite.target.{suffix}");
@@ -337,6 +351,7 @@ k3=v3", &mut map);
 
     #[test]
     fn load_properties_from_classpath_is_noop_when_resource_missing() {
+        let _guard = GLOBAL_STATE_LOCK.lock().unwrap();
         // `vernal.properties` 在 classpath 不存在时不应 panic, 保持空表（对标 Spring `loadProperties` 容错）
         load_properties_from_classpath();
         // 不假设任何特定内容, 只保证调用后全局表仍然存在
@@ -405,6 +420,7 @@ k3=v3", &mut map);
 
     #[test]
     fn load_properties_from_file_overrides_existing_property() {
+        let _guard = GLOBAL_STATE_LOCK.lock().unwrap();
         // 对标 Spring `MutablePropertySources` 的覆盖语义：
         // 加载文件后，文件中的值应覆盖之前 set_property 的值。
         let key = format!("override.vernal.test.{}", std::process::id());
@@ -427,6 +443,7 @@ k3=v3", &mut map);
 
     #[test]
     fn load_properties_from_file_returns_error_for_directory() {
+        let _guard = GLOBAL_STATE_LOCK.lock().unwrap();
         // 对标 Spring `PropertiesLoaderUtils.loadProperties` 错误传播：
         // 当路径是目录而不是文件时返回 Io 错误
         let dir = std::env::temp_dir().join("vernal_test_dir_only");

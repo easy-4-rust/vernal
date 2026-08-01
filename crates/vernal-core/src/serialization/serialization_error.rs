@@ -58,7 +58,7 @@ mod tests {
         assert!(s.contains("codec failure"), "actual: {s}");
     }
 
-    /// 错误实现 std::error::Error 链路
+    /// 错误实现 `std::error::Error` 链路
     #[test]
     fn serialization_error_implements_std_error() {
         fn assert_error<T: std::error::Error>() {}

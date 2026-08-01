@@ -21,7 +21,6 @@ pub use system_environment_property_source::SystemEnvironmentPropertySource;
 mod tests {
     use super::*;
     use std::collections::HashMap;
-    use super::*;
 
     #[test]
     fn map_property_source_basic() {

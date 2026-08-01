@@ -12,6 +12,7 @@ use std::any::TypeId;
 
 /// 方法参数规格：方法名 + 参数索引 + 嵌套层级。
 ///
+/// 对应 Java: org.springframework.core.MethodParameter
 /// 对标 Spring `MethodParameter`。
 ///
 /// `parameter_index` 语义：`-1` 表示返回类型；`0` 表示第一个参数；`1` 表示第二个参数。
@@ -276,7 +277,7 @@ mod tests {
         assert!(s.contains("MyClass"));
         assert!(s.contains("doWork"));
         assert!(s.contains("[0]"));
-        assert!(!s.contains("'"));
+        assert!(!s.contains('\''));
     }
 
     #[test]

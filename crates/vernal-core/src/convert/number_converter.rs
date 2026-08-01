@@ -56,7 +56,7 @@ mod tests {
 
     #[test]
     fn u64_valid() {
-        assert_eq!(u64::from_str_value("123456789").unwrap(), 123456789u64);
+        assert_eq!(u64::from_str_value("123456789").unwrap(), 123_456_789u64);
     }
 
     #[test]
@@ -67,7 +67,7 @@ mod tests {
 
     #[test]
     fn f64_valid() {
-        assert!((f64::from_str_value("3.14").unwrap() - 3.14).abs() < 1e-10);
+        assert!((f64::from_str_value("3.25").unwrap() - 3.25).abs() < 1e-10);
     }
 
     #[test]

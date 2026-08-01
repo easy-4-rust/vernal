@@ -1,4 +1,4 @@
-//! 可选值转换器（处理 Option<T>）。
+//! 可选值转换器（处理 `Option<T>`）。
 
 use super::{ConversionError, Convertible};
 

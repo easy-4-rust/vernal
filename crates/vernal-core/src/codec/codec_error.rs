@@ -54,8 +54,8 @@ mod tests {
     #[test]
     fn error_trait_source_returns_none() {
         // 对标 std::error::Error: source() 默认返回 None
-        let err = CodecError::Encode("x".to_string());
         use std::error::Error as _;
+        let err = CodecError::Encode("x".to_string());
         assert!(err.source().is_none());
     }
 

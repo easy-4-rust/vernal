@@ -107,6 +107,7 @@ impl From<i32> for AttributeValue {
     }
 }
 
+#[allow(clippy::cast_possible_wrap)] // 对标 Java long: 按位模式解释
 impl From<u64> for AttributeValue {
     fn from(u: u64) -> Self {
         Self::Int(u as i64)
@@ -175,8 +176,8 @@ mod tests {
 
     #[test]
     fn float_from_f64() {
-        let v = AttributeValue::from(3.14_f64);
-        assert_eq!(v.as_float(), Some(3.14));
+        let v = AttributeValue::from(std::f64::consts::PI);
+        assert_eq!(v.as_float(), Some(std::f64::consts::PI));
     }
 
     #[test]
@@ -224,6 +225,7 @@ mod tests {
 
     #[test]
     fn display_float_negative() {
+        #[allow(clippy::approx_constant)] // 显示格式测试用近似值即可
         let v = AttributeValue::Float(-3.14);
         assert_eq!(v.to_string(), "-3.14");
     }

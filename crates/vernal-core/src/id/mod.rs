@@ -13,9 +13,9 @@
 //!
 //! # Feature-gated 后端(可选)
 //!
-//! - `id-uuid`:[`uuid_id::UuidId`] UUID v7(对标 Java `java.util.UUID`)
-//! - `id-ulid`:[`ulid_id::UlidId`] ULID(时间排序,26 字符 Crockford Base32)
-//! - `id-nanoid`:[`nanoid_id::NanoIdGenerator`] NanoId(短 URL-friendly ID)
+//! - `id-uuid`:`uuid_id::UuidId` UUID v7(对标 Java `java.util.UUID`)
+//! - `id-ulid`:`ulid_id::UlidId` ULID(时间排序,26 字符 Crockford Base32)
+//! - `id-nanoid`:`nanoid_id::NanoIdGenerator` NanoId(短 URL-friendly ID)
 //!
 //! # 设计原则
 //!

@@ -30,24 +30,24 @@ mod tests {
 
     #[test]
     fn true_values() {
-        assert_eq!(bool::from_str_value("true").unwrap(), true);
-        assert_eq!(bool::from_str_value("1").unwrap(), true);
-        assert_eq!(bool::from_str_value("yes").unwrap(), true);
-        assert_eq!(bool::from_str_value("on").unwrap(), true);
-        assert_eq!(bool::from_str_value("TRUE").unwrap(), true);
-        assert_eq!(bool::from_str_value("Yes").unwrap(), true);
-        assert_eq!(bool::from_str_value("ON").unwrap(), true);
+        assert!(bool::from_str_value("true").unwrap());
+        assert!(bool::from_str_value("1").unwrap());
+        assert!(bool::from_str_value("yes").unwrap());
+        assert!(bool::from_str_value("on").unwrap());
+        assert!(bool::from_str_value("TRUE").unwrap());
+        assert!(bool::from_str_value("Yes").unwrap());
+        assert!(bool::from_str_value("ON").unwrap());
     }
 
     #[test]
     fn false_values() {
-        assert_eq!(bool::from_str_value("false").unwrap(), false);
-        assert_eq!(bool::from_str_value("0").unwrap(), false);
-        assert_eq!(bool::from_str_value("no").unwrap(), false);
-        assert_eq!(bool::from_str_value("off").unwrap(), false);
-        assert_eq!(bool::from_str_value("FALSE").unwrap(), false);
-        assert_eq!(bool::from_str_value("No").unwrap(), false);
-        assert_eq!(bool::from_str_value("OFF").unwrap(), false);
+        assert!(!bool::from_str_value("false").unwrap());
+        assert!(!bool::from_str_value("0").unwrap());
+        assert!(!bool::from_str_value("no").unwrap());
+        assert!(!bool::from_str_value("off").unwrap());
+        assert!(!bool::from_str_value("FALSE").unwrap());
+        assert!(!bool::from_str_value("No").unwrap());
+        assert!(!bool::from_str_value("OFF").unwrap());
     }
 
     #[test]

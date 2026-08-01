@@ -126,7 +126,7 @@ mod tests {
         assert_eq!(cap[0].1, "e-msg");
     }
 
-    /// 默认 is_enabled 对所有级别都返回 true
+    /// 默认 `is_enabled` 对所有级别都返回 true
     /// （对标 Spring `Logger.isInfoEnabled()` 等方法默认实现）
     #[test]
     fn is_enabled_default_returns_true_for_all_levels() {

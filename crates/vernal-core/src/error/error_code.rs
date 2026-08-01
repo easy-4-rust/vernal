@@ -50,7 +50,7 @@ use super::VernalError;
 pub trait ErrorCode: Send + Sync + 'static {
     /// 错误所属的子系统域。
     ///
-    /// 必须是 [`ErrorDomain`] 中定义的常量之一。
+    /// 必须是 [`crate::error::error_domain::ErrorDomain`] 中定义的常量之一。
     fn domain(&self) -> &'static str;
 
     /// 子系统内的错误码。

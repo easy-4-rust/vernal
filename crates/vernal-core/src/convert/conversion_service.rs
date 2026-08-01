@@ -38,7 +38,7 @@ impl ConversionService {
         !std::any::type_name::<T>().is_empty()
     }
 
-    /// 获取全局共享的 ConversionService 实例。
+    /// 获取全局共享的 `ConversionService` 实例。
     ///
     /// 对标 Spring `DefaultConversionService.getSharedInstance()`。
     #[must_use]
@@ -67,13 +67,13 @@ mod tests {
     #[test]
     fn convert_string_to_i64() {
         let result: i64 = ConversionService::convert("9999999999").unwrap();
-        assert_eq!(result, 9999999999);
+        assert_eq!(result, 9_999_999_999);
     }
 
     #[test]
     fn convert_string_to_f64() {
-        let result: f64 = ConversionService::convert("3.14").unwrap();
-        assert!((result - 3.14).abs() < 1e-10);
+        let result: f64 = ConversionService::convert("3.25").unwrap();
+        assert!((result - 3.25).abs() < 1e-10);
     }
 
     #[test]

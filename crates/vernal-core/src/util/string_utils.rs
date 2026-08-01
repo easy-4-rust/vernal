@@ -96,7 +96,7 @@ impl StringUtils {
         s.to_lowercase().contains(&substr.to_lowercase())
     }
 
-    /// 把逗号分隔的字符串切分为 Vec<String>(去除空白与空项)。
+    /// 把逗号分隔的字符串切分为 `Vec<String>`(去除空白与空项)。
     ///
     /// 对标 Spring `StringUtils.commaDelimitedListToStringArray(String)`。
     ///
@@ -113,7 +113,7 @@ impl StringUtils {
             .collect()
     }
 
-    /// 把 Vec<String> 用逗号拼接为字符串。
+    /// 把 `Vec<String>` 用逗号拼接为字符串。
     ///
     /// 对标 Spring `StringUtils.collectionToCommaDelimitedString(Collection)`。
     #[must_use]

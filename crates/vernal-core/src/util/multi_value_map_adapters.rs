@@ -1,4 +1,4 @@
-//! MultiValueMap 适配器家族。
+//! `MultiValueMap` 适配器家族。
 //!
 //! 对标 Spring `org.springframework.util` 中的适配器。
 
@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use std::hash::Hash;
 use super::multi_value_map::MultiValueMapTrait;
 
-/// 包装任意 `Map<K, Vec<V>>` 实现 `MultiValueMapTrait`。对标 Spring MultiValueMapAdapter。
+/// 包装任意 `Map<K, Vec<V>>` 实现 `MultiValueMapTrait`。对标 Spring `MultiValueMapAdapter`。
 pub struct MultiValueMapAdapter<K: Eq + Hash, V> {
     target: HashMap<K, Vec<V>>,
 }
@@ -50,7 +50,7 @@ impl<K: Eq + Hash, V> Default for MultiValueMapAdapter<K, V> {
     fn default() -> Self { Self::new(HashMap::new()) }
 }
 
-/// 多值 Map → 单值 Map 实时视图。对标 Spring MultiToSingleValueMapAdapter。
+/// 多值 Map → 单值 Map 实时视图。对标 Spring `MultiToSingleValueMapAdapter`。
 pub struct MultiToSingleValueMapAdapter<'a, K: Eq + Hash, V, M: MultiValueMapTrait<K, V>> {
     delegate: &'a M,
     _k: std::marker::PhantomData<K>,
@@ -77,7 +77,7 @@ impl<'a, K: Eq + Hash, V, M: MultiValueMapTrait<K, V>> MultiToSingleValueMapAdap
     pub fn contains_key(&self, key: &K) -> bool { self.delegate.contains_key(key) }
 }
 
-/// 单值 Map → 多值 Map 包装。对标 Spring SingleToMultiValueMapAdapter。
+/// 单值 Map → 多值 Map 包装。对标 Spring `SingleToMultiValueMapAdapter`。
 pub struct SingleToMultiValueMapAdapter<K: Eq + Hash, V> {
     target: HashMap<K, V>,
 }
@@ -107,7 +107,7 @@ impl<K: Eq + Hash + Clone, V: Clone> MultiValueMapTrait<K, V> for SingleToMultiV
     fn contains_key(&self, key: &K) -> bool { self.target.contains_key(key) }
 }
 
-/// 多值 Map 的 Stream 收集器。对标 Spring MultiValueMapCollector。
+/// 多值 Map 的 Stream 收集器。对标 Spring `MultiValueMapCollector`。
 pub struct MultiValueMapCollector<K: Eq + Hash, V> {
     map: HashMap<K, Vec<V>>,
 }

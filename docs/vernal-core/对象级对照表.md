@@ -26,22 +26,21 @@
 | 指标 | 数量 |
 |---|---:|
 | Java 业务对象 | 329 |
-| 已处理（严格三类） | 6 |
+| 已处理（严格三类） | 25 |
 | `DEPENDENCY_REUSED` | 0 |
-| `IMPLEMENTED` | 6 |
-| `MISPLACED` | 10 |
-| `MISSING` | 306 |
+| `IMPLEMENTED` | 25 |
+| `MISPLACED` | 0 |
+| `MISSING` | 304 |
 | `PARTIAL` | 0 |
 | `PLATFORM_NA` | 0 |
 | `STUB` | 0 |
-| `UNVERIFIED` | 7 |
+| `UNVERIFIED` | 0 |
 
 ## 结构红线
 
 > 下列既存问题属于未完成证据。本报告只登记，不在文档治理任务中修改源码。
 
 - 单文件多个公开对象位于 `properties_file.rs`：`FrameworkProperties`、`PropertiesFileError`
-- 单文件多个公开对象位于 `ordered.rs`：`PriorityOrdered`、`Ordered`、`OrderComparator`
 - 单文件多个公开对象位于 `failure.rs`：`BoxError`、`SharedError`
 - 单文件多个公开对象位于 `util/mime_sniff.rs`：`SniffedMimeType`、`MismatchError`
 - 单文件多个公开对象位于 `util/property_placeholder_helper.rs`：`PlaceholderError`、`PlaceholderResolver`、`PropertyPlaceholderHelper`、`StringValueResolver`
@@ -52,8 +51,8 @@
 - 单文件多个公开对象位于 `diagnostics/span.rs`：`SpanStatus`、`Span`、`SpanReport`
 - 单文件多个公开对象位于 `id/snowflake_id.rs`：`SnowflakeId`、`SnowflakeError`
 - 单文件多个公开对象位于 `id/ulid_id.rs`：`UlidId`、`Ulid`
-- 单文件多个公开对象位于 `convert/converter_registry.rs`：`ConverterRegistry`、`TypeIdConverterRegistry`
-- 单文件多个公开对象位于 `convert/generic_converter.rs`：`GenericConverter`、`ClosureGenericConverter`
+- 单文件多个公开对象位于 `convert/converter/converter_registry.rs`：`ErasedConverter`、`ConverterRegistry`、`TypeIdConverterRegistry`
+- 单文件多个公开对象位于 `convert/converter/generic_converter.rs`：`ErasedGenericFn`、`GenericConverter`、`ClosureGenericConverter`
 - 单文件多个公开对象位于 `util/unit/data_size.rs`：`DataSize`、`DataSizeParseError`
 - 单文件多个公开对象位于 `util/unit/data_unit.rs`：`DataUnit`、`UnknownDataUnitSuffix`
 
@@ -67,8 +66,8 @@
 | `org.springframework.core.BridgeMethodResolver` | `BridgeMethodResolver.java` | `bridge_method_resolver.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.CollectionFactory` | `CollectionFactory.java` | `collection_factory.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.ConfigurableObjectInputStream` | `ConfigurableObjectInputStream.java` | `configurable_object_input_stream.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
-| `org.springframework.core.Constants` | `Constants.java` | `constants.rs` | `constants.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
-| `org.springframework.core.Conventions` | `Conventions.java` | `conventions.rs` | `conventions.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
+| `org.springframework.core.Constants` | `Constants.java` | `constants.rs` | `constants.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/constants.rs#[cfg(test)]` |
+| `org.springframework.core.Conventions` | `Conventions.java` | `conventions.rs` | `conventions.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/conventions.rs#[cfg(test)]` |
 | `org.springframework.core.CoroutinesUtils` | `CoroutinesUtils.java` | `coroutines_utils.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.DecoratingClassLoader` | `DecoratingClassLoader.java` | `decorating_class_loader.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.DecoratingProxy` | `DecoratingProxy.java` | `decorating_proxy.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
@@ -80,7 +79,7 @@
 | `org.springframework.core.KotlinReflectionParameterNameDiscoverer` | `KotlinReflectionParameterNameDiscoverer.java` | `kotlin_reflection_parameter_name_discoverer.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.MethodClassKey` | `MethodClassKey.java` | `method_class_key.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.MethodIntrospector` | `MethodIntrospector.java` | `method_introspector.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
-| `org.springframework.core.MethodParameter` | `MethodParameter.java` | `method_parameter.rs` | `method_parameter.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
+| `org.springframework.core.MethodParameter` | `MethodParameter.java` | `method_parameter.rs` | `method_parameter.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/method_parameter.rs#[cfg(test)]` |
 | `org.springframework.core.NamedInheritableThreadLocal` | `NamedInheritableThreadLocal.java` | `named_inheritable_thread_local.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.NamedThreadLocal` | `NamedThreadLocal.java` | `named_thread_local.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.NativeDetector` | `NativeDetector.java` | `native_detector.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
@@ -88,13 +87,13 @@
 | `org.springframework.core.NestedExceptionUtils` | `NestedExceptionUtils.java` | `nested_exception_utils.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.NestedRuntimeException` | `NestedRuntimeException.java` | `nested_runtime_exception.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.Nullness` | `Nullness.java` | `nullness.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
-| `org.springframework.core.OrderComparator` | `OrderComparator.java` | `order_comparator.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
-| `org.springframework.core.Ordered` | `Ordered.java` | `ordered.rs` | `ordered.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
+| `org.springframework.core.OrderComparator` | `OrderComparator.java` | `order_comparator.rs` | `order_comparator.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/order_comparator.rs#[cfg(test)]` |
+| `org.springframework.core.Ordered` | `Ordered.java` | `ordered.rs` | `ordered.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/order_comparator.rs#[cfg(test)]` |
 | `org.springframework.core.OverridingClassLoader` | `OverridingClassLoader.java` | `overriding_class_loader.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.ParameterNameDiscoverer` | `ParameterNameDiscoverer.java` | `parameter_name_discoverer.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.ParameterizedTypeReference` | `ParameterizedTypeReference.java` | `parameterized_type_reference.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.PrioritizedParameterNameDiscoverer` | `PrioritizedParameterNameDiscoverer.java` | `prioritized_parameter_name_discoverer.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
-| `org.springframework.core.PriorityOrdered` | `PriorityOrdered.java` | `priority_ordered.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.core.PriorityOrdered` | `PriorityOrdered.java` | `priority_ordered.rs` | `priority_ordered.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/order_comparator.rs#[cfg(test)]` |
 | `org.springframework.core.PropagationContextElement` | `PropagationContextElement.java` | `propagation_context_element.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.ReactiveAdapter` | `ReactiveAdapter.java` | `reactive_adapter.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.ReactiveAdapterRegistry` | `ReactiveAdapterRegistry.java` | `reactive_adapter_registry.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
@@ -104,7 +103,7 @@
 | `org.springframework.core.SerializableTypeWrapper` | `SerializableTypeWrapper.java` | `serializable_type_wrapper.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.SimpleAliasRegistry` | `SimpleAliasRegistry.java` | `simple_alias_registry.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.SmartClassLoader` | `SmartClassLoader.java` | `smart_class_loader.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
-| `org.springframework.core.SortedProperties` | `SortedProperties.java` | `sorted_properties.rs` | `sorted_properties.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
+| `org.springframework.core.SortedProperties` | `SortedProperties.java` | `sorted_properties.rs` | `sorted_properties.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/sorted_properties.rs#[cfg(test)]` |
 | `org.springframework.core.SpringProperties` | `SpringProperties.java` | `spring_properties.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.SpringVersion` | `SpringVersion.java` | `spring_version.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.StandardReflectionParameterNameDiscoverer` | `StandardReflectionParameterNameDiscoverer.java` | `standard_reflection_parameter_name_discoverer.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
@@ -157,7 +156,7 @@
 | `org.springframework.core.codec.DataBufferEncoder` | `codec/DataBufferEncoder.java` | `codec/data_buffer_encoder.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.codec.Decoder` | `codec/Decoder.java` | `codec/decoder.rs` | `codec/decoder.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/codec/string_decoder.rs#[cfg(test)]` |
 | `org.springframework.core.codec.DecodingException` | `codec/DecodingException.java` | `codec/decoding_exception.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
-| `org.springframework.core.codec.Encoder` | `codec/Encoder.java` | `codec/encoder.rs` | `codec/encoder.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/codec/byte_array_encoder.rs#[cfg(test)]` |
+| `org.springframework.core.codec.Encoder` | `codec/Encoder.java` | `codec/encoder.rs` | `codec/encoder.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/codec/codec_error.rs#[cfg(test)]` |
 | `org.springframework.core.codec.EncodingException` | `codec/EncodingException.java` | `codec/encoding_exception.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.codec.Hints` | `codec/Hints.java` | `codec/hints.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.codec.NettyByteBufDecoder` | `codec/NettyByteBufDecoder.java` | `codec/netty_byte_buf_decoder.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
@@ -172,13 +171,13 @@
 | `org.springframework.core.convert.ConverterNotFoundException` | `convert/ConverterNotFoundException.java` | `convert/converter_not_found_exception.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.convert.Property` | `convert/Property.java` | `convert/property.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.convert.TypeDescriptor` | `convert/TypeDescriptor.java` | `convert/type_descriptor.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
-| `org.springframework.core.convert.converter.ConditionalConverter` | `convert/converter/ConditionalConverter.java` | `convert/converter/conditional_converter.rs` | `convert/conditional_converter.rs` | `MISPLACED` | 文件名存在，但未位于保留末两层包目录计算出的路径 |
+| `org.springframework.core.convert.converter.ConditionalConverter` | `convert/converter/ConditionalConverter.java` | `convert/converter/conditional_converter.rs` | `convert/converter/conditional_converter.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/convert/converter/type_pair_conditional_converter.rs#[cfg(test)]` |
 | `org.springframework.core.convert.converter.ConditionalGenericConverter` | `convert/converter/ConditionalGenericConverter.java` | `convert/converter/conditional_generic_converter.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
-| `org.springframework.core.convert.converter.Converter` | `convert/converter/Converter.java` | `convert/converter/converter.rs` | `convert/converter.rs` | `MISPLACED` | 文件名存在，但未位于保留末两层包目录计算出的路径 |
+| `org.springframework.core.convert.converter.Converter` | `convert/converter/Converter.java` | `convert/converter/converter.rs` | `convert/converter/converter.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/convert/duration_converter.rs#[cfg(test)]` |
 | `org.springframework.core.convert.converter.ConverterFactory` | `convert/converter/ConverterFactory.java` | `convert/converter/converter_factory.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
-| `org.springframework.core.convert.converter.ConverterRegistry` | `convert/converter/ConverterRegistry.java` | `convert/converter/converter_registry.rs` | `convert/converter_registry.rs` | `MISPLACED` | 文件名存在，但未位于保留末两层包目录计算出的路径 |
+| `org.springframework.core.convert.converter.ConverterRegistry` | `convert/converter/ConverterRegistry.java` | `convert/converter/converter_registry.rs` | `convert/converter/converter_registry.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/convert/converter/converter_registry.rs#[cfg(test)]` |
 | `org.springframework.core.convert.converter.ConvertingComparator` | `convert/converter/ConvertingComparator.java` | `convert/converter/converting_comparator.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
-| `org.springframework.core.convert.converter.GenericConverter` | `convert/converter/GenericConverter.java` | `convert/converter/generic_converter.rs` | `convert/generic_converter.rs` | `MISPLACED` | 文件名存在，但未位于保留末两层包目录计算出的路径 |
+| `org.springframework.core.convert.converter.GenericConverter` | `convert/converter/GenericConverter.java` | `convert/converter/generic_converter.rs` | `convert/converter/generic_converter.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/convert/converter/generic_converter.rs#[cfg(test)]` |
 | `org.springframework.core.convert.support.AbstractConditionalEnumConverter` | `convert/support/AbstractConditionalEnumConverter.java` | `convert/support/abstract_conditional_enum_converter.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.convert.support.ArrayToArrayConverter` | `convert/support/ArrayToArrayConverter.java` | `convert/support/array_to_array_converter.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.convert.support.ArrayToCollectionConverter` | `convert/support/ArrayToCollectionConverter.java` | `convert/support/array_to_collection_converter.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
@@ -238,23 +237,23 @@
 | `org.springframework.core.env.ConfigurableEnvironment` | `env/ConfigurableEnvironment.java` | `env/configurable_environment.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.env.ConfigurablePropertyResolver` | `env/ConfigurablePropertyResolver.java` | `env/configurable_property_resolver.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.env.EnumerablePropertySource` | `env/EnumerablePropertySource.java` | `env/enumerable_property_source.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
-| `org.springframework.core.env.Environment` | `env/Environment.java` | `env/environment.rs` | `environment/environment.rs` | `MISPLACED` | 文件名存在，但未位于保留末两层包目录计算出的路径 |
+| `org.springframework.core.env.Environment` | `env/Environment.java` | `env/environment.rs` | `env/environment.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/env/mod.rs#[cfg(test)]` |
 | `org.springframework.core.env.EnvironmentCapable` | `env/EnvironmentCapable.java` | `env/environment_capable.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.env.JOptCommandLinePropertySource` | `env/JOptCommandLinePropertySource.java` | `env/j_opt_command_line_property_source.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
-| `org.springframework.core.env.MapPropertySource` | `env/MapPropertySource.java` | `env/map_property_source.rs` | `environment/map_property_source.rs` | `MISPLACED` | 文件名存在，但未位于保留末两层包目录计算出的路径 |
+| `org.springframework.core.env.MapPropertySource` | `env/MapPropertySource.java` | `env/map_property_source.rs` | `env/map_property_source.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/env/mod.rs#[cfg(test)]` |
 | `org.springframework.core.env.MissingRequiredPropertiesException` | `env/MissingRequiredPropertiesException.java` | `env/missing_required_properties_exception.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.env.MutablePropertySources` | `env/MutablePropertySources.java` | `env/mutable_property_sources.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.env.Profiles` | `env/Profiles.java` | `env/profiles.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.env.ProfilesParser` | `env/ProfilesParser.java` | `env/profiles_parser.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.env.PropertiesPropertySource` | `env/PropertiesPropertySource.java` | `env/properties_property_source.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.env.PropertyResolver` | `env/PropertyResolver.java` | `env/property_resolver.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
-| `org.springframework.core.env.PropertySource` | `env/PropertySource.java` | `env/property_source.rs` | `environment/property_source.rs` | `MISPLACED` | 文件名存在，但未位于保留末两层包目录计算出的路径 |
-| `org.springframework.core.env.PropertySources` | `env/PropertySources.java` | `env/property_sources.rs` | `environment/property_sources.rs` | `MISPLACED` | 文件名存在，但未位于保留末两层包目录计算出的路径 |
+| `org.springframework.core.env.PropertySource` | `env/PropertySource.java` | `env/property_source.rs` | `env/property_source.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/properties_file.rs#[cfg(test)]` |
+| `org.springframework.core.env.PropertySources` | `env/PropertySources.java` | `env/property_sources.rs` | `env/property_sources.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/properties_file.rs#[cfg(test)]` |
 | `org.springframework.core.env.PropertySourcesPropertyResolver` | `env/PropertySourcesPropertyResolver.java` | `env/property_sources_property_resolver.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.env.SimpleCommandLineArgsParser` | `env/SimpleCommandLineArgsParser.java` | `env/simple_command_line_args_parser.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.env.SimpleCommandLinePropertySource` | `env/SimpleCommandLinePropertySource.java` | `env/simple_command_line_property_source.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
-| `org.springframework.core.env.StandardEnvironment` | `env/StandardEnvironment.java` | `env/standard_environment.rs` | `environment/standard_environment.rs` | `MISPLACED` | 文件名存在，但未位于保留末两层包目录计算出的路径 |
-| `org.springframework.core.env.SystemEnvironmentPropertySource` | `env/SystemEnvironmentPropertySource.java` | `env/system_environment_property_source.rs` | `environment/system_environment_property_source.rs` | `MISPLACED` | 文件名存在，但未位于保留末两层包目录计算出的路径 |
+| `org.springframework.core.env.StandardEnvironment` | `env/StandardEnvironment.java` | `env/standard_environment.rs` | `env/standard_environment.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/env/mod.rs#[cfg(test)]` |
+| `org.springframework.core.env.SystemEnvironmentPropertySource` | `env/SystemEnvironmentPropertySource.java` | `env/system_environment_property_source.rs` | `env/system_environment_property_source.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/env/mod.rs#[cfg(test)]` |
 | `org.springframework.core.io.AbstractFileResolvingResource` | `io/AbstractFileResolvingResource.java` | `io/abstract_file_resolving_resource.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.io.AbstractResource` | `io/AbstractResource.java` | `io/abstract_resource.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.io.ByteArrayResource` | `io/ByteArrayResource.java` | `io/byte_array_resource.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
@@ -349,12 +348,12 @@
 | `org.springframework.core.style.ToStringCreator` | `style/ToStringCreator.java` | `style/to_string_creator.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.style.ToStringStyler` | `style/ToStringStyler.java` | `style/to_string_styler.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.style.ValueStyler` | `style/ValueStyler.java` | `style/value_styler.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
-| `org.springframework.core.task.AsyncTaskExecutor` | `task/AsyncTaskExecutor.java` | `task/async_task_executor.rs` | `task/async_task_executor.rs` | `UNVERIFIED` | 缺少测试引用 |
+| `org.springframework.core.task.AsyncTaskExecutor` | `task/AsyncTaskExecutor.java` | `task/async_task_executor.rs` | `task/async_task_executor.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/task/async_task_executor.rs#[cfg(test)]` |
 | `org.springframework.core.task.SimpleAsyncTaskExecutor` | `task/SimpleAsyncTaskExecutor.java` | `task/simple_async_task_executor.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.task.SyncTaskExecutor` | `task/SyncTaskExecutor.java` | `task/sync_task_executor.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.task.TaskCallback` | `task/TaskCallback.java` | `task/task_callback.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.task.TaskDecorator` | `task/TaskDecorator.java` | `task/task_decorator.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
-| `org.springframework.core.task.TaskExecutor` | `task/TaskExecutor.java` | `task/task_executor.rs` | `task/task_executor.rs` | `UNVERIFIED` | 缺少测试引用 |
+| `org.springframework.core.task.TaskExecutor` | `task/TaskExecutor.java` | `task/task_executor.rs` | `task/task_executor.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/task/async_task_executor.rs#[cfg(test)]` |
 | `org.springframework.core.task.TaskRejectedException` | `task/TaskRejectedException.java` | `task/task_rejected_exception.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.task.TaskTimeoutException` | `task/TaskTimeoutException.java` | `task/task_timeout_exception.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.core.task.VirtualThreadDelegate` | `task/VirtualThreadDelegate.java` | `task/virtual_thread_delegate.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |

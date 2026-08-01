@@ -21,7 +21,7 @@ use super::ConversionError;
 /// # 示例
 ///
 /// ```rust
-/// use vernal_core::convert::converter_not_found_error::converter_not_found;
+/// use vernal_core::convert::converter_not_found;
 /// use std::any::TypeId;
 ///
 /// let err = converter_not_found("hello", TypeId::of::<String>(), TypeId::of::<bool>());

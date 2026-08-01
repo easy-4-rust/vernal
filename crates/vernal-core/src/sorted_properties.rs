@@ -10,6 +10,7 @@ use std::fmt;
 
 /// 有序属性集合。
 ///
+/// 对应 Java: org.springframework.core.SortedProperties
 /// 对标 Spring `SortedProperties`。按 key 字典序存储,用于配置文件输出
 /// (保证每次生成的文件内容一致,便于 diff)。
 ///
@@ -24,7 +25,7 @@ use std::fmt;
 /// props.set("mike", "2");
 ///
 /// // keys() 按字典序输出
-/// let keys: Vec<&str> = props.keys().copied().collect();
+/// let keys: Vec<&str> = props.keys().collect();
 /// assert_eq!(keys, vec!["alpha", "mike", "zulu"]);
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq)]

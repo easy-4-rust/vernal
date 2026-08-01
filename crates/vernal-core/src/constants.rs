@@ -11,6 +11,7 @@ use std::collections::HashMap;
 
 /// 框架常量注册表。
 ///
+/// 对应 Java: org.springframework.core.Constants
 /// 对标 Spring `Constants`。
 ///
 /// # 示例

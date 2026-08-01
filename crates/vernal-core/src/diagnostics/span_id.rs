@@ -13,6 +13,7 @@ use crate::id::ObjectId;
 /// vernal-core 选择统一使用 24 位 hex(与 `ObjectId` 兼容),
 /// 业务可通过 [`SpanId::trace_id`] 区分 trace 与 span。
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[allow(clippy::struct_field_names)] // 字段名对标 OTel span_id/parent_span_id 命名
 pub struct SpanId {
     /// 当前 Span 的 ID(24 位 hex)
     span_id: ObjectId,

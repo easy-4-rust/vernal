@@ -107,7 +107,7 @@ mod tests {
         assert_eq!(copy1.source_type_id(), std::any::TypeId::of::<String>());
     }
 
-    /// from_type_ids 显式构造
+    /// `from_type_ids` 显式构造
     #[test]
     fn from_type_ids_explicit_construction() {
         let s = std::any::TypeId::of::<String>();

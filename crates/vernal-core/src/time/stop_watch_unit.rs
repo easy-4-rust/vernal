@@ -76,6 +76,7 @@ impl StopWatchUnit {
     /// 对标 Java `(double) nanos / TimeUnit.NANOSECONDS.convert(1, timeUnit)`。
     /// 使用 f64 精度,保持与 Spring 一致的"小数点 9 位精度"语义。
     #[must_use]
+    #[allow(clippy::cast_precision_loss)] // 对标 Java double 精度
     pub fn from_nanos(&self, nanos: u128) -> f64 {
         nanos as f64 / self.nanos_per_unit() as f64
     }

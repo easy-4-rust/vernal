@@ -198,7 +198,7 @@ impl<K: Eq + Hash, V> UnmodifiableMultiValueMap<K, V> {
 
     /// 获取内部引用。
     #[must_use]
-    pub fn as_ref(&self) -> &MultiValueMap<K, V> {
+    pub fn as_multi_value_map(&self) -> &MultiValueMap<K, V> {
         &self.inner
     }
 }
@@ -379,7 +379,7 @@ mod tests {
         map.add("a", 1);
         map.add("b", 2);
         let mut keys: Vec<&str> = map.keys().copied().collect();
-        keys.sort();
+        keys.sort_unstable();
         assert_eq!(keys, vec!["a", "b"]);
     }
 
@@ -411,7 +411,7 @@ mod tests {
         let mut inner = MultiValueMap::new();
         inner.add("k", 1);
         let unmod = UnmodifiableMultiValueMap::new(inner);
-        let map_ref = unmod.as_ref();
+        let map_ref = unmod.as_multi_value_map();
         assert_eq!(map_ref.get_first(&"k"), Some(&1));
     }
 
@@ -459,7 +459,7 @@ mod tests {
         inner.insert("b", vec![2]);
         let map = MultiValueMap::from_hashmap(inner);
         let mut keys: Vec<&str> = map.keys().copied().collect();
-        keys.sort();
+        keys.sort_unstable();
         assert_eq!(keys, vec!["a", "b"]);
     }
 
@@ -480,7 +480,7 @@ mod tests {
         let mut inner = MultiValueMap::new();
         inner.add("k", 1);
         let unmod = UnmodifiableMultiValueMap::new(inner);
-        let map_ref = unmod.as_ref();
+        let map_ref = unmod.as_multi_value_map();
         assert_eq!(map_ref.get_first(&"k"), Some(&1));
         assert_eq!(unmod.len(), 1);
         assert!(!unmod.is_empty());
@@ -517,7 +517,7 @@ mod tests {
         map.add("counter", 1);
         // 通过 DerefMut 直接修改内部 HashMap
         {
-            let inner: &mut HashMap<&str, Vec<i32>> = &mut *map;
+            let inner: &mut HashMap<&str, Vec<i32>> = &mut map;
             inner.entry("counter").or_default().push(2);
         }
         assert_eq!(map.get_all(&"counter"), Some(&[1, 2][..]));
@@ -529,7 +529,7 @@ mod tests {
         map.add("a", 1);
         map.add("b", 2);
         // Deref 暴露 HashMap 的 capability 方法
-        let inner: &HashMap<&str, Vec<i32>> = &*map;
+        let inner: &HashMap<&str, Vec<i32>> = &map;
         assert_eq!(inner.len(), 2);
         assert!(inner.contains_key(&"a"));
         assert!(!inner.contains_key(&"c"));

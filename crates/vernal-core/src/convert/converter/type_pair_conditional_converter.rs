@@ -48,7 +48,7 @@ impl ConditionalConverter for TypePairConditionalConverter {
 mod tests {
     use super::*;
 
-    /// 验证 source_type/target_type 返回 `TypeId` 而不是具体类型
+    /// 验证 `source_type/target_type` 返回 `TypeId` 而不是具体类型
     /// （对标 Spring `getConvertibleTypes()` 返回 `Set<ConvertiblePair>` 的运行时类型对查询）
     #[test]
     fn source_type_and_target_type_match_constructed_pair() {

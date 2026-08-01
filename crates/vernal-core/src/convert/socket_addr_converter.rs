@@ -58,14 +58,14 @@ mod tests {
     #[test]
     fn parses_ipv4_socket_addr() {
         let addr = SocketAddr::from_str_value("127.0.0.1:8080").unwrap();
-        assert_eq!(addr.ip(), Ipv4Addr::new(127, 0, 0, 1));
+        assert_eq!(addr.ip(), Ipv4Addr::LOCALHOST);
         assert_eq!(addr.port(), 8080);
     }
 
     #[test]
     fn parses_ipv4_socket_addr_v4() {
         let addr = SocketAddrV4::from_str_value("0.0.0.0:443").unwrap();
-        assert_eq!(*addr.ip(), Ipv4Addr::new(0, 0, 0, 0));
+        assert_eq!(*addr.ip(), Ipv4Addr::UNSPECIFIED);
         assert_eq!(addr.port(), 443);
     }
 
@@ -108,7 +108,7 @@ mod tests {
         assert_eq!(addr.port(), 8080);
     }
 
-    /// SocketAddrV4 错误消息标识具体类型
+    /// `SocketAddrV4` 错误消息标识具体类型
     #[test]
     fn socket_addr_v4_error_mentions_ipv4_kind() {
         let err = SocketAddrV4::from_str_value("not-a-v4-addr:80").unwrap_err();
@@ -116,7 +116,7 @@ mod tests {
         assert!(err.reason.contains("IPv4"));
     }
 
-    /// SocketAddrV6 错误消息标识具体类型
+    /// `SocketAddrV6` 错误消息标识具体类型
     #[test]
     fn socket_addr_v6_error_mentions_ipv6_kind() {
         let err = SocketAddrV6::from_str_value("not-a-v6-addr:80").unwrap_err();
@@ -124,7 +124,7 @@ mod tests {
         assert!(err.reason.contains("IPv6"));
     }
 
-    /// SocketAddrV4: 完整 IPv4 地址 + 端口
+    /// `SocketAddrV4`: 完整 IPv4 地址 + 端口
     #[test]
     fn socket_addr_v4_parses_full_address() {
         let addr = SocketAddrV4::from_str_value("192.168.1.1:8080").unwrap();

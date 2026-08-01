@@ -38,7 +38,7 @@ mod tests {
     #[test]
     fn default_works_like_new() {
         // 对标 Spring: Default trait 应提供等价于 new() 的实例
-        let c = AlwaysMatchConverter::default();
+        let c = AlwaysMatchConverter;
         let pair = ConvertiblePair::new::<String, i64>();
         assert!(c.matches(&pair));
     }
@@ -46,7 +46,7 @@ mod tests {
     #[test]
     fn debug_format_is_struct_name() {
         let c = AlwaysMatchConverter::new();
-        assert_eq!(format!("{:?}", c), "AlwaysMatchConverter");
+        assert_eq!(format!("{c:?}"), "AlwaysMatchConverter");
     }
 
     #[test]
@@ -61,7 +61,7 @@ mod tests {
     #[test]
     fn clone_equals_original() {
         let c1 = AlwaysMatchConverter::new();
-        let c2 = c1.clone();
+        let c2 = c1;
         let pair = ConvertiblePair::new::<bool, i32>();
         assert_eq!(c1.matches(&pair), c2.matches(&pair));
     }

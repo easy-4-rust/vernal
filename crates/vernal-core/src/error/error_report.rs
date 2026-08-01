@@ -188,7 +188,7 @@ mod tests {
 
     #[test]
     fn from_infrastructure_error() {
-        let io_err = std::io::Error::new(std::io::ErrorKind::Other, "fail");
+        let io_err = std::io::Error::other("fail");
         let err = VernalError::infrastructure(io_err);
         let report = ErrorReport::from_error(&err);
         assert!(report.is_infrastructure());
@@ -240,7 +240,7 @@ mod tests {
 
     #[test]
     fn display_infrastructure_error() {
-        let io_err = std::io::Error::new(std::io::ErrorKind::Other, "timeout");
+        let io_err = std::io::Error::other("timeout");
         let err = VernalError::infrastructure(io_err);
         let report = ErrorReport::from_error(&err);
         let s = report.to_string();

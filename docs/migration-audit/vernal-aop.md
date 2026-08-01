@@ -29,34 +29,41 @@
 | 已处理（严格三类） | 0 |
 | `DEPENDENCY_REUSED` | 0 |
 | `IMPLEMENTED` | 0 |
-| `MISPLACED` | 9 |
-| `MISSING` | 187 |
+| `MISPLACED` | 5 |
+| `MISSING` | 165 |
 | `PARTIAL` | 0 |
 | `PLATFORM_NA` | 0 |
-| `STUB` | 0 |
-| `UNVERIFIED` | 12 |
+| `STUB` | 1 |
+| `UNVERIFIED` | 37 |
 
 ## 结构红线
 
 > 下列既存问题属于未完成证据。本报告只登记，不在文档治理任务中修改源码。
 
-- 单文件多个公开对象位于 `target_source.rs`：`TargetSource`、`TargetSourceError`、`SingletonTargetSource`、`LazyTargetSource`、`TargetClassAware`
+- 单文件多个公开对象位于 `target_source.rs`：`TargetSource`、`SingletonTargetSource`、`LazyTargetSource`、`TargetClassAware`
 - 单文件多个公开对象位于 `method_matcher.rs`：`MethodMatcher`、`TrueMethodMatcher`、`StaticMethodMatcher`、`DynamicMethodMatcher`、`MethodMatcherFactory`
 - 单文件多个公开对象位于 `class_filter.rs`：`ClassFilter`、`TrueClassFilter`、`FnClassFilter`、`ClassFilterFactory`
 - 单文件多个公开对象位于 `local_invocation_result.rs`：`LocalInvocationValue`、`LocalInvocationResult`、`LocalInvocationFuture`、`LocalInvocationTarget`
+- 单文件多个公开对象位于 `proxy_method_invocation.rs`：`ProxyMethodInvocation`、`SimpleProxyMethodInvocation`、`IntroductionAwareMethodMatcher`、`AspectJPrecedenceInformation`
+- 单文件多个公开对象位于 `raw_target_access.rs`：`RawTargetAccess`、`Refreshable`、`PoolingConfig`、`ScopedObject`、`SpringProxy`、`ThreadLocalTargetSourceStats`、`AsyncUncaughtExceptionHandler`、`AopInfrastructureBean`、`AdvisedSupportListener`、`InstantiationModelAwarePointcutAdvisor`、`MetadataAwarePointcutAdvisor`
 - 单文件多个公开对象位于 `invocation_result.rs`：`InvocationValue`、`InvocationResult`、`InvocationFuture`、`InvocationTarget`
 - 单文件多个公开对象位于 `aspect_rs_adapter.rs`：`AspectRsAdapter`、`AroundAdapter`
-- 单文件多个公开对象位于 `framework/joinpoint.rs`：`Joinpoint`、`MethodInvocation`、`InvocationChain`
-- 单文件多个公开对象位于 `framework/proxy_method_invocation.rs`：`ProxyMethodInvocation`、`SimpleProxyMethodInvocation`、`IntroductionAwareMethodMatcher`、`AspectJPrecedenceInformation`
-- 单文件多个公开对象位于 `framework/aspect_instance_factory.rs`：`AspectInstanceFactory`、`AspectInstanceError`、`SingletonAspectInstanceFactory`、`LazyAspectInstanceFactory`、`MetadataAwareAspectInstanceFactory`
+- 单文件多个公开对象位于 `spring_proxy.rs`：`SpringProxy`、`DefaultSpringProxy`
 - 单文件多个公开对象位于 `framework/advisor_chain_factory.rs`：`AdvisorChainFactory`、`DefaultAdvisorChainFactory`、`Advised`
-- 单文件多个公开对象位于 `framework/raw_target_access.rs`：`RawTargetAccess`、`Refreshable`、`PoolingConfig`、`ScopedObject`、`SpringProxy`、`ThreadLocalTargetSourceStats`、`AsyncUncaughtExceptionHandler`、`AopInfrastructureBean`、`AdvisedSupportListener`、`InstantiationModelAwarePointcutAdvisor`、`MetadataAwarePointcutAdvisor`
+- 单文件多个公开对象位于 `framework/aop_infrastructure_bean.rs`：`AopInfrastructureBean`、`DefaultAopInfrastructureBean`
 - 单文件多个公开对象位于 `framework/aop_proxy.rs`：`AopProxy`、`AopProxyError`、`AopProxyFactory`、`FnAopProxy`
-- 单文件多个公开对象位于 `framework/target_source_creator.rs`：`TargetSourceCreator`、`FnTargetSourceCreator`
-- 单文件多个公开对象位于 `framework/constructor_interceptor.rs`：`ConstructorInvocation`、`ConstructorInvocationError`、`ConstructorInterceptor`、`FnConstructorInterceptor`
+- 单文件多个公开对象位于 `framework/advised_support_listener.rs`：`AdvisedSupportListener`、`FnAdvisedSupportListener`
+- 单文件多个公开对象位于 `intercept/joinpoint.rs`：`Joinpoint`、`MethodInvocation`、`InvocationChain`
+- 单文件多个公开对象位于 `intercept/constructor_interceptor.rs`：`ConstructorInvocation`、`ConstructorInvocationError`、`ConstructorInterceptor`、`FnConstructorInterceptor`
+- 单文件多个公开对象位于 `aspectj/aspect_instance_factory.rs`：`AspectInstanceFactory`、`AspectInstanceError`、`SingletonAspectInstanceFactory`、`LazyAspectInstanceFactory`、`MetadataAwareAspectInstanceFactory`
+- 单文件多个公开对象位于 `aop/dynamic_introduction_advice.rs`：`DynamicIntroductionAdvice`、`IntroductionAdvice`、`IntroductionInterceptor`
+- 单文件多个公开对象位于 `aop/after_advice.rs`：`AfterAdvice`、`AfterReturningAdvice`、`ThrowsAdvice`
+- 单文件多个公开对象位于 `aop/advice.rs`：`Advice`、`AspectException`
+- 单文件多个公开对象位于 `aop/before_advice.rs`：`BeforeAdvice`、`MethodBeforeAdvice`
 - 单文件多个公开对象位于 `support/expression_pointcut.rs`：`ExpressionPointcut`、`StringExpressionPointcut`
 - 单文件多个公开对象位于 `pointcut/dsl/pattern.rs`：`Visibility`、`NamePattern`、`ExecutionPattern`、`ModulePattern`
 - 单文件多个公开对象位于 `pointcut/dsl/matcher.rs`：`FunctionDescriptor`、`PointcutMatcher`、`TagPattern`、`QualifierPattern`
+- 单文件多个公开对象位于 `framework/autoproxy/target_source_creator.rs`：`TargetSourceCreator`、`FnTargetSourceCreator`
 - 单文件多个公开对象位于 `framework/adapter/advisor_adapter.rs`：`AdvisorAdapter`、`AdvisorAdapterRegistry`、`DefaultAdvisorAdapterRegistry`
 
 ## 依赖复用边界
@@ -70,41 +77,41 @@
 
 | Java FQN | Java 相对路径 | 预期 Rust 路径 | 当前 Rust 路径 | 状态 | 证据 |
 |---|---|---|---|---|---|
-| `org.aopalliance.aop.Advice` | `org/aopalliance/aop/Advice.java` | `aop/advice.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.aopalliance.aop.Advice` | `org/aopalliance/aop/Advice.java` | `aop/advice.rs` | `aop/advice.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
 | `org.aopalliance.aop.AspectException` | `org/aopalliance/aop/AspectException.java` | `aop/aspect_exception.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
-| `org.aopalliance.intercept.ConstructorInterceptor` | `org/aopalliance/intercept/ConstructorInterceptor.java` | `intercept/constructor_interceptor.rs` | `framework/constructor_interceptor.rs` | `MISPLACED` | 文件名存在，但未位于保留末两层包目录计算出的路径 |
+| `org.aopalliance.intercept.ConstructorInterceptor` | `org/aopalliance/intercept/ConstructorInterceptor.java` | `intercept/constructor_interceptor.rs` | `intercept/constructor_interceptor.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
 | `org.aopalliance.intercept.ConstructorInvocation` | `org/aopalliance/intercept/ConstructorInvocation.java` | `intercept/constructor_invocation.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.aopalliance.intercept.Interceptor` | `org/aopalliance/intercept/Interceptor.java` | `intercept/interceptor.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
-| `org.aopalliance.intercept.Invocation` | `org/aopalliance/intercept/Invocation.java` | `intercept/invocation.rs` | `invocation.rs` | `MISPLACED` | 文件名存在，但未位于保留末两层包目录计算出的路径 |
-| `org.aopalliance.intercept.Joinpoint` | `org/aopalliance/intercept/Joinpoint.java` | `intercept/joinpoint.rs` | `framework/joinpoint.rs` | `MISPLACED` | 文件名存在，但未位于保留末两层包目录计算出的路径 |
+| `org.aopalliance.intercept.Invocation` | `org/aopalliance/intercept/Invocation.java` | `intercept/invocation.rs` | `intercept/invocation.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
+| `org.aopalliance.intercept.Joinpoint` | `org/aopalliance/intercept/Joinpoint.java` | `intercept/joinpoint.rs` | `intercept/joinpoint.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
 | `org.aopalliance.intercept.MethodInterceptor` | `org/aopalliance/intercept/MethodInterceptor.java` | `intercept/method_interceptor.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.aopalliance.intercept.MethodInvocation` | `org/aopalliance/intercept/MethodInvocation.java` | `intercept/method_invocation.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.aop.Advisor` | `org/springframework/aop/Advisor.java` | `advisor.rs` | `advisor.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
-| `org.springframework.aop.AfterAdvice` | `org/springframework/aop/AfterAdvice.java` | `after_advice.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.aop.AfterAdvice` | `org/springframework/aop/AfterAdvice.java` | `after_advice.rs` | `aop/after_advice.rs` | `MISPLACED` | 文件名存在，但未位于保留末两层包目录计算出的路径 |
 | `org.springframework.aop.AfterReturningAdvice` | `org/springframework/aop/AfterReturningAdvice.java` | `after_returning_advice.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.aop.AopInvocationException` | `org/springframework/aop/AopInvocationException.java` | `aop_invocation_exception.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
-| `org.springframework.aop.BeforeAdvice` | `org/springframework/aop/BeforeAdvice.java` | `before_advice.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.aop.BeforeAdvice` | `org/springframework/aop/BeforeAdvice.java` | `before_advice.rs` | `aop/before_advice.rs` | `MISPLACED` | 文件名存在，但未位于保留末两层包目录计算出的路径 |
 | `org.springframework.aop.ClassFilter` | `org/springframework/aop/ClassFilter.java` | `class_filter.rs` | `class_filter.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
-| `org.springframework.aop.DynamicIntroductionAdvice` | `org/springframework/aop/DynamicIntroductionAdvice.java` | `dynamic_introduction_advice.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.aop.DynamicIntroductionAdvice` | `org/springframework/aop/DynamicIntroductionAdvice.java` | `dynamic_introduction_advice.rs` | `aop/dynamic_introduction_advice.rs` | `MISPLACED` | 文件名存在，但未位于保留末两层包目录计算出的路径 |
 | `org.springframework.aop.IntroductionAdvisor` | `org/springframework/aop/IntroductionAdvisor.java` | `introduction_advisor.rs` | `introduction_advisor.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
 | `org.springframework.aop.IntroductionAwareMethodMatcher` | `org/springframework/aop/IntroductionAwareMethodMatcher.java` | `introduction_aware_method_matcher.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.aop.IntroductionInfo` | `org/springframework/aop/IntroductionInfo.java` | `introduction_info.rs` | `introduction_info.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
-| `org.springframework.aop.IntroductionInterceptor` | `org/springframework/aop/IntroductionInterceptor.java` | `introduction_interceptor.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.aop.IntroductionInterceptor` | `org/springframework/aop/IntroductionInterceptor.java` | `introduction_interceptor.rs` | `aop/introduction_interceptor.rs` | `MISPLACED` | 文件名存在，但未位于保留末两层包目录计算出的路径 |
 | `org.springframework.aop.MethodBeforeAdvice` | `org/springframework/aop/MethodBeforeAdvice.java` | `method_before_advice.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.aop.MethodMatcher` | `org/springframework/aop/MethodMatcher.java` | `method_matcher.rs` | `method_matcher.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
 | `org.springframework.aop.Pointcut` | `org/springframework/aop/Pointcut.java` | `pointcut.rs` | `pointcut.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
 | `org.springframework.aop.PointcutAdvisor` | `org/springframework/aop/PointcutAdvisor.java` | `pointcut_advisor.rs` | `pointcut_advisor.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
-| `org.springframework.aop.ProxyMethodInvocation` | `org/springframework/aop/ProxyMethodInvocation.java` | `proxy_method_invocation.rs` | `framework/proxy_method_invocation.rs` | `MISPLACED` | 文件名存在，但未位于保留末两层包目录计算出的路径 |
-| `org.springframework.aop.RawTargetAccess` | `org/springframework/aop/RawTargetAccess.java` | `raw_target_access.rs` | `framework/raw_target_access.rs` | `MISPLACED` | 文件名存在，但未位于保留末两层包目录计算出的路径 |
-| `org.springframework.aop.SpringProxy` | `org/springframework/aop/SpringProxy.java` | `spring_proxy.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.aop.ProxyMethodInvocation` | `org/springframework/aop/ProxyMethodInvocation.java` | `proxy_method_invocation.rs` | `proxy_method_invocation.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
+| `org.springframework.aop.RawTargetAccess` | `org/springframework/aop/RawTargetAccess.java` | `raw_target_access.rs` | `raw_target_access.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释、测试引用 |
+| `org.springframework.aop.SpringProxy` | `org/springframework/aop/SpringProxy.java` | `spring_proxy.rs` | `spring_proxy.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
 | `org.springframework.aop.TargetClassAware` | `org/springframework/aop/TargetClassAware.java` | `target_class_aware.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.aop.TargetSource` | `org/springframework/aop/TargetSource.java` | `target_source.rs` | `target_source.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
 | `org.springframework.aop.ThrowsAdvice` | `org/springframework/aop/ThrowsAdvice.java` | `throws_advice.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
-| `org.springframework.aop.TrueClassFilter` | `org/springframework/aop/TrueClassFilter.java` | `true_class_filter.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
-| `org.springframework.aop.TrueMethodMatcher` | `org/springframework/aop/TrueMethodMatcher.java` | `true_method_matcher.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
-| `org.springframework.aop.TruePointcut` | `org/springframework/aop/TruePointcut.java` | `true_pointcut.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.aop.TrueClassFilter` | `org/springframework/aop/TrueClassFilter.java` | `true_class_filter.rs` | `true_class_filter.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
+| `org.springframework.aop.TrueMethodMatcher` | `org/springframework/aop/TrueMethodMatcher.java` | `true_method_matcher.rs` | `true_method_matcher.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
+| `org.springframework.aop.TruePointcut` | `org/springframework/aop/TruePointcut.java` | `true_pointcut.rs` | `true_pointcut.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
 | `org.springframework.aop.aspectj.AbstractAspectJAdvice` | `org/springframework/aop/aspectj/AbstractAspectJAdvice.java` | `aspectj/abstract_aspect_j_advice.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
-| `org.springframework.aop.aspectj.AspectInstanceFactory` | `org/springframework/aop/aspectj/AspectInstanceFactory.java` | `aspectj/aspect_instance_factory.rs` | `framework/aspect_instance_factory.rs` | `MISPLACED` | 文件名存在，但未位于保留末两层包目录计算出的路径 |
+| `org.springframework.aop.aspectj.AspectInstanceFactory` | `org/springframework/aop/aspectj/AspectInstanceFactory.java` | `aspectj/aspect_instance_factory.rs` | `aspectj/aspect_instance_factory.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
 | `org.springframework.aop.aspectj.AspectJAdviceParameterNameDiscoverer` | `org/springframework/aop/aspectj/AspectJAdviceParameterNameDiscoverer.java` | `aspectj/aspect_j_advice_parameter_name_discoverer.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.aop.aspectj.AspectJAfterAdvice` | `org/springframework/aop/aspectj/AspectJAfterAdvice.java` | `aspectj/aspect_j_after_advice.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.aop.aspectj.AspectJAfterReturningAdvice` | `org/springframework/aop/aspectj/AspectJAfterReturningAdvice.java` | `aspectj/aspect_j_after_returning_advice.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
@@ -164,29 +171,29 @@
 | `org.springframework.aop.config.SpringConfiguredBeanDefinitionParser` | `org/springframework/aop/config/SpringConfiguredBeanDefinitionParser.java` | `config/spring_configured_bean_definition_parser.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.aop.framework.AbstractAdvisingBeanPostProcessor` | `org/springframework/aop/framework/AbstractAdvisingBeanPostProcessor.java` | `framework/abstract_advising_bean_post_processor.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.aop.framework.AbstractSingletonProxyFactoryBean` | `org/springframework/aop/framework/AbstractSingletonProxyFactoryBean.java` | `framework/abstract_singleton_proxy_factory_bean.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
-| `org.springframework.aop.framework.Advised` | `org/springframework/aop/framework/Advised.java` | `framework/advised.rs` | `advised.rs` | `MISPLACED` | 文件名存在，但未位于保留末两层包目录计算出的路径 |
-| `org.springframework.aop.framework.AdvisedSupport` | `org/springframework/aop/framework/AdvisedSupport.java` | `framework/advised_support.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
-| `org.springframework.aop.framework.AdvisedSupportListener` | `org/springframework/aop/framework/AdvisedSupportListener.java` | `framework/advised_support_listener.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.aop.framework.Advised` | `org/springframework/aop/framework/Advised.java` | `framework/advised.rs` | `framework/advised.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
+| `org.springframework.aop.framework.AdvisedSupport` | `org/springframework/aop/framework/AdvisedSupport.java` | `framework/advised_support.rs` | `framework/advised_support.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
+| `org.springframework.aop.framework.AdvisedSupportListener` | `org/springframework/aop/framework/AdvisedSupportListener.java` | `framework/advised_support_listener.rs` | `framework/advised_support_listener.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
 | `org.springframework.aop.framework.AdvisorChainFactory` | `org/springframework/aop/framework/AdvisorChainFactory.java` | `framework/advisor_chain_factory.rs` | `framework/advisor_chain_factory.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
-| `org.springframework.aop.framework.AopConfigException` | `org/springframework/aop/framework/AopConfigException.java` | `framework/aop_config_exception.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
-| `org.springframework.aop.framework.AopContext` | `org/springframework/aop/framework/AopContext.java` | `framework/aop_context.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
-| `org.springframework.aop.framework.AopInfrastructureBean` | `org/springframework/aop/framework/AopInfrastructureBean.java` | `framework/aop_infrastructure_bean.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.aop.framework.AopConfigException` | `org/springframework/aop/framework/AopConfigException.java` | `framework/aop_config_exception.rs` | `framework/aop_config_exception.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
+| `org.springframework.aop.framework.AopContext` | `org/springframework/aop/framework/AopContext.java` | `framework/aop_context.rs` | `framework/aop_context.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
+| `org.springframework.aop.framework.AopInfrastructureBean` | `org/springframework/aop/framework/AopInfrastructureBean.java` | `framework/aop_infrastructure_bean.rs` | `framework/aop_infrastructure_bean.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
 | `org.springframework.aop.framework.AopProxy` | `org/springframework/aop/framework/AopProxy.java` | `framework/aop_proxy.rs` | `framework/aop_proxy.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
 | `org.springframework.aop.framework.AopProxyFactory` | `org/springframework/aop/framework/AopProxyFactory.java` | `framework/aop_proxy_factory.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
-| `org.springframework.aop.framework.AopProxyUtils` | `org/springframework/aop/framework/AopProxyUtils.java` | `framework/aop_proxy_utils.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.aop.framework.AopProxyUtils` | `org/springframework/aop/framework/AopProxyUtils.java` | `framework/aop_proxy_utils.rs` | `framework/aop_proxy_utils.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
 | `org.springframework.aop.framework.CglibAopProxy` | `org/springframework/aop/framework/CglibAopProxy.java` | `framework/cglib_aop_proxy.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.aop.framework.CoroutinesUtils` | `org/springframework/aop/framework/CoroutinesUtils.java` | `framework/coroutines_utils.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.aop.framework.DefaultAdvisorChainFactory` | `org/springframework/aop/framework/DefaultAdvisorChainFactory.java` | `framework/default_advisor_chain_factory.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
-| `org.springframework.aop.framework.DefaultAopProxyFactory` | `org/springframework/aop/framework/DefaultAopProxyFactory.java` | `framework/default_aop_proxy_factory.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
-| `org.springframework.aop.framework.InterceptorAndDynamicMethodMatcher` | `org/springframework/aop/framework/InterceptorAndDynamicMethodMatcher.java` | `framework/interceptor_and_dynamic_method_matcher.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.aop.framework.DefaultAopProxyFactory` | `org/springframework/aop/framework/DefaultAopProxyFactory.java` | `framework/default_aop_proxy_factory.rs` | `framework/default_aop_proxy_factory.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
+| `org.springframework.aop.framework.InterceptorAndDynamicMethodMatcher` | `org/springframework/aop/framework/InterceptorAndDynamicMethodMatcher.java` | `framework/interceptor_and_dynamic_method_matcher.rs` | `framework/interceptor_and_dynamic_method_matcher.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
 | `org.springframework.aop.framework.JdkDynamicAopProxy` | `org/springframework/aop/framework/JdkDynamicAopProxy.java` | `framework/jdk_dynamic_aop_proxy.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.aop.framework.ObjenesisCglibAopProxy` | `org/springframework/aop/framework/ObjenesisCglibAopProxy.java` | `framework/objenesis_cglib_aop_proxy.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
-| `org.springframework.aop.framework.ProxyConfig` | `org/springframework/aop/framework/ProxyConfig.java` | `framework/proxy_config.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
-| `org.springframework.aop.framework.ProxyCreatorSupport` | `org/springframework/aop/framework/ProxyCreatorSupport.java` | `framework/proxy_creator_support.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
-| `org.springframework.aop.framework.ProxyFactory` | `org/springframework/aop/framework/ProxyFactory.java` | `framework/proxy_factory.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.aop.framework.ProxyConfig` | `org/springframework/aop/framework/ProxyConfig.java` | `framework/proxy_config.rs` | `framework/proxy_config.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
+| `org.springframework.aop.framework.ProxyCreatorSupport` | `org/springframework/aop/framework/ProxyCreatorSupport.java` | `framework/proxy_creator_support.rs` | `framework/proxy_creator_support.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
+| `org.springframework.aop.framework.ProxyFactory` | `org/springframework/aop/framework/ProxyFactory.java` | `framework/proxy_factory.rs` | `framework/proxy_factory.rs` | `STUB` | 存在 todo!/unimplemented!/TODO/占位或空业务逻辑标记 |
 | `org.springframework.aop.framework.ProxyFactoryBean` | `org/springframework/aop/framework/ProxyFactoryBean.java` | `framework/proxy_factory_bean.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.aop.framework.ProxyProcessorSupport` | `org/springframework/aop/framework/ProxyProcessorSupport.java` | `framework/proxy_processor_support.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
-| `org.springframework.aop.framework.ReflectiveMethodInvocation` | `org/springframework/aop/framework/ReflectiveMethodInvocation.java` | `framework/reflective_method_invocation.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.aop.framework.ReflectiveMethodInvocation` | `org/springframework/aop/framework/ReflectiveMethodInvocation.java` | `framework/reflective_method_invocation.rs` | `framework/reflective_method_invocation.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
 | `org.springframework.aop.framework.adapter.AdvisorAdapter` | `org/springframework/aop/framework/adapter/AdvisorAdapter.java` | `framework/adapter/advisor_adapter.rs` | `framework/adapter/advisor_adapter.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
 | `org.springframework.aop.framework.adapter.AdvisorAdapterRegistrationManager` | `org/springframework/aop/framework/adapter/AdvisorAdapterRegistrationManager.java` | `framework/adapter/advisor_adapter_registration_manager.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.aop.framework.adapter.AdvisorAdapterRegistry` | `org/springframework/aop/framework/adapter/AdvisorAdapterRegistry.java` | `framework/adapter/advisor_adapter_registry.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
@@ -208,7 +215,7 @@
 | `org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator` | `org/springframework/aop/framework/autoproxy/DefaultAdvisorAutoProxyCreator.java` | `framework/autoproxy/default_advisor_auto_proxy_creator.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.aop.framework.autoproxy.InfrastructureAdvisorAutoProxyCreator` | `org/springframework/aop/framework/autoproxy/InfrastructureAdvisorAutoProxyCreator.java` | `framework/autoproxy/infrastructure_advisor_auto_proxy_creator.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.aop.framework.autoproxy.ProxyCreationContext` | `org/springframework/aop/framework/autoproxy/ProxyCreationContext.java` | `framework/autoproxy/proxy_creation_context.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
-| `org.springframework.aop.framework.autoproxy.TargetSourceCreator` | `org/springframework/aop/framework/autoproxy/TargetSourceCreator.java` | `framework/autoproxy/target_source_creator.rs` | `framework/target_source_creator.rs` | `MISPLACED` | 文件名存在，但未位于保留末两层包目录计算出的路径 |
+| `org.springframework.aop.framework.autoproxy.TargetSourceCreator` | `org/springframework/aop/framework/autoproxy/TargetSourceCreator.java` | `framework/autoproxy/target_source_creator.rs` | `framework/autoproxy/target_source_creator.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
 | `org.springframework.aop.framework.autoproxy.target.AbstractBeanFactoryBasedTargetSourceCreator` | `org/springframework/aop/framework/autoproxy/target/AbstractBeanFactoryBasedTargetSourceCreator.java` | `autoproxy/target/abstract_bean_factory_based_target_source_creator.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.aop.framework.autoproxy.target.LazyInitTargetSourceCreator` | `org/springframework/aop/framework/autoproxy/target/LazyInitTargetSourceCreator.java` | `autoproxy/target/lazy_init_target_source_creator.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.aop.framework.autoproxy.target.QuickTargetSourceCreator` | `org/springframework/aop/framework/autoproxy/target/QuickTargetSourceCreator.java` | `autoproxy/target/quick_target_source_creator.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
@@ -241,7 +248,7 @@
 | `org.springframework.aop.support.ControlFlowPointcut` | `org/springframework/aop/support/ControlFlowPointcut.java` | `support/control_flow_pointcut.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.aop.support.DefaultBeanFactoryPointcutAdvisor` | `org/springframework/aop/support/DefaultBeanFactoryPointcutAdvisor.java` | `support/default_bean_factory_pointcut_advisor.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.aop.support.DefaultIntroductionAdvisor` | `org/springframework/aop/support/DefaultIntroductionAdvisor.java` | `support/default_introduction_advisor.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
-| `org.springframework.aop.support.DefaultPointcutAdvisor` | `org/springframework/aop/support/DefaultPointcutAdvisor.java` | `support/default_pointcut_advisor.rs` | `default_pointcut_advisor.rs` | `MISPLACED` | 文件名存在，但未位于保留末两层包目录计算出的路径 |
+| `org.springframework.aop.support.DefaultPointcutAdvisor` | `org/springframework/aop/support/DefaultPointcutAdvisor.java` | `support/default_pointcut_advisor.rs` | `support/default_pointcut_advisor.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
 | `org.springframework.aop.support.DelegatePerTargetObjectIntroductionInterceptor` | `org/springframework/aop/support/DelegatePerTargetObjectIntroductionInterceptor.java` | `support/delegate_per_target_object_introduction_interceptor.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.aop.support.DelegatingIntroductionInterceptor` | `org/springframework/aop/support/DelegatingIntroductionInterceptor.java` | `support/delegating_introduction_interceptor.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.aop.support.DynamicMethodMatcher` | `org/springframework/aop/support/DynamicMethodMatcher.java` | `support/dynamic_method_matcher.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
@@ -272,7 +279,7 @@
 | `org.springframework.aop.target.PoolingConfig` | `org/springframework/aop/target/PoolingConfig.java` | `target/pooling_config.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.aop.target.PrototypeTargetSource` | `org/springframework/aop/target/PrototypeTargetSource.java` | `target/prototype_target_source.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.aop.target.SimpleBeanTargetSource` | `org/springframework/aop/target/SimpleBeanTargetSource.java` | `target/simple_bean_target_source.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
-| `org.springframework.aop.target.SingletonTargetSource` | `org/springframework/aop/target/SingletonTargetSource.java` | `target/singleton_target_source.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.aop.target.SingletonTargetSource` | `org/springframework/aop/target/SingletonTargetSource.java` | `target/singleton_target_source.rs` | `singleton_target_source.rs` | `MISPLACED` | 文件名存在，但未位于保留末两层包目录计算出的路径 |
 | `org.springframework.aop.target.ThreadLocalTargetSource` | `org/springframework/aop/target/ThreadLocalTargetSource.java` | `target/thread_local_target_source.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.aop.target.ThreadLocalTargetSourceStats` | `org/springframework/aop/target/ThreadLocalTargetSourceStats.java` | `target/thread_local_target_source_stats.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.aop.target.dynamic.AbstractRefreshableTargetSource` | `org/springframework/aop/target/dynamic/AbstractRefreshableTargetSource.java` | `target/dynamic/abstract_refreshable_target_source.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |

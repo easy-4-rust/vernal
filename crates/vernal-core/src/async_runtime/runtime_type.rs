@@ -4,7 +4,7 @@
 
 /// 运行时类型枚举。
 ///
-/// 对应 Java: 多种 TaskExecutor 抽象
+/// 对应 Java: 多种 `TaskExecutor` 抽象
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RuntimeType {
     /// tokio 运行时

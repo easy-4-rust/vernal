@@ -154,6 +154,7 @@ impl SnowflakeId {
     /// # 错误
     ///
     /// 返回 [`SnowflakeError::ClockMovedBackwards`] 如果系统时钟回拨。
+    #[allow(clippy::cast_possible_wrap)] // 对标 Java long: 位模式解释
     pub fn next_id_i64(&self) -> Result<i64, SnowflakeError> {
         let _guard = self.clock_guard.lock().unwrap();
 
@@ -186,6 +187,7 @@ impl SnowflakeId {
     }
 
     /// 获取当前时间(相对 epoch 的毫秒)。
+    #[allow(clippy::cast_possible_truncation)] // as_millis 截断到 u64,对标 Java 毫秒时间戳
     fn current_time_ms(&self) -> u64 {
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -294,6 +296,7 @@ mod tests {
     #[test]
     fn id_has_correct_bit_layout() {
         let generator = SnowflakeId::with_epoch(7, DEFAULT_EPOCH_MS).unwrap();
+        #[allow(clippy::cast_sign_loss)] // 测试: i64 位模式转回 u64
         let id = generator.next_id_i64().unwrap() as u64;
         // 提取 node_id(右移 12 位,低 10 位)
         let extracted_node = (id >> NODE_ID_SHIFT) & MAX_NODE_ID;
@@ -350,6 +353,7 @@ mod tests {
         // 用一个未来的 epoch,确保 timestamp 字段相对它计算
         let future_epoch = DEFAULT_EPOCH_MS + 1_000_000;
         let generator = SnowflakeId::with_epoch(0, future_epoch).unwrap();
+        #[allow(clippy::cast_sign_loss)] // 测试: i64 位模式转回 u64
         let id = generator.next_id_i64().unwrap() as u64;
         let ts = id >> TIMESTAMP_SHIFT;
         // 应该比 future_epoch 起算的小(因为 current time < future_epoch 在测试时为负,但 saturated 到 0)
@@ -388,7 +392,9 @@ mod tests {
                 assert_eq!(last, u64::MAX);
                 assert!(current < u64::MAX);
             }
-            other => panic!("expected ClockMovedBackwards, got {other:?}"),
+            SnowflakeError::NodeIdOutOfRange(_) => {
+                panic!("expected ClockMovedBackwards, got NodeIdOutOfRange")
+            }
         }
     }
 

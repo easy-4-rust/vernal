@@ -1,3 +1,7 @@
+<!-- migration-doc: authority=support canonical=../迁移验收规范.md -->
+
+> 迁移文档治理：本文级别为 **support**。正文中的历史统计或完成标记不得单独作为验收结论；以 [../迁移验收规范.md](../迁移验收规范.md) 和自动审计报告为准。
+
 # vernal-aspects SOURCE_PARITY 测试台账
 
 > 本文档记录 Java 源测试到 Rust 测试的映射关系。

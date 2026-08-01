@@ -30,6 +30,7 @@ impl PropertySources {
     }
 
     /// 按优先级顺序查找属性值。
+    #[must_use]
     pub fn get_property(&self, key: &str) -> Option<String> {
         for source in &self.sources {
             if let Some(value) = source.get_property(key) {
@@ -40,6 +41,7 @@ impl PropertySources {
     }
 
     /// 检查属性是否存在。
+    #[must_use]
     pub fn contains_property(&self, key: &str) -> bool {
         self.get_property(key).is_some()
     }

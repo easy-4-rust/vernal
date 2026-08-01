@@ -164,10 +164,10 @@ mod tests {
 
     #[test]
     fn method_hash_and_eq() {
+        use std::collections::HashSet;
         let a = HttpMethod::Get;
         let b = HttpMethod::Get;
         assert_eq!(a, b);
-        use std::collections::HashSet;
         let mut set = HashSet::new();
         set.insert(a);
         assert!(set.contains(&b));

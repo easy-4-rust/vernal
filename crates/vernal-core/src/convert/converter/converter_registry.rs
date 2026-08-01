@@ -21,24 +21,40 @@ use std::any::TypeId;
 use std::collections::HashMap;
 use std::sync::Mutex;
 
-use super::ConversionError;
+use crate::convert::ConversionError;
+
+/// 类型擦除的转换器函数:`&str` → `Result<String, ConversionError>`。
+///
+/// 对标 Spring `Converter<? super S, ? extends T>` 的运行时形态。
+pub type ErasedConverter =
+    Box<dyn Fn(&str) -> Result<String, ConversionError> + Send + Sync>;
 
 /// 转换器注册表 trait。
 ///
+/// 对应 Java: org.springframework.core.convert.converter.ConverterRegistry
 /// 对标 Spring `ConverterRegistry` 接口。
 /// 允许在运行时注册类型擦除的转换器。
 ///
 /// # 示例
 ///
 /// ```rust
-/// use vernal_core::convert::{ConverterRegistry, TypeIdConverterRegistry, Converter, ConversionError};
+/// use vernal_core::convert::{ConverterRegistry, TypeIdConverterRegistry, ConversionError};
+/// use std::any::TypeId;
 ///
 /// let registry = TypeIdConverterRegistry::new();
-/// registry.add_converter::<String, i64>(Box::new(|s: &str| s.parse::<i64>().map_err(|e| ConversionError {
-///     value: s.to_string(),
-///     target_type: "i64",
-///     reason: e.to_string(),
-/// })));
+/// registry.add_converter(
+///     TypeId::of::<String>(),
+///     TypeId::of::<i64>(),
+///     Box::new(|s: &str| {
+///         s.parse::<i64>()
+///             .map(|n| n.to_string())
+///             .map_err(|e| ConversionError {
+///                 value: s.to_string(),
+///                 target_type: "i64",
+///                 reason: e.to_string(),
+///             })
+///     }),
+/// );
 /// ```
 pub trait ConverterRegistry: Send + Sync {
     /// 注册一个类型擦除的转换器。
@@ -48,7 +64,7 @@ pub trait ConverterRegistry: Send + Sync {
         &self,
         source_type: TypeId,
         target_type: TypeId,
-        converter: Box<dyn Fn(&str) -> Result<String, ConversionError> + Send + Sync>,
+        converter: ErasedConverter,
     );
 
     /// 移除指定类型对的转换器。
@@ -70,12 +86,7 @@ pub trait ConverterRegistry: Send + Sync {
 ///
 /// 通过 `Mutex` 保护,可跨线程共享(`Arc<TypeIdConverterRegistry>`)。
 pub struct TypeIdConverterRegistry {
-    converters: Mutex<
-        HashMap<
-            (TypeId, TypeId),
-            Box<dyn Fn(&str) -> Result<String, ConversionError> + Send + Sync>,
-        >,
-    >,
+    converters: Mutex<HashMap<(TypeId, TypeId), ErasedConverter>>,
 }
 
 impl TypeIdConverterRegistry {
@@ -123,7 +134,7 @@ impl ConverterRegistry for TypeIdConverterRegistry {
         &self,
         source_type: TypeId,
         target_type: TypeId,
-        converter: Box<dyn Fn(&str) -> Result<String, ConversionError> + Send + Sync>,
+        converter: ErasedConverter,
     ) {
         let mut map = self.converters.lock().unwrap();
         map.insert((source_type, target_type), converter);

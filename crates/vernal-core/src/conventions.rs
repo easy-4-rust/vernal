@@ -18,6 +18,7 @@ use std::any::type_name;
 
 /// 命名约定工具。
 ///
+/// 对应 Java: org.springframework.core.Conventions
 /// 对标 Spring `org.springframework.core.Conventions`。
 /// 所有方法均为关联函数（对标 Java `static`）。
 pub struct Conventions;

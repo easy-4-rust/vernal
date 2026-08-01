@@ -1,6 +1,6 @@
 //! 保持插入顺序的多值 Map。
 //!
-//! 对标 Spring `org.springframework.util.LinkedMultiValueMap`，基于 LinkedHashMap
+//! 对标 Spring `org.springframework.util.LinkedMultiValueMap`，基于 `LinkedHashMap`
 //! 保证键的迭代顺序与插入顺序一致（对标 Spring 用 `LinkedHashMap<K, List<V>>` 包装）。
 
 use super::multi_value_map::MultiValueMapTrait;
@@ -274,7 +274,7 @@ mod tests {
         let mut map = LinkedMultiValueMap::new();
         map.add("k", 42);
         let s = format!("{map:?}");
-        assert!(s.contains("k"));
+        assert!(s.contains('k'));
         assert!(s.contains("42"));
     }
 

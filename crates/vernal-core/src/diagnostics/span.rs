@@ -267,6 +267,7 @@ impl Span {
     }
 }
 
+#[allow(clippy::missing_fields_in_debug)] // attributes 明细不入 Debug,保持输出简洁
 impl std::fmt::Debug for Span {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Span")
@@ -378,7 +379,7 @@ mod tests {
         let mut span = Span::new("test");
         span.set_attribute("string_key", "string_value");
         span.set_attribute("int_key", 42_i64);
-        span.set_attribute("float_key", 3.14_f64);
+        span.set_attribute("float_key", std::f64::consts::PI);
         span.set_attribute("bool_key", true);
         assert_eq!(span.attributes().len(), 4);
     }
@@ -386,7 +387,7 @@ mod tests {
     #[test]
     fn record_error_sets_error_status() {
         let mut span = Span::new("test");
-        let err = std::io::Error::new(std::io::ErrorKind::Other, "test error");
+        let err = std::io::Error::other("test error");
         span.record_error(&err);
         assert!(span.status().is_error());
     }
@@ -402,7 +403,7 @@ mod tests {
     #[test]
     fn end_preserves_error_status() {
         let mut span = Span::new("test");
-        let err = std::io::Error::new(std::io::ErrorKind::Other, "fail");
+        let err = std::io::Error::other("fail");
         span.record_error(&err);
         let report = span.end();
         assert!(report.is_error());
@@ -501,7 +502,7 @@ mod tests {
     #[test]
     fn span_report_display_with_error_status() {
         let mut span = Span::new("db-query");
-        let err = std::io::Error::new(std::io::ErrorKind::Other, "connection refused");
+        let err = std::io::Error::other("connection refused");
         span.record_error(&err);
         let report = span.end();
         let s = report.to_string();

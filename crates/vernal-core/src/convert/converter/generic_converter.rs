@@ -14,7 +14,7 @@
 //!
 //! | 特性 | `Converter<S, T>` | `GenericConverter` |
 //! |---|---|---|
-//! | 类型对数 | 单一(S→T) | 多对(Set<ConvertiblePair>) |
+//! | 类型对数 | 单一(S→T) | 多对(Set<`ConvertiblePair`>) |
 //! | 类型擦除 | 静态(编译期) | 运行时(TypeId 匹配) |
 //! | 字段元数据 | 不可访问 | 可访问(对标 TypeDescriptor) |
 //! | 推荐场景 | 简单单向转换 | 复杂多对多转换 |
@@ -22,13 +22,18 @@
 use std::any::TypeId;
 use std::collections::HashSet;
 
+use crate::convert::ConversionError;
+
 use super::convertible_pair::ConvertiblePair;
-use super::{ConditionalConverter, ConversionError};
+use super::ConditionalConverter;
 
-
+/// 类型擦除的通用转换函数:`(&str, TypeId)` → `Result<String, ConversionError>`。
+pub type ErasedGenericFn =
+    Box<dyn Fn(&str, TypeId) -> Result<String, ConversionError> + Send + Sync>;
 
 /// 通用转换器 trait。
 ///
+/// 对应 Java: org.springframework.core.convert.converter.GenericConverter
 /// 对标 Spring `GenericConverter`。
 ///
 /// 一个实现可以支持多个类型对(`convertible_types`),并根据运行时类型匹配决定是否执行。
@@ -52,7 +57,7 @@ pub trait GenericConverter: ConditionalConverter {
 /// 适用于需要运行时多对多转换但逻辑简单的场景。
 pub struct ClosureGenericConverter {
     pairs: HashSet<ConvertiblePair>,
-    closure: Box<dyn Fn(&str, TypeId) -> Result<String, ConversionError> + Send + Sync>,
+    closure: ErasedGenericFn,
 }
 
 impl ClosureGenericConverter {
@@ -91,6 +96,7 @@ impl GenericConverter for ClosureGenericConverter {
     }
 }
 
+#[allow(clippy::missing_fields_in_debug)] // closure 字段不可 Debug 格式化,只展示类型对数量
 impl std::fmt::Debug for ClosureGenericConverter {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ClosureGenericConverter")
@@ -194,7 +200,7 @@ mod tests {
         let converter = ClosureGenericConverter::new(pairs, |s, _| Ok(s.to_string()));
         let s = format!("{converter:?}");
         assert!(s.contains("ClosureGenericConverter"));
-        assert!(s.contains("3"), "should include pair count 3: {s}");
+        assert!(s.contains('3'), "should include pair count 3: {s}");
     }
 
     #[test]
@@ -202,6 +208,6 @@ mod tests {
         let converter = ClosureGenericConverter::new(HashSet::new(), |s, _| Ok(s.to_string()));
         let s = format!("{converter:?}");
         assert!(s.contains("ClosureGenericConverter"));
-        assert!(s.contains("0"), "should include pair count 0: {s}");
+        assert!(s.contains('0'), "should include pair count 0: {s}");
     }
 }

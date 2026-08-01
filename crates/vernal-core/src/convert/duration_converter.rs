@@ -66,7 +66,6 @@ fn parse_iso8601(s: &str) -> Option<Duration> {
         } else if c == 'T' {
             // T 之后是时间部分
             current_num.clear();
-            continue;
         } else {
             if current_num.is_empty() {
                 return None;

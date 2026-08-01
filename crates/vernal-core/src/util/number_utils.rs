@@ -136,7 +136,7 @@ mod tests {
 
     #[test]
     fn parse_f64_basic() {
-        assert_eq!(NumberUtils::parse_f64("3.14"), Some(3.14));
+        assert_eq!(NumberUtils::parse_f64("3.25"), Some(3.25));
         assert_eq!(NumberUtils::parse_f64("-0.5"), Some(-0.5));
         assert_eq!(NumberUtils::parse_f64("1e10"), Some(1e10));
     }

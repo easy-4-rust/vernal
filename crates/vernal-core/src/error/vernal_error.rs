@@ -335,6 +335,7 @@ impl From<&str> for VernalError {
 impl PartialEq for VernalError {
     /// 业务错误按 domain + code 比较（忽略上下文和消息）。
     /// 基础设施错误按 Arc 指针比较。
+    #[allow(clippy::match_same_arms)] // 各变体模式不同,分开写保持可读性(仅跨同变体比较)
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             (

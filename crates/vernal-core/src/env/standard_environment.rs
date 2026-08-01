@@ -98,7 +98,7 @@ mod tests {
     use super::*;
 
     /// 对标 Spring `StandardEnvironment()` 默认构造:
-    /// 默认 profile 为 ["default"], active 为空
+    /// 默认 profile 为 `["default"]`, active 为空
     #[test]
     fn default_profile_is_default_and_active_is_empty() {
         let env = StandardEnvironment::new();

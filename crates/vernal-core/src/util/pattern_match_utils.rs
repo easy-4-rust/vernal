@@ -120,7 +120,7 @@ impl PatternMatchUtils {
         }
     }
 
-    /// 在 str 中从 start_index 开始查找 other_str。
+    /// 在 str 中从 `start_index` 开始查找 `other_str`。
     ///
     /// 对标 Spring 私有方法 `indexOf(str, otherStr, startIndex, ignoreCase)`。
     /// 返回字节偏移量（因为只处理 ASCII 子串，字节偏移 == 字符偏移）。

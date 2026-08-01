@@ -78,7 +78,7 @@ mod tests {
 
     #[test]
     fn display_outputs_full_version() {
-        let s = format!("{}", FrameworkVersion);
+        let s = format!("{FrameworkVersion}");
         assert!(s.contains("Vernal Framework"));
     }
 }

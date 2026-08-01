@@ -35,7 +35,7 @@ mod tests {
 
     #[test]
     fn noop_default() {
-        let logger: NoOpLogger = Default::default();
+        let logger = NoOpLogger;
         logger.info("test");
     }
 }

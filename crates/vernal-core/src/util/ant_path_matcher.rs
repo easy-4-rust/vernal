@@ -196,9 +196,9 @@ impl AntPathMatcher {
         let mut t_idx = t_idx;
 
         while p_idx < pattern.len() {
-            let patt = &pattern[p_idx];
+            let part = &pattern[p_idx];
 
-            if patt == "**" {
+            if part == "**" {
                 // ** 匹配任意数量的路径段(包括 0)
                 let next_p_idx = p_idx + 1;
 
@@ -221,7 +221,7 @@ impl AntPathMatcher {
             if t_idx >= path.len() {
                 return false;
             }
-            if !self.match_strings(patt, &path[t_idx]) {
+            if !self.match_strings(part, &path[t_idx]) {
                 return false;
             }
             p_idx += 1;
@@ -260,8 +260,8 @@ impl PathMatcher for AntPathMatcher {
         let path_dirs = self.tokenize(path);
 
         let mut result = Vec::new();
-        for (patt, path_dir) in pattern_dirs.iter().zip(path_dirs.iter()) {
-            if patt.contains('*') || patt.contains('?') || patt.contains('{') {
+        for (part, path_dir) in pattern_dirs.iter().zip(path_dirs.iter()) {
+            if part.contains('*') || part.contains('?') || part.contains('{') {
                 result.push(path_dir.clone());
             }
         }
@@ -277,9 +277,9 @@ impl PathMatcher for AntPathMatcher {
         let pattern_dirs = self.tokenize(pattern);
         let path_dirs = self.tokenize(path);
 
-        for (patt, path_dir) in pattern_dirs.iter().zip(path_dirs.iter()) {
+        for (part, path_dir) in pattern_dirs.iter().zip(path_dirs.iter()) {
             // 提取 {var} 形式的变量
-            let chars = patt.chars().peekable();
+            let chars = part.chars().peekable();
             let mut literal = String::new();
             let mut in_var = false;
             let mut var_name = String::new();
@@ -315,9 +315,9 @@ impl PathMatcher for AntPathMatcher {
         if pattern2.is_empty() {
             return pattern1.to_string();
         }
-        if pattern1.ends_with(self.path_separator.as_str()) {
-            format!("{pattern1}{pattern2}")
-        } else if pattern2.starts_with(self.path_separator.as_str()) {
+        if pattern1.ends_with(self.path_separator.as_str())
+            || pattern2.starts_with(self.path_separator.as_str())
+        {
             format!("{pattern1}{pattern2}")
         } else {
             format!("{pattern1}{}{pattern2}", self.path_separator)
