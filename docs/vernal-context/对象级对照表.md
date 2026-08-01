@@ -44,8 +44,6 @@
 - 单文件多个公开对象位于 `event_listener_registration.rs`：`ListenerKey`、`ApplicationListenerRegistration`、`EventListenerRegistry`
 - 单文件多个公开对象位于 `application_context_event.rs`：`ApplicationContextEvent`、`ApplicationContextEventBase`
 - 单文件多个公开对象位于 `value_binding.rs`：`ValueBinding`、`ValueExpressionResolver`
-- 单文件多个公开对象位于 `resource/resource.rs`：`Resource`、`ResourceError`
-- 单文件多个公开对象位于 `resource/resource_loader.rs`：`ResourceLoader`、`SimpleResourceLoader`
 
 ## 逐对象台账
 

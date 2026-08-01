@@ -27,7 +27,7 @@ pub trait Resource: Send + Sync {
 
 /// 资源错误。
 ///
-/// 对应 Spring 资源加载的 IOException 聚合
+/// 对应 Spring 资源加载的 `IOException` 聚合
 #[derive(Debug)]
 pub enum ResourceError {
     /// 资源未找到

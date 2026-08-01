@@ -36,7 +36,13 @@ mod conditional_component_module_parts;
 mod configuration_properties;
 mod configuration_properties_error;
 mod context_error;
-pub mod resource;
+/// 资源抽象（由 vernal-core 提供,此处保持旧路径兼容重导出）。
+pub mod resource {
+    pub use vernal_core::io::{
+        ByteArrayResource, ClassPathResource, FileSystemResource, Resource, ResourceError,
+        ResourceLoader, SimpleResourceLoader,
+    };
+}
 
 mod context_resources;
 mod context_state;

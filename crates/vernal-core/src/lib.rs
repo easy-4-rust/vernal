@@ -1,8 +1,11 @@
 #![allow(unused)] // deny(unsafe_code) 移除：Rust 2024 edition 中 set_var 需要 unsafe 块
 #![doc = "Vernal 各独立内核共享的稳定基础合同。"]
 
+pub mod alias_registry;
 pub mod app_lifecycle_phase;
 pub mod async_runtime;
+pub mod attribute_accessor;
+pub mod attribute_accessor_support;
 pub mod constants;
 pub mod cli;
 pub mod convert;
@@ -12,8 +15,17 @@ pub mod diagnostics;
 pub mod error;
 mod failure;
 pub mod id;
+pub mod io;
 pub mod logging;
+pub mod method_class_key;
 pub mod method_parameter;
+pub mod named_inheritable_thread_local;
+pub mod named_thread_local;
+pub mod nested_checked_exception;
+pub mod nested_exception_utils;
+pub mod nested_runtime_exception;
+pub mod collection_factory;
+pub mod simple_alias_registry;
 pub mod task;
 pub mod env;
 pub mod ordered;
@@ -27,7 +39,11 @@ pub mod time;
 pub mod web;
 pub mod util;
 
+pub use alias_registry::AliasRegistry;
 pub use app_lifecycle_phase::AppLifecyclePhase;
+pub use attribute_accessor::AttributeAccessor;
+pub use attribute_accessor_support::AttributeAccessorSupport;
+pub use simple_alias_registry::SimpleAliasRegistry;
 pub use async_runtime::RuntimeType;
 #[cfg(feature = "async-runtime")]
 pub use async_runtime::TokioRuntime;

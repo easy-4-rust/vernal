@@ -28,6 +28,18 @@ impl FileSystemResource {
     }
 }
 
+impl crate::io::AbstractFileResolvingResource for FileSystemResource {
+    fn file_path(&self) -> Option<std::path::PathBuf> {
+        Some(self.path().clone())
+    }
+}
+
+impl crate::io::WritableResource for FileSystemResource {
+    fn write_bytes(&self, content: &[u8]) -> std::io::Result<()> {
+        std::fs::write(self.path(), content)
+    }
+}
+
 impl Resource for FileSystemResource {
     fn exists(&self) -> bool {
         self.path.exists()

@@ -4,7 +4,7 @@
 //!
 //! # 注意
 //!
-//! vernal-context 中的 `ResourceLoader` 使用关联类型 + Box<dyn> 模式，
+//! vernal-core 中的 `ResourceLoader` 使用 `Box<dyn Resource>` 模式，
 //! 因为单个 loader 难以在编译期返回不同具体类型。
 
 use super::resource::Resource;
