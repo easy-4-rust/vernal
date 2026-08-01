@@ -1242,13 +1242,17 @@ fn container_transient_scope_tracking() {
     let c = Container::new(b.build().unwrap());
     let tracker = c.transient_tracker();
     assert_eq!(tracker.total_surviving(), 0);
-    // Keep references alive so weak refs can upgrade
+    // Transient 实例不被容器自动追踪：调用方独占所有权
+    // （对标 Spring prototype：容器不持有原型实例引用，且弱引用会破坏
+    //  `Arc::get_mut` 的独占借用契约）
     let a: Arc<i32> = c.resolve().unwrap();
     let b_val: Arc<i32> = c.resolve().unwrap();
     assert_eq!(*a, 42);
     assert_eq!(*b_val, 42);
-    // The tracker should have recorded the transient instances
-    // (total_surviving may count differently depending on weak ref state)
+    assert_eq!(tracker.total_surviving(), 0);
+    // 需要关闭通知的上层显式 track 后，存活实例可被枚举
+    let raw: Arc<dyn Any + Send + Sync> = a;
+    tracker.track(TypeId::of::<i32>(), &raw);
     let surviving = tracker.surviving_instances(TypeId::of::<i32>());
     assert!(surviving.len() >= 1);
 }

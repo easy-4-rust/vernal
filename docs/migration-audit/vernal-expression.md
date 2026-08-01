@@ -33,8 +33,8 @@
 | `MISSING` | 11 |
 | `PARTIAL` | 0 |
 | `PLATFORM_NA` | 0 |
-| `STUB` | 3 |
-| `UNVERIFIED` | 89 |
+| `STUB` | 0 |
+| `UNVERIFIED` | 92 |
 
 ## 结构红线
 
@@ -90,10 +90,10 @@
 | `org.springframework.expression.spel.ExpressionState` | `spel/ExpressionState.java` | `spel/expression_state.rs` | `spel/expression_state.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
 | `org.springframework.expression.spel.InternalParseException` | `spel/InternalParseException.java` | `spel/internal_parse_exception.rs` | `spel/internal_parse_exception.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
 | `org.springframework.expression.spel.SpelCompilerMode` | `spel/SpelCompilerMode.java` | `spel/spel_compiler_mode.rs` | `spel/spel_compiler_mode.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释、测试引用 |
-| `org.springframework.expression.spel.SpelEvaluationException` | `spel/SpelEvaluationException.java` | `spel/spel_evaluation_exception.rs` | `spel/spel_evaluation_exception.rs` | `STUB` | 存在 todo!/unimplemented!/TODO/占位或空业务逻辑标记 |
-| `org.springframework.expression.spel.SpelMessage` | `spel/SpelMessage.java` | `spel/spel_message.rs` | `spel/spel_message.rs` | `STUB` | 存在 todo!/unimplemented!/TODO/占位或空业务逻辑标记 |
+| `org.springframework.expression.spel.SpelEvaluationException` | `spel/SpelEvaluationException.java` | `spel/spel_evaluation_exception.rs` | `spel/spel_evaluation_exception.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
+| `org.springframework.expression.spel.SpelMessage` | `spel/SpelMessage.java` | `spel/spel_message.rs` | `spel/spel_message.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
 | `org.springframework.expression.spel.SpelNode` | `spel/SpelNode.java` | `spel/spel_node.rs` | `spel/ast/spel_node.rs` | `MISPLACED` | 文件名存在，但未位于保留末两层包目录计算出的路径 |
-| `org.springframework.expression.spel.SpelParseException` | `spel/SpelParseException.java` | `spel/spel_parse_exception.rs` | `spel/spel_parse_exception.rs` | `STUB` | 存在 todo!/unimplemented!/TODO/占位或空业务逻辑标记 |
+| `org.springframework.expression.spel.SpelParseException` | `spel/SpelParseException.java` | `spel/spel_parse_exception.rs` | `spel/spel_parse_exception.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
 | `org.springframework.expression.spel.SpelParserConfiguration` | `spel/SpelParserConfiguration.java` | `spel/spel_parser_configuration.rs` | `spel/spel_parser_configuration.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
 | `org.springframework.expression.spel.ast.AccessorUtils` | `spel/ast/AccessorUtils.java` | `spel/ast/accessor_utils.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
 | `org.springframework.expression.spel.ast.Assign` | `spel/ast/Assign.java` | `spel/ast/assign.rs` | `spel/ast/assign.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |

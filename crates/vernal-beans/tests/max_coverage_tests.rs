@@ -818,10 +818,15 @@ fn container_transient_scope_tracking() {
     let c = make_container_with_transient();
     let tracker = c.transient_tracker();
     assert_eq!(tracker.total_surviving(), 0);
+    // Transient 实例不被容器自动追踪（对标 Spring prototype 独占所有权）；
+    // 需要关闭通知时上层显式 track
     let a: Arc<i32> = c.resolve().unwrap();
     let b_val: Arc<i32> = c.resolve().unwrap();
     assert_eq!(*a, 99);
     assert_eq!(*b_val, 99);
+    assert_eq!(tracker.total_surviving(), 0);
+    let raw: Arc<dyn Any + Send + Sync> = a;
+    tracker.track(TypeId::of::<i32>(), &raw);
     let surviving = tracker.surviving_instances(TypeId::of::<i32>());
     assert!(surviving.len() >= 1);
 }

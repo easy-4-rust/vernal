@@ -680,10 +680,11 @@ impl Container {
         let result = match definition.scope() {
             Scope::Transient => {
                 let instance = self.construct(definition, stack, scope);
-                // 追踪 Transient 实例的弱引用，供上层在关闭时通知存活实例
-                if let Ok(ref arc) = instance {
-                    self.transient_tracker.track(definition.key().type_id, arc);
-                }
+                // 不自动追踪 Transient 实例：弱引用会令 `Arc::get_mut` 永远
+                // 失败（weak_count != 0），破坏调用方对瞬态实例的独占借用
+                // （对标 Spring prototype 语义：容器不持有原型实例引用），
+                // 且每次解析都累积弱引用会造成无界增长。需要关闭通知的
+                // 上层可显式调用 `transient_tracker().track(...)`。
                 instance
             }
             Scope::Singleton => {
