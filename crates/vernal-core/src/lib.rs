@@ -39,10 +39,11 @@ pub mod sorted_properties;
 pub mod properties_file;
 pub mod retry;
 pub mod serializer;
-pub mod version;
 pub mod time;
 pub mod web;
 pub mod util;
+pub mod vernal_properties;
+pub mod vernal_version;
 
 pub use alias_registry::AliasRegistry;
 pub use app_lifecycle_phase::AppLifecyclePhase;
@@ -53,7 +54,8 @@ pub use async_runtime::RuntimeType;
 #[cfg(feature = "async-runtime")]
 pub use async_runtime::TokioRuntime;
 pub use method_parameter::MethodParameter;
-pub use properties_file::FrameworkProperties;
+pub use vernal_properties::VernalProperties;
+pub use vernal_version::VernalVersion;
 pub use conventions::{Conventions, PLURAL_SUFFIX};
 pub use failure::{BoxError, SharedError};
 pub use cli::CliError;

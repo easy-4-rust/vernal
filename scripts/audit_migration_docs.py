@@ -88,12 +88,22 @@ def camel_to_snake(name: str) -> str:
     return second.replace("$", "_").lower()
 
 
+# Vernal 命名惯例：`Spring*` 品牌类型在 vernal 中改用 `Vernal*` 命名
+# （用户指定映射：SpringProperties → VernalProperties、SpringVersion → VernalVersion）。
+# 只影响列出的类型，避免误伤 SpringFactoriesLoader 等保留 Spring 前缀的迁移对象。
+VERNAL_RENAMED_TYPES = {
+    "SpringProperties": "VernalProperties",
+    "SpringVersion": "VernalVersion",
+}
+
+
 def expected_rust_path(java_relative_path: Path, retain_segments: int = 2) -> Path:
     """计算 Java 源对象对应的 Rust 相对路径。"""
 
     package_parts = java_relative_path.parent.parts
     kept = package_parts[-retain_segments:] if package_parts else ()
-    rust_name = f"{camel_to_snake(java_relative_path.stem)}.rs"
+    stem = VERNAL_RENAMED_TYPES.get(java_relative_path.stem, java_relative_path.stem)
+    rust_name = f"{camel_to_snake(stem)}.rs"
     return Path(*kept, rust_name) if kept else Path(rust_name)
 
 
@@ -184,10 +194,18 @@ def _test_evidence(
     rust_stem: str,
     java_type: str,
 ) -> str | None:
-    """返回引用目标文件名或 Java 类型名的第一份测试证据路径。"""
+    """返回引用目标文件名或 Java 类型名的第一份测试证据路径。
 
+    Vernal 命名惯例下同时接受 `Vernal*` 类型名与其 snake_case 文件名。
+    """
+
+    candidates = {rust_stem, java_type}
+    if java_type in VERNAL_RENAMED_TYPES:
+        vernal_type = VERNAL_RENAMED_TYPES[java_type]
+        candidates.add(vernal_type)
+        candidates.add(camel_to_snake(vernal_type))
     for path, text in test_sources:
-        if rust_stem in text or java_type in text:
+        if any(candidate in text for candidate in candidates):
             return path
     return None
 
@@ -327,7 +345,10 @@ def audit_module(repo_root: Path, module: ModuleConfig) -> list[ObjectRecord]:
         else:
             has_source_doc = "对应 Java" in text and java_file.stem in text
             public_types = PUBLIC_TYPE_PATTERN.findall(text)
-            has_main_type = java_file.stem in public_types
+            has_main_type = (
+                java_file.stem in public_types
+                or VERNAL_RENAMED_TYPES.get(java_file.stem) in public_types
+            )
             test_evidence = _test_evidence(
                 test_sources,
                 exact.stem,

@@ -26,11 +26,11 @@
 | 指标 | 数量 |
 |---|---:|
 | Java 业务对象 | 329 |
-| 已处理（严格三类） | 327 |
+| 已处理（严格三类） | 329 |
 | `DEPENDENCY_REUSED` | 0 |
-| `IMPLEMENTED` | 193 |
+| `IMPLEMENTED` | 195 |
 | `MISPLACED` | 0 |
-| `MISSING` | 2 |
+| `MISSING` | 0 |
 | `PARTIAL` | 0 |
 | `PLATFORM_NA` | 134 |
 | `STUB` | 0 |
@@ -40,7 +40,7 @@
 
 > 下列既存问题属于未完成证据。本报告只登记，不在文档治理任务中修改源码。
 
-- 单文件多个公开对象位于 `properties_file.rs`：`FrameworkProperties`、`PropertiesFileError`
+- 单文件多个公开对象位于 `vernal_properties.rs`：`VernalProperties`、`PropertiesFileError`
 - 单文件多个公开对象位于 `failure.rs`：`BoxError`、`SharedError`
 - 单文件多个公开对象位于 `metrics/startup_step.rs`：`StartupStep`、`SimpleStartupStep`
 - 单文件多个公开对象位于 `retry/retry_state.rs`：`RetryState`、`SimpleRetryState`
@@ -115,8 +115,8 @@
 | `org.springframework.core.SimpleAliasRegistry` | `SimpleAliasRegistry.java` | `simple_alias_registry.rs` | `simple_alias_registry.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/simple_alias_registry.rs#[cfg(test)]` |
 | `org.springframework.core.SmartClassLoader` | `SmartClassLoader.java` | `smart_class_loader.rs` | `—` | `PLATFORM_NA` | JVM 类加载器/反射机制无 Rust 对应；由编译器静态分发承担 |
 | `org.springframework.core.SortedProperties` | `SortedProperties.java` | `sorted_properties.rs` | `sorted_properties.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/sorted_properties.rs#[cfg(test)]` |
-| `org.springframework.core.SpringProperties` | `SpringProperties.java` | `spring_properties.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
-| `org.springframework.core.SpringVersion` | `SpringVersion.java` | `spring_version.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
+| `org.springframework.core.SpringProperties` | `SpringProperties.java` | `vernal_properties.rs` | `vernal_properties.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/vernal_properties.rs#[cfg(test)]` |
+| `org.springframework.core.SpringVersion` | `SpringVersion.java` | `vernal_version.rs` | `vernal_version.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/vernal_version.rs#[cfg(test)]` |
 | `org.springframework.core.StandardReflectionParameterNameDiscoverer` | `StandardReflectionParameterNameDiscoverer.java` | `standard_reflection_parameter_name_discoverer.rs` | `—` | `PLATFORM_NA` | JVM 类加载器/反射机制无 Rust 对应；由编译器静态分发承担 |
 | `org.springframework.core.annotation.AbstractMergedAnnotation` | `annotation/AbstractMergedAnnotation.java` | `annotation/abstract_merged_annotation.rs` | `—` | `PLATFORM_NA` | JVM 注解反射模型（java.lang.annotation 元数据）无 Rust 运行时对应；注解语义由 vernal-macros 过程宏在编译期处理 |
 | `org.springframework.core.annotation.AliasFor` | `annotation/AliasFor.java` | `annotation/alias_for.rs` | `—` | `PLATFORM_NA` | JVM 注解反射模型（java.lang.annotation 元数据）无 Rust 运行时对应；注解语义由 vernal-macros 过程宏在编译期处理 |
@@ -253,13 +253,13 @@
 | `org.springframework.core.env.JOptCommandLinePropertySource` | `env/JOptCommandLinePropertySource.java` | `env/j_opt_command_line_property_source.rs` | `—` | `PLATFORM_NA` | jopt-simple（JVM 命令行库）为 JVM 专属；命令行解析由 clap 承担 |
 | `org.springframework.core.env.MapPropertySource` | `env/MapPropertySource.java` | `env/map_property_source.rs` | `env/map_property_source.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/env/property_sources_property_resolver.rs#[cfg(test)]` |
 | `org.springframework.core.env.MissingRequiredPropertiesException` | `env/MissingRequiredPropertiesException.java` | `env/missing_required_properties_exception.rs` | `env/missing_required_properties_exception.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/env/abstract_property_resolver.rs#[cfg(test)]` |
-| `org.springframework.core.env.MutablePropertySources` | `env/MutablePropertySources.java` | `env/mutable_property_sources.rs` | `env/mutable_property_sources.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/properties_file.rs#[cfg(test)]` |
+| `org.springframework.core.env.MutablePropertySources` | `env/MutablePropertySources.java` | `env/mutable_property_sources.rs` | `env/mutable_property_sources.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/env/property_sources.rs#[cfg(test)]` |
 | `org.springframework.core.env.Profiles` | `env/Profiles.java` | `env/profiles.rs` | `env/profiles.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/env/profiles_parser.rs#[cfg(test)]` |
 | `org.springframework.core.env.ProfilesParser` | `env/ProfilesParser.java` | `env/profiles_parser.rs` | `env/profiles_parser.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/env/profiles_parser.rs#[cfg(test)]` |
 | `org.springframework.core.env.PropertiesPropertySource` | `env/PropertiesPropertySource.java` | `env/properties_property_source.rs` | `env/properties_property_source.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/env/properties_property_source.rs#[cfg(test)]` |
 | `org.springframework.core.env.PropertyResolver` | `env/PropertyResolver.java` | `env/property_resolver.rs` | `env/property_resolver.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/env/property_resolver.rs#[cfg(test)]` |
-| `org.springframework.core.env.PropertySource` | `env/PropertySource.java` | `env/property_source.rs` | `env/property_source.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/properties_file.rs#[cfg(test)]` |
-| `org.springframework.core.env.PropertySources` | `env/PropertySources.java` | `env/property_sources.rs` | `env/property_sources.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/properties_file.rs#[cfg(test)]` |
+| `org.springframework.core.env.PropertySource` | `env/PropertySource.java` | `env/property_source.rs` | `env/property_source.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/env/properties_property_source.rs#[cfg(test)]` |
+| `org.springframework.core.env.PropertySources` | `env/PropertySources.java` | `env/property_sources.rs` | `env/property_sources.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/env/property_sources.rs#[cfg(test)]` |
 | `org.springframework.core.env.PropertySourcesPropertyResolver` | `env/PropertySourcesPropertyResolver.java` | `env/property_sources_property_resolver.rs` | `env/property_sources_property_resolver.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/env/property_sources_property_resolver.rs#[cfg(test)]` |
 | `org.springframework.core.env.SimpleCommandLineArgsParser` | `env/SimpleCommandLineArgsParser.java` | `env/simple_command_line_args_parser.rs` | `env/simple_command_line_args_parser.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/env/simple_command_line_args_parser.rs#[cfg(test)]` |
 | `org.springframework.core.env.SimpleCommandLinePropertySource` | `env/SimpleCommandLinePropertySource.java` | `env/simple_command_line_property_source.rs` | `env/simple_command_line_property_source.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/env/simple_command_line_property_source.rs#[cfg(test)]` |
@@ -279,9 +279,9 @@
 | `org.springframework.core.io.InputStreamResource` | `io/InputStreamResource.java` | `io/input_stream_resource.rs` | `io/input_stream_resource.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/io/input_stream_resource.rs#[cfg(test)]` |
 | `org.springframework.core.io.InputStreamSource` | `io/InputStreamSource.java` | `io/input_stream_source.rs` | `io/input_stream_source.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/io/input_stream_source.rs#[cfg(test)]` |
 | `org.springframework.core.io.ModuleResource` | `io/ModuleResource.java` | `io/module_resource.rs` | `—` | `PLATFORM_NA` | JVM 专属能力（模块系统/PropertyEditor/JBoss VFS）无 Rust 对应 |
-| `org.springframework.core.io.PathResource` | `io/PathResource.java` | `io/path_resource.rs` | `io/path_resource.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/properties_file.rs#[cfg(test)]` |
+| `org.springframework.core.io.PathResource` | `io/PathResource.java` | `io/path_resource.rs` | `io/path_resource.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/io/abstract_resource.rs#[cfg(test)]` |
 | `org.springframework.core.io.ProtocolResolver` | `io/ProtocolResolver.java` | `io/protocol_resolver.rs` | `io/protocol_resolver.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/io/default_resource_loader.rs#[cfg(test)]` |
-| `org.springframework.core.io.Resource` | `io/Resource.java` | `io/resource.rs` | `io/resource.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/properties_file.rs#[cfg(test)]` |
+| `org.springframework.core.io.Resource` | `io/Resource.java` | `io/resource.rs` | `io/resource.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/vernal_properties.rs#[cfg(test)]` |
 | `org.springframework.core.io.ResourceEditor` | `io/ResourceEditor.java` | `io/resource_editor.rs` | `—` | `PLATFORM_NA` | JVM 专属能力（模块系统/PropertyEditor/JBoss VFS）无 Rust 对应 |
 | `org.springframework.core.io.ResourceLoader` | `io/ResourceLoader.java` | `io/resource_loader.rs` | `io/resource_loader.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/io/file_system_resource_loader.rs#[cfg(test)]` |
 | `org.springframework.core.io.UrlResource` | `io/UrlResource.java` | `io/url_resource.rs` | `io/url_resource.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/io/file_url_resource.rs#[cfg(test)]` |
@@ -312,7 +312,7 @@
 | `org.springframework.core.io.support.LocalizedResourceHelper` | `io/support/LocalizedResourceHelper.java` | `io/support/localized_resource_helper.rs` | `io/support/localized_resource_helper.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/io/support/localized_resource_helper.rs#[cfg(test)]` |
 | `org.springframework.core.io.support.PathMatchingResourcePatternResolver` | `io/support/PathMatchingResourcePatternResolver.java` | `io/support/path_matching_resource_pattern_resolver.rs` | `io/support/path_matching_resource_pattern_resolver.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/io/support/path_matching_resource_pattern_resolver.rs#[cfg(test)]` |
 | `org.springframework.core.io.support.PropertiesLoaderSupport` | `io/support/PropertiesLoaderSupport.java` | `io/support/properties_loader_support.rs` | `io/support/properties_loader_support.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/io/support/properties_loader_support.rs#[cfg(test)]` |
-| `org.springframework.core.io.support.PropertiesLoaderUtils` | `io/support/PropertiesLoaderUtils.java` | `io/support/properties_loader_utils.rs` | `io/support/properties_loader_utils.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/properties_file.rs#[cfg(test)]` |
+| `org.springframework.core.io.support.PropertiesLoaderUtils` | `io/support/PropertiesLoaderUtils.java` | `io/support/properties_loader_utils.rs` | `io/support/properties_loader_utils.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/io/support/properties_loader_utils.rs#[cfg(test)]` |
 | `org.springframework.core.io.support.PropertySourceDescriptor` | `io/support/PropertySourceDescriptor.java` | `io/support/property_source_descriptor.rs` | `io/support/property_source_descriptor.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/io/support/property_source_descriptor.rs#[cfg(test)]` |
 | `org.springframework.core.io.support.PropertySourceFactory` | `io/support/PropertySourceFactory.java` | `io/support/property_source_factory.rs` | `io/support/property_source_factory.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/io/support/default_property_source_factory.rs#[cfg(test)]` |
 | `org.springframework.core.io.support.PropertySourceProcessor` | `io/support/PropertySourceProcessor.java` | `io/support/property_source_processor.rs` | `io/support/property_source_processor.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/io/support/property_source_processor.rs#[cfg(test)]` |
