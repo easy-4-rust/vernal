@@ -50,11 +50,7 @@ impl Location {
     /// - `resource` — 资源名称或文件路径
     /// - `line_number` — 行号（从 1 开始）
     /// - `column_number` — 列号（从 1 开始）
-    pub fn new(
-        resource: impl Into<String>,
-        line_number: usize,
-        column_number: usize,
-    ) -> Self {
+    pub fn new(resource: impl Into<String>, line_number: usize, column_number: usize) -> Self {
         Self {
             resource: resource.into(),
             line_number,

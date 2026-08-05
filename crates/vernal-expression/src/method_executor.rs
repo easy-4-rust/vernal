@@ -16,5 +16,10 @@ pub trait MethodExecutor: Send + Sync {
     /// - `context` — 求值上下文
     /// - `target` — 目标对象
     /// - `arguments` — 方法参数列表
-    fn execute(&self, context: &dyn EvaluationContext, target: &TypedValue, arguments: &[TypedValue]) -> Result<TypedValue, AccessException>;
+    fn execute(
+        &self,
+        context: &dyn EvaluationContext,
+        target: &TypedValue,
+        arguments: &[TypedValue],
+    ) -> Result<TypedValue, AccessException>;
 }

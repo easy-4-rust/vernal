@@ -253,8 +253,7 @@ mod tests {
     #[test]
     fn test_should_rollback_with_rollback_for() {
         let mut attr = TransactionAttribute::default();
-        attr.rollback_for
-            .push(Cow::Borrowed("java.io.IOException"));
+        attr.rollback_for.push(Cow::Borrowed("java.io.IOException"));
 
         // 在列表中的 checked 异常回滚
         assert!(attr.should_rollback("java.io.IOException", false, false));
@@ -289,8 +288,7 @@ mod tests {
     #[test]
     fn test_should_rollback_combined_rules() {
         let mut attr = TransactionAttribute::default();
-        attr.rollback_for
-            .push(Cow::Borrowed("java.io.IOException"));
+        attr.rollback_for.push(Cow::Borrowed("java.io.IOException"));
         attr.no_rollback_for
             .push(Cow::Borrowed("java.io.FileNotFoundException"));
 
@@ -415,8 +413,7 @@ mod tests {
     #[test]
     fn test_should_rollback_all_checked_exceptions() {
         let mut attr = TransactionAttribute::default();
-        attr.rollback_for
-            .push(Cow::Borrowed("java.io.IOException"));
+        attr.rollback_for.push(Cow::Borrowed("java.io.IOException"));
 
         // IOException 回滚
         assert!(attr.should_rollback("java.io.IOException", false, false));
@@ -538,7 +535,8 @@ mod tests {
     fn test_should_rollback_with_multiple_rollback_for() {
         let mut attr = TransactionAttribute::default();
         attr.rollback_for.push(Cow::Borrowed("java.io.IOException"));
-        attr.rollback_for.push(Cow::Borrowed("java.sql.SQLException"));
+        attr.rollback_for
+            .push(Cow::Borrowed("java.sql.SQLException"));
 
         assert!(attr.should_rollback("java.io.IOException", false, false));
         assert!(attr.should_rollback("java.sql.SQLException", false, false));
@@ -548,8 +546,10 @@ mod tests {
     #[test]
     fn test_should_rollback_with_multiple_no_rollback_for() {
         let mut attr = TransactionAttribute::default();
-        attr.no_rollback_for.push(Cow::Borrowed("java.lang.NullPointerException"));
-        attr.no_rollback_for.push(Cow::Borrowed("java.lang.IllegalStateException"));
+        attr.no_rollback_for
+            .push(Cow::Borrowed("java.lang.NullPointerException"));
+        attr.no_rollback_for
+            .push(Cow::Borrowed("java.lang.IllegalStateException"));
 
         assert!(!attr.should_rollback("java.lang.NullPointerException", true, false));
         assert!(!attr.should_rollback("java.lang.IllegalStateException", true, false));

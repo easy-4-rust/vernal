@@ -4,8 +4,12 @@ use std::sync::Arc;
 
 fn make_container() -> vernal_beans::Container {
     let mut b = vernal_beans::RegistryBuilder::new();
-    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
-    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<i32, _>(|_| 42i32));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(
+        |_| "hello".to_string(),
+    ));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<i32, _>(
+        |_| 42i32,
+    ));
     vernal_beans::Container::new(b.build().unwrap())
 }
 
@@ -92,7 +96,11 @@ fn cav_contains_named() {
     use vernal_beans::factory::config::constructor_argument_values::ValueHolder;
     let mut cav = ConstructorArgumentValues::new();
     assert!(!cav.contains_named_argument());
-    cav.add_generic_argument_value(ValueHolder::with_type_and_name(Arc::new("val"), "String", "name"));
+    cav.add_generic_argument_value(ValueHolder::with_type_and_name(
+        Arc::new("val"),
+        "String",
+        "name",
+    ));
     assert!(cav.contains_named_argument());
 }
 
@@ -156,10 +164,6 @@ fn generic_bean_definition_setters() {
     gbd.set_description("A test service");
     gbd.add_depends_on("dataSource");
     gbd.set_autowire_mode(vernal_beans::Autowire::ByType);
-    
-    
-    
-    
 }
 
 #[test]
@@ -282,28 +286,44 @@ fn bean_definition_builder_root_full() {
 
 #[test]
 fn bean_wrapper_batch_set() {
-    use vernal_beans::bean_wrapper_impl::BeanWrapperImpl;
     use vernal_beans::bean_wrapper::BeanWrapper;
+    use vernal_beans::bean_wrapper_impl::BeanWrapperImpl;
     use vernal_beans::property_accessor::PropertyAccessor;
     let wrapper = BeanWrapperImpl::new(Arc::new("test".to_string()));
     wrapper.register_property("x", std::any::TypeId::of::<i32>());
     wrapper.register_property("y", std::any::TypeId::of::<i32>());
     let mut values = std::collections::HashMap::new();
-    values.insert("x".to_string(), Arc::new(10i32) as Arc<dyn Any + Send + Sync>);
-    values.insert("y".to_string(), Arc::new(20i32) as Arc<dyn Any + Send + Sync>);
+    values.insert(
+        "x".to_string(),
+        Arc::new(10i32) as Arc<dyn Any + Send + Sync>,
+    );
+    values.insert(
+        "y".to_string(),
+        Arc::new(20i32) as Arc<dyn Any + Send + Sync>,
+    );
     wrapper.set_property_values(&values).unwrap();
-    let x = wrapper.get_property_value("x").unwrap().downcast_ref::<i32>().copied();
+    let x = wrapper
+        .get_property_value("x")
+        .unwrap()
+        .downcast_ref::<i32>()
+        .copied();
     assert_eq!(x, Some(10));
 }
 
 #[test]
 fn bean_wrapper_wrapped_instance() {
-    use vernal_beans::bean_wrapper_impl::BeanWrapperImpl;
     use vernal_beans::bean_wrapper::BeanWrapper;
+    use vernal_beans::bean_wrapper_impl::BeanWrapperImpl;
     let instance: Arc<dyn Any + Send + Sync> = Arc::new("my_bean".to_string());
     let wrapper = BeanWrapperImpl::new(Arc::clone(&instance));
-    assert_eq!(wrapper.get_wrapped_class(), std::any::TypeId::of::<String>());
-    let s = wrapper.get_wrapped_instance().downcast_ref::<String>().unwrap();
+    assert_eq!(
+        wrapper.get_wrapped_class(),
+        std::any::TypeId::of::<String>()
+    );
+    let s = wrapper
+        .get_wrapped_instance()
+        .downcast_ref::<String>()
+        .unwrap();
     assert_eq!(s, "my_bean");
 }
 
@@ -324,7 +344,10 @@ fn container_resolve_multiple_types() {
 fn container_resolve_qualified() {
     let mut b = vernal_beans::RegistryBuilder::new();
     let q = vernal_beans::Qualifier::new("primary").unwrap();
-    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "primary_val".to_string()).qualified(q.clone()));
+    let _ = b.register(
+        vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "primary_val".to_string())
+            .qualified(q.clone()),
+    );
     let c = vernal_beans::Container::new(b.build().unwrap());
     let val: Arc<String> = c.resolve_qualified(&q).unwrap();
     assert_eq!(*val, "primary_val");
@@ -333,8 +356,12 @@ fn container_resolve_qualified() {
 #[test]
 fn container_warm_up() {
     let mut b = vernal_beans::RegistryBuilder::new();
-    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
-    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<i32, _>(|_| 42i32));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(
+        |_| "hello".to_string(),
+    ));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<i32, _>(
+        |_| 42i32,
+    ));
     let c = vernal_beans::Container::new(b.build().unwrap());
     assert!(c.warm_up().is_ok());
     assert!(c.unused_definitions().is_empty());
@@ -344,7 +371,8 @@ fn container_warm_up() {
 fn container_post_processor() {
     use vernal_beans::BeanPostProcessor;
     let mut c = make_container();
-    struct PP; impl BeanPostProcessor for PP {}
+    struct PP;
+    impl BeanPostProcessor for PP {}
     c.add_bean_post_processor(Arc::new(PP));
     c.add_bean_post_processor(Arc::new(PP));
     assert_eq!(c.bean_post_processor_count(), 2);

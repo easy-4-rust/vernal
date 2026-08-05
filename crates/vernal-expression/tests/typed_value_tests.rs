@@ -1,11 +1,9 @@
 //! 类型化值测试（`TypedValue` / `ExpressionValue` / `TypeDescriptor`）。
 
-use vernal_expression::{
-    TypedValue, ExpressionValue, TypeDescriptor, PrimitiveKind,
-};
-use chrono::{Utc, Duration as ChronoDuration, TimeZone};
-use num_bigint::BigInt;
 use bigdecimal::BigDecimal;
+use chrono::{Duration as ChronoDuration, TimeZone, Utc};
+use num_bigint::BigInt;
+use vernal_expression::{ExpressionValue, PrimitiveKind, TypeDescriptor, TypedValue};
 
 // ═══════════════════════════════════════════════════════════════════
 //  TypedValue::new() with all ExpressionValue variants
@@ -129,7 +127,10 @@ fn typed_value_new_with_list() {
 #[test]
 fn typed_value_new_with_map() {
     let map = ExpressionValue::Map(vec![(
-        TypedValue::new(ExpressionValue::String("k".to_string()), TypeDescriptor::STRING),
+        TypedValue::new(
+            ExpressionValue::String("k".to_string()),
+            TypeDescriptor::STRING,
+        ),
         TypedValue::new(ExpressionValue::Int(1), TypeDescriptor::INT),
     )]);
     let td = TypeDescriptor::Map(
@@ -166,7 +167,10 @@ fn typed_value_null_constant() {
     let tv = TypedValue::NULL;
     assert!(tv.is_null());
     assert!(matches!(tv.value(), ExpressionValue::Null));
-    assert!(matches!(tv.type_descriptor(), TypeDescriptor::Primitive(PrimitiveKind::Null)));
+    assert!(matches!(
+        tv.type_descriptor(),
+        TypeDescriptor::Primitive(PrimitiveKind::Null)
+    ));
 }
 
 #[test]
@@ -297,7 +301,10 @@ fn typed_value_display_datetime() {
         TypeDescriptor::Primitive(PrimitiveKind::DateTime),
     );
     let display = tv.to_string();
-    assert!(display.contains("2024"), "DateTime display should contain year, got: {display}");
+    assert!(
+        display.contains("2024"),
+        "DateTime display should contain year, got: {display}"
+    );
 }
 
 #[test]
@@ -331,7 +338,10 @@ fn typed_value_display_empty_list() {
 #[test]
 fn typed_value_display_map() {
     let map = ExpressionValue::Map(vec![(
-        TypedValue::new(ExpressionValue::String("k".to_string()), TypeDescriptor::STRING),
+        TypedValue::new(
+            ExpressionValue::String("k".to_string()),
+            TypeDescriptor::STRING,
+        ),
         TypedValue::new(ExpressionValue::Int(1), TypeDescriptor::INT),
     )]);
     let td = TypeDescriptor::Map(
@@ -592,11 +602,19 @@ fn expression_value_as_any_null_returns_none() {
 #[test]
 fn expression_value_as_any_unsupported_types_return_none() {
     assert!(ExpressionValue::BigInt(BigInt::from(42)).as_any().is_none());
-    assert!(ExpressionValue::Decimal(BigDecimal::from(42)).as_any().is_none());
+    assert!(
+        ExpressionValue::Decimal(BigDecimal::from(42))
+            .as_any()
+            .is_none()
+    );
     assert!(ExpressionValue::List(vec![]).as_any().is_none());
     assert!(ExpressionValue::Map(vec![]).as_any().is_none());
     assert!(ExpressionValue::DateTime(Utc::now()).as_any().is_none());
-    assert!(ExpressionValue::Duration(ChronoDuration::seconds(42)).as_any().is_none());
+    assert!(
+        ExpressionValue::Duration(ChronoDuration::seconds(42))
+            .as_any()
+            .is_none()
+    );
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -605,7 +623,10 @@ fn expression_value_as_any_unsupported_types_return_none() {
 
 #[test]
 fn expression_value_type_id_null() {
-    assert_eq!(ExpressionValue::Null.type_id(), std::any::TypeId::of::<()>());
+    assert_eq!(
+        ExpressionValue::Null.type_id(),
+        std::any::TypeId::of::<()>()
+    );
 }
 
 #[test]
@@ -618,14 +639,26 @@ fn expression_value_type_id_boolean() {
 
 #[test]
 fn expression_value_type_id_int_and_long_share_i64() {
-    assert_eq!(ExpressionValue::Int(0).type_id(), std::any::TypeId::of::<i64>());
-    assert_eq!(ExpressionValue::Long(0).type_id(), std::any::TypeId::of::<i64>());
+    assert_eq!(
+        ExpressionValue::Int(0).type_id(),
+        std::any::TypeId::of::<i64>()
+    );
+    assert_eq!(
+        ExpressionValue::Long(0).type_id(),
+        std::any::TypeId::of::<i64>()
+    );
 }
 
 #[test]
 fn expression_value_type_id_float_and_double_share_f64() {
-    assert_eq!(ExpressionValue::Float(0.0).type_id(), std::any::TypeId::of::<f64>());
-    assert_eq!(ExpressionValue::Double(0.0).type_id(), std::any::TypeId::of::<f64>());
+    assert_eq!(
+        ExpressionValue::Float(0.0).type_id(),
+        std::any::TypeId::of::<f64>()
+    );
+    assert_eq!(
+        ExpressionValue::Double(0.0).type_id(),
+        std::any::TypeId::of::<f64>()
+    );
 }
 
 #[test]
@@ -655,13 +688,22 @@ fn expression_value_partial_eq_null() {
 
 #[test]
 fn expression_value_partial_eq_boolean_equal() {
-    assert_eq!(ExpressionValue::Boolean(true), ExpressionValue::Boolean(true));
-    assert_eq!(ExpressionValue::Boolean(false), ExpressionValue::Boolean(false));
+    assert_eq!(
+        ExpressionValue::Boolean(true),
+        ExpressionValue::Boolean(true)
+    );
+    assert_eq!(
+        ExpressionValue::Boolean(false),
+        ExpressionValue::Boolean(false)
+    );
 }
 
 #[test]
 fn expression_value_partial_eq_boolean_not_equal() {
-    assert_ne!(ExpressionValue::Boolean(true), ExpressionValue::Boolean(false));
+    assert_ne!(
+        ExpressionValue::Boolean(true),
+        ExpressionValue::Boolean(false)
+    );
 }
 
 #[test]
@@ -684,7 +726,10 @@ fn expression_value_partial_eq_long() {
 fn expression_value_partial_eq_float_within_epsilon() {
     assert_eq!(ExpressionValue::Float(1.0), ExpressionValue::Float(1.0));
     // 0.1 + 0.2 is within epsilon of 0.3
-    assert_eq!(ExpressionValue::Double(0.1 + 0.2), ExpressionValue::Double(0.3));
+    assert_eq!(
+        ExpressionValue::Double(0.1 + 0.2),
+        ExpressionValue::Double(0.3)
+    );
 }
 
 #[test]
@@ -738,7 +783,10 @@ fn expression_value_partial_eq_different_types_not_equal() {
     assert_ne!(ExpressionValue::Null, ExpressionValue::Int(0));
     assert_ne!(ExpressionValue::Null, ExpressionValue::Boolean(false));
     assert_ne!(ExpressionValue::Boolean(true), ExpressionValue::Int(1));
-    assert_ne!(ExpressionValue::String("42".to_string()), ExpressionValue::Int(42));
+    assert_ne!(
+        ExpressionValue::String("42".to_string()),
+        ExpressionValue::Int(42)
+    );
 }
 
 #[test]
@@ -746,8 +794,14 @@ fn expression_value_partial_eq_datetime() {
     let dt1 = Utc.with_ymd_and_hms(2024, 1, 1, 0, 0, 0).unwrap();
     let dt2 = Utc.with_ymd_and_hms(2024, 1, 1, 0, 0, 0).unwrap();
     let dt3 = Utc.with_ymd_and_hms(2024, 1, 2, 0, 0, 0).unwrap();
-    assert_eq!(ExpressionValue::DateTime(dt1), ExpressionValue::DateTime(dt2));
-    assert_ne!(ExpressionValue::DateTime(dt1), ExpressionValue::DateTime(dt3));
+    assert_eq!(
+        ExpressionValue::DateTime(dt1),
+        ExpressionValue::DateTime(dt2)
+    );
+    assert_ne!(
+        ExpressionValue::DateTime(dt1),
+        ExpressionValue::DateTime(dt3)
+    );
 }
 
 #[test]
@@ -765,12 +819,14 @@ fn expression_value_partial_eq_duration() {
 #[test]
 fn expression_value_partial_eq_list_by_length() {
     // Current impl: List compares lengths and nested list structure only
-    let list_a = ExpressionValue::List(vec![
-        TypedValue::new(ExpressionValue::Int(1), TypeDescriptor::INT),
-    ]);
-    let list_b = ExpressionValue::List(vec![
-        TypedValue::new(ExpressionValue::Int(2), TypeDescriptor::INT),
-    ]);
+    let list_a = ExpressionValue::List(vec![TypedValue::new(
+        ExpressionValue::Int(1),
+        TypeDescriptor::INT,
+    )]);
+    let list_b = ExpressionValue::List(vec![TypedValue::new(
+        ExpressionValue::Int(2),
+        TypeDescriptor::INT,
+    )]);
     let list_c = ExpressionValue::List(vec![
         TypedValue::new(ExpressionValue::Int(1), TypeDescriptor::INT),
         TypedValue::new(ExpressionValue::Int(2), TypeDescriptor::INT),
@@ -784,11 +840,17 @@ fn expression_value_partial_eq_list_by_length() {
 #[test]
 fn expression_value_partial_eq_map_by_length() {
     let map_a = ExpressionValue::Map(vec![(
-        TypedValue::new(ExpressionValue::String("a".to_string()), TypeDescriptor::STRING),
+        TypedValue::new(
+            ExpressionValue::String("a".to_string()),
+            TypeDescriptor::STRING,
+        ),
         TypedValue::new(ExpressionValue::Int(1), TypeDescriptor::INT),
     )]);
     let map_b = ExpressionValue::Map(vec![(
-        TypedValue::new(ExpressionValue::String("b".to_string()), TypeDescriptor::STRING),
+        TypedValue::new(
+            ExpressionValue::String("b".to_string()),
+            TypeDescriptor::STRING,
+        ),
         TypedValue::new(ExpressionValue::Int(2), TypeDescriptor::INT),
     )]);
     let map_c = ExpressionValue::Map(vec![]);
@@ -885,9 +947,10 @@ fn expression_value_clone_duration() {
 
 #[test]
 fn expression_value_clone_list() {
-    let v = ExpressionValue::List(vec![
-        TypedValue::new(ExpressionValue::Int(1), TypeDescriptor::INT),
-    ]);
+    let v = ExpressionValue::List(vec![TypedValue::new(
+        ExpressionValue::Int(1),
+        TypeDescriptor::INT,
+    )]);
     let cloned = v.clone();
     assert!(matches!(cloned, ExpressionValue::List(l) if l.len() == 1));
 }

@@ -32,7 +32,12 @@ pub struct PropertyDescriptorEntry {
 
 impl PropertyDescriptorEntry {
     /// 创建一个新的 PropertyDescriptorEntry。
-    pub fn new(name: impl Into<String>, property_type: TypeId, readable: bool, writable: bool) -> Self {
+    pub fn new(
+        name: impl Into<String>,
+        property_type: TypeId,
+        readable: bool,
+        writable: bool,
+    ) -> Self {
         Self {
             name: name.into(),
             property_type,
@@ -79,15 +84,16 @@ impl CachedIntrospectionResults {
     }
 
     /// 获取属性描述符。
-    pub fn get_property_descriptor(&self, type_id: TypeId, name: &str) -> Option<PropertyDescriptorEntry> {
-        self.class_cache
-            .read()
-            .ok()
-            .and_then(|cache| {
-                cache.get(&type_id).and_then(|type_cache| {
-                    type_cache.get(name).cloned()
-                })
-            })
+    pub fn get_property_descriptor(
+        &self,
+        type_id: TypeId,
+        name: &str,
+    ) -> Option<PropertyDescriptorEntry> {
+        self.class_cache.read().ok().and_then(|cache| {
+            cache
+                .get(&type_id)
+                .and_then(|type_cache| type_cache.get(name).cloned())
+        })
     }
 
     /// 获取类型的所有属性描述符。
@@ -96,9 +102,9 @@ impl CachedIntrospectionResults {
             .read()
             .ok()
             .and_then(|cache| {
-                cache.get(&type_id).map(|type_cache| {
-                    type_cache.values().cloned().collect()
-                })
+                cache
+                    .get(&type_id)
+                    .map(|type_cache| type_cache.values().cloned().collect())
             })
             .unwrap_or_default()
     }
@@ -142,7 +148,9 @@ mod tests {
         let desc = PropertyDescriptorEntry::new("name", TypeId::of::<String>(), true, true);
         results.register_property(TypeId::of::<String>(), desc);
 
-        let retrieved = results.get_property_descriptor(TypeId::of::<String>(), "name").unwrap();
+        let retrieved = results
+            .get_property_descriptor(TypeId::of::<String>(), "name")
+            .unwrap();
         assert_eq!(retrieved.name(), "name");
         assert!(retrieved.is_readable());
         assert!(retrieved.is_writable());
@@ -151,8 +159,14 @@ mod tests {
     #[test]
     fn test_get_property_descriptors() {
         let results = CachedIntrospectionResults::new();
-        results.register_property(TypeId::of::<String>(), PropertyDescriptorEntry::new("a", TypeId::of::<i32>(), true, true));
-        results.register_property(TypeId::of::<String>(), PropertyDescriptorEntry::new("b", TypeId::of::<bool>(), true, false));
+        results.register_property(
+            TypeId::of::<String>(),
+            PropertyDescriptorEntry::new("a", TypeId::of::<i32>(), true, true),
+        );
+        results.register_property(
+            TypeId::of::<String>(),
+            PropertyDescriptorEntry::new("b", TypeId::of::<bool>(), true, false),
+        );
 
         let descs = results.get_property_descriptors(TypeId::of::<String>());
         assert_eq!(descs.len(), 2);
@@ -161,7 +175,10 @@ mod tests {
     #[test]
     fn test_clear() {
         let results = CachedIntrospectionResults::new();
-        results.register_property(TypeId::of::<String>(), PropertyDescriptorEntry::new("name", TypeId::of::<String>(), true, true));
+        results.register_property(
+            TypeId::of::<String>(),
+            PropertyDescriptorEntry::new("name", TypeId::of::<String>(), true, true),
+        );
         assert!(results.has_cached_class(TypeId::of::<String>()));
 
         results.clear();

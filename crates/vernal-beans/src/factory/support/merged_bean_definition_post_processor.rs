@@ -111,16 +111,25 @@ mod tests {
     #[test]
     fn post_processor_records_bean_types() {
         let processor = MetadataCollectingPostProcessor::new();
-        processor.post_process_merged_bean_definition("myBean", "com.example.MyService").unwrap();
-        assert_eq!(processor.get_processed_type("myBean"), Some("com.example.MyService".to_string()));
+        processor
+            .post_process_merged_bean_definition("myBean", "com.example.MyService")
+            .unwrap();
+        assert_eq!(
+            processor.get_processed_type("myBean"),
+            Some("com.example.MyService".to_string())
+        );
         assert_eq!(processor.processed_count(), 1);
     }
 
     #[test]
     fn reset_bean_definition_removes_metadata() {
         let processor = MetadataCollectingPostProcessor::new();
-        processor.post_process_merged_bean_definition("bean1", "Type1").unwrap();
-        processor.post_process_merged_bean_definition("bean2", "Type2").unwrap();
+        processor
+            .post_process_merged_bean_definition("bean1", "Type1")
+            .unwrap();
+        processor
+            .post_process_merged_bean_definition("bean2", "Type2")
+            .unwrap();
         assert_eq!(processor.processed_count(), 2);
 
         processor.reset_bean_definition("bean1");
@@ -138,7 +147,9 @@ mod tests {
     #[test]
     fn post_process_returns_none_metadata() {
         let processor = MetadataCollectingPostProcessor::new();
-        let result = processor.post_process_merged_bean_definition("bean", "Type").unwrap();
+        let result = processor
+            .post_process_merged_bean_definition("bean", "Type")
+            .unwrap();
         assert!(result.is_none());
     }
 }

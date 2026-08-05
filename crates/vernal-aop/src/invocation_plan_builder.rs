@@ -88,7 +88,11 @@ mod tests {
 
     struct TestInterceptor;
     impl Interceptor for TestInterceptor {
-        fn intercept<'a>(&'a self, invocation: std::sync::Arc<Invocation>, next: Next<'a>) -> crate::InvocationFuture<'a> {
+        fn intercept<'a>(
+            &'a self,
+            invocation: std::sync::Arc<Invocation>,
+            next: Next<'a>,
+        ) -> crate::InvocationFuture<'a> {
             next.run(invocation)
         }
     }

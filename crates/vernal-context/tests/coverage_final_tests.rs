@@ -3,13 +3,15 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use vernal_context::{
-    ApplicationRunner, Lifecycle, ScheduledTask, TaskSchedule,
-    VernalApplicationBuilder, ApplicationContext, ApplicationEventListener,
+use vernal_aop::{
+    Interceptor, Invocation, InvocationFuture, LocalInterceptor, LocalInvocationFuture, LocalNext,
+    Next, Operation, Pointcut,
 };
 use vernal_beans::{Component, ComponentDefinition, Qualifier};
-use vernal_aop::{Interceptor, LocalInterceptor, Invocation, InvocationFuture,
-    LocalInvocationFuture, Next, LocalNext, Operation, Pointcut};
+use vernal_context::{
+    ApplicationContext, ApplicationEventListener, ApplicationRunner, Lifecycle, ScheduledTask,
+    TaskSchedule, VernalApplicationBuilder,
+};
 
 // ════════════════════════════════════════════════════════════════════
 // 测试用类型
@@ -82,7 +84,11 @@ impl Component for NopInterceptor {
     }
 }
 impl Interceptor for NopInterceptor {
-    fn intercept<'a>(&'a self, invocation: Arc<Invocation>, next: Next<'a>) -> InvocationFuture<'a> {
+    fn intercept<'a>(
+        &'a self,
+        invocation: Arc<Invocation>,
+        next: Next<'a>,
+    ) -> InvocationFuture<'a> {
         next.run(invocation)
     }
 }
@@ -96,7 +102,11 @@ impl Component for NopLocalInterceptor {
     }
 }
 impl LocalInterceptor for NopLocalInterceptor {
-    fn intercept_local<'a>(&'a self, invocation: Arc<Invocation>, next: LocalNext<'a>) -> LocalInvocationFuture<'a> {
+    fn intercept_local<'a>(
+        &'a self,
+        invocation: Arc<Invocation>,
+        next: LocalNext<'a>,
+    ) -> LocalInvocationFuture<'a> {
         Box::pin(async move { next.run(invocation).await })
     }
 }
@@ -105,7 +115,9 @@ impl LocalInterceptor for NopLocalInterceptor {
 #[allow(dead_code)]
 struct AlwaysPointcut;
 impl Pointcut for AlwaysPointcut {
-    fn matches(&self, _: &Operation) -> bool { true }
+    fn matches(&self, _: &Operation) -> bool {
+        true
+    }
 }
 
 /// 创建测试用 ApplicationContext
@@ -161,7 +173,10 @@ async fn test_context_set_application_name() {
     let context = build_context();
     context.set_application_name("my-app".to_string());
     let name = context.application_name();
-    assert_eq!(name, "my-app", "set_application_name should change the name");
+    assert_eq!(
+        name, "my-app",
+        "set_application_name should change the name"
+    );
 }
 
 /// 验证 display_name() 返回默认值
@@ -169,7 +184,10 @@ async fn test_context_set_application_name() {
 async fn test_context_display_name_default() {
     let context = build_context();
     let name = context.display_name();
-    assert!(!name.is_empty(), "display_name should not be empty by default");
+    assert!(
+        !name.is_empty(),
+        "display_name should not be empty by default"
+    );
 }
 
 /// 验证 set_display_name() 修改显示名
@@ -178,7 +196,10 @@ async fn test_context_set_display_name() {
     let context = build_context();
     context.set_display_name("My Application".to_string());
     let name = context.display_name();
-    assert_eq!(name, "My Application", "set_display_name should change the display name");
+    assert_eq!(
+        name, "My Application",
+        "set_display_name should change the display name"
+    );
 }
 
 /// 验证 parent() 默认返回 None
@@ -204,7 +225,11 @@ async fn test_context_set_parent() {
 async fn test_context_startup_date() {
     let context = build_context();
     let date = context.startup_date();
-    assert!(date > 0, "startup_date should be greater than 0, got: {}", date);
+    assert!(
+        date > 0,
+        "startup_date should be greater than 0, got: {}",
+        date
+    );
 }
 
 /// 验证 is_active() 在 build 后返回 false
@@ -259,7 +284,10 @@ async fn test_minimum_rust_version() {
     let context = build_context();
     let report = context.startup_report().await;
     let version = report.minimum_rust_version();
-    assert!(!version.is_empty(), "minimum_rust_version should not be empty");
+    assert!(
+        !version.is_empty(),
+        "minimum_rust_version should not be empty"
+    );
 }
 
 /// 验证 context_state 返回非空字符串
@@ -358,7 +386,9 @@ async fn test_report_observations() {
 #[tokio::test]
 async fn test_register_all() {
     let mut builder = VernalApplicationBuilder::new(tokio::runtime::Handle::current());
-    let defs = vec![ComponentDefinition::singleton::<SimpleComponent, _>(|_| SimpleComponent)];
+    let defs = vec![ComponentDefinition::singleton::<SimpleComponent, _>(|_| {
+        SimpleComponent
+    })];
     let result = builder.register_all(defs);
     assert!(result.is_ok(), "register_all should succeed");
 }
@@ -369,7 +399,10 @@ async fn test_register_all_empty() {
     let mut builder = VernalApplicationBuilder::new(tokio::runtime::Handle::current());
     let defs: Vec<ComponentDefinition> = vec![];
     let result = builder.register_all(defs);
-    assert!(result.is_ok(), "register_all with empty iterator should succeed");
+    assert!(
+        result.is_ok(),
+        "register_all with empty iterator should succeed"
+    );
 }
 
 /// 验证 lifecycle_qualified 注册带限定符的生命周期组件
@@ -409,7 +442,10 @@ async fn test_event_listener_qualified() {
 async fn test_register_event_listener_component() {
     let mut builder = VernalApplicationBuilder::new(tokio::runtime::Handle::current());
     let result = builder.register_event_listener_component::<TestEvent, TestEventListener>();
-    assert!(result.is_ok(), "register_event_listener_component should succeed");
+    assert!(
+        result.is_ok(),
+        "register_event_listener_component should succeed"
+    );
 }
 
 /// 验证 register_application_runner 注册 Runner 组件

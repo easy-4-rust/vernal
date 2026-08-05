@@ -2,8 +2,8 @@
 //!
 //! 对标 Spring `org.springframework.core.env.CompositePropertySource`。
 
-use super::enumerable_property_source::EnumerablePropertySource;
 use super::PropertySource;
+use super::enumerable_property_source::EnumerablePropertySource;
 
 /// 组合属性源。
 ///
@@ -96,7 +96,10 @@ mod tests {
         let mut composite = CompositePropertySource::new("composite");
         composite.add_property_source(enumerable("a", &[("x", "1"), ("y", "2")]));
         composite.add_property_source(enumerable("b", &[("x", "3")]));
-        assert_eq!(composite.property_names(), vec!["x".to_string(), "y".to_string()]);
+        assert_eq!(
+            composite.property_names(),
+            vec!["x".to_string(), "y".to_string()]
+        );
     }
 
     #[test]

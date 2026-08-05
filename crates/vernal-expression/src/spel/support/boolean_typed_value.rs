@@ -19,25 +19,17 @@ pub struct BooleanTypedValue;
 
 impl BooleanTypedValue {
     /// 表示 true 的类型化值。
-    pub const TRUE: TypedValue = TypedValue::new(
-        ExpressionValue::Boolean(true),
-        TypeDescriptor::BOOLEAN,
-    );
+    pub const TRUE: TypedValue =
+        TypedValue::new(ExpressionValue::Boolean(true), TypeDescriptor::BOOLEAN);
 
     /// 表示 false 的类型化值。
-    pub const FALSE: TypedValue = TypedValue::new(
-        ExpressionValue::Boolean(false),
-        TypeDescriptor::BOOLEAN,
-    );
+    pub const FALSE: TypedValue =
+        TypedValue::new(ExpressionValue::Boolean(false), TypeDescriptor::BOOLEAN);
 
     /// 根据布尔值获取对应的类型化值。
     #[must_use]
     pub fn for_value(value: bool) -> TypedValue {
-        if value {
-            Self::TRUE
-        } else {
-            Self::FALSE
-        }
+        if value { Self::TRUE } else { Self::FALSE }
     }
 
     /// 从 TypedValue 中提取布尔值。

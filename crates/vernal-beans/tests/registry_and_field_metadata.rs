@@ -2,15 +2,17 @@
 
 use std::sync::Arc;
 
+use vernal_beans::BeanDefinitionRegistry;
 use vernal_beans::ComponentDefinition;
 use vernal_beans::RegistryBuilder;
 use vernal_beans::Resolver;
-use vernal_beans::BeanDefinitionRegistry;
 use vernal_beans::field_metadata::{FieldDescriptor, TypeMetadata};
 
 fn lock_field_md() -> std::sync::MutexGuard<'static, ()> {
     static LOCK: std::sync::OnceLock<std::sync::Mutex<()>> = std::sync::OnceLock::new();
-    LOCK.get_or_init(|| std::sync::Mutex::new(())).lock().unwrap()
+    LOCK.get_or_init(|| std::sync::Mutex::new(()))
+        .lock()
+        .unwrap()
 }
 
 // ── 测试类型 ─────────────────────────────────────────────────────────────

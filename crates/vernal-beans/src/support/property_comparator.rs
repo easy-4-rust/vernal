@@ -82,7 +82,11 @@ impl PropertyComparator {
                 val_a.cmp(val_b)
             };
 
-            if ascending { ordering } else { ordering.reverse() }
+            if ascending {
+                ordering
+            } else {
+                ordering.reverse()
+            }
         });
     }
 }

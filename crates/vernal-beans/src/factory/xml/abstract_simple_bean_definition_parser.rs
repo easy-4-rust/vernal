@@ -44,11 +44,15 @@ pub trait AbstractSimpleBeanDefinitionParser: Send + Sync {
 
         for (attr_name, attr_value) in attributes {
             // 检查是否有映射
-            let bean_prop = mappings.get(attr_name).cloned().unwrap_or_else(|| attr_name.clone());
+            let bean_prop = mappings
+                .get(attr_name)
+                .cloned()
+                .unwrap_or_else(|| attr_name.clone());
             properties.insert(bean_prop, attr_value.clone());
         }
 
-        let id = attributes.iter()
+        let id = attributes
+            .iter()
             .find(|(k, _)| k == "id")
             .map(|(_, v)| v.clone())
             .unwrap_or_else(|| {
@@ -106,7 +110,10 @@ mod tests {
         let result = parser.parse("simple-service", &attrs).unwrap();
         assert_eq!(result.id, "svc");
         assert_eq!(result.bean_class, "com.example.SimpleService");
-        assert_eq!(result.properties.get("endpointUrl"), Some(&"http://example.com".to_string()));
+        assert_eq!(
+            result.properties.get("endpointUrl"),
+            Some(&"http://example.com".to_string())
+        );
     }
 
     #[test]

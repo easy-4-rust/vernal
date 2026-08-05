@@ -2,11 +2,11 @@
 //!
 //! 对标 Spring `org.springframework.core.env.AbstractEnvironment`。
 
+use super::PropertyResolver;
 use super::configurable_environment::ConfigurableEnvironment;
 use super::environment::Environment;
 use super::mutable_property_sources::MutablePropertySources;
 use super::property_sources_property_resolver::PropertySourcesPropertyResolver;
-use super::PropertyResolver;
 
 /// 抽象环境。
 ///
@@ -51,7 +51,8 @@ impl PropertyResolver for AbstractEnvironment {
     }
 
     fn resolve_placeholders_inner(&self, text: &str, ignore_unresolvable: bool) -> String {
-        self.resolver().resolve_placeholders_inner(text, ignore_unresolvable)
+        self.resolver()
+            .resolve_placeholders_inner(text, ignore_unresolvable)
     }
 }
 

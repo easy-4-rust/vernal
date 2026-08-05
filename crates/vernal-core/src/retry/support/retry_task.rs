@@ -58,21 +58,18 @@ mod tests {
     #[test]
     fn runs_until_success() {
         // A 类（合同对齐）：对标 Spring 任务执行
-        use std::sync::atomic::{AtomicU32, Ordering};
         use std::sync::Arc;
+        use std::sync::atomic::{AtomicU32, Ordering};
         let attempts = Arc::new(AtomicU32::new(0));
         let counter = attempts.clone();
-        let mut task = RetryTask::new(
-            Box::new(DefaultRetryPolicy::new()),
-            move || {
-                let n = counter.fetch_add(1, Ordering::SeqCst);
-                if n < 2 {
-                    Err("transient".to_string())
-                } else {
-                    Ok(())
-                }
-            },
-        );
+        let mut task = RetryTask::new(Box::new(DefaultRetryPolicy::new()), move || {
+            let n = counter.fetch_add(1, Ordering::SeqCst);
+            if n < 2 {
+                Err("transient".to_string())
+            } else {
+                Ok(())
+            }
+        });
         assert!(task.run().is_ok());
         assert_eq!(attempts.load(Ordering::SeqCst), 3);
     }

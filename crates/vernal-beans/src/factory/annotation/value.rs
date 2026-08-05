@@ -20,16 +20,24 @@ pub struct Value {
 
 impl Value {
     /// 创建 @Value 注解。
-    pub fn new(value: String) -> Self { Self { value } }
+    pub fn new(value: String) -> Self {
+        Self { value }
+    }
 
     /// 获取注解值表达式。
-    pub fn value(&self) -> &str { &self.value }
+    pub fn value(&self) -> &str {
+        &self.value
+    }
 
     /// 值表达式长度。
-    pub fn len(&self) -> usize { self.value.len() }
+    pub fn len(&self) -> usize {
+        self.value.len()
+    }
 
     /// 值表达式是否为空。
-    pub fn is_empty(&self) -> bool { self.value.is_empty() }
+    pub fn is_empty(&self) -> bool {
+        self.value.is_empty()
+    }
 
     /// 是否为属性占位符（以 `${` 开头）。
     pub fn is_placeholder(&self) -> bool {
@@ -71,13 +79,17 @@ impl Value {
     /// 创建一个属性占位符 @Value 注解。
     pub fn placeholder(key: impl Into<String>) -> Self {
         let key = key.into();
-        Self { value: format!("${{{}}}", key) }
+        Self {
+            value: format!("${{{}}}", key),
+        }
     }
 
     /// 创建一个 SpEL 表达式 @Value 注解。
     pub fn spel(expression: impl Into<String>) -> Self {
         let expression = expression.into();
-        Self { value: format!("#{{{}}}", expression) }
+        Self {
+            value: format!("#{{{}}}", expression),
+        }
     }
 
     /// 获取原始值表达式。
@@ -96,7 +108,9 @@ impl Value {
 }
 
 impl Default for Value {
-    fn default() -> Self { Self::new(String::new()) }
+    fn default() -> Self {
+        Self::new(String::new())
+    }
 }
 
 #[cfg(test)]

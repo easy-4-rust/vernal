@@ -4,8 +4,8 @@
 //!
 //! 在 Bean 工厂初始化之前执行 AOT 处理。
 
-use std::sync::Mutex;
 use std::collections::HashSet;
+use std::sync::Mutex;
 
 /// Spring 风格的 `BeanFactoryInitializationAotProcessor`。
 ///
@@ -28,7 +28,10 @@ impl BeanFactoryInitializationAotProcessor {
 
     /// 执行process_step操作。
     pub fn process_step(&self, step_name: &str) {
-        self.processed_steps.lock().unwrap().insert(step_name.to_string());
+        self.processed_steps
+            .lock()
+            .unwrap()
+            .insert(step_name.to_string());
     }
 
     /// 判断是否initialized。
@@ -58,5 +61,7 @@ impl BeanFactoryInitializationAotProcessor {
 }
 
 impl Default for BeanFactoryInitializationAotProcessor {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }

@@ -4,35 +4,13 @@ use std::any::{Any, TypeId};
 use std::sync::Arc;
 
 use vernal_beans::{
-    BeanDescCache,
-    BeanDefinition,
-    BeanFactoryUtils,
-    ComponentDefinition,
-    ComponentKey,
-    ConfigurableBeanFactory,
-    ConfigurableListableBeanFactory,
-    Container,
-    ConversionServiceFactory,
-    DefinitionError,
-    DirectFieldAccessor,
-    FactoryBeanRegistrySupport,
-    GraphError,
-    HierarchicalBeanFactory,
-    ListableBeanFactory,
-    PropertyEditor,
-    PropertyEditorCache,
-    PropertyEditorRegistry,
-    Qualifier,
-    RegistryBuilder,
-    ResolveError,
-    RootBeanDefinition,
-    Scope,
-    ScopeError,
-    ScopeKey,
-    ScopeState,
-    TransientTracker,
+    BeanDefinition, BeanDescCache, BeanFactoryUtils, ComponentDefinition, ComponentKey,
+    ConfigurableBeanFactory, ConfigurableListableBeanFactory, Container, ConversionServiceFactory,
+    DefinitionError, DirectFieldAccessor, FactoryBeanRegistrySupport, GraphError,
+    HierarchicalBeanFactory, ListableBeanFactory, PropertyEditor, PropertyEditorCache,
+    PropertyEditorRegistry, Qualifier, RegistryBuilder, ResolveError, RootBeanDefinition, Scope,
+    ScopeError, ScopeKey, ScopeState, TransientTracker,
 };
-
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Helper
@@ -40,15 +18,20 @@ use vernal_beans::{
 
 fn make_container() -> Container {
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()))
-        .unwrap();
+    b.register(ComponentDefinition::singleton::<String, _>(|_| {
+        "hello".to_string()
+    }))
+    .unwrap();
     b.register(ComponentDefinition::singleton::<i32, _>(|_| 42i32))
         .unwrap();
     Container::new(b.build().unwrap())
 }
 
 fn shared_err(msg: &str) -> vernal_core::SharedError {
-    Arc::new(std::io::Error::new(std::io::ErrorKind::Other, msg.to_string()))
+    Arc::new(std::io::Error::new(
+        std::io::ErrorKind::Other,
+        msg.to_string(),
+    ))
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -142,7 +125,8 @@ fn registry_builder_register_bundle_success() {
 #[test]
 fn registry_builder_register_bundle_duplicate_fails_atomically() {
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::shared_value(42i32)).unwrap();
+    b.register(ComponentDefinition::shared_value(42i32))
+        .unwrap();
     let result = b.register_bundle(
         vec![
             ComponentDefinition::shared_value(100i32),
@@ -165,7 +149,8 @@ fn registry_builder_build_empty() {
 #[test]
 fn registry_builder_build_with_definitions() {
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::shared_value(42i32)).unwrap();
+    b.register(ComponentDefinition::shared_value(42i32))
+        .unwrap();
     b.register(ComponentDefinition::shared_value("hello".to_string()))
         .unwrap();
     let registry = b.build().unwrap();
@@ -176,7 +161,8 @@ fn registry_builder_build_with_definitions() {
 fn registry_builder_is_empty_considers_both() {
     let mut b = RegistryBuilder::new();
     assert!(b.is_empty());
-    b.register(ComponentDefinition::shared_value(42i32)).unwrap();
+    b.register(ComponentDefinition::shared_value(42i32))
+        .unwrap();
     assert!(!b.is_empty());
 }
 
@@ -192,14 +178,16 @@ fn registry_builder_remove_rebuilds_indices() {
     assert!(!b.contains::<i32>());
     assert!(b.contains::<u64>());
     assert!(b.contains::<String>());
-    b.register(ComponentDefinition::shared_value(3.14f64)).unwrap();
+    b.register(ComponentDefinition::shared_value(3.14f64))
+        .unwrap();
     assert_eq!(b.len(), 3);
 }
 
 #[test]
 fn registry_builder_remove_by_key() {
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::shared_value(42i32)).unwrap();
+    b.register(ComponentDefinition::shared_value(42i32))
+        .unwrap();
     b.remove_by_key(&ComponentKey::of::<i32>()).unwrap();
     assert!(b.is_empty());
 }
@@ -224,7 +212,8 @@ fn registry_builder_remove_nonexistent_type() {
 fn expression_resolver_new_and_default() {
     let r = vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver::new();
     assert_eq!(r.bean_count(), 0);
-    let r2 = vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver::default();
+    let r2 =
+        vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver::default();
     assert_eq!(r2.bean_count(), 0);
 }
 
@@ -374,7 +363,8 @@ fn configurable_accessor_set_with_conversion_mismatched_no_converter() {
     base.register_property("count", TypeId::of::<i32>());
     let accessor = ConfigurablePropertyAccessorImpl::new(Box::new(base));
     // Type mismatch, no converter
-    let _ = accessor.set_property_value_with_conversion("count", Arc::new("not_a_number".to_string()));
+    let _ =
+        accessor.set_property_value_with_conversion("count", Arc::new("not_a_number".to_string()));
 }
 
 #[test]
@@ -386,7 +376,9 @@ fn configurable_accessor_set_and_get_type_converter() {
     let base = AbstractPropertyAccessor::new();
     let accessor = ConfigurablePropertyAccessorImpl::new(Box::new(base));
     assert!(accessor.get_type_converter().is_none());
-    accessor.set_type_converter(Arc::new(vernal_beans::type_converter_support::TypeConverterSupport::new()));
+    accessor.set_type_converter(Arc::new(
+        vernal_beans::type_converter_support::TypeConverterSupport::new(),
+    ));
     assert!(accessor.get_type_converter().is_some());
 }
 
@@ -432,9 +424,21 @@ impl PropertyEditor for TestEditor {
 #[test]
 fn property_editor_registry_find_with_path() {
     let mut registry = vernal_beans::property_editor_registry::SimplePropertyEditorRegistry::new();
-    registry.register_custom_editor_for_path(TypeId::of::<String>(), "name", Box::new(TestEditor::new()));
-    assert!(registry.find_custom_editor(TypeId::of::<String>(), Some("name")).is_some());
-    assert!(registry.find_custom_editor(TypeId::of::<String>(), Some("other")).is_none());
+    registry.register_custom_editor_for_path(
+        TypeId::of::<String>(),
+        "name",
+        Box::new(TestEditor::new()),
+    );
+    assert!(
+        registry
+            .find_custom_editor(TypeId::of::<String>(), Some("name"))
+            .is_some()
+    );
+    assert!(
+        registry
+            .find_custom_editor(TypeId::of::<String>(), Some("other"))
+            .is_none()
+    );
 }
 
 #[test]
@@ -442,30 +446,62 @@ fn property_editor_registry_find_type_level_fallback() {
     let mut registry = vernal_beans::property_editor_registry::SimplePropertyEditorRegistry::new();
     registry.register_custom_editor(TypeId::of::<String>(), Box::new(TestEditor::new()));
     // With path but no path-specific editor falls back to type-level
-    assert!(registry.find_custom_editor(TypeId::of::<String>(), Some("any.path")).is_some());
-    assert!(registry.find_custom_editor(TypeId::of::<String>(), None).is_some());
+    assert!(
+        registry
+            .find_custom_editor(TypeId::of::<String>(), Some("any.path"))
+            .is_some()
+    );
+    assert!(
+        registry
+            .find_custom_editor(TypeId::of::<String>(), None)
+            .is_some()
+    );
 }
 
 #[test]
 fn property_editor_registry_find_not_found() {
     let registry = vernal_beans::property_editor_registry::SimplePropertyEditorRegistry::new();
-    assert!(registry.find_custom_editor(TypeId::of::<i32>(), None).is_none());
+    assert!(
+        registry
+            .find_custom_editor(TypeId::of::<i32>(), None)
+            .is_none()
+    );
 }
 
 #[test]
 fn property_editor_registry_find_mut() {
     let mut registry = vernal_beans::property_editor_registry::SimplePropertyEditorRegistry::new();
     registry.register_custom_editor(TypeId::of::<String>(), Box::new(TestEditor::new()));
-    assert!(registry.find_custom_editor_mut(TypeId::of::<String>(), None).is_some());
-    assert!(registry.find_custom_editor_mut(TypeId::of::<i32>(), None).is_none());
+    assert!(
+        registry
+            .find_custom_editor_mut(TypeId::of::<String>(), None)
+            .is_some()
+    );
+    assert!(
+        registry
+            .find_custom_editor_mut(TypeId::of::<i32>(), None)
+            .is_none()
+    );
 }
 
 #[test]
 fn property_editor_registry_find_mut_with_path() {
     let mut registry = vernal_beans::property_editor_registry::SimplePropertyEditorRegistry::new();
-    registry.register_custom_editor_for_path(TypeId::of::<String>(), "name", Box::new(TestEditor::new()));
-    assert!(registry.find_custom_editor_mut(TypeId::of::<String>(), Some("name")).is_some());
-    assert!(registry.find_custom_editor_mut(TypeId::of::<String>(), Some("other")).is_none());
+    registry.register_custom_editor_for_path(
+        TypeId::of::<String>(),
+        "name",
+        Box::new(TestEditor::new()),
+    );
+    assert!(
+        registry
+            .find_custom_editor_mut(TypeId::of::<String>(), Some("name"))
+            .is_some()
+    );
+    assert!(
+        registry
+            .find_custom_editor_mut(TypeId::of::<String>(), Some("other"))
+            .is_none()
+    );
 }
 
 #[test]
@@ -473,7 +509,11 @@ fn property_editor_registry_find_mut_path_fallback_to_type() {
     let mut registry = vernal_beans::property_editor_registry::SimplePropertyEditorRegistry::new();
     registry.register_custom_editor(TypeId::of::<String>(), Box::new(TestEditor::new()));
     // Path not found, but type-level editor exists
-    assert!(registry.find_custom_editor_mut(TypeId::of::<String>(), Some("missing")).is_some());
+    assert!(
+        registry
+            .find_custom_editor_mut(TypeId::of::<String>(), Some("missing"))
+            .is_some()
+    );
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -482,13 +522,15 @@ fn property_editor_registry_find_mut_path_fallback_to_type() {
 
 #[test]
 fn abstract_bean_definition_bean_class_name_default() {
-    let def = vernal_beans::factory::support::abstract_bean_definition::AbstractBeanDefinition::new();
+    let def =
+        vernal_beans::factory::support::abstract_bean_definition::AbstractBeanDefinition::new();
     assert_eq!(BeanDefinition::bean_class_name(&def), "unknown");
 }
 
 #[test]
 fn abstract_bean_definition_trait_methods_all() {
-    let mut def = vernal_beans::factory::support::abstract_bean_definition::AbstractBeanDefinition::new();
+    let mut def =
+        vernal_beans::factory::support::abstract_bean_definition::AbstractBeanDefinition::new();
     def.set_bean_class_name("com.example.Svc");
     def.set_scope(Scope::Transient);
     def.set_lazy_init(true);
@@ -522,7 +564,8 @@ fn abstract_bean_definition_trait_methods_all() {
 
 #[test]
 fn abstract_bean_definition_singleton_scope() {
-    let def = vernal_beans::factory::support::abstract_bean_definition::AbstractBeanDefinition::new();
+    let def =
+        vernal_beans::factory::support::abstract_bean_definition::AbstractBeanDefinition::new();
     assert!(BeanDefinition::is_singleton(&def));
     assert!(!BeanDefinition::is_prototype(&def));
 }
@@ -539,7 +582,10 @@ fn bean_definition_default_methods() {
     assert!(BeanDefinition::is_autowire_candidate(&def));
     assert_eq!(BeanDefinition::role(&def), 0);
     assert_eq!(BeanDefinition::description(&def), None);
-    assert_eq!(BeanDefinition::bean_class_name_internal(&def), Some("MyBean"));
+    assert_eq!(
+        BeanDefinition::bean_class_name_internal(&def),
+        Some("MyBean")
+    );
     assert_eq!(BeanDefinition::parent_name(&def), None);
     assert_eq!(BeanDefinition::factory_bean_name(&def), None);
     assert_eq!(BeanDefinition::factory_method_name(&def), None);
@@ -614,10 +660,14 @@ fn factory_bean_registry_type_erased_no_cache() {
 fn factory_bean_registry_type_erased_with_cache() {
     let support = FactoryBeanRegistrySupport::new();
     support
-        .get_object_from_factory_bean_with_closure("myFactory", &|| Ok(Arc::new(42i32) as Arc<dyn Any + Send + Sync>))
+        .get_object_from_factory_bean_with_closure("myFactory", &|| {
+            Ok(Arc::new(42i32) as Arc<dyn Any + Send + Sync>)
+        })
         .unwrap();
     let dummy: &dyn Any = &42i32;
-    let result = support.get_object_from_factory_bean(dummy, "myFactory").unwrap();
+    let result = support
+        .get_object_from_factory_bean(dummy, "myFactory")
+        .unwrap();
     assert_eq!(*result.downcast_ref::<i32>().unwrap(), 42);
 }
 
@@ -635,7 +685,9 @@ fn factory_bean_registry_clear_all() {
     let support = FactoryBeanRegistrySupport::new();
     support.register_factory_bean_type(TypeId::of::<i32>(), "f1".to_string());
     support
-        .get_object_from_factory_bean_with_closure("f1", &|| Ok(Arc::new("v".to_string()) as Arc<dyn Any + Send + Sync>))
+        .get_object_from_factory_bean_with_closure("f1", &|| {
+            Ok(Arc::new("v".to_string()) as Arc<dyn Any + Send + Sync>)
+        })
         .unwrap();
     support.clear_all();
     assert!(support.factory_bean_names().is_empty());
@@ -646,7 +698,9 @@ fn factory_bean_registry_clear_all() {
 fn factory_bean_registry_remove_cached_object() {
     let support = FactoryBeanRegistrySupport::new();
     support
-        .get_object_from_factory_bean_with_closure("f1", &|| Ok(Arc::new(42i32) as Arc<dyn Any + Send + Sync>))
+        .get_object_from_factory_bean_with_closure("f1", &|| {
+            Ok(Arc::new(42i32) as Arc<dyn Any + Send + Sync>)
+        })
         .unwrap();
     let removed = support.remove_cached_object("f1");
     assert!(removed.is_some());
@@ -688,7 +742,14 @@ fn factory_bean_registry_duplicate_name_registration() {
     let support = FactoryBeanRegistrySupport::new();
     support.register_factory_bean_type(TypeId::of::<i32>(), "factory".to_string());
     support.register_factory_bean_type(TypeId::of::<String>(), "factory".to_string());
-    assert_eq!(support.factory_bean_names().iter().filter(|n| *n == "factory").count(), 1);
+    assert_eq!(
+        support
+            .factory_bean_names()
+            .iter()
+            .filter(|n| *n == "factory")
+            .count(),
+        1
+    );
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -763,7 +824,9 @@ fn conversion_factory_no_converter_returns_none() {
 fn conversion_factory_invalid_string_to_i32() {
     let f = ConversionServiceFactory::new();
     f.register_defaults();
-    let r = f.convert(&"not_a_number".to_string(), "String", "i32").unwrap();
+    let r = f
+        .convert(&"not_a_number".to_string(), "String", "i32")
+        .unwrap();
     assert!(r.is_none());
 }
 
@@ -924,7 +987,10 @@ fn scope_error_display_close_task() {
 fn scope_error_source_resolution() {
     let err = ScopeError::Resolution {
         scope: ScopeKey::of::<String>(),
-        source: Box::new(ResolveError::NotFound { component: "b".to_string(), path: vec![] }),
+        source: Box::new(ResolveError::NotFound {
+            component: "b".to_string(),
+            path: vec![],
+        }),
     };
     assert!(std::error::Error::source(&err).is_some());
 }
@@ -949,27 +1015,49 @@ fn scope_error_source_close_task() {
 
 #[test]
 fn scope_error_source_none_variants() {
-    assert!(std::error::Error::source(&ScopeError::InvalidState {
-        operation: "o", scope: ScopeKey::of::<String>(), state: ScopeState::Closed
-    }).is_none());
-    assert!(std::error::Error::source(&ScopeError::Cancelled {
-        operation: "o", scope: ScopeKey::of::<String>()
-    }).is_none());
-    assert!(std::error::Error::source(&ScopeError::TypeMismatch {
-        scope: ScopeKey::of::<String>(), expected: "t"
-    }).is_none());
-    assert!(std::error::Error::source(&ScopeError::CloseTimeout {
-        scope: ScopeKey::of::<String>(), timeout: std::time::Duration::from_secs(1)
-    }).is_none());
-    assert!(std::error::Error::source(&ScopeError::RuntimeUnavailable {
-        scope: ScopeKey::of::<String>()
-    }).is_none());
+    assert!(
+        std::error::Error::source(&ScopeError::InvalidState {
+            operation: "o",
+            scope: ScopeKey::of::<String>(),
+            state: ScopeState::Closed
+        })
+        .is_none()
+    );
+    assert!(
+        std::error::Error::source(&ScopeError::Cancelled {
+            operation: "o",
+            scope: ScopeKey::of::<String>()
+        })
+        .is_none()
+    );
+    assert!(
+        std::error::Error::source(&ScopeError::TypeMismatch {
+            scope: ScopeKey::of::<String>(),
+            expected: "t"
+        })
+        .is_none()
+    );
+    assert!(
+        std::error::Error::source(&ScopeError::CloseTimeout {
+            scope: ScopeKey::of::<String>(),
+            timeout: std::time::Duration::from_secs(1)
+        })
+        .is_none()
+    );
+    assert!(
+        std::error::Error::source(&ScopeError::RuntimeUnavailable {
+            scope: ScopeKey::of::<String>()
+        })
+        .is_none()
+    );
 }
 
 #[test]
 fn scope_error_debug_impl() {
     let err = ScopeError::InvalidState {
-        operation: "open", scope: ScopeKey::of::<String>(), state: ScopeState::Open,
+        operation: "open",
+        scope: ScopeKey::of::<String>(),
+        state: ScopeState::Open,
     };
     assert!(format!("{:?}", err).contains("InvalidState"));
 }
@@ -1001,13 +1089,19 @@ fn bean_factory_utils_check_is_factory_bean() {
 #[test]
 fn bean_factory_utils_count_beans_for_type() {
     let c = make_container();
-    assert_eq!(BeanFactoryUtils::count_beans_for_type(TypeId::of::<String>(), &c), 1);
+    assert_eq!(
+        BeanFactoryUtils::count_beans_for_type(TypeId::of::<String>(), &c),
+        1
+    );
 }
 
 #[test]
 fn bean_factory_utils_bean_names_for_type() {
     let c = make_container();
-    assert_eq!(BeanFactoryUtils::bean_names_for_type(TypeId::of::<String>(), &c).len(), 1);
+    assert_eq!(
+        BeanFactoryUtils::bean_names_for_type(TypeId::of::<String>(), &c).len(),
+        1
+    );
 }
 
 #[test]
@@ -1026,13 +1120,19 @@ fn bean_factory_utils_bean_definition_names() {
 #[test]
 fn bean_factory_utils_count_including_ancestors() {
     let c = make_container();
-    assert_eq!(BeanFactoryUtils::count_beans_for_type_including_ancestors(TypeId::of::<String>(), &c), 1);
+    assert_eq!(
+        BeanFactoryUtils::count_beans_for_type_including_ancestors(TypeId::of::<String>(), &c),
+        1
+    );
 }
 
 #[test]
 fn bean_factory_utils_names_including_ancestors() {
     let c = make_container();
-    assert_eq!(BeanFactoryUtils::bean_names_for_type_including_ancestors(TypeId::of::<String>(), &c).len(), 1);
+    assert_eq!(
+        BeanFactoryUtils::bean_names_for_type_including_ancestors(TypeId::of::<String>(), &c).len(),
+        1
+    );
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1081,21 +1181,34 @@ struct StubEditor {
 
 impl StubEditor {
     fn new(initial: &str) -> Self {
-        Self { value: initial.to_string() }
+        Self {
+            value: initial.to_string(),
+        }
     }
 }
 
 impl PropertyEditor for StubEditor {
-    fn target_type(&self) -> TypeId { TypeId::of::<String>() }
+    fn target_type(&self) -> TypeId {
+        TypeId::of::<String>()
+    }
     fn set_as_text(&mut self, text: &str) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        self.value = text.to_string(); Ok(())
+        self.value = text.to_string();
+        Ok(())
     }
-    fn get_as_text(&self) -> Option<String> { Some(self.value.clone()) }
+    fn get_as_text(&self) -> Option<String> {
+        Some(self.value.clone())
+    }
     fn set_value(&mut self, value: Arc<dyn Any + Send + Sync>) {
-        if let Some(s) = value.downcast_ref::<String>() { self.value = s.clone(); }
+        if let Some(s) = value.downcast_ref::<String>() {
+            self.value = s.clone();
+        }
     }
-    fn get_value(&self) -> Option<&dyn Any> { Some(&self.value) }
-    fn get_value_type(&self) -> TypeId { TypeId::of::<String>() }
+    fn get_value(&self) -> Option<&dyn Any> {
+        Some(&self.value)
+    }
+    fn get_value_type(&self) -> TypeId {
+        TypeId::of::<String>()
+    }
 }
 
 #[test]
@@ -1166,7 +1279,9 @@ fn property_editor_cache_debug_impl() {
 fn container_resolve_qualified_in_success() {
     let mut b = RegistryBuilder::new();
     let q = Qualifier::new("primary").unwrap();
-    let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "primary".to_string()).qualified(q.clone()));
+    let _ = b.register(
+        ComponentDefinition::singleton::<String, _>(|_| "primary".to_string()).qualified(q.clone()),
+    );
     let c = Container::new(b.build().unwrap());
     let scope = c.open_scope::<String>();
     let val: Arc<String> = c.resolve_qualified_in(&q, &scope).unwrap();
@@ -1177,7 +1292,9 @@ fn container_resolve_qualified_in_success() {
 fn container_resolve_qualified_in_wrong_owner() {
     let mut b = RegistryBuilder::new();
     let q = Qualifier::new("q").unwrap();
-    let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "v".to_string()).qualified(q.clone()));
+    let _ = b.register(
+        ComponentDefinition::singleton::<String, _>(|_| "v".to_string()).qualified(q.clone()),
+    );
     let c = Container::new(b.build().unwrap());
     let other = Container::new(RegistryBuilder::new().build().unwrap());
     let scope = other.open_scope::<String>();
@@ -1263,13 +1380,18 @@ fn container_construct_with_post_processor() {
     struct MockPP;
     impl BeanPostProcessor for MockPP {
         fn post_process_after_initialization(
-            &self, bean: Arc<dyn Any + Send + Sync>, _: &str,
-        ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>> {
+            &self,
+            bean: Arc<dyn Any + Send + Sync>,
+            _: &str,
+        ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>>
+        {
             Ok(Some(bean))
         }
     }
     let mut b = RegistryBuilder::new();
-    let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+    let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| {
+        "hello".to_string()
+    }));
     let mut c = Container::new(b.build().unwrap());
     c.add_bean_post_processor(Arc::new(MockPP));
     assert_eq!(c.bean_post_processor_count(), 1);
@@ -1287,8 +1409,12 @@ fn container_bean_definition_registry_full_flow() {
     let mut c = make_container();
     let initial = <Container as BeanDefinitionRegistry>::bean_definition_count(&c);
     let def = Box::new(RootBeanDefinition::new());
-    c.register_bean_definition("newBean".to_string(), def).unwrap();
-    assert_eq!(<Container as BeanDefinitionRegistry>::bean_definition_count(&c), initial + 1);
+    c.register_bean_definition("newBean".to_string(), def)
+        .unwrap();
+    assert_eq!(
+        <Container as BeanDefinitionRegistry>::bean_definition_count(&c),
+        initial + 1
+    );
     assert!(<Container as BeanDefinitionRegistry>::contains_bean_definition(&c, "newBean"));
     let bd = <Container as BeanDefinitionRegistry>::get_bean_definition(&c, "newBean");
     assert!(bd.is_some());
@@ -1302,7 +1428,8 @@ fn container_bean_definition_names_includes_dynamic() {
     use vernal_beans::BeanDefinitionRegistry;
     let mut c = make_container();
     let def = Box::new(RootBeanDefinition::new());
-    c.register_bean_definition("dynamicBean".to_string(), def).unwrap();
+    c.register_bean_definition("dynamicBean".to_string(), def)
+        .unwrap();
     let names = <Container as BeanDefinitionRegistry>::bean_definition_names(&c);
     assert!(names.contains(&"dynamicBean".to_string()));
 }
@@ -1314,14 +1441,18 @@ fn container_bean_definition_names_includes_dynamic() {
 #[test]
 fn container_listable_beans_of_type_id_empty() {
     let c = Container::new(RegistryBuilder::new().build().unwrap());
-    let beans = c.beans_of_type_id(TypeId::of::<String>(), true, true).unwrap();
+    let beans = c
+        .beans_of_type_id(TypeId::of::<String>(), true, true)
+        .unwrap();
     assert!(beans.is_empty());
 }
 
 #[test]
 fn container_listable_contains_non_singleton_with_transient() {
     let mut b = RegistryBuilder::new();
-    let _ = b.register(ComponentDefinition::transient::<String, _>(|_| "t".to_string()));
+    let _ = b.register(ComponentDefinition::transient::<String, _>(|_| {
+        "t".to_string()
+    }));
     let c = Container::new(b.build().unwrap());
     assert!(c.contains_non_singleton_bean());
     assert!(!c.contains_singleton_bean());
@@ -1359,12 +1490,15 @@ fn container_embedded_value_multiple_resolvers() {
 fn container_resolve_dependency_optional_not_found() {
     use vernal_beans::AutowireCapableBeanFactory;
     let c = Container::new(RegistryBuilder::new().build().unwrap());
-    let descriptor = vernal_beans::factory::support::dependency_descriptor::DependencyDescriptor::new(
-        TypeId::of::<String>(),
-        "alloc::string::String".to_string(),
-        false, // not required
-    );
-    let result = <Container as AutowireCapableBeanFactory>::resolve_dependency(&c, &descriptor, None).unwrap();
+    let descriptor =
+        vernal_beans::factory::support::dependency_descriptor::DependencyDescriptor::new(
+            TypeId::of::<String>(),
+            "alloc::string::String".to_string(),
+            false, // not required
+        );
+    let result =
+        <Container as AutowireCapableBeanFactory>::resolve_dependency(&c, &descriptor, None)
+            .unwrap();
     assert!(result.is_none());
 }
 
@@ -1377,8 +1511,12 @@ fn container_contains_local_bean_dynamic() {
     use vernal_beans::BeanDefinitionRegistry;
     let mut c = make_container();
     let def = Box::new(RootBeanDefinition::new());
-    c.register_bean_definition("localBean".to_string(), def).unwrap();
-    assert!(<Container as HierarchicalBeanFactory>::contains_local_bean(&c, "localBean"));
+    c.register_bean_definition("localBean".to_string(), def)
+        .unwrap();
+    assert!(<Container as HierarchicalBeanFactory>::contains_local_bean(
+        &c,
+        "localBean"
+    ));
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1401,13 +1539,18 @@ fn container_post_processor_count_reflects_additions() {
     struct PP;
     impl BeanPostProcessor for PP {
         fn post_process_after_initialization(
-            &self, bean: Arc<dyn Any + Send + Sync>, _: &str,
-        ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>> {
+            &self,
+            bean: Arc<dyn Any + Send + Sync>,
+            _: &str,
+        ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>>
+        {
             Ok(Some(bean))
         }
     }
     let mut b = RegistryBuilder::new();
-    let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+    let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| {
+        "hello".to_string()
+    }));
     let mut c = Container::new(b.build().unwrap());
     assert_eq!(c.bean_post_processor_count(), 0);
     c.add_bean_post_processor(Arc::new(PP));
@@ -1420,36 +1563,58 @@ fn container_post_processor_count_reflects_additions() {
 
 #[test]
 fn resolve_error_display_all_variants() {
-    let err = ResolveError::NotFound { component: "b".to_string(), path: vec!["a".into(), "b".into()] };
+    let err = ResolveError::NotFound {
+        component: "b".to_string(),
+        path: vec!["a".into(), "b".into()],
+    };
     assert!(format!("{}", err).contains("not found"));
     assert!(format!("{}", err).contains("a -> b"));
 
-    let err = ResolveError::Ambiguous { component: "S".to_string(), candidates: vec!["a".into(), "b".into()], path: vec![] };
+    let err = ResolveError::Ambiguous {
+        component: "S".to_string(),
+        candidates: vec!["a".into(), "b".into()],
+        path: vec![],
+    };
     assert!(format!("{}", err).contains("ambiguous"));
 
-    let err = ResolveError::UndeclaredDependency { component: ComponentKey::of::<String>(), dependency: "i32".into() };
+    let err = ResolveError::UndeclaredDependency {
+        component: ComponentKey::of::<String>(),
+        dependency: "i32".into(),
+    };
     assert!(format!("{}", err).contains("undeclared"));
 
-    let err = ResolveError::TypeMismatch { component: ComponentKey::of::<String>() };
+    let err = ResolveError::TypeMismatch {
+        component: ComponentKey::of::<String>(),
+    };
     assert!(format!("{}", err).contains("type mismatch"));
 
-    let err = ResolveError::CircularRuntime { path: vec!["A".into(), "B".into(), "A".into()] };
+    let err = ResolveError::CircularRuntime {
+        path: vec!["A".into(), "B".into(), "A".into()],
+    };
     assert!(format!("{}", err).contains("cycle"));
 
-    let err = ResolveError::ScopeNotActive { component: ComponentKey::of::<String>(), scope: ScopeKey::of::<i32>() };
+    let err = ResolveError::ScopeNotActive {
+        component: ComponentKey::of::<String>(),
+        scope: ScopeKey::of::<i32>(),
+    };
     assert!(format!("{}", err).contains("requires active scope"));
 
-    let err = ResolveError::ScopeOwnerMismatch { scope: ScopeKey::of::<String>() };
+    let err = ResolveError::ScopeOwnerMismatch {
+        scope: ScopeKey::of::<String>(),
+    };
     assert!(format!("{}", err).contains("different component container"));
 
     let err = ResolveError::ScopeUnavailable {
-        component: ComponentKey::of::<String>(), scope: ScopeKey::of::<i32>(),
-        state: ScopeState::Closed, cancelled: false,
+        component: ComponentKey::of::<String>(),
+        scope: ScopeKey::of::<i32>(),
+        state: ScopeState::Closed,
+        cancelled: false,
     };
     assert!(format!("{}", err).contains("unavailable"));
 
     let err = ResolveError::ProviderUsedDuringConstruction {
-        component: ComponentKey::of::<String>(), dependency: "i32".into(),
+        component: ComponentKey::of::<String>(),
+        dependency: "i32".into(),
     };
     assert!(format!("{}", err).contains("before its factory completed"));
 }
@@ -1462,13 +1627,19 @@ fn resolve_error_source() {
     };
     assert!(std::error::Error::source(&err).is_some());
 
-    let err = ResolveError::NotFound { component: "b".into(), path: vec![] };
+    let err = ResolveError::NotFound {
+        component: "b".into(),
+        path: vec![],
+    };
     assert!(std::error::Error::source(&err).is_none());
 }
 
 #[test]
 fn resolve_error_debug_clone() {
-    let err = ResolveError::NotFound { component: "b".into(), path: vec![] };
+    let err = ResolveError::NotFound {
+        component: "b".into(),
+        path: vec![],
+    };
     assert!(format!("{:?}", err).contains("NotFound"));
     let cloned = err.clone();
     assert_eq!(format!("{}", err), format!("{}", cloned));
@@ -1516,7 +1687,9 @@ fn scope_state_default_debug_equality() {
 
 #[test]
 fn definition_error_display_debug() {
-    let err = DefinitionError::DuplicateDefinition { key: ComponentKey::of::<String>() };
+    let err = DefinitionError::DuplicateDefinition {
+        key: ComponentKey::of::<String>(),
+    };
     assert!(format!("{}", err).contains("duplicate component definition"));
     assert!(format!("{:?}", err).contains("DuplicateDefinition"));
 }
@@ -1527,17 +1700,26 @@ fn definition_error_display_debug() {
 
 #[test]
 fn graph_error_display_debug() {
-    let err = GraphError::MissingDependency { path: vec!["A".into(), "B".into()] };
+    let err = GraphError::MissingDependency {
+        path: vec!["A".into(), "B".into()],
+    };
     assert!(format!("{}", err).contains("missing dependency"));
     assert!(format!("{:?}", err).contains("MissingDependency"));
 
-    let err = GraphError::AmbiguousDependency { path: vec![], candidates: vec!["a".into()] };
+    let err = GraphError::AmbiguousDependency {
+        path: vec![],
+        candidates: vec!["a".into()],
+    };
     assert!(format!("{}", err).contains("ambiguous"));
 
-    let err = GraphError::MissingTraitBindingTarget { binding: "b".into() };
+    let err = GraphError::MissingTraitBindingTarget {
+        binding: "b".into(),
+    };
     assert!(format!("{}", err).contains("not registered"));
 
-    let err = GraphError::Cycle { path: vec!["A".into(), "B".into(), "A".into()] };
+    let err = GraphError::Cycle {
+        path: vec!["A".into(), "B".into(), "A".into()],
+    };
     assert!(format!("{}", err).contains("cycle"));
 }
 
@@ -1648,9 +1830,15 @@ fn smart_post_processor_default_trait_methods() {
     let bean: Arc<dyn Any + Send + Sync> = Arc::new(42i32);
     let early = p.get_early_bean_reference(bean.clone(), "n");
     assert!(Arc::ptr_eq(&bean, &early));
-    assert!(p.post_process_before_instantiation("C", "n").unwrap().is_none());
+    assert!(
+        p.post_process_before_instantiation("C", "n")
+            .unwrap()
+            .is_none()
+    );
     assert!(p.post_process_after_instantiation(&42i32, "n").unwrap());
-    let r = p.post_process_before_initialization(bean.clone(), "n").unwrap();
+    let r = p
+        .post_process_before_initialization(bean.clone(), "n")
+        .unwrap();
     assert!(r.is_some() && Arc::ptr_eq(&bean, &r.unwrap()));
     let r = p.post_process_after_initialization(bean, "n").unwrap();
     assert!(r.is_some());

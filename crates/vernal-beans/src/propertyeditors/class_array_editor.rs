@@ -70,7 +70,10 @@ mod tests {
     fn set_as_text_stores_value() {
         let mut editor = ClassArrayEditor::new();
         editor.set_as_text("com.example.A,com.example.B").unwrap();
-        assert_eq!(editor.get_as_text(), Some("com.example.A,com.example.B".to_string()));
+        assert_eq!(
+            editor.get_as_text(),
+            Some("com.example.A,com.example.B".to_string())
+        );
     }
 
     #[test]
@@ -86,7 +89,10 @@ mod tests {
         let val: Arc<dyn Any + Send + Sync> = Arc::new("class_array_data".to_string());
         editor.set_value(val);
         let retrieved = editor.get_value().unwrap();
-        assert_eq!(*retrieved.downcast_ref::<String>().unwrap(), "class_array_data");
+        assert_eq!(
+            *retrieved.downcast_ref::<String>().unwrap(),
+            "class_array_data"
+        );
     }
 
     #[test]

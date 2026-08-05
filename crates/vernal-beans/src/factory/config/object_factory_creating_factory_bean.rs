@@ -2,7 +2,6 @@
 //!
 //! ObjectFactory 创建工厂 Bean。
 
-
 /// ObjectFactory 创建工厂 Bean。
 ///
 /// 对应 Java 类：`org.springframework.beans.factory.config.ObjectFactoryCreatingFactoryBean`。

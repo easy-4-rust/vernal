@@ -2,7 +2,7 @@
 //!
 //! 对标 Spring `org.springframework.core.convert.support.StringToBooleanConverter`。
 
-use crate::convert::{ConversionError, Convertible, Converter};
+use crate::convert::{ConversionError, Converter, Convertible};
 
 /// 字符串 → 布尔转换器。
 ///

@@ -20,7 +20,11 @@ pub struct ManagedProperties {
 
 impl ManagedProperties {
     /// 创建空的管理 Properties。
-    pub fn new() -> Self { Self { entries: Mutex::new(HashMap::new()) } }
+    pub fn new() -> Self {
+        Self {
+            entries: Mutex::new(HashMap::new()),
+        }
+    }
 
     /// 设置键值对。
     pub fn set(&self, key: String, value: String) {
@@ -38,10 +42,14 @@ impl ManagedProperties {
     }
 
     /// 键值对数量。
-    pub fn len(&self) -> usize { self.entries.lock().unwrap().len() }
+    pub fn len(&self) -> usize {
+        self.entries.lock().unwrap().len()
+    }
 
     /// 是否为空。
-    pub fn is_empty(&self) -> bool { self.entries.lock().unwrap().is_empty() }
+    pub fn is_empty(&self) -> bool {
+        self.entries.lock().unwrap().is_empty()
+    }
 
     /// 是否包含指定键。
     pub fn contains_key(&self, key: &str) -> bool {
@@ -65,7 +73,12 @@ impl ManagedProperties {
 
     /// 获取所有键值对。
     pub fn entries(&self) -> Vec<(String, String)> {
-        self.entries.lock().unwrap().iter().map(|(k, v)| (k.clone(), v.clone())).collect()
+        self.entries
+            .lock()
+            .unwrap()
+            .iter()
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect()
     }
 
     /// 获取指定键的值，如果不存在则返回默认值。
@@ -92,7 +105,11 @@ impl ManagedProperties {
     }
 }
 
-impl Default for ManagedProperties { fn default() -> Self { Self::new() } }
+impl Default for ManagedProperties {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 #[cfg(test)]
 mod tests {

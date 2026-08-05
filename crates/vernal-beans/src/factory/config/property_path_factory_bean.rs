@@ -2,7 +2,6 @@
 //!
 //! 属性路径工厂 Bean，用于通过属性路径获取 Bean 的属性值。
 
-
 /// 属性路径工厂 Bean。
 ///
 /// 对应 Java 类：`org.springframework.beans.factory.config.PropertyPathFactoryBean`。
@@ -25,10 +24,7 @@ pub struct PropertyPathFactoryBean {
 
 impl PropertyPathFactoryBean {
     /// 创建新的 PropertyPathFactoryBean。
-    pub fn new(
-        target_bean_name: impl Into<String>,
-        property_path: impl Into<String>,
-    ) -> Self {
+    pub fn new(target_bean_name: impl Into<String>, property_path: impl Into<String>) -> Self {
         Self {
             target_bean_name: target_bean_name.into(),
             property_path: property_path.into(),

@@ -58,7 +58,10 @@ impl BeanClassLoaderAwareManager {
 
     /// 检查指定 Bean 是否已注册。
     pub fn is_aware_bean(&self, bean_name: &str) -> bool {
-        self.aware_beans.lock().unwrap().contains(&bean_name.to_string())
+        self.aware_beans
+            .lock()
+            .unwrap()
+            .contains(&bean_name.to_string())
     }
 
     /// 清除所有注册信息。

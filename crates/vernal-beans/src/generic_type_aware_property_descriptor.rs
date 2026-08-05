@@ -150,7 +150,8 @@ mod tests {
 
     #[test]
     fn test_basic_creation() {
-        let desc = GenericTypeAwarePropertyDescriptor::new("name", TypeId::of::<String>(), "String");
+        let desc =
+            GenericTypeAwarePropertyDescriptor::new("name", TypeId::of::<String>(), "String");
         assert_eq!(desc.name(), "name");
         assert_eq!(desc.property_type_name(), "String");
         assert_eq!(desc.property_type(), TypeId::of::<String>());
@@ -162,12 +163,9 @@ mod tests {
 
     #[test]
     fn test_with_generic_type() {
-        let desc = GenericTypeAwarePropertyDescriptor::new(
-            "items",
-            TypeId::of::<Vec<String>>(),
-            "Vec",
-        )
-        .with_generic_type("String", TypeId::of::<String>());
+        let desc =
+            GenericTypeAwarePropertyDescriptor::new("items", TypeId::of::<Vec<String>>(), "Vec")
+                .with_generic_type("String", TypeId::of::<String>());
 
         assert_eq!(desc.name(), "items");
         assert!(desc.has_generic_type());
@@ -177,15 +175,12 @@ mod tests {
 
     #[test]
     fn test_builder_pattern() {
-        let desc = GenericTypeAwarePropertyDescriptor::new(
-            "count",
-            TypeId::of::<Option<i32>>(),
-            "Option",
-        )
-        .readable(true)
-        .writable(false)
-        .optional(true)
-        .with_generic_type("i32", TypeId::of::<i32>());
+        let desc =
+            GenericTypeAwarePropertyDescriptor::new("count", TypeId::of::<Option<i32>>(), "Option")
+                .readable(true)
+                .writable(false)
+                .optional(true)
+                .with_generic_type("i32", TypeId::of::<i32>());
 
         assert!(desc.is_readable());
         assert!(!desc.is_writable());
@@ -195,12 +190,8 @@ mod tests {
 
     #[test]
     fn test_readonly_property() {
-        let desc = GenericTypeAwarePropertyDescriptor::new(
-            "id",
-            TypeId::of::<u64>(),
-            "u64",
-        )
-        .writable(false);
+        let desc = GenericTypeAwarePropertyDescriptor::new("id", TypeId::of::<u64>(), "u64")
+            .writable(false);
 
         assert!(desc.is_readable());
         assert!(!desc.is_writable());

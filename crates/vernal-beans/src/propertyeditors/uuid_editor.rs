@@ -102,28 +102,45 @@ mod tests {
     #[test]
     fn valid_uuid() {
         let mut editor = UUIDEditor::new();
-        editor.set_as_text("550e8400-e29b-41d4-a716-446655440000").unwrap();
-        assert_eq!(editor.get_as_text(), Some("550e8400-e29b-41d4-a716-446655440000".to_string()));
+        editor
+            .set_as_text("550e8400-e29b-41d4-a716-446655440000")
+            .unwrap();
+        assert_eq!(
+            editor.get_as_text(),
+            Some("550e8400-e29b-41d4-a716-446655440000".to_string())
+        );
     }
 
     #[test]
     fn valid_uuid_uppercase() {
         let mut editor = UUIDEditor::new();
-        editor.set_as_text("550E8400-E29B-41D4-A716-446655440000").unwrap();
-        assert_eq!(editor.get_as_text(), Some("550E8400-E29B-41D4-A716-446655440000".to_string()));
+        editor
+            .set_as_text("550E8400-E29B-41D4-A716-446655440000")
+            .unwrap();
+        assert_eq!(
+            editor.get_as_text(),
+            Some("550E8400-E29B-41D4-A716-446655440000".to_string())
+        );
     }
 
     #[test]
     fn valid_uuid_with_whitespace() {
         let mut editor = UUIDEditor::new();
-        editor.set_as_text("  550e8400-e29b-41d4-a716-446655440000  ").unwrap();
-        assert_eq!(editor.get_as_text(), Some("550e8400-e29b-41d4-a716-446655440000".to_string()));
+        editor
+            .set_as_text("  550e8400-e29b-41d4-a716-446655440000  ")
+            .unwrap();
+        assert_eq!(
+            editor.get_as_text(),
+            Some("550e8400-e29b-41d4-a716-446655440000".to_string())
+        );
     }
 
     #[test]
     fn empty_string_sets_none() {
         let mut editor = UUIDEditor::new();
-        editor.set_as_text("550e8400-e29b-41d4-a716-446655440000").unwrap();
+        editor
+            .set_as_text("550e8400-e29b-41d4-a716-446655440000")
+            .unwrap();
         editor.set_as_text("").unwrap();
         assert!(editor.get_as_text().is_none());
     }
@@ -137,19 +154,31 @@ mod tests {
     #[test]
     fn invalid_uuid_wrong_segment_length() {
         let mut editor = UUIDEditor::new();
-        assert!(editor.set_as_text("550e84-e29b-41d4-a716-446655440000").is_err());
+        assert!(
+            editor
+                .set_as_text("550e84-e29b-41d4-a716-446655440000")
+                .is_err()
+        );
     }
 
     #[test]
     fn invalid_uuid_non_hex() {
         let mut editor = UUIDEditor::new();
-        assert!(editor.set_as_text("ZZZZZZZZ-e29b-41d4-a716-446655440000").is_err());
+        assert!(
+            editor
+                .set_as_text("ZZZZZZZZ-e29b-41d4-a716-446655440000")
+                .is_err()
+        );
     }
 
     #[test]
     fn invalid_uuid_no_dashes() {
         let mut editor = UUIDEditor::new();
-        assert!(editor.set_as_text("550e8400e29b41d4a716446655440000").is_err());
+        assert!(
+            editor
+                .set_as_text("550e8400e29b41d4a716446655440000")
+                .is_err()
+        );
     }
 
     #[test]
@@ -167,9 +196,13 @@ mod tests {
     #[test]
     fn set_value_with_string() {
         let mut editor = UUIDEditor::new();
-        let val: Arc<dyn std::any::Any + Send + Sync> = Arc::new("550e8400-e29b-41d4-a716-446655440000".to_string());
+        let val: Arc<dyn std::any::Any + Send + Sync> =
+            Arc::new("550e8400-e29b-41d4-a716-446655440000".to_string());
         editor.set_value(val);
-        assert_eq!(editor.get_as_text(), Some("550e8400-e29b-41d4-a716-446655440000".to_string()));
+        assert_eq!(
+            editor.get_as_text(),
+            Some("550e8400-e29b-41d4-a716-446655440000".to_string())
+        );
     }
 
     #[test]
@@ -183,7 +216,9 @@ mod tests {
     #[test]
     fn get_value_returns_ref() {
         let mut editor = UUIDEditor::new();
-        editor.set_as_text("550e8400-e29b-41d4-a716-446655440000").unwrap();
+        editor
+            .set_as_text("550e8400-e29b-41d4-a716-446655440000")
+            .unwrap();
         let val = editor.get_value().unwrap();
         assert!(val.is::<String>());
     }
@@ -197,15 +232,25 @@ mod tests {
     #[test]
     fn all_zeros_uuid() {
         let mut editor = UUIDEditor::new();
-        editor.set_as_text("00000000-0000-0000-0000-000000000000").unwrap();
-        assert_eq!(editor.get_as_text(), Some("00000000-0000-0000-0000-000000000000".to_string()));
+        editor
+            .set_as_text("00000000-0000-0000-0000-000000000000")
+            .unwrap();
+        assert_eq!(
+            editor.get_as_text(),
+            Some("00000000-0000-0000-0000-000000000000".to_string())
+        );
     }
 
     #[test]
     fn all_fs_uuid() {
         let mut editor = UUIDEditor::new();
-        editor.set_as_text("ffffffff-ffff-ffff-ffff-ffffffffffff").unwrap();
-        assert_eq!(editor.get_as_text(), Some("ffffffff-ffff-ffff-ffff-ffffffffffff".to_string()));
+        editor
+            .set_as_text("ffffffff-ffff-ffff-ffff-ffffffffffff")
+            .unwrap();
+        assert_eq!(
+            editor.get_as_text(),
+            Some("ffffffff-ffff-ffff-ffff-ffffffffffff".to_string())
+        );
     }
 
     #[test]

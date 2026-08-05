@@ -145,8 +145,12 @@ mod tests {
     #[test]
     fn multiple_constructor_args() {
         let handler = SimpleConstructorNamespaceHandler::new();
-        handler.parse_constructor_arg("bean", &[("value".to_string(), "a".to_string())]).unwrap();
-        handler.parse_constructor_arg("bean", &[("value".to_string(), "b".to_string())]).unwrap();
+        handler
+            .parse_constructor_arg("bean", &[("value".to_string(), "a".to_string())])
+            .unwrap();
+        handler
+            .parse_constructor_arg("bean", &[("value".to_string(), "b".to_string())])
+            .unwrap();
         let args = handler.get_constructor_args("bean");
         assert_eq!(args.len(), 2);
     }
@@ -186,9 +190,7 @@ mod tests {
     #[test]
     fn parse_constructor_arg_invalid_index() {
         let handler = SimpleConstructorNamespaceHandler::new();
-        let attrs = vec![
-            ("index".to_string(), "not_a_number".to_string()),
-        ];
+        let attrs = vec![("index".to_string(), "not_a_number".to_string())];
         let result = handler.parse_constructor_arg("myBean", &attrs);
         assert!(result.is_err());
     }
@@ -279,9 +281,7 @@ mod tests {
     #[test]
     fn parse_constructor_arg_with_ref_only() {
         let handler = SimpleConstructorNamespaceHandler::new();
-        let attrs = vec![
-            ("ref".to_string(), "anotherBean".to_string()),
-        ];
+        let attrs = vec![("ref".to_string(), "anotherBean".to_string())];
         let arg = handler.parse_constructor_arg("myBean", &attrs).unwrap();
         assert_eq!(arg.ref_bean, Some("anotherBean".to_string()));
         assert!(arg.index.is_none());
@@ -293,9 +293,7 @@ mod tests {
     #[test]
     fn parse_constructor_arg_with_type_only() {
         let handler = SimpleConstructorNamespaceHandler::new();
-        let attrs = vec![
-            ("type".to_string(), "com.example.Service".to_string()),
-        ];
+        let attrs = vec![("type".to_string(), "com.example.Service".to_string())];
         let arg = handler.parse_constructor_arg("myBean", &attrs).unwrap();
         assert_eq!(arg.type_name, Some("com.example.Service".to_string()));
     }
@@ -303,9 +301,7 @@ mod tests {
     #[test]
     fn parse_constructor_arg_with_index_only() {
         let handler = SimpleConstructorNamespaceHandler::new();
-        let attrs = vec![
-            ("index".to_string(), "5".to_string()),
-        ];
+        let attrs = vec![("index".to_string(), "5".to_string())];
         let arg = handler.parse_constructor_arg("myBean", &attrs).unwrap();
         assert_eq!(arg.index, Some(5));
     }
@@ -313,8 +309,12 @@ mod tests {
     #[test]
     fn parse_constructor_args_for_different_beans() {
         let handler = SimpleConstructorNamespaceHandler::new();
-        handler.parse_constructor_arg("bean1", &[("value".to_string(), "a".to_string())]).unwrap();
-        handler.parse_constructor_arg("bean2", &[("value".to_string(), "b".to_string())]).unwrap();
+        handler
+            .parse_constructor_arg("bean1", &[("value".to_string(), "a".to_string())])
+            .unwrap();
+        handler
+            .parse_constructor_arg("bean2", &[("value".to_string(), "b".to_string())])
+            .unwrap();
         let args1 = handler.get_constructor_args("bean1");
         let args2 = handler.get_constructor_args("bean2");
         assert_eq!(args1.len(), 1);
@@ -332,9 +332,7 @@ mod tests {
     #[test]
     fn parse_constructor_arg_index_zero() {
         let handler = SimpleConstructorNamespaceHandler::new();
-        let attrs = vec![
-            ("index".to_string(), "0".to_string()),
-        ];
+        let attrs = vec![("index".to_string(), "0".to_string())];
         let arg = handler.parse_constructor_arg("myBean", &attrs).unwrap();
         assert_eq!(arg.index, Some(0));
     }
@@ -342,9 +340,7 @@ mod tests {
     #[test]
     fn parse_constructor_arg_large_index() {
         let handler = SimpleConstructorNamespaceHandler::new();
-        let attrs = vec![
-            ("index".to_string(), "999".to_string()),
-        ];
+        let attrs = vec![("index".to_string(), "999".to_string())];
         let arg = handler.parse_constructor_arg("myBean", &attrs).unwrap();
         assert_eq!(arg.index, Some(999));
     }
@@ -352,9 +348,7 @@ mod tests {
     #[test]
     fn constructor_arg_definition_clone() {
         let handler = SimpleConstructorNamespaceHandler::new();
-        let attrs = vec![
-            ("value".to_string(), "test".to_string()),
-        ];
+        let attrs = vec![("value".to_string(), "test".to_string())];
         let arg = handler.parse_constructor_arg("myBean", &attrs).unwrap();
         let cloned = arg.clone();
         assert_eq!(cloned.value, Some("test".to_string()));

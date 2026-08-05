@@ -128,10 +128,26 @@ mod tests {
         }
 
         let mut items = vec![
-            Item { name: "C".into(), priority: false, order: 0 },
-            Item { name: "A".into(), priority: true, order: 100 },
-            Item { name: "B".into(), priority: false, order: -10 },
-            Item { name: "D".into(), priority: true, order: 200 },
+            Item {
+                name: "C".into(),
+                priority: false,
+                order: 0,
+            },
+            Item {
+                name: "A".into(),
+                priority: true,
+                order: 100,
+            },
+            Item {
+                name: "B".into(),
+                priority: false,
+                order: -10,
+            },
+            Item {
+                name: "D".into(),
+                priority: true,
+                order: 200,
+            },
         ];
 
         OrderComparator::sort(&mut items, |item| item.priority, |item| item.order);
@@ -152,9 +168,18 @@ mod tests {
         }
 
         let mut items = vec![
-            Item { name: "A".into(), order: 1 },
-            Item { name: "B".into(), order: 1 },
-            Item { name: "C".into(), order: 1 },
+            Item {
+                name: "A".into(),
+                order: 1,
+            },
+            Item {
+                name: "B".into(),
+                order: 1,
+            },
+            Item {
+                name: "C".into(),
+                order: 1,
+            },
         ];
 
         OrderComparator::sort(&mut items, |_| false, |item| item.order);

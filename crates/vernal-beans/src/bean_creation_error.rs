@@ -100,10 +100,7 @@ mod tests {
     #[test]
     fn test_display() {
         let e = BeanCreationError::new("something went wrong");
-        assert_eq!(
-            format!("{}", e),
-            "BeanCreationError: something went wrong"
-        );
+        assert_eq!(format!("{}", e), "BeanCreationError: something went wrong");
     }
 
     #[test]

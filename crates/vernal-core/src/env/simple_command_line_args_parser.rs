@@ -66,7 +66,9 @@ mod tests {
     fn parses_space_form() {
         // A 类（合同对齐）：对标 Spring `--key value`
         let parser = SimpleCommandLineArgsParser;
-        let args = parser.parse(&["--port".to_string(), "8080".to_string()]).unwrap();
+        let args = parser
+            .parse(&["--port".to_string(), "8080".to_string()])
+            .unwrap();
         assert_eq!(args.option_values("port").unwrap()[0], "8080");
     }
 

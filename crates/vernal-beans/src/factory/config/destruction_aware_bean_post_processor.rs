@@ -12,7 +12,11 @@ use std::sync::Arc;
 /// 在 Bean 销毁前执行回调。
 pub trait DestructionAwareBeanPostProcessor: Send + Sync {
     /// 在 Bean 销毁前执行。
-    fn post_process_before_destruction(&self, bean: Arc<dyn Any + Send + Sync>, bean_name: &str) -> Result<(), Box<dyn std::error::Error + Send +Sync>>;
+    fn post_process_before_destruction(
+        &self,
+        bean: Arc<dyn Any + Send + Sync>,
+        bean_name: &str,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
 
     /// 是否需要处理销毁。
     fn requires_destruction(&self, _bean: Arc<dyn Any + Send + Sync>) -> bool {
@@ -27,7 +31,11 @@ mod tests {
     struct TestProcessor;
 
     impl DestructionAwareBeanPostProcessor for TestProcessor {
-        fn post_process_before_destruction(&self, _bean: Arc<dyn Any + Send + Sync>, _bean_name: &str) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        fn post_process_before_destruction(
+            &self,
+            _bean: Arc<dyn Any + Send + Sync>,
+            _bean_name: &str,
+        ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             Ok(())
         }
     }
@@ -36,6 +44,10 @@ mod tests {
     fn test_processor() {
         let processor = TestProcessor;
         let bean: Arc<dyn Any + Send + Sync> = Arc::new(String::from("test"));
-        assert!(processor.post_process_before_destruction(bean, "test").is_ok());
+        assert!(
+            processor
+                .post_process_before_destruction(bean, "test")
+                .is_ok()
+        );
     }
 }

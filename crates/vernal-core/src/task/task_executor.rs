@@ -18,8 +18,8 @@ pub trait TaskExecutor: Send + Sync {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::Arc;
+    use std::sync::atomic::{AtomicBool, Ordering};
 
     /// 测试双：记录执行次数与名称的同步执行器。
     struct TestExecutor {

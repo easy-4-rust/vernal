@@ -5,9 +5,9 @@
 
 use std::sync::Arc;
 
+use super::proxy_config::ProxyConfig;
 use crate::Advisor;
 use crate::target_source::TargetSource;
-use super::proxy_config::ProxyConfig;
 
 /// 通知支持类。
 ///
@@ -157,7 +157,9 @@ impl AdvisedSupport {
     }
 
     /// 获取顾问链。
-    pub fn get_interceptors_and_dynamic_interception_advice(&self) -> Vec<Arc<dyn crate::Interceptor>> {
+    pub fn get_interceptors_and_dynamic_interception_advice(
+        &self,
+    ) -> Vec<Arc<dyn crate::Interceptor>> {
         let mut interceptors = Vec::new();
         for advisor in &self.advisors {
             interceptors.push(advisor.interceptor());
@@ -223,17 +225,17 @@ mod tests {
     fn advised_support_add_advisor() {
         struct TestInterceptor;
         impl crate::Interceptor for TestInterceptor {
-            fn intercept<'a>(&'a self, invocation: Arc<crate::Invocation>, next: crate::Next<'a>) -> crate::InvocationFuture<'a> {
+            fn intercept<'a>(
+                &'a self,
+                invocation: Arc<crate::Invocation>,
+                next: crate::Next<'a>,
+            ) -> crate::InvocationFuture<'a> {
                 next.run(invocation)
             }
         }
 
         let mut support = AdvisedSupport::new();
-        let advisor = Arc::new(crate::Advisor::new(
-            AnyPointcut::new(),
-            TestInterceptor,
-            0,
-        ));
+        let advisor = Arc::new(crate::Advisor::new(AnyPointcut::new(), TestInterceptor, 0));
         support.add_advisor(advisor);
         assert_eq!(support.get_advisor_count(), 1);
     }
@@ -262,7 +264,11 @@ mod additional_tests {
 
     struct TestInterceptor;
     impl crate::Interceptor for TestInterceptor {
-        fn intercept<'a>(&'a self, invocation: Arc<crate::Invocation>, next: crate::Next<'a>) -> crate::InvocationFuture<'a> {
+        fn intercept<'a>(
+            &'a self,
+            invocation: Arc<crate::Invocation>,
+            next: crate::Next<'a>,
+        ) -> crate::InvocationFuture<'a> {
             next.run(invocation)
         }
     }
@@ -272,7 +278,9 @@ mod additional_tests {
         fn target_class(&self) -> Option<&str> {
             Some("TestTarget")
         }
-        fn get_target(&self) -> Result<Box<dyn std::any::Any>, crate::target_source_error::TargetSourceError> {
+        fn get_target(
+            &self,
+        ) -> Result<Box<dyn std::any::Any>, crate::target_source_error::TargetSourceError> {
             Ok(Box::new(42i32))
         }
     }
@@ -299,8 +307,16 @@ mod additional_tests {
     #[test]
     fn advised_support_remove_advisor_at() {
         let mut support = AdvisedSupport::new();
-        support.add_advisor(Arc::new(crate::Advisor::new(AnyPointcut::new(), TestInterceptor, 0)));
-        support.add_advisor(Arc::new(crate::Advisor::new(AnyPointcut::new(), TestInterceptor, 1)));
+        support.add_advisor(Arc::new(crate::Advisor::new(
+            AnyPointcut::new(),
+            TestInterceptor,
+            0,
+        )));
+        support.add_advisor(Arc::new(crate::Advisor::new(
+            AnyPointcut::new(),
+            TestInterceptor,
+            1,
+        )));
         assert_eq!(support.get_advisor_count(), 2);
         support.remove_advisor_at(0);
         assert_eq!(support.get_advisor_count(), 1);
@@ -370,7 +386,11 @@ mod advised_support_coverage_tests {
 
     struct TestInterceptor;
     impl crate::Interceptor for TestInterceptor {
-        fn intercept<'a>(&'a self, invocation: Arc<crate::Invocation>, next: crate::Next<'a>) -> crate::InvocationFuture<'a> {
+        fn intercept<'a>(
+            &'a self,
+            invocation: Arc<crate::Invocation>,
+            next: crate::Next<'a>,
+        ) -> crate::InvocationFuture<'a> {
             next.run(invocation)
         }
     }
@@ -380,7 +400,9 @@ mod advised_support_coverage_tests {
         fn target_class(&self) -> Option<&str> {
             Some("TestTarget")
         }
-        fn get_target(&self) -> Result<Box<dyn std::any::Any>, crate::target_source_error::TargetSourceError> {
+        fn get_target(
+            &self,
+        ) -> Result<Box<dyn std::any::Any>, crate::target_source_error::TargetSourceError> {
             Ok(Box::new(42i32))
         }
     }
@@ -453,7 +475,11 @@ mod advised_support_coverage_tests {
     #[test]
     fn advised_support_get_interceptors_and_dynamic_interception_advice() {
         let mut support = AdvisedSupport::new();
-        support.add_advisor(Arc::new(crate::Advisor::new(AnyPointcut::new(), TestInterceptor, 0)));
+        support.add_advisor(Arc::new(crate::Advisor::new(
+            AnyPointcut::new(),
+            TestInterceptor,
+            0,
+        )));
         let interceptors = support.get_interceptors_and_dynamic_interception_advice();
         assert_eq!(interceptors.len(), 1);
     }

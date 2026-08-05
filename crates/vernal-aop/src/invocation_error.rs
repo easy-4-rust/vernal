@@ -162,9 +162,7 @@ mod tests {
 
     #[test]
     fn return_type_mismatch_display() {
-        let err = InvocationError::ReturnTypeMismatch {
-            expected: "i32",
-        };
+        let err = InvocationError::ReturnTypeMismatch { expected: "i32" };
         assert!(format!("{}", err).contains("return type mismatch"));
     }
 

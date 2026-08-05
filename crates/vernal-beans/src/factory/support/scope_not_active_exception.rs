@@ -21,7 +21,10 @@ pub struct ScopeNotActiveException {
 impl ScopeNotActiveException {
     /// 创建新的异常。
     pub fn new(message: impl Into<String>) -> Self {
-        Self { scope_name: String::new(), message: message.into() }
+        Self {
+            scope_name: String::new(),
+            message: message.into(),
+        }
     }
 
     /// 创建带 Scope 名称的异常。
@@ -34,10 +37,14 @@ impl ScopeNotActiveException {
     }
 
     /// 获取错误消息。
-    pub fn message(&self) -> &str { &self.message }
+    pub fn message(&self) -> &str {
+        &self.message
+    }
 
     /// 获取 Scope 名称。
-    pub fn scope_name(&self) -> &str { &self.scope_name }
+    pub fn scope_name(&self) -> &str {
+        &self.scope_name
+    }
 }
 
 impl fmt::Display for ScopeNotActiveException {

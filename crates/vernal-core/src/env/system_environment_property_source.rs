@@ -57,7 +57,10 @@ mod tests {
     #[test]
     fn get_property_returns_none_for_missing_var() {
         let src = SystemEnvironmentPropertySource::new("test");
-        assert!(src.get_property("VERNAL_TEST_NONEXISTENT_VAR_12345").is_none());
+        assert!(
+            src.get_property("VERNAL_TEST_NONEXISTENT_VAR_12345")
+                .is_none()
+        );
     }
 
     #[test]

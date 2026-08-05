@@ -68,12 +68,18 @@ impl BeanWrapperInfo {
 
     /// 添加可读属性。
     pub fn add_readable_property(&self, name: &str) {
-        self.readable_properties.lock().unwrap().insert(name.to_string());
+        self.readable_properties
+            .lock()
+            .unwrap()
+            .insert(name.to_string());
     }
 
     /// 添加可写属性。
     pub fn add_writable_property(&self, name: &str) {
-        self.writable_properties.lock().unwrap().insert(name.to_string());
+        self.writable_properties
+            .lock()
+            .unwrap()
+            .insert(name.to_string());
     }
 
     /// 检查属性是否可读。
@@ -98,12 +104,22 @@ impl BeanWrapperInfo {
 
     /// 获取所有可读属性名称。
     pub fn readable_property_names(&self) -> Vec<String> {
-        self.readable_properties.lock().unwrap().iter().cloned().collect()
+        self.readable_properties
+            .lock()
+            .unwrap()
+            .iter()
+            .cloned()
+            .collect()
     }
 
     /// 获取所有可写属性名称。
     pub fn writable_property_names(&self) -> Vec<String> {
-        self.writable_properties.lock().unwrap().iter().cloned().collect()
+        self.writable_properties
+            .lock()
+            .unwrap()
+            .iter()
+            .cloned()
+            .collect()
     }
 
     /// 检查是否有嵌套路径。

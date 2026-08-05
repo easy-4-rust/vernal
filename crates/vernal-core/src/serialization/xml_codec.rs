@@ -56,7 +56,9 @@ mod tests {
     #[test]
     fn roundtrip_simple() {
         let codec = XmlCodec::new();
-        let original = XmlStruct { name: "test".to_string() };
+        let original = XmlStruct {
+            name: "test".to_string(),
+        };
         let xml = codec.to_string(&original).unwrap();
         let parsed: XmlStruct = codec.from_str(&xml).unwrap();
         assert_eq!(original, parsed);

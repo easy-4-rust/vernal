@@ -44,7 +44,9 @@ pub struct DefaultBeanNameGenerator {
 impl DefaultBeanNameGenerator {
     /// 创建一个新的实例。
     pub fn new() -> Self {
-        Self { counter: AtomicU32::new(0) }
+        Self {
+            counter: AtomicU32::new(0),
+        }
     }
 
     /// 生成 Bean 名称，使用类型调试名加序号。
@@ -62,7 +64,9 @@ impl BeanNameGenerator for DefaultBeanNameGenerator {
 }
 
 impl Default for DefaultBeanNameGenerator {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[cfg(test)]

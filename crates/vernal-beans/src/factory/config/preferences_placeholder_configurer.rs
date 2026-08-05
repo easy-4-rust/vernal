@@ -175,7 +175,10 @@ mod tests {
     fn set_and_get_system_preference() {
         let mut configurer = PreferencesPlaceholderConfigurer::new();
         configurer.set_system_preference("sys_key", "sys_value");
-        assert_eq!(configurer.get_system_preference("sys_key"), Some("sys_value"));
+        assert_eq!(
+            configurer.get_system_preference("sys_key"),
+            Some("sys_value")
+        );
         assert_eq!(configurer.get_system_preference("missing"), None);
     }
 
@@ -183,7 +186,10 @@ mod tests {
     fn set_and_get_user_preference() {
         let mut configurer = PreferencesPlaceholderConfigurer::new();
         configurer.set_user_preference("user_key", "user_value");
-        assert_eq!(configurer.get_user_preference("user_key"), Some("user_value"));
+        assert_eq!(
+            configurer.get_user_preference("user_key"),
+            Some("user_value")
+        );
         assert_eq!(configurer.get_user_preference("missing"), None);
     }
 

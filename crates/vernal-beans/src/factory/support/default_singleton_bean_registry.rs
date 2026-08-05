@@ -24,7 +24,8 @@ pub struct DefaultSingletonBeanRegistry {
     /// 二级缓存：提前暴露的半成品对象
     early_singleton_objects: Mutex<HashMap<String, Arc<dyn Any + Send + Sync>>>,
     /// 三级缓存：单例工厂
-    singleton_factories: Mutex<HashMap<String, Arc<dyn Fn() -> Arc<dyn Any + Send + Sync> + Send + Sync>>>,
+    singleton_factories:
+        Mutex<HashMap<String, Arc<dyn Fn() -> Arc<dyn Any + Send + Sync> + Send + Sync>>>,
     /// 正在创建中的 Bean（循环依赖检测）
     singletons_currently_in_creation: Mutex<HashMap<String, bool>>,
     /// 已注册的单例名称（按注册顺序）
@@ -47,7 +48,11 @@ impl DefaultSingletonBeanRegistry {
     ///
     /// 对应 Spring 的 `getSingleton(String)`。
     pub fn get_singleton(&self, name: &str) -> Option<Arc<dyn Any + Send + Sync>> {
-        self.singleton_objects.lock().unwrap().get(name).map(Arc::clone)
+        self.singleton_objects
+            .lock()
+            .unwrap()
+            .get(name)
+            .map(Arc::clone)
     }
 
     /// 检查是否包含指定单例。
@@ -62,22 +67,37 @@ impl DefaultSingletonBeanRegistry {
 
     /// 获取所有单例名称。
     pub fn singleton_names(&self) -> Vec<String> {
-        self.singleton_objects.lock().unwrap().keys().cloned().collect()
+        self.singleton_objects
+            .lock()
+            .unwrap()
+            .keys()
+            .cloned()
+            .collect()
     }
 
     /// 注册单例对象。
     ///
     /// 对应 Spring 的 `registerSingleton(String, Object)`。
     pub fn register_singleton(&self, name: String, obj: Arc<dyn Any + Send + Sync>) {
-        self.singleton_objects.lock().unwrap().insert(name.clone(), obj);
+        self.singleton_objects
+            .lock()
+            .unwrap()
+            .insert(name.clone(), obj);
         self.registered_singletons.lock().unwrap().push(name);
     }
 
     /// 添加单例工厂（三级缓存）。
     ///
     /// 对应 Spring 的 `addSingletonFactory(String, ObjectFactory)`。
-    pub fn add_singleton_factory(&self, name: String, factory: Arc<dyn Fn() -> Arc<dyn Any + Send + Sync> + Send + Sync>) {
-        self.singleton_factories.lock().unwrap().insert(name, factory);
+    pub fn add_singleton_factory(
+        &self,
+        name: String,
+        factory: Arc<dyn Fn() -> Arc<dyn Any + Send + Sync> + Send + Sync>,
+    ) {
+        self.singleton_factories
+            .lock()
+            .unwrap()
+            .insert(name, factory);
     }
 
     /// 获取早期 Bean 引用（从三级缓存提升到二级缓存）。
@@ -93,7 +113,10 @@ impl DefaultSingletonBeanRegistry {
         let mut factories = self.singleton_factories.lock().unwrap();
         if let Some(f) = factories.remove(name) {
             let bean = f();
-            self.early_singleton_objects.lock().unwrap().insert(name.to_string(), Arc::clone(&bean));
+            self.early_singleton_objects
+                .lock()
+                .unwrap()
+                .insert(name.to_string(), Arc::clone(&bean));
             return Some(bean);
         }
         None
@@ -103,12 +126,20 @@ impl DefaultSingletonBeanRegistry {
     ///
     /// 对应 Spring 的 `markSingletonAsCurrentlyInCreation`。
     pub fn mark_as_in_creation(&self, name: &str) {
-        self.singletons_currently_in_creation.lock().unwrap().insert(name.to_string(), true);
+        self.singletons_currently_in_creation
+            .lock()
+            .unwrap()
+            .insert(name.to_string(), true);
     }
 
     /// 检查 Bean 是否正在创建中。
     pub fn is_currently_in_creation(&self, name: &str) -> bool {
-        self.singletons_currently_in_creation.lock().unwrap().get(name).copied().unwrap_or(false)
+        self.singletons_currently_in_creation
+            .lock()
+            .unwrap()
+            .get(name)
+            .copied()
+            .unwrap_or(false)
     }
 
     /// 获取正在创建中的 Bean 数量。
@@ -123,7 +154,10 @@ impl DefaultSingletonBeanRegistry {
         self.singleton_objects.lock().unwrap().clear();
         self.early_singleton_objects.lock().unwrap().clear();
         self.singleton_factories.lock().unwrap().clear();
-        self.singletons_currently_in_creation.lock().unwrap().clear();
+        self.singletons_currently_in_creation
+            .lock()
+            .unwrap()
+            .clear();
     }
 
     /// 销毁指定单例。
@@ -140,7 +174,9 @@ impl DefaultSingletonBeanRegistry {
 }
 
 impl Default for DefaultSingletonBeanRegistry {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[cfg(test)]
@@ -182,7 +218,10 @@ mod tests {
 
         let early = registry.get_early_bean_reference("myBean");
         assert!(early.is_some());
-        assert_eq!(early.unwrap().downcast_ref::<String>(), Some(&"early_bean".to_string()));
+        assert_eq!(
+            early.unwrap().downcast_ref::<String>(),
+            Some(&"early_bean".to_string())
+        );
     }
 
     #[test]

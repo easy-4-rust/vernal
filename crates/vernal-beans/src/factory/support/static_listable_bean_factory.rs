@@ -6,11 +6,11 @@
 //! 持有预注册的单例 Bean，不支持动态注册。
 //! 常用于测试场景或嵌入式环境。
 
+use crate::component_key::ComponentKey;
+use crate::factory::bean_factory::BeanFactory;
 use std::any::Any;
 use std::collections::HashMap;
 use std::sync::Arc;
-use crate::factory::bean_factory::BeanFactory;
-use crate::component_key::ComponentKey;
 
 /// 静态可列举 Bean 工厂。
 ///
@@ -24,12 +24,18 @@ pub struct StaticListableBeanFactory {
 
 impl StaticListableBeanFactory {
     /// 创建空的静态 Bean 工厂。
-    pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
 
     /// 注册单例 Bean。
     ///
     /// 对应 Spring 的 `addSingleton(String, Object)`。
-    pub fn register_singleton(&mut self, name: impl Into<String>, bean: Arc<dyn Any + Send + Sync>) {
+    pub fn register_singleton(
+        &mut self,
+        name: impl Into<String>,
+        bean: Arc<dyn Any + Send + Sync>,
+    ) {
         self.singletons.insert(name.into(), bean);
     }
 
@@ -60,13 +66,23 @@ impl StaticListableBeanFactory {
 }
 
 impl BeanFactory for StaticListableBeanFactory {
-    fn get_bean_by_key(&self, key: &ComponentKey) -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> {
-        self.singletons.get(key.type_name()).cloned()
+    fn get_bean_by_key(
+        &self,
+        key: &ComponentKey,
+    ) -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> {
+        self.singletons
+            .get(key.type_name())
+            .cloned()
             .ok_or_else(|| format!("Bean '{}' not found", key).into())
     }
 
-    fn get_bean_by_type_id(&self, type_id: std::any::TypeId) -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> {
-        let mut found = self.singletons.values()
+    fn get_bean_by_type_id(
+        &self,
+        type_id: std::any::TypeId,
+    ) -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> {
+        let mut found = self
+            .singletons
+            .values()
             .filter(|v| (**v).type_id() == type_id);
         found.next().cloned().ok_or_else(|| "No bean found".into())
     }
@@ -75,12 +91,39 @@ impl BeanFactory for StaticListableBeanFactory {
         self.singletons.contains_key(key.type_name())
     }
 
-    fn is_singleton(&self, _key: &ComponentKey) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> { Ok(true) }
-    fn is_prototype(&self, _key: &ComponentKey) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> { Ok(false) }
-    fn get_type(&self, key: &ComponentKey) -> Result<Option<&'static str>, Box<dyn std::error::Error + Send + Sync>> { Ok(Some(key.type_name())) }
-    fn get_aliases(&self, _key: &ComponentKey) -> Vec<ComponentKey> { vec![] }
-    fn get_bean_provider_by_type_id(&self, _type_id: std::any::TypeId) -> Result<Box<dyn crate::factory::object_provider::ObjectProvider<dyn Any + Send + Sync> + '_>, Box<dyn std::error::Error + Send + Sync>> { unimplemented!() }
-    fn is_type_match(&self, _key: &ComponentKey, _type_id: std::any::TypeId) -> bool { false }
+    fn is_singleton(
+        &self,
+        _key: &ComponentKey,
+    ) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
+        Ok(true)
+    }
+    fn is_prototype(
+        &self,
+        _key: &ComponentKey,
+    ) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
+        Ok(false)
+    }
+    fn get_type(
+        &self,
+        key: &ComponentKey,
+    ) -> Result<Option<&'static str>, Box<dyn std::error::Error + Send + Sync>> {
+        Ok(Some(key.type_name()))
+    }
+    fn get_aliases(&self, _key: &ComponentKey) -> Vec<ComponentKey> {
+        vec![]
+    }
+    fn get_bean_provider_by_type_id(
+        &self,
+        _type_id: std::any::TypeId,
+    ) -> Result<
+        Box<dyn crate::factory::object_provider::ObjectProvider<dyn Any + Send + Sync> + '_>,
+        Box<dyn std::error::Error + Send + Sync>,
+    > {
+        unimplemented!()
+    }
+    fn is_type_match(&self, _key: &ComponentKey, _type_id: std::any::TypeId) -> bool {
+        false
+    }
 }
 
 #[cfg(test)]

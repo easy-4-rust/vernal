@@ -19,7 +19,8 @@ use crate::typed_value::{ExpressionValue, TypeDescriptor, TypedValue};
 /// 继承 `StandardTypeConverter` 的基本转换。
 pub struct VernalTypeConverter {
     /// 自定义类型转换器。
-    custom_converters: Vec<Box<dyn Fn(&TypedValue, &TypeDescriptor) -> Option<TypedValue> + Send + Sync>>,
+    custom_converters:
+        Vec<Box<dyn Fn(&TypedValue, &TypeDescriptor) -> Option<TypedValue> + Send + Sync>>,
 }
 
 impl VernalTypeConverter {
@@ -74,17 +75,12 @@ impl TypeConverter for VernalTypeConverter {
                 ))
             }
             // String → Int
-            (ExpressionValue::String(s), TypeDescriptor::Primitive(PrimitiveKind::Int)) => {
-                s.parse::<i64>()
-                    .map(|i| TypedValue::new(ExpressionValue::Int(i), TypeDescriptor::INT))
-                    .map_err(|_| {
-                        EvaluationException::new(
-                            "",
-                            None,
-                            format!("无法将 '{}' 转换为整数", s),
-                        )
-                    })
-            }
+            (ExpressionValue::String(s), TypeDescriptor::Primitive(PrimitiveKind::Int)) => s
+                .parse::<i64>()
+                .map(|i| TypedValue::new(ExpressionValue::Int(i), TypeDescriptor::INT))
+                .map_err(|_| {
+                    EvaluationException::new("", None, format!("无法将 '{}' 转换为整数", s))
+                }),
             // Boolean → String
             (ExpressionValue::Boolean(b), TypeDescriptor::Primitive(PrimitiveKind::String)) => {
                 Ok(TypedValue::new(
@@ -95,12 +91,14 @@ impl TypeConverter for VernalTypeConverter {
             // String → Boolean
             (ExpressionValue::String(s), TypeDescriptor::Primitive(PrimitiveKind::Boolean)) => {
                 match s.as_str() {
-                    "true" | "TRUE" | "True" | "1" => {
-                        Ok(TypedValue::new(ExpressionValue::Boolean(true), TypeDescriptor::BOOLEAN))
-                    }
-                    "false" | "FALSE" | "False" | "0" => {
-                        Ok(TypedValue::new(ExpressionValue::Boolean(false), TypeDescriptor::BOOLEAN))
-                    }
+                    "true" | "TRUE" | "True" | "1" => Ok(TypedValue::new(
+                        ExpressionValue::Boolean(true),
+                        TypeDescriptor::BOOLEAN,
+                    )),
+                    "false" | "FALSE" | "False" | "0" => Ok(TypedValue::new(
+                        ExpressionValue::Boolean(false),
+                        TypeDescriptor::BOOLEAN,
+                    )),
                     _ => Err(EvaluationException::new(
                         "",
                         None,
@@ -126,39 +124,63 @@ mod tests {
     fn int_to_string() {
         let converter = VernalTypeConverter::new();
         let value = TypedValue::new(ExpressionValue::Int(42), TypeDescriptor::INT);
-        let result = converter.convert_value(&value, &TypeDescriptor::STRING).unwrap();
+        let result = converter
+            .convert_value(&value, &TypeDescriptor::STRING)
+            .unwrap();
         assert_eq!(*result.value(), ExpressionValue::String("42".to_string()));
     }
 
     #[test]
     fn string_to_int() {
         let converter = VernalTypeConverter::new();
-        let value = TypedValue::new(ExpressionValue::String("123".to_string()), TypeDescriptor::STRING);
-        let result = converter.convert_value(&value, &TypeDescriptor::INT).unwrap();
+        let value = TypedValue::new(
+            ExpressionValue::String("123".to_string()),
+            TypeDescriptor::STRING,
+        );
+        let result = converter
+            .convert_value(&value, &TypeDescriptor::INT)
+            .unwrap();
         assert_eq!(*result.value(), ExpressionValue::Int(123));
     }
 
     #[test]
     fn string_to_int_error() {
         let converter = VernalTypeConverter::new();
-        let value = TypedValue::new(ExpressionValue::String("abc".to_string()), TypeDescriptor::STRING);
-        assert!(converter.convert_value(&value, &TypeDescriptor::INT).is_err());
+        let value = TypedValue::new(
+            ExpressionValue::String("abc".to_string()),
+            TypeDescriptor::STRING,
+        );
+        assert!(
+            converter
+                .convert_value(&value, &TypeDescriptor::INT)
+                .is_err()
+        );
     }
 
     #[test]
     fn custom_converter() {
         let mut converter = VernalTypeConverter::new();
         converter.register_converter(|value, target| {
-            if let (ExpressionValue::String(s), TypeDescriptor::Primitive(PrimitiveKind::Int)) = (value.value(), target) {
+            if let (ExpressionValue::String(s), TypeDescriptor::Primitive(PrimitiveKind::Int)) =
+                (value.value(), target)
+            {
                 if s == "custom" {
-                    return Some(TypedValue::new(ExpressionValue::Int(999), TypeDescriptor::INT));
+                    return Some(TypedValue::new(
+                        ExpressionValue::Int(999),
+                        TypeDescriptor::INT,
+                    ));
                 }
             }
             None
         });
 
-        let value = TypedValue::new(ExpressionValue::String("custom".to_string()), TypeDescriptor::STRING);
-        let result = converter.convert_value(&value, &TypeDescriptor::INT).unwrap();
+        let value = TypedValue::new(
+            ExpressionValue::String("custom".to_string()),
+            TypeDescriptor::STRING,
+        );
+        let result = converter
+            .convert_value(&value, &TypeDescriptor::INT)
+            .unwrap();
         assert_eq!(*result.value(), ExpressionValue::Int(999));
     }
 }

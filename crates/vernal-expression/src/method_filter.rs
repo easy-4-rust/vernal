@@ -14,4 +14,5 @@ pub trait MethodFilter: Send + Sync {
 ///
 /// 对标 Spring `StandardEvaluationContext.registerMethodFilter(Class<?>, MethodFilter)`。
 #[allow(dead_code)] // 保留作为 Spring MethodFilter 注册表的 Rust 镜像，供后续实现注册方法过滤器使用。
-pub type MethodFilterRegistry = std::collections::HashMap<std::any::TypeId, Vec<Box<dyn MethodFilter>>>;
+pub type MethodFilterRegistry =
+    std::collections::HashMap<std::any::TypeId, Vec<Box<dyn MethodFilter>>>;

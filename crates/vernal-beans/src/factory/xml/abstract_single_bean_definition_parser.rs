@@ -44,7 +44,8 @@ pub trait AbstractSingleBeanDefinitionParser: Send + Sync {
     ) -> Result<HashMap<String, String>, Box<dyn std::error::Error + Send + Sync>> {
         // 默认实现：跳过 id/name/class 属性，其余作为 Bean 属性
         let skip = ["id", "name", "class", "parent"];
-        Ok(attributes.iter()
+        Ok(attributes
+            .iter()
             .filter(|(k, _)| !skip.contains(&k.as_str()))
             .cloned()
             .collect())
@@ -56,15 +57,18 @@ pub trait AbstractSingleBeanDefinitionParser: Send + Sync {
         element_name: &str,
         attributes: &[(String, String)],
     ) -> Result<SingleBeanParseResult, Box<dyn std::error::Error + Send + Sync>> {
-        let id = attributes.iter()
+        let id = attributes
+            .iter()
             .find(|(k, _)| k == "id" || k == "name")
             .map(|(_, v)| v.clone())
             .unwrap_or_else(|| format!("generated_{}", element_name));
 
-        let bean_class = self.resolve_bean_class(attributes)
+        let bean_class = self
+            .resolve_bean_class(attributes)
             .ok_or("Bean class not specified")?;
 
-        let parent = attributes.iter()
+        let parent = attributes
+            .iter()
             .find(|(k, _)| k == "parent")
             .map(|(_, v)| v.clone());
 
@@ -88,7 +92,8 @@ mod tests {
 
     impl AbstractSingleBeanDefinitionParser for SimpleBeanParser {
         fn resolve_bean_class(&self, attributes: &[(String, String)]) -> Option<String> {
-            attributes.iter()
+            attributes
+                .iter()
                 .find(|(k, _)| k == "class")
                 .map(|(_, v)| v.clone())
         }

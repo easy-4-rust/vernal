@@ -46,7 +46,8 @@ impl SimplePropertyNamespaceHandler {
         bean_name: &str,
         p_attrs: &[(String, String)],
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        let mut properties = self.parsed_properties
+        let mut properties = self
+            .parsed_properties
             .lock()
             .unwrap()
             .entry(bean_name.to_string())
@@ -63,7 +64,10 @@ impl SimplePropertyNamespaceHandler {
             }
         }
 
-        self.parsed_properties.lock().unwrap().insert(bean_name.to_string(), properties);
+        self.parsed_properties
+            .lock()
+            .unwrap()
+            .insert(bean_name.to_string(), properties);
         Ok(())
     }
 

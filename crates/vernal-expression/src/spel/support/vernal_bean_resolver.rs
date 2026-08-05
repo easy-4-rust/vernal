@@ -149,7 +149,10 @@ mod tests {
         });
         let ctx = StandardEvaluationContext::new(TypedValue::null());
         let result = resolver.resolve(&ctx, "myBean").unwrap();
-        assert_eq!(*result.value(), ExpressionValue::String("bean:myBean".into()));
+        assert_eq!(
+            *result.value(),
+            ExpressionValue::String("bean:myBean".into())
+        );
     }
 
     #[test]
@@ -187,7 +190,10 @@ mod tests {
         });
 
         let result = resolver.resolve(&ctx, "bean").unwrap();
-        assert_eq!(*result.value(), ExpressionValue::String("resolved:bean".into()));
+        assert_eq!(
+            *result.value(),
+            ExpressionValue::String("resolved:bean".into())
+        );
     }
 
     #[test]

@@ -15,7 +15,9 @@ impl PropertyAccessorFactory {
     /// 创建一个 BeanWrapper。
     ///
     /// 对应 Java 方法：`PropertyAccessor forBeanPropertyAccess(Object target)`
-    pub fn for_bean_property_access(target: impl std::any::Any + Send + Sync + 'static) -> BeanWrapperImpl {
+    pub fn for_bean_property_access(
+        target: impl std::any::Any + Send + Sync + 'static,
+    ) -> BeanWrapperImpl {
         BeanWrapperImpl::new(std::sync::Arc::new(target))
     }
 }

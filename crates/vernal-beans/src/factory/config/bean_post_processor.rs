@@ -140,7 +140,8 @@ mod tests {
             &self,
             bean: Arc<dyn Any + Send + Sync>,
             _bean_name: &str,
-        ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>> {
+        ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>>
+        {
             Ok(Some(bean))
         }
 
@@ -148,7 +149,8 @@ mod tests {
             &self,
             bean: Arc<dyn Any + Send + Sync>,
             _bean_name: &str,
-        ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>> {
+        ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>>
+        {
             Ok(Some(bean))
         }
     }
@@ -166,7 +168,8 @@ mod tests {
             &self,
             _bean: Arc<dyn Any + Send + Sync>,
             _bean_name: &str,
-        ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>> {
+        ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>>
+        {
             Err("intentional error".into())
         }
     }
@@ -179,7 +182,8 @@ mod tests {
             &self,
             _bean_class: &str,
             _bean_name: &str,
-        ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>> {
+        ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>>
+        {
             Ok(Some(Arc::new("proxy_bean".to_string())))
         }
     }
@@ -188,7 +192,9 @@ mod tests {
     fn default_before_initialization_returns_bean() {
         let processor = NoOpProcessor;
         let bean: Arc<dyn Any + Send + Sync> = Arc::new("test".to_string());
-        let result = processor.post_process_before_initialization(bean.clone(), "myBean").unwrap();
+        let result = processor
+            .post_process_before_initialization(bean.clone(), "myBean")
+            .unwrap();
         assert!(result.is_some());
     }
 
@@ -196,14 +202,18 @@ mod tests {
     fn default_after_initialization_returns_bean() {
         let processor = NoOpProcessor;
         let bean: Arc<dyn Any + Send + Sync> = Arc::new("test".to_string());
-        let result = processor.post_process_after_initialization(bean.clone(), "myBean").unwrap();
+        let result = processor
+            .post_process_after_initialization(bean.clone(), "myBean")
+            .unwrap();
         assert!(result.is_some());
     }
 
     #[test]
     fn default_before_instantiation_returns_none() {
         let processor = NoOpProcessor;
-        let result = processor.post_process_before_instantiation("MyClass", "myBean").unwrap();
+        let result = processor
+            .post_process_before_instantiation("MyClass", "myBean")
+            .unwrap();
         assert!(result.is_none());
     }
 
@@ -211,7 +221,9 @@ mod tests {
     fn default_after_instantiation_returns_true() {
         let processor = NoOpProcessor;
         let bean: Arc<dyn Any + Send + Sync> = Arc::new("test".to_string());
-        let result = processor.post_process_after_instantiation(bean.as_ref(), "myBean").unwrap();
+        let result = processor
+            .post_process_after_instantiation(bean.as_ref(), "myBean")
+            .unwrap();
         assert!(result);
     }
 
@@ -234,7 +246,9 @@ mod tests {
     fn wrapping_processor_before() {
         let processor = WrappingProcessor;
         let bean: Arc<dyn Any + Send + Sync> = Arc::new("test".to_string());
-        let result = processor.post_process_before_initialization(bean, "myBean").unwrap();
+        let result = processor
+            .post_process_before_initialization(bean, "myBean")
+            .unwrap();
         assert!(result.is_some());
     }
 
@@ -242,7 +256,9 @@ mod tests {
     fn wrapping_processor_after() {
         let processor = WrappingProcessor;
         let bean: Arc<dyn Any + Send + Sync> = Arc::new("test".to_string());
-        let result = processor.post_process_after_initialization(bean, "myBean").unwrap();
+        let result = processor
+            .post_process_after_initialization(bean, "myBean")
+            .unwrap();
         assert!(result.is_some());
     }
 
@@ -257,7 +273,9 @@ mod tests {
     #[test]
     fn proxy_processor_returns_proxy() {
         let processor = ProxyProcessor;
-        let result = processor.post_process_before_instantiation("MyClass", "myBean").unwrap();
+        let result = processor
+            .post_process_before_instantiation("MyClass", "myBean")
+            .unwrap();
         assert!(result.is_some());
         let proxy = result.unwrap();
         let name = proxy.downcast_ref::<String>().unwrap();
@@ -268,7 +286,9 @@ mod tests {
     fn proxy_processor_default_after_instantiation() {
         let processor = ProxyProcessor;
         let bean: Arc<dyn Any + Send + Sync> = Arc::new("test".to_string());
-        let result = processor.post_process_after_instantiation(bean.as_ref(), "myBean").unwrap();
+        let result = processor
+            .post_process_after_instantiation(bean.as_ref(), "myBean")
+            .unwrap();
         assert!(result);
     }
 
@@ -276,7 +296,11 @@ mod tests {
     fn proxy_processor_default_before_destruction() {
         let processor = ProxyProcessor;
         let bean: Arc<dyn Any + Send + Sync> = Arc::new("test".to_string());
-        assert!(processor.post_process_before_destruction(bean.as_ref(), "myBean").is_ok());
+        assert!(
+            processor
+                .post_process_before_destruction(bean.as_ref(), "myBean")
+                .is_ok()
+        );
     }
 
     #[test]

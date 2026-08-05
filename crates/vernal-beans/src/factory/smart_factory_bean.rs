@@ -46,7 +46,10 @@ pub struct SimpleSmartFactoryBean<T: Any + Send + Sync> {
 impl<T: Any + Send + Sync> SimpleSmartFactoryBean<T> {
     /// 创建一个新的 SimpleSmartFactoryBean。
     pub fn new(
-        creator: impl Fn() -> Result<T, Box<dyn std::error::Error + Send + Sync>> + Send + Sync + 'static,
+        creator: impl Fn() -> Result<T, Box<dyn std::error::Error + Send + Sync>>
+        + Send
+        + Sync
+        + 'static,
         singleton: bool,
         type_name: &'static str,
     ) -> Self {
@@ -82,11 +85,7 @@ mod tests {
 
     #[test]
     fn test_simple_smart_factory_bean() {
-        let factory = SimpleSmartFactoryBean::new(
-            || Ok(String::from("hello")),
-            true,
-            "String",
-        );
+        let factory = SimpleSmartFactoryBean::new(|| Ok(String::from("hello")), true, "String");
 
         assert!(factory.is_singleton());
         assert!(!factory.is_prototype());

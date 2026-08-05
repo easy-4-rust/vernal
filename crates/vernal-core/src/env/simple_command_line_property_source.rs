@@ -2,11 +2,11 @@
 //!
 //! 对标 Spring `org.springframework.core.env.SimpleCommandLinePropertySource`。
 
+use super::PropertySource;
 use super::command_line_args::CommandLineArgs;
 use super::command_line_property_source::CommandLinePropertySource;
 use super::enumerable_property_source::EnumerablePropertySource;
 use super::simple_command_line_args_parser::SimpleCommandLineArgsParser;
-use super::PropertySource;
 
 /// 简单命令行属性源。
 ///
@@ -51,7 +51,9 @@ impl SimpleCommandLinePropertySource {
             let index: usize = index.parse().ok()?;
             return self.args.option_values(&name)?.get(index).cloned();
         }
-        self.args.option_values(key).and_then(|values| values.first().cloned())
+        self.args
+            .option_values(key)
+            .and_then(|values| values.first().cloned())
     }
 }
 

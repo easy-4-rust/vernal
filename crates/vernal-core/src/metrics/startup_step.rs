@@ -75,7 +75,10 @@ impl StartupStep for SimpleStartupStep {
     }
 
     fn tags(&self) -> Vec<(&str, String)> {
-        self.tags.iter().map(|(k, v)| (k.as_str(), v.clone())).collect()
+        self.tags
+            .iter()
+            .map(|(k, v)| (k.as_str(), v.clone()))
+            .collect()
     }
 
     fn end(&mut self) -> Instant {

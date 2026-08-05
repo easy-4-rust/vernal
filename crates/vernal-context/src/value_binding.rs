@@ -105,7 +105,8 @@ pub struct ValueExpressionResolver {
     /// 目前为 Java 镜像脚手架预留：求值逻辑由 `ApplicationContext` 集成路径
     /// 在 populateBean 阶段直接委托，暂未从此字段读取。
     #[allow(dead_code)]
-    bean_expression_resolver: Arc<dyn value_expression_resolver_trait::BeanExpressionResolverBridge>,
+    bean_expression_resolver:
+        Arc<dyn value_expression_resolver_trait::BeanExpressionResolverBridge>,
 }
 
 /// Bean 表达式解析器桥接 trait（避免循环依赖）。

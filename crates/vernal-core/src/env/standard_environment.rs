@@ -5,8 +5,8 @@
 use std::collections::HashMap;
 
 use super::environment::Environment;
-use super::property_resolver::PropertyResolver;
 use super::map_property_source::MapPropertySource;
+use super::property_resolver::PropertyResolver;
 use super::property_source::PropertySource;
 use super::system_environment_property_source::SystemEnvironmentPropertySource;
 
@@ -164,7 +164,13 @@ mod tests {
     fn default_impl_matches_new() {
         let from_new = StandardEnvironment::new();
         let from_default = StandardEnvironment::default();
-        assert_eq!(from_new.get_default_profiles(), from_default.get_default_profiles());
-        assert_eq!(from_new.get_active_profiles(), from_default.get_active_profiles());
+        assert_eq!(
+            from_new.get_default_profiles(),
+            from_default.get_default_profiles()
+        );
+        assert_eq!(
+            from_new.get_active_profiles(),
+            from_default.get_active_profiles()
+        );
     }
 }

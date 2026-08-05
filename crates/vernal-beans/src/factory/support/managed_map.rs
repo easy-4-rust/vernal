@@ -21,7 +21,11 @@ pub struct ManagedMap {
 
 impl ManagedMap {
     /// 创建空的管理映射。
-    pub fn new() -> Self { Self { entries: Mutex::new(HashMap::new()) } }
+    pub fn new() -> Self {
+        Self {
+            entries: Mutex::new(HashMap::new()),
+        }
+    }
 
     /// 插入键值对。
     pub fn put(&self, key: String, value: Arc<dyn Any + Send + Sync>) {
@@ -39,10 +43,14 @@ impl ManagedMap {
     }
 
     /// 键值对数量。
-    pub fn len(&self) -> usize { self.entries.lock().unwrap().len() }
+    pub fn len(&self) -> usize {
+        self.entries.lock().unwrap().len()
+    }
 
     /// 是否为空。
-    pub fn is_empty(&self) -> bool { self.entries.lock().unwrap().is_empty() }
+    pub fn is_empty(&self) -> bool {
+        self.entries.lock().unwrap().is_empty()
+    }
 
     /// 是否包含指定键。
     pub fn contains_key(&self, key: &str) -> bool {
@@ -66,11 +74,20 @@ impl ManagedMap {
 
     /// 获取所有键值对。
     pub fn entries(&self) -> Vec<(String, Arc<dyn Any + Send + Sync>)> {
-        self.entries.lock().unwrap().iter().map(|(k, v)| (k.clone(), Arc::clone(v))).collect()
+        self.entries
+            .lock()
+            .unwrap()
+            .iter()
+            .map(|(k, v)| (k.clone(), Arc::clone(v)))
+            .collect()
     }
 
     /// 获取指定键的值，如果不存在则插入默认值。
-    pub fn get_or_insert(&self, key: String, default: Arc<dyn Any + Send + Sync>) -> Arc<dyn Any + Send + Sync> {
+    pub fn get_or_insert(
+        &self,
+        key: String,
+        default: Arc<dyn Any + Send + Sync>,
+    ) -> Arc<dyn Any + Send + Sync> {
         let mut entries = self.entries.lock().unwrap();
         if let Some(val) = entries.get(&key) {
             Arc::clone(val)
@@ -90,7 +107,11 @@ impl ManagedMap {
     }
 }
 
-impl Default for ManagedMap { fn default() -> Self { Self::new() } }
+impl Default for ManagedMap {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -100,7 +121,10 @@ mod tests {
     fn put_and_get() {
         let map = ManagedMap::new();
         map.put("key1".to_string(), Arc::new(100_i32));
-        assert_eq!(*map.get("key1").unwrap().downcast_ref::<i32>().unwrap(), 100);
+        assert_eq!(
+            *map.get("key1").unwrap().downcast_ref::<i32>().unwrap(),
+            100
+        );
         assert_eq!(map.len(), 1);
     }
 

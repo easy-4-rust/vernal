@@ -61,10 +61,7 @@ impl DataBufferInputStream {
 impl Read for DataBufferInputStream {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         if self.closed {
-            return Err(io::Error::new(
-                io::ErrorKind::BrokenPipe,
-                "输入流已关闭",
-            ));
+            return Err(io::Error::new(io::ErrorKind::BrokenPipe, "输入流已关闭"));
         }
         Ok(self.buffer.read(buf))
     }

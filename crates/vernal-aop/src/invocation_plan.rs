@@ -125,7 +125,11 @@ mod tests {
 
     struct TestInterceptor;
     impl Interceptor for TestInterceptor {
-        fn intercept<'a>(&'a self, invocation: std::sync::Arc<Invocation>, next: Next<'a>) -> crate::InvocationFuture<'a> {
+        fn intercept<'a>(
+            &'a self,
+            invocation: std::sync::Arc<Invocation>,
+            next: Next<'a>,
+        ) -> crate::InvocationFuture<'a> {
             next.run(invocation)
         }
     }
@@ -169,9 +173,8 @@ mod tests {
         let plan = InvocationPlan::new(op, vec![]);
         let different_op = Operation::new("Other", "method");
         let invocation = Arc::new(Invocation::new(different_op));
-        let target: Arc<InvocationTarget> = Arc::new(|_| {
-            Box::pin(async { Ok(Box::new(42i32) as crate::InvocationValue) })
-        });
+        let target: Arc<InvocationTarget> =
+            Arc::new(|_| Box::pin(async { Ok(Box::new(42i32) as crate::InvocationValue) }));
         let result = plan.invoke(invocation, target).await;
         assert!(result.is_err());
     }
@@ -181,9 +184,8 @@ mod tests {
         let op = Operation::new("Service", "method");
         let plan = InvocationPlan::new(op.clone(), vec![]);
         let invocation = Arc::new(Invocation::new(op));
-        let target: Arc<InvocationTarget> = Arc::new(|_| {
-            Box::pin(async { Ok(Box::new(42i32) as crate::InvocationValue) })
-        });
+        let target: Arc<InvocationTarget> =
+            Arc::new(|_| Box::pin(async { Ok(Box::new(42i32) as crate::InvocationValue) }));
         let result = plan.invoke(invocation, target).await;
         assert!(result.is_ok());
     }
@@ -194,9 +196,8 @@ mod tests {
         let interceptor: Arc<dyn Interceptor> = Arc::new(TestInterceptor);
         let plan = InvocationPlan::new(op.clone(), vec![interceptor]);
         let invocation = Arc::new(Invocation::new(op));
-        let target: Arc<InvocationTarget> = Arc::new(|_| {
-            Box::pin(async { Ok(Box::new(42i32) as crate::InvocationValue) })
-        });
+        let target: Arc<InvocationTarget> =
+            Arc::new(|_| Box::pin(async { Ok(Box::new(42i32) as crate::InvocationValue) }));
         let result = plan.invoke(invocation, target).await;
         assert!(result.is_ok());
     }
@@ -209,7 +210,11 @@ mod invocation_plan_tests {
 
     struct TestInterceptor;
     impl Interceptor for TestInterceptor {
-        fn intercept<'a>(&'a self, invocation: std::sync::Arc<Invocation>, next: Next<'a>) -> crate::InvocationFuture<'a> {
+        fn intercept<'a>(
+            &'a self,
+            invocation: std::sync::Arc<Invocation>,
+            next: Next<'a>,
+        ) -> crate::InvocationFuture<'a> {
             next.run(invocation)
         }
     }
@@ -285,7 +290,11 @@ mod invocation_plan_final_tests {
 
     struct TestInterceptor;
     impl Interceptor for TestInterceptor {
-        fn intercept<'a>(&'a self, invocation: std::sync::Arc<Invocation>, next: Next<'a>) -> crate::InvocationFuture<'a> {
+        fn intercept<'a>(
+            &'a self,
+            invocation: std::sync::Arc<Invocation>,
+            next: Next<'a>,
+        ) -> crate::InvocationFuture<'a> {
             next.run(invocation)
         }
     }
@@ -345,7 +354,11 @@ mod invocation_plan_coverage_tests {
 
     struct TestInterceptor;
     impl Interceptor for TestInterceptor {
-        fn intercept<'a>(&'a self, invocation: std::sync::Arc<Invocation>, next: Next<'a>) -> crate::InvocationFuture<'a> {
+        fn intercept<'a>(
+            &'a self,
+            invocation: std::sync::Arc<Invocation>,
+            next: Next<'a>,
+        ) -> crate::InvocationFuture<'a> {
             next.run(invocation)
         }
     }

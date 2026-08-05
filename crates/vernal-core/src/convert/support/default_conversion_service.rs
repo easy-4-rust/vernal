@@ -82,8 +82,7 @@ impl DefaultConversionService {
     /// 获取全局共享实例（对标 Spring `getSharedInstance()`）。
     #[must_use]
     pub fn get_shared_instance() -> &'static Self {
-        static INSTANCE: std::sync::OnceLock<DefaultConversionService> =
-            std::sync::OnceLock::new();
+        static INSTANCE: std::sync::OnceLock<DefaultConversionService> = std::sync::OnceLock::new();
         INSTANCE.get_or_init(DefaultConversionService::new)
     }
 }
@@ -116,7 +115,8 @@ impl ConverterRegistry for DefaultConversionService {
         target_type: TypeId,
         converter: crate::convert::converter::ErasedConverter,
     ) {
-        self.registry.add_converter(source_type, target_type, converter);
+        self.registry
+            .add_converter(source_type, target_type, converter);
     }
 
     fn remove_convertible(&self, source_type: TypeId, target_type: TypeId) {
@@ -172,7 +172,11 @@ mod tests {
     fn registry_accessor_and_default_trait() {
         // D 类（重构安全）：registry() 暴露与 Default 构造等价
         let service = DefaultConversionService::default();
-        assert!(service.registry().can_convert(TypeId::of::<String>(), TypeId::of::<bool>()));
+        assert!(
+            service
+                .registry()
+                .can_convert(TypeId::of::<String>(), TypeId::of::<bool>())
+        );
     }
 
     #[test]

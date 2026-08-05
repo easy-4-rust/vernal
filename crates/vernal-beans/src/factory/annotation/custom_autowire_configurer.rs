@@ -44,7 +44,9 @@ impl CustomAutowireConfigurer {
     }
 
     /// 是否要求依赖存在。
-    pub fn is_required(&self) -> bool { *self.required.lock().unwrap() }
+    pub fn is_required(&self) -> bool {
+        *self.required.lock().unwrap()
+    }
 
     /// 移除一个自定义限定符注解类型。
     pub fn remove_custom_qualifier(&self, type_id: TypeId) -> bool {
@@ -58,7 +60,12 @@ impl CustomAutowireConfigurer {
 
     /// 获取所有已注册的自定义限定符 TypeId。
     pub fn custom_qualifiers(&self) -> Vec<TypeId> {
-        self.custom_qualifiers.lock().unwrap().iter().copied().collect()
+        self.custom_qualifiers
+            .lock()
+            .unwrap()
+            .iter()
+            .copied()
+            .collect()
     }
 
     /// 清空所有自定义限定符。
@@ -75,7 +82,11 @@ impl CustomAutowireConfigurer {
     }
 }
 
-impl Default for CustomAutowireConfigurer { fn default() -> Self { Self::new() } }
+impl Default for CustomAutowireConfigurer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 #[cfg(test)]
 mod tests {

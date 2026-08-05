@@ -83,11 +83,11 @@ pub struct FnConstructorInterceptor<
 }
 
 impl<
-        F: Fn(&dyn ConstructorInvocation) -> Result<Box<dyn Any>, ConstructorInvocationError>
-            + Send
-            + Sync
-            + 'static,
-    > FnConstructorInterceptor<F>
+    F: Fn(&dyn ConstructorInvocation) -> Result<Box<dyn Any>, ConstructorInvocationError>
+        + Send
+        + Sync
+        + 'static,
+> FnConstructorInterceptor<F>
 {
     /// 创建基于闭包的构造器拦截器。
     pub fn new(interceptor: F) -> Self {
@@ -96,11 +96,11 @@ impl<
 }
 
 impl<
-        F: Fn(&dyn ConstructorInvocation) -> Result<Box<dyn Any>, ConstructorInvocationError>
-            + Send
-            + Sync
-            + 'static,
-    > ConstructorInterceptor for FnConstructorInterceptor<F>
+    F: Fn(&dyn ConstructorInvocation) -> Result<Box<dyn Any>, ConstructorInvocationError>
+        + Send
+        + Sync
+        + 'static,
+> ConstructorInterceptor for FnConstructorInterceptor<F>
 {
     fn construct(
         &self,

@@ -11,7 +11,9 @@ use crate::target_source_error::TargetSourceError;
 /// 基于闭包的目标源。
 ///
 /// 每次调用 `get_target()` 时通过闭包创建新目标。
-pub struct LazyTargetSource<F: Fn() -> Result<Box<dyn Any + Send + Sync>, TargetSourceError> + Send + Sync + 'static> {
+pub struct LazyTargetSource<
+    F: Fn() -> Result<Box<dyn Any + Send + Sync>, TargetSourceError> + Send + Sync + 'static,
+> {
     factory: F,
     target_class: Option<String>,
 }
@@ -99,9 +101,8 @@ mod additional_tests {
 
     #[test]
     fn lazy_target_source_get_target_error() {
-        let source = LazyTargetSource::new(|| {
-            Err(TargetSourceError::CreationFailed("test".to_string()))
-        });
+        let source =
+            LazyTargetSource::new(|| Err(TargetSourceError::CreationFailed("test".to_string())));
         let result = source.get_target();
         assert!(result.is_err());
     }

@@ -51,9 +51,7 @@ mod tests {
         // A 类（合同对齐）：对标 Spring 工厂创建属性源
         let factory = TestFactory;
         let resource = crate::io::ByteArrayResource::new(b"content".to_vec());
-        let source = factory
-            .create_property_source("config", &resource)
-            .unwrap();
+        let source = factory.create_property_source("config", &resource).unwrap();
         assert_eq!(source.name(), "config");
         assert_eq!(source.get_property("raw").as_deref(), Some("content"));
     }

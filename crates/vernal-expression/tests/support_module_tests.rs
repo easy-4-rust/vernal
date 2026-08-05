@@ -27,10 +27,9 @@ use vernal_expression::spel::token::Token;
 use vernal_expression::spel::token_kind::TokenKind;
 // Re-exported types from the crate root (modules are private)
 use vernal_expression::{
-    BeanResolver, ConstructorResolver, EvaluationContext,
-    EvaluationException, IndexAccessor, MethodResolver, OperatorOverloader,
-    PropertyAccessor, TypeComparator, TypeConverter, TypeDescriptor,
-    PrimitiveKind, TypeLocator, TypedValue,
+    BeanResolver, ConstructorResolver, EvaluationContext, EvaluationException, IndexAccessor,
+    MethodResolver, OperatorOverloader, PrimitiveKind, PropertyAccessor, TypeComparator,
+    TypeConverter, TypeDescriptor, TypeLocator, TypedValue,
 };
 
 // =========================================================================
@@ -109,7 +108,10 @@ fn make_string_tv(s: &str) -> TypedValue {
 }
 
 fn make_int_tv(i: i64) -> TypedValue {
-    TypedValue::new(ExpressionValue::Int(i), TypeDescriptor::Primitive(PrimitiveKind::Int))
+    TypedValue::new(
+        ExpressionValue::Int(i),
+        TypeDescriptor::Primitive(PrimitiveKind::Int),
+    )
 }
 
 fn make_bool_tv(b: bool) -> TypedValue {
@@ -181,16 +183,17 @@ mod map_accessor_tests {
             (make_string_tv("age"), make_int_tv(30)),
         ]);
         let result = accessor.read(&ctx, &map_tv, "name").unwrap();
-        assert_eq!(*result.value(), ExpressionValue::String("Alice".to_string()));
+        assert_eq!(
+            *result.value(),
+            ExpressionValue::String("Alice".to_string())
+        );
     }
 
     #[test]
     fn read_returns_null_for_missing_key() {
         let accessor = MapAccessor;
         let ctx = DummyCtx::null_root();
-        let map_tv = make_map_tv(vec![
-            (make_string_tv("name"), make_string_tv("Alice")),
-        ]);
+        let map_tv = make_map_tv(vec![(make_string_tv("name"), make_string_tv("Alice"))]);
         let result = accessor.read(&ctx, &map_tv, "missing").unwrap();
         assert!(result.is_null());
     }
@@ -216,9 +219,7 @@ mod map_accessor_tests {
     fn read_finds_int_value() {
         let accessor = MapAccessor;
         let ctx = DummyCtx::null_root();
-        let map_tv = make_map_tv(vec![
-            (make_string_tv("count"), make_int_tv(42)),
-        ]);
+        let map_tv = make_map_tv(vec![(make_string_tv("count"), make_int_tv(42))]);
         let result = accessor.read(&ctx, &map_tv, "count").unwrap();
         assert_eq!(*result.value(), ExpressionValue::Int(42));
     }
@@ -227,9 +228,7 @@ mod map_accessor_tests {
     fn read_finds_bool_value() {
         let accessor = MapAccessor;
         let ctx = DummyCtx::null_root();
-        let map_tv = make_map_tv(vec![
-            (make_string_tv("active"), make_bool_tv(true)),
-        ]);
+        let map_tv = make_map_tv(vec![(make_string_tv("active"), make_bool_tv(true))]);
         let result = accessor.read(&ctx, &map_tv, "active").unwrap();
         assert_eq!(*result.value(), ExpressionValue::Boolean(true));
     }
@@ -248,7 +247,11 @@ mod map_accessor_tests {
         let accessor = MapAccessor;
         let ctx = DummyCtx::null_root();
         let map_tv = make_map_tv(vec![]);
-        assert!(accessor.write(&ctx, &map_tv, "key", &make_string_tv("v")).is_err());
+        assert!(
+            accessor
+                .write(&ctx, &map_tv, "key", &make_string_tv("v"))
+                .is_err()
+        );
     }
 
     #[test]
@@ -264,9 +267,10 @@ mod map_accessor_tests {
     fn read_with_empty_string_key() {
         let accessor = MapAccessor;
         let ctx = DummyCtx::null_root();
-        let map_tv = make_map_tv(vec![
-            (make_string_tv(""), make_string_tv("empty_key_value")),
-        ]);
+        let map_tv = make_map_tv(vec![(
+            make_string_tv(""),
+            make_string_tv("empty_key_value"),
+        )]);
         let result = accessor.read(&ctx, &map_tv, "").unwrap();
         assert_eq!(
             *result.value(),
@@ -375,9 +379,7 @@ mod reflective_index_accessor_tests {
     fn read_map_missing_key_returns_null() {
         let accessor = ReflectiveIndexAccessor;
         let ctx = DummyCtx::null_root();
-        let map_tv = make_map_tv(vec![
-            (make_string_tv("x"), make_int_tv(10)),
-        ]);
+        let map_tv = make_map_tv(vec![(make_string_tv("x"), make_int_tv(10))]);
         let result = accessor.read(&ctx, &map_tv, &make_string_tv("z")).unwrap();
         assert!(result.is_null());
     }
@@ -412,9 +414,11 @@ mod reflective_index_accessor_tests {
         let accessor = ReflectiveIndexAccessor;
         let ctx = DummyCtx::null_root();
         let list_tv = make_list_tv(vec![]);
-        assert!(accessor
-            .write(&ctx, &list_tv, &make_int_tv(0), &make_string_tv("v"))
-            .is_err());
+        assert!(
+            accessor
+                .write(&ctx, &list_tv, &make_int_tv(0), &make_string_tv("v"))
+                .is_err()
+        );
     }
 
     #[test]
@@ -597,7 +601,10 @@ mod spel_parser_configuration_tests {
     fn default_trait_matches_new() {
         let config1 = SpelParserConfiguration::new();
         let config2 = SpelParserConfiguration::default();
-        assert_eq!(config1.max_expression_length(), config2.max_expression_length());
+        assert_eq!(
+            config1.max_expression_length(),
+            config2.max_expression_length()
+        );
         assert_eq!(config1.max_operations(), config2.max_operations());
         assert_eq!(
             config1.auto_grow_null_references(),
@@ -609,7 +616,10 @@ mod spel_parser_configuration_tests {
     fn clone_preserves_values() {
         let config = SpelParserConfiguration::new();
         let cloned = config.clone();
-        assert_eq!(config.max_expression_length(), cloned.max_expression_length());
+        assert_eq!(
+            config.max_expression_length(),
+            cloned.max_expression_length()
+        );
         assert_eq!(config.max_operations(), cloned.max_operations());
     }
 
@@ -902,9 +912,18 @@ mod simple_evaluation_context_tests {
         ctx.set_variable("a", make_int_tv(1));
         ctx.set_variable("b", make_int_tv(2));
         ctx.set_variable("c", make_int_tv(3));
-        assert_eq!(*ctx.lookup_variable("a").unwrap().value(), ExpressionValue::Int(1));
-        assert_eq!(*ctx.lookup_variable("b").unwrap().value(), ExpressionValue::Int(2));
-        assert_eq!(*ctx.lookup_variable("c").unwrap().value(), ExpressionValue::Int(3));
+        assert_eq!(
+            *ctx.lookup_variable("a").unwrap().value(),
+            ExpressionValue::Int(1)
+        );
+        assert_eq!(
+            *ctx.lookup_variable("b").unwrap().value(),
+            ExpressionValue::Int(2)
+        );
+        assert_eq!(
+            *ctx.lookup_variable("c").unwrap().value(),
+            ExpressionValue::Int(3)
+        );
     }
 
     #[test]
@@ -1084,7 +1103,10 @@ mod standard_evaluation_context_tests {
     fn property_accessors_non_empty_by_default() {
         let ctx = StandardEvaluationContext::new(TypedValue::null());
         let accessors = ctx.property_accessors();
-        assert!(!accessors.is_empty(), "should have default ReflectivePropertyAccessor");
+        assert!(
+            !accessors.is_empty(),
+            "should have default ReflectivePropertyAccessor"
+        );
     }
 
     #[test]
@@ -1133,9 +1155,7 @@ mod standard_evaluation_context_tests {
     #[test]
     fn register_method_fn() {
         let ctx = StandardEvaluationContext::new(TypedValue::null());
-        ctx.register_method_fn("test_method", |_ctx, _target, _args| {
-            Ok(TypedValue::null())
-        });
+        ctx.register_method_fn("test_method", |_ctx, _target, _args| Ok(TypedValue::null()));
         // Verify it was registered by checking the resolver has it
         let resolvers = ctx.method_resolvers();
         assert_eq!(resolvers.len(), 1);
@@ -1185,9 +1205,7 @@ mod standard_evaluation_context_tests {
 
     #[test]
     fn new_with_map_root() {
-        let root = make_map_tv(vec![
-            (make_string_tv("k"), make_string_tv("v")),
-        ]);
+        let root = make_map_tv(vec![(make_string_tv("k"), make_string_tv("v"))]);
         let ctx = StandardEvaluationContext::new(root);
         match ctx.root_object().value() {
             ExpressionValue::Map(entries) => assert_eq!(entries.len(), 1),
@@ -1280,7 +1298,10 @@ mod spel_message_tests {
 
     #[test]
     fn incorrect_number_of_arguments_to_function_code() {
-        assert_eq!(SpelMessage::IncorrectNumberOfArgumentsToFunction.code(), 1014);
+        assert_eq!(
+            SpelMessage::IncorrectNumberOfArgumentsToFunction.code(),
+            1014
+        );
     }
 
     #[test]
@@ -1404,14 +1425,16 @@ mod spel_message_tests {
 
     #[test]
     fn format_message_display_trait() {
-        let result =
-            SpelMessage::NotAnInteger.format_message_display(&[42_i32, 100_i32]);
+        let result = SpelMessage::NotAnInteger.format_message_display(&[42_i32, 100_i32]);
         assert!(result.contains("42"));
     }
 
     #[test]
     fn kind_returns_error() {
-        assert_eq!(SpelMessage::Ood.kind(), vernal_expression::spel::spel_message::MessageKind::Error);
+        assert_eq!(
+            SpelMessage::Ood.kind(),
+            vernal_expression::spel::spel_message::MessageKind::Error
+        );
         assert_eq!(
             SpelMessage::TypeConversionError.kind(),
             vernal_expression::spel::spel_message::MessageKind::Error
@@ -1428,8 +1451,7 @@ mod spel_message_tests {
 
     #[test]
     fn format_message_property_not_readable() {
-        let result =
-            SpelMessage::PropertyOrFieldNotReadable.format_message(&["name", "Person"]);
+        let result = SpelMessage::PropertyOrFieldNotReadable.format_message(&["name", "Person"]);
         assert!(result.contains("name"));
         assert!(result.contains("Person"));
     }
@@ -1458,15 +1480,19 @@ mod spel_evaluation_exception_tests {
 
     #[test]
     fn at_creates_with_position() {
-        let ex =
-            SpelEvaluationException::at(SpelMessage::PropertyOrFieldNotReadable, 12, &["foo", "Object"]);
+        let ex = SpelEvaluationException::at(
+            SpelMessage::PropertyOrFieldNotReadable,
+            12,
+            &["foo", "Object"],
+        );
         assert_eq!(ex.position(), Some(12));
         assert!(ex.simple_message().contains("foo"));
     }
 
     #[test]
     fn set_position_updates_position() {
-        let mut ex = SpelEvaluationException::new(SpelMessage::NotComparable, &["Integer", "String"]);
+        let mut ex =
+            SpelEvaluationException::new(SpelMessage::NotComparable, &["Integer", "String"]);
         assert!(ex.position().is_none());
         ex.set_position(42);
         assert_eq!(ex.position(), Some(42));
@@ -1542,7 +1568,12 @@ mod spel_parse_exception_tests {
 
     #[test]
     fn new_with_expression_and_position() {
-        let ex = SpelParseException::new("1 + )", 4, SpelMessage::NotExpectedToken, &["rparen", "rparen"]);
+        let ex = SpelParseException::new(
+            "1 + )",
+            4,
+            SpelMessage::NotExpectedToken,
+            &["rparen", "rparen"],
+        );
         assert_eq!(ex.code, SpelMessage::NotExpectedToken);
         assert_eq!(ex.position, Some(4));
         assert!(ex.expression_string.is_some());
@@ -1667,8 +1698,7 @@ mod internal_parse_exception_tests {
 
     #[test]
     fn parse_exception_borrows() {
-        let internal =
-            InternalParseException::new("abc", 2, SpelMessage::MoreInput, &["extra"]);
+        let internal = InternalParseException::new("abc", 2, SpelMessage::MoreInput, &["extra"]);
         let pe_ref = internal.parse_exception();
         assert_eq!(pe_ref.code, SpelMessage::MoreInput);
         assert!(pe_ref.expression_string.is_some());
@@ -2084,7 +2114,9 @@ mod token_tests {
     #[test]
     fn is_numeric_relational_operator_false() {
         assert!(!Token::empty(TokenKind::Plus, 0, 1).is_numeric_relational_operator());
-        assert!(!Token::with_data(TokenKind::Identifier, "x", 0, 1).is_numeric_relational_operator());
+        assert!(
+            !Token::with_data(TokenKind::Identifier, "x", 0, 1).is_numeric_relational_operator()
+        );
     }
 
     #[test]
@@ -2228,7 +2260,10 @@ mod spel_node_trait_tests {
     }
 
     impl SpelNode for TestNode {
-        fn get_value(&self, _context: &dyn EvaluationContext) -> Result<TypedValue, EvaluationException> {
+        fn get_value(
+            &self,
+            _context: &dyn EvaluationContext,
+        ) -> Result<TypedValue, EvaluationException> {
             Ok(TypedValue::null())
         }
 

@@ -20,7 +20,11 @@ pub struct ManagedSet {
 
 impl ManagedSet {
     /// 创建空的管理集合。
-    pub fn new() -> Self { Self { items: Mutex::new(HashSet::new()) } }
+    pub fn new() -> Self {
+        Self {
+            items: Mutex::new(HashSet::new()),
+        }
+    }
 
     /// 添加元素，返回是否为新元素。
     pub fn add(&self, key: &str) -> bool {
@@ -33,10 +37,14 @@ impl ManagedSet {
     }
 
     /// 元素数量。
-    pub fn len(&self) -> usize { self.items.lock().unwrap().len() }
+    pub fn len(&self) -> usize {
+        self.items.lock().unwrap().len()
+    }
 
     /// 是否为空。
-    pub fn is_empty(&self) -> bool { self.items.lock().unwrap().is_empty() }
+    pub fn is_empty(&self) -> bool {
+        self.items.lock().unwrap().is_empty()
+    }
 
     /// 移除元素，返回是否成功。
     pub fn remove(&self, key: &str) -> bool {
@@ -84,7 +92,11 @@ impl ManagedSet {
     }
 }
 
-impl Default for ManagedSet { fn default() -> Self { Self::new() } }
+impl Default for ManagedSet {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 #[cfg(test)]
 mod tests {

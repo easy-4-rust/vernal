@@ -148,12 +148,16 @@ mod tests {
         let processor = SimpleInstantiationAwareBeanPostProcessor::new();
 
         // 默认不跳过实例化
-        let result = processor.post_process_before_instantiation("MyClass", "myBean").unwrap();
+        let result = processor
+            .post_process_before_instantiation("MyClass", "myBean")
+            .unwrap();
         assert!(result.is_none());
 
         // 默认继续属性注入
         let bean = Arc::new(String::from("test"));
-        let result = processor.post_process_after_instantiation(bean.as_ref(), "myBean").unwrap();
+        let result = processor
+            .post_process_after_instantiation(bean.as_ref(), "myBean")
+            .unwrap();
         assert!(result);
     }
 
@@ -162,7 +166,9 @@ mod tests {
         let mut processor = SimpleInstantiationAwareBeanPostProcessor::new();
         processor.set_skip_instantiation(true);
 
-        let result = processor.post_process_before_instantiation("MyClass", "myBean").unwrap();
+        let result = processor
+            .post_process_before_instantiation("MyClass", "myBean")
+            .unwrap();
         assert!(result.is_some());
     }
 
@@ -171,16 +177,23 @@ mod tests {
         let processor = SimpleInstantiationAwareBeanPostProcessor::new();
         let bean = Arc::new(String::from("test"));
         let mut properties = HashMap::new();
-        properties.insert("key".to_string(), Arc::new(42i32) as Arc<dyn Any + Send + Sync>);
+        properties.insert(
+            "key".to_string(),
+            Arc::new(42i32) as Arc<dyn Any + Send + Sync>,
+        );
 
-        let result = processor.post_process_property_values(bean.as_ref(), "myBean", properties).unwrap();
+        let result = processor
+            .post_process_property_values(bean.as_ref(), "myBean", properties)
+            .unwrap();
         assert!(result.is_some());
     }
 
     #[test]
     fn test_default_trait_creates_default() {
         let processor = SimpleInstantiationAwareBeanPostProcessor::default();
-        let result = processor.post_process_before_instantiation("MyClass", "myBean").unwrap();
+        let result = processor
+            .post_process_before_instantiation("MyClass", "myBean")
+            .unwrap();
         assert!(result.is_none()); // default doesn't skip
     }
 
@@ -189,7 +202,9 @@ mod tests {
         let mut processor = SimpleInstantiationAwareBeanPostProcessor::new();
         processor.set_continue_injection(false);
         let bean = Arc::new(String::from("test"));
-        let result = processor.post_process_after_instantiation(bean.as_ref(), "myBean").unwrap();
+        let result = processor
+            .post_process_after_instantiation(bean.as_ref(), "myBean")
+            .unwrap();
         assert!(!result);
     }
 
@@ -200,12 +215,16 @@ mod tests {
         processor.set_continue_injection(false);
 
         // Skip instantiation returns proxy
-        let result = processor.post_process_before_instantiation("MyClass", "myBean").unwrap();
+        let result = processor
+            .post_process_before_instantiation("MyClass", "myBean")
+            .unwrap();
         assert!(result.is_some());
 
         // Continue injection is false
         let bean = Arc::new(String::from("test"));
-        let result = processor.post_process_after_instantiation(bean.as_ref(), "myBean").unwrap();
+        let result = processor
+            .post_process_after_instantiation(bean.as_ref(), "myBean")
+            .unwrap();
         assert!(!result);
     }
 
@@ -216,7 +235,9 @@ mod tests {
 
         let processor = DefaultProcessor;
         let bean: Arc<dyn Any + Send + Sync> = Arc::new(String::from("test"));
-        let result = processor.post_process_before_initialization(bean.clone(), "myBean").unwrap();
+        let result = processor
+            .post_process_before_initialization(bean.clone(), "myBean")
+            .unwrap();
         assert!(result.is_some());
         // Default returns the same bean
         assert!(Arc::ptr_eq(&result.unwrap(), &bean));
@@ -229,7 +250,9 @@ mod tests {
 
         let processor = DefaultProcessor;
         let bean: Arc<dyn Any + Send + Sync> = Arc::new(String::from("test"));
-        let result = processor.post_process_after_initialization(bean.clone(), "myBean").unwrap();
+        let result = processor
+            .post_process_after_initialization(bean.clone(), "myBean")
+            .unwrap();
         assert!(result.is_some());
         assert!(Arc::ptr_eq(&result.unwrap(), &bean));
     }
@@ -242,9 +265,14 @@ mod tests {
         let processor = DefaultProcessor;
         let bean = Arc::new(String::from("test"));
         let mut properties = HashMap::new();
-        properties.insert("key".to_string(), Arc::new(42i32) as Arc<dyn Any + Send + Sync>);
+        properties.insert(
+            "key".to_string(),
+            Arc::new(42i32) as Arc<dyn Any + Send + Sync>,
+        );
 
-        let result = processor.post_process_property_values(bean.as_ref(), "myBean", properties).unwrap();
+        let result = processor
+            .post_process_property_values(bean.as_ref(), "myBean", properties)
+            .unwrap();
         assert!(result.is_some());
         assert_eq!(result.unwrap().len(), 1);
     }
@@ -255,7 +283,9 @@ mod tests {
         impl InstantiationAwareBeanPostProcessor for DefaultProcessor {}
 
         let processor = DefaultProcessor;
-        let result = processor.post_process_before_instantiation("MyClass", "myBean").unwrap();
+        let result = processor
+            .post_process_before_instantiation("MyClass", "myBean")
+            .unwrap();
         assert!(result.is_none()); // default returns None
     }
 
@@ -266,7 +296,9 @@ mod tests {
 
         let processor = DefaultProcessor;
         let bean = Arc::new(String::from("test"));
-        let result = processor.post_process_after_instantiation(bean.as_ref(), "myBean").unwrap();
+        let result = processor
+            .post_process_after_instantiation(bean.as_ref(), "myBean")
+            .unwrap();
         assert!(result); // default returns true
     }
 
@@ -275,7 +307,9 @@ mod tests {
         let processor = SimpleInstantiationAwareBeanPostProcessor::new();
         let bean = Arc::new(String::from("test"));
         let properties = HashMap::new();
-        let result = processor.post_process_property_values(bean.as_ref(), "myBean", properties).unwrap();
+        let result = processor
+            .post_process_property_values(bean.as_ref(), "myBean", properties)
+            .unwrap();
         assert!(result.is_some());
         assert!(result.unwrap().is_empty());
     }
@@ -285,11 +319,22 @@ mod tests {
         let processor = SimpleInstantiationAwareBeanPostProcessor::new();
         let bean = Arc::new(String::from("test"));
         let mut properties = HashMap::new();
-        properties.insert("key1".to_string(), Arc::new(1i32) as Arc<dyn Any + Send + Sync>);
-        properties.insert("key2".to_string(), Arc::new("value".to_string()) as Arc<dyn Any + Send + Sync>);
-        properties.insert("key3".to_string(), Arc::new(true) as Arc<dyn Any + Send + Sync>);
+        properties.insert(
+            "key1".to_string(),
+            Arc::new(1i32) as Arc<dyn Any + Send + Sync>,
+        );
+        properties.insert(
+            "key2".to_string(),
+            Arc::new("value".to_string()) as Arc<dyn Any + Send + Sync>,
+        );
+        properties.insert(
+            "key3".to_string(),
+            Arc::new(true) as Arc<dyn Any + Send + Sync>,
+        );
 
-        let result = processor.post_process_property_values(bean.as_ref(), "myBean", properties).unwrap();
+        let result = processor
+            .post_process_property_values(bean.as_ref(), "myBean", properties)
+            .unwrap();
         assert!(result.is_some());
         assert_eq!(result.unwrap().len(), 3);
     }

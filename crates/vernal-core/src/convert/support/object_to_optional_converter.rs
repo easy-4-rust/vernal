@@ -2,7 +2,7 @@
 //!
 //! 对标 Spring `org.springframework.core.convert.support.ObjectToOptionalConverter`。
 
-use crate::convert::{ConversionError, Convertible, Converter};
+use crate::convert::{ConversionError, Converter, Convertible};
 
 /// 对象 → `Option` 转换器。
 ///

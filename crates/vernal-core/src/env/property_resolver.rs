@@ -24,7 +24,8 @@ pub trait PropertyResolver: Send + Sync {
     ///
     /// 对应 Java: `PropertyResolver#getProperty(String, String)`
     fn get_property_with_default(&self, key: &str, default: &str) -> String {
-        self.get_property(key).unwrap_or_else(|| default.to_string())
+        self.get_property(key)
+            .unwrap_or_else(|| default.to_string())
     }
 
     /// 获取必填属性值。

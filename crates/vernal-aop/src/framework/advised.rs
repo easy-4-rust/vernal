@@ -141,7 +141,9 @@ mod tests {
         let plan = Arc::new(crate::InvocationPlan::new(op, vec![]));
         let target = Arc::new(42i32);
         let advised = Advised::new(target, plan);
-        let result = advised.invoke(|_target, _inv| async { Ok::<i32, std::io::Error>(100) }).await;
+        let result = advised
+            .invoke(|_target, _inv| async { Ok::<i32, std::io::Error>(100) })
+            .await;
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), 100);
     }

@@ -2,11 +2,11 @@
 //!
 //! 覆盖模板解析（`#{...}`）、`LiteralExpression` 与 `CompositeStringExpression`。
 
-use vernal_expression::common::literal_expression::LiteralExpression;
 use vernal_expression::common::composite_string_expression::CompositeStringExpression;
+use vernal_expression::common::expression_utils;
+use vernal_expression::common::literal_expression::LiteralExpression;
 use vernal_expression::common::template_aware_expression_parser::TemplateAwareExpressionParser;
 use vernal_expression::common::template_parser_context::TemplateParserContextImpl;
-use vernal_expression::common::expression_utils;
 use vernal_expression::*;
 
 // ═══════════════════════════════════════════════════════════════════
@@ -68,7 +68,9 @@ impl ExpressionParser for MockExpressionParser {
         &self,
         expression_string: &str,
     ) -> Result<Box<dyn Expression>, ParseException> {
-        Ok(Box::new(LiteralExpression::new(expression_string.to_string())))
+        Ok(Box::new(LiteralExpression::new(
+            expression_string.to_string(),
+        )))
     }
 
     fn parse_expression_with_context(
@@ -88,7 +90,10 @@ impl Expression for MockNonStringExpression {
         "42"
     }
     fn get_value(&self) -> Result<TypedValue, EvaluationException> {
-        Ok(TypedValue::new(ExpressionValue::Int(42), TypeDescriptor::INT))
+        Ok(TypedValue::new(
+            ExpressionValue::Int(42),
+            TypeDescriptor::INT,
+        ))
     }
     fn get_value_with_context(
         &self,
@@ -551,9 +556,12 @@ fn utils_convert_typed_value_with_different_target_types() {
     let value = TypedValue::new(ExpressionValue::Boolean(true), TypeDescriptor::BOOLEAN);
 
     // boolean
-    let result =
-        expression_utils::ExpressionUtils::convert_typed_value(&converter, &value, &TypeDescriptor::BOOLEAN)
-            .unwrap();
+    let result = expression_utils::ExpressionUtils::convert_typed_value(
+        &converter,
+        &value,
+        &TypeDescriptor::BOOLEAN,
+    )
+    .unwrap();
     assert_eq!(*result.value(), ExpressionValue::Boolean(true));
 }
 

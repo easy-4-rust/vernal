@@ -2,7 +2,7 @@
 //!
 //! 对标 Spring `org.springframework.core.convert.support.ObjectToArrayConverter`。
 
-use crate::convert::{ConversionError, Convertible, Converter};
+use crate::convert::{ConversionError, Converter, Convertible};
 
 /// 对象 → 数组转换器。
 ///

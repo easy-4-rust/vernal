@@ -279,7 +279,13 @@ mod tests {
         vh.set_converted_value(Arc::new("42".to_string()));
         assert!(vh.is_converted());
         assert!(vh.converted_value().is_some());
-        assert_eq!(*vh.converted_value().unwrap().downcast_ref::<String>().unwrap(), "42");
+        assert_eq!(
+            *vh.converted_value()
+                .unwrap()
+                .downcast_ref::<String>()
+                .unwrap(),
+            "42"
+        );
     }
 
     #[test]
@@ -309,7 +315,10 @@ mod tests {
     fn from_other_copies_values() {
         let mut original = ConstructorArgumentValues::new();
         original.add_indexed_argument_value(0, ValueHolder::new(Arc::new(42i32)));
-        original.add_generic_argument_value(ValueHolder::with_type(Arc::new("hello".to_string()), "String"));
+        original.add_generic_argument_value(ValueHolder::with_type(
+            Arc::new("hello".to_string()),
+            "String",
+        ));
 
         let copy = ConstructorArgumentValues::from_other(&original);
         assert_eq!(copy.argument_count(), 2);
@@ -331,7 +340,10 @@ mod tests {
         assert!(!cav.has_indexed_argument_value(2));
 
         let vh = cav.get_indexed_argument_value(0).unwrap();
-        assert_eq!(*vh.value().unwrap().downcast_ref::<String>().unwrap(), "first");
+        assert_eq!(
+            *vh.value().unwrap().downcast_ref::<String>().unwrap(),
+            "first"
+        );
 
         assert_eq!(cav.indexed_argument_values().len(), 2);
     }
@@ -340,7 +352,10 @@ mod tests {
     fn generic_argument_values() {
         let mut cav = ConstructorArgumentValues::new();
         cav.add_generic_argument_value(ValueHolder::with_type(Arc::new(42i32), "i32"));
-        cav.add_generic_argument_value(ValueHolder::with_type(Arc::new("hello".to_string()), "String"));
+        cav.add_generic_argument_value(ValueHolder::with_type(
+            Arc::new("hello".to_string()),
+            "String",
+        ));
 
         assert_eq!(cav.generic_argument_values().len(), 2);
         assert!(cav.get_generic_argument_value("i32").is_some());
@@ -352,7 +367,10 @@ mod tests {
     fn get_argument_value_by_index_first() {
         let mut cav = ConstructorArgumentValues::new();
         cav.add_indexed_argument_value(0, ValueHolder::new(Arc::new(42i32)));
-        cav.add_generic_argument_value(ValueHolder::with_type(Arc::new("generic".to_string()), "String"));
+        cav.add_generic_argument_value(ValueHolder::with_type(
+            Arc::new("generic".to_string()),
+            "String",
+        ));
 
         let vh = cav.get_argument_value(0, None, None).unwrap();
         assert_eq!(*vh.value().unwrap().downcast_ref::<i32>().unwrap(), 42);
@@ -361,17 +379,25 @@ mod tests {
     #[test]
     fn get_argument_value_falls_back_to_generic() {
         let mut cav = ConstructorArgumentValues::new();
-        cav.add_generic_argument_value(ValueHolder::with_type(Arc::new("hello".to_string()), "String"));
+        cav.add_generic_argument_value(ValueHolder::with_type(
+            Arc::new("hello".to_string()),
+            "String",
+        ));
 
         let vh = cav.get_argument_value(5, Some("String"), None).unwrap();
-        assert_eq!(*vh.value().unwrap().downcast_ref::<String>().unwrap(), "hello");
+        assert_eq!(
+            *vh.value().unwrap().downcast_ref::<String>().unwrap(),
+            "hello"
+        );
     }
 
     #[test]
     fn get_argument_value_by_name() {
         let mut cav = ConstructorArgumentValues::new();
         cav.add_generic_argument_value(ValueHolder::with_type_and_name(
-            Arc::new(42i32), "i32", "answer",
+            Arc::new(42i32),
+            "i32",
+            "answer",
         ));
 
         let vh = cav.get_argument_value(0, None, Some("answer")).unwrap();
@@ -389,9 +415,7 @@ mod tests {
         let mut cav = ConstructorArgumentValues::new();
         assert!(!cav.contains_named_argument());
 
-        cav.add_generic_argument_value(ValueHolder::with_type_and_name(
-            Arc::new(1i32), "i32", "x",
-        ));
+        cav.add_generic_argument_value(ValueHolder::with_type_and_name(Arc::new(1i32), "i32", "x"));
         assert!(cav.contains_named_argument());
     }
 

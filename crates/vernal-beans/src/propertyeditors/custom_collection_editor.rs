@@ -174,13 +174,17 @@ mod tests {
     #[test]
     fn get_value_type_is_vec_string() {
         let editor = CustomCollectionEditor::new(CollectionType::List);
-        assert_eq!(editor.get_value_type(), std::any::TypeId::of::<Vec<String>>());
+        assert_eq!(
+            editor.get_value_type(),
+            std::any::TypeId::of::<Vec<String>>()
+        );
     }
 
     #[test]
     fn set_value_with_vec_string() {
         let mut editor = CustomCollectionEditor::new(CollectionType::List);
-        let val: Arc<dyn std::any::Any + Send + Sync> = Arc::new(vec!["a".to_string(), "b".to_string()]);
+        let val: Arc<dyn std::any::Any + Send + Sync> =
+            Arc::new(vec!["a".to_string(), "b".to_string()]);
         editor.set_value(val);
         assert_eq!(editor.len(), 2);
     }

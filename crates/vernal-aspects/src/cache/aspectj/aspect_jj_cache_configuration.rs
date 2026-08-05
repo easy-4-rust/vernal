@@ -6,8 +6,8 @@
 
 use std::sync::{Arc, RwLock};
 
-use super::jcache_cache_aspect::JCacheCacheAspect;
 use super::cache_operation_source::CacheOperationSource;
+use super::jcache_cache_aspect::JCacheCacheAspect;
 
 /// AspectJ JCache 缓存管理配置。
 ///
@@ -55,13 +55,15 @@ mod tests {
 
     #[test]
     fn test_jcache_configuration_creation() {
-        let config = AspectJJCacheConfiguration::new(Arc::new(AnnotationCacheOperationSource::new()));
+        let config =
+            AspectJJCacheConfiguration::new(Arc::new(AnnotationCacheOperationSource::new()));
         assert!(config.get_jcache_aspect().is_none());
     }
 
     #[test]
     fn test_jcache_configuration_register() {
-        let config = AspectJJCacheConfiguration::new(Arc::new(AnnotationCacheOperationSource::new()));
+        let config =
+            AspectJJCacheConfiguration::new(Arc::new(AnnotationCacheOperationSource::new()));
         let aspect = config.register_jcache_aspect();
         assert!(config.get_jcache_aspect().is_some());
         let aspect2 = config.register_jcache_aspect();
@@ -70,7 +72,8 @@ mod tests {
 
     #[test]
     fn test_jcache_configuration_register_multiple() {
-        let config = AspectJJCacheConfiguration::new(Arc::new(AnnotationCacheOperationSource::new()));
+        let config =
+            AspectJJCacheConfiguration::new(Arc::new(AnnotationCacheOperationSource::new()));
         let _ = config.register_jcache_aspect();
         let _ = config.register_jcache_aspect();
         let _ = config.register_jcache_aspect();

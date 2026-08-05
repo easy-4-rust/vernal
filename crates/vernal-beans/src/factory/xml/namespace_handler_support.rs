@@ -44,7 +44,10 @@ impl NamespaceHandlerSupport {
         element_name: impl Into<String>,
         parser_description: impl Into<String>,
     ) {
-        self.parsers.lock().unwrap().insert(element_name.into(), parser_description.into());
+        self.parsers
+            .lock()
+            .unwrap()
+            .insert(element_name.into(), parser_description.into());
     }
 
     /// 注册 Bean 定义装饰器。
@@ -55,7 +58,10 @@ impl NamespaceHandlerSupport {
         attribute_name: impl Into<String>,
         decorator_description: impl Into<String>,
     ) {
-        self.decorators.lock().unwrap().insert(attribute_name.into(), decorator_description.into());
+        self.decorators
+            .lock()
+            .unwrap()
+            .insert(attribute_name.into(), decorator_description.into());
     }
 
     /// 查找元素对应的解析器描述。
@@ -80,7 +86,8 @@ impl NamespaceHandlerSupport {
 
     /// 标记为已初始化。
     pub fn mark_initialized(&self) {
-        self.initialized.store(true, std::sync::atomic::Ordering::Relaxed);
+        self.initialized
+            .store(true, std::sync::atomic::Ordering::Relaxed);
     }
 
     /// 检查是否已初始化。
@@ -116,7 +123,10 @@ mod tests {
         let handler = NamespaceHandlerSupport::new();
         handler.register_bean_definition_parser("component-scan", "ComponentScanParser");
         assert_eq!(handler.parser_count(), 1);
-        assert_eq!(handler.find_parser_description("component-scan"), Some("ComponentScanParser".to_string()));
+        assert_eq!(
+            handler.find_parser_description("component-scan"),
+            Some("ComponentScanParser".to_string())
+        );
     }
 
     #[test]
@@ -124,7 +134,10 @@ mod tests {
         let handler = NamespaceHandlerSupport::new();
         handler.register_bean_definition_decorator("scoped-proxy", "ScopedProxyDecorator");
         assert_eq!(handler.decorator_count(), 1);
-        assert_eq!(handler.find_decorator_description("scoped-proxy"), Some("ScopedProxyDecorator".to_string()));
+        assert_eq!(
+            handler.find_decorator_description("scoped-proxy"),
+            Some("ScopedProxyDecorator".to_string())
+        );
     }
 
     #[test]

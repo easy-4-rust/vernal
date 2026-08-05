@@ -86,8 +86,8 @@ impl SpelNode for SafeNavigation {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::spel::ast::null_literal::NullLiteral;
     use crate::spel::ast::int_literal::IntLiteral;
+    use crate::spel::ast::null_literal::NullLiteral;
     use crate::spel::support::standard_evaluation_context::StandardEvaluationContext;
     use crate::typed_value::ExpressionValue;
 

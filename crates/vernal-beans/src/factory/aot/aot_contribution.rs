@@ -109,10 +109,7 @@ impl SimpleAotContribution {
     ///
     /// * `class_name` - 目标类名
     /// * `method_name` - 目标方法名
-    pub fn new(
-        class_name: impl Into<String>,
-        method_name: impl Into<String>,
-    ) -> Self {
+    pub fn new(class_name: impl Into<String>, method_name: impl Into<String>) -> Self {
         Self {
             class_name: class_name.into(),
             method_name: method_name.into(),
@@ -178,14 +175,8 @@ mod tests {
     #[test]
     fn test_registry_keys() {
         let registry = AotContributionRegistry::new();
-        registry.register(
-            "alpha",
-            Box::new(SimpleAotContribution::new("A", "a")),
-        );
-        registry.register(
-            "beta",
-            Box::new(SimpleAotContribution::new("B", "b")),
-        );
+        registry.register("alpha", Box::new(SimpleAotContribution::new("A", "a")));
+        registry.register("beta", Box::new(SimpleAotContribution::new("B", "b")));
 
         let mut keys = registry.keys();
         keys.sort();
@@ -195,10 +186,7 @@ mod tests {
     #[test]
     fn test_registry_clear() {
         let registry = AotContributionRegistry::new();
-        registry.register(
-            "key",
-            Box::new(SimpleAotContribution::new("C", "c")),
-        );
+        registry.register("key", Box::new(SimpleAotContribution::new("C", "c")));
         assert_eq!(registry.count(), 1);
 
         registry.clear();

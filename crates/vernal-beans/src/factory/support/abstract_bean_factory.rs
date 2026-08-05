@@ -81,7 +81,10 @@ impl AbstractBeanFactory {
 
     /// 注册 Bean 定义。
     pub fn register_bean_definition(&self, name: String, definition: Arc<dyn Any + Send + Sync>) {
-        self.bean_definitions.lock().unwrap().insert(name, definition);
+        self.bean_definitions
+            .lock()
+            .unwrap()
+            .insert(name, definition);
     }
 
     /// 移除 Bean 定义。
@@ -106,7 +109,12 @@ impl AbstractBeanFactory {
 
     /// 获取所有 Bean 定义名称。
     pub fn bean_definition_names(&self) -> Vec<String> {
-        self.bean_definitions.lock().unwrap().keys().cloned().collect()
+        self.bean_definitions
+            .lock()
+            .unwrap()
+            .keys()
+            .cloned()
+            .collect()
     }
 
     /// 注册单例。
@@ -143,7 +151,10 @@ impl AbstractBeanFactory {
             if existing == &bean_name {
                 return Ok(());
             }
-            return Err(format!("Alias '{}' already points to '{}'", alias, existing));
+            return Err(format!(
+                "Alias '{}' already points to '{}'",
+                alias, existing
+            ));
         }
         aliases.insert(alias, bean_name);
         Ok(())
@@ -151,7 +162,12 @@ impl AbstractBeanFactory {
 
     /// 解析别名。
     pub fn resolve_alias(&self, alias: &str) -> String {
-        self.aliases.lock().unwrap().get(alias).cloned().unwrap_or_else(|| alias.to_string())
+        self.aliases
+            .lock()
+            .unwrap()
+            .get(alias)
+            .cloned()
+            .unwrap_or_else(|| alias.to_string())
     }
 
     /// 获取别名数量。
@@ -206,7 +222,9 @@ impl AbstractBeanFactory {
 
     /// 注册类型到名称的映射。
     pub fn register_type_mapping(&self, type_id: std::any::TypeId, bean_name: String) {
-        self.type_to_names.lock().unwrap()
+        self.type_to_names
+            .lock()
+            .unwrap()
             .entry(type_id)
             .or_default()
             .push(bean_name);
@@ -214,7 +232,9 @@ impl AbstractBeanFactory {
 
     /// 按类型查找 Bean 名称。
     pub fn get_bean_names_for_type(&self, type_id: std::any::TypeId) -> Vec<String> {
-        self.type_to_names.lock().unwrap()
+        self.type_to_names
+            .lock()
+            .unwrap()
             .get(&type_id)
             .cloned()
             .unwrap_or_default()
@@ -240,7 +260,10 @@ impl AbstractBeanFactory {
     ///
     /// 对应 Spring 的 `isSingletonCurrentlyInCreation`。
     pub fn is_singleton_currently_in_creation(&self, bean_name: &str) -> bool {
-        self.singletons_currently_in_creation.lock().unwrap().contains(bean_name)
+        self.singletons_currently_in_creation
+            .lock()
+            .unwrap()
+            .contains(bean_name)
     }
 
     /// 获取正在创建中的 Bean 数量。
@@ -296,7 +319,9 @@ impl AbstractBeanFactory {
 }
 
 impl Default for AbstractBeanFactory {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[cfg(test)]
@@ -333,7 +358,9 @@ mod tests {
     #[test]
     fn alias_management() {
         let factory = AbstractBeanFactory::new();
-        factory.register_alias("alias1".to_string(), "myBean".to_string()).unwrap();
+        factory
+            .register_alias("alias1".to_string(), "myBean".to_string())
+            .unwrap();
 
         assert_eq!(factory.resolve_alias("alias1"), "myBean");
         assert_eq!(factory.resolve_alias("unknown"), "unknown");
@@ -343,15 +370,27 @@ mod tests {
     #[test]
     fn duplicate_alias_same_target_ok() {
         let factory = AbstractBeanFactory::new();
-        factory.register_alias("a".to_string(), "bean".to_string()).unwrap();
-        assert!(factory.register_alias("a".to_string(), "bean".to_string()).is_ok());
+        factory
+            .register_alias("a".to_string(), "bean".to_string())
+            .unwrap();
+        assert!(
+            factory
+                .register_alias("a".to_string(), "bean".to_string())
+                .is_ok()
+        );
     }
 
     #[test]
     fn duplicate_alias_different_target_errors() {
         let factory = AbstractBeanFactory::new();
-        factory.register_alias("a".to_string(), "bean1".to_string()).unwrap();
-        assert!(factory.register_alias("a".to_string(), "bean2".to_string()).is_err());
+        factory
+            .register_alias("a".to_string(), "bean1".to_string())
+            .unwrap();
+        assert!(
+            factory
+                .register_alias("a".to_string(), "bean2".to_string())
+                .is_err()
+        );
     }
 
     #[test]
@@ -414,7 +453,9 @@ mod tests {
     fn contains_bean_checks_alias() {
         let factory = AbstractBeanFactory::new();
         factory.register_bean_definition("myBean".to_string(), Arc::new(1));
-        factory.register_alias("alias1".to_string(), "myBean".to_string()).unwrap();
+        factory
+            .register_alias("alias1".to_string(), "myBean".to_string())
+            .unwrap();
 
         assert!(factory.contains_bean("myBean"));
         assert!(factory.contains_bean("alias1"));
@@ -459,7 +500,9 @@ mod tests {
     #[test]
     fn contains_alias() {
         let factory = AbstractBeanFactory::new();
-        factory.register_alias("a".to_string(), "bean".to_string()).unwrap();
+        factory
+            .register_alias("a".to_string(), "bean".to_string())
+            .unwrap();
 
         assert!(factory.contains_alias("a"));
         assert!(!factory.contains_alias("b"));
@@ -567,8 +610,12 @@ mod tests {
     #[test]
     fn aliases_returns_clone() {
         let factory = AbstractBeanFactory::new();
-        factory.register_alias("a".to_string(), "bean".to_string()).unwrap();
-        factory.register_alias("b".to_string(), "bean".to_string()).unwrap();
+        factory
+            .register_alias("a".to_string(), "bean".to_string())
+            .unwrap();
+        factory
+            .register_alias("b".to_string(), "bean".to_string())
+            .unwrap();
 
         let aliases = factory.aliases();
         assert_eq!(aliases.len(), 2);
@@ -580,7 +627,9 @@ mod tests {
     fn is_singleton_with_alias() {
         let factory = AbstractBeanFactory::new();
         factory.register_singleton("myBean".to_string(), Arc::new(1));
-        factory.register_alias("alias1".to_string(), "myBean".to_string()).unwrap();
+        factory
+            .register_alias("alias1".to_string(), "myBean".to_string())
+            .unwrap();
 
         assert!(factory.is_singleton("alias1"));
     }
@@ -589,7 +638,9 @@ mod tests {
     fn is_prototype_with_alias() {
         let factory = AbstractBeanFactory::new();
         factory.register_bean_definition("myBean".to_string(), Arc::new(1));
-        factory.register_alias("alias1".to_string(), "myBean".to_string()).unwrap();
+        factory
+            .register_alias("alias1".to_string(), "myBean".to_string())
+            .unwrap();
 
         assert!(factory.is_prototype("alias1"));
     }

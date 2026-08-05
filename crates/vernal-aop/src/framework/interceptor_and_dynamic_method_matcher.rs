@@ -66,7 +66,11 @@ mod tests {
 
     struct TestInterceptor;
     impl crate::Interceptor for TestInterceptor {
-        fn intercept<'a>(&'a self, invocation: Arc<crate::Invocation>, next: crate::Next<'a>) -> crate::InvocationFuture<'a> {
+        fn intercept<'a>(
+            &'a self,
+            invocation: Arc<crate::Invocation>,
+            next: crate::Next<'a>,
+        ) -> crate::InvocationFuture<'a> {
             next.run(invocation)
         }
     }
@@ -98,7 +102,11 @@ mod additional_tests {
 
     struct TestInterceptor;
     impl crate::Interceptor for TestInterceptor {
-        fn intercept<'a>(&'a self, invocation: Arc<crate::Invocation>, next: crate::Next<'a>) -> crate::InvocationFuture<'a> {
+        fn intercept<'a>(
+            &'a self,
+            invocation: Arc<crate::Invocation>,
+            next: crate::Next<'a>,
+        ) -> crate::InvocationFuture<'a> {
             next.run(invocation)
         }
     }

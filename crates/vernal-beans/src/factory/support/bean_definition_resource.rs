@@ -27,20 +27,31 @@ impl BeanDefinitionResource {
     /// - `description` — 资源描述
     /// - `content` — 资源内容
     pub fn new(description: String, content: String) -> Self {
-        Self { description, content }
+        Self {
+            description,
+            content,
+        }
     }
 
     /// 获取资源描述。
-    pub fn description(&self) -> &str { &self.description }
+    pub fn description(&self) -> &str {
+        &self.description
+    }
 
     /// 获取资源内容。
-    pub fn content(&self) -> &str { &self.content }
+    pub fn content(&self) -> &str {
+        &self.content
+    }
 
     /// 获取资源内容长度。
-    pub fn content_len(&self) -> usize { self.content.len() }
+    pub fn content_len(&self) -> usize {
+        self.content.len()
+    }
 
     /// 资源内容是否为空。
-    pub fn is_empty(&self) -> bool { self.content.is_empty() }
+    pub fn is_empty(&self) -> bool {
+        self.content.is_empty()
+    }
 
     /// 判断资源是否包含指定文本。
     pub fn contains(&self, text: &str) -> bool {
@@ -105,10 +116,8 @@ mod tests {
 
     #[test]
     fn new_resource_has_correct_fields() {
-        let r = BeanDefinitionResource::new(
-            "test.xml".to_string(),
-            "<bean id=\"foo\"/>".to_string(),
-        );
+        let r =
+            BeanDefinitionResource::new("test.xml".to_string(), "<bean id=\"foo\"/>".to_string());
         assert_eq!(r.description(), "test.xml");
         assert_eq!(r.content(), "<bean id=\"foo\"/>");
         assert_eq!(r.content_len(), 16);
@@ -147,10 +156,7 @@ mod tests {
 
     #[test]
     fn starts_with_and_ends_with() {
-        let r = BeanDefinitionResource::new(
-            "test".to_string(),
-            "<bean id=\"foo\"/>".to_string(),
-        );
+        let r = BeanDefinitionResource::new("test".to_string(), "<bean id=\"foo\"/>".to_string());
         assert!(r.starts_with("<bean"));
         assert!(r.ends_with("/>"));
         assert!(!r.starts_with("bean"));
@@ -161,10 +167,8 @@ mod tests {
         let r1 = BeanDefinitionResource::new("empty".to_string(), String::new());
         assert_eq!(r1.line_count(), 0);
 
-        let r2 = BeanDefinitionResource::new(
-            "multi".to_string(),
-            "line1\nline2\nline3".to_string(),
-        );
+        let r2 =
+            BeanDefinitionResource::new("multi".to_string(), "line1\nline2\nline3".to_string());
         assert_eq!(r2.line_count(), 3);
     }
 

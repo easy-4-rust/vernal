@@ -3,11 +3,11 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use vernal_context::{
-    ApplicationRunner, Lifecycle, ScheduledTask, TaskSchedule,
-    VernalApplicationBuilder, ApplicationContext,
-};
 use vernal_beans::{Component, ComponentDefinition, Qualifier, TraitBinding};
+use vernal_context::{
+    ApplicationContext, ApplicationRunner, Lifecycle, ScheduledTask, TaskSchedule,
+    VernalApplicationBuilder,
+};
 
 // ════════════════════════════════════════════════════════════════════
 // 测试用类型
@@ -94,9 +94,11 @@ async fn test_bind() {
 #[tokio::test]
 async fn test_bind_all() {
     let mut builder = VernalApplicationBuilder::new(tokio::runtime::Handle::current());
-    let bindings = vec![
-        TraitBinding::new::<dyn std::any::Any + Send + Sync, SimpleComponent, _>(|c| c),
-    ];
+    let bindings = vec![TraitBinding::new::<
+        dyn std::any::Any + Send + Sync,
+        SimpleComponent,
+        _,
+    >(|c| c)];
     let result = builder.bind_all(bindings);
     assert!(result.is_ok(), "bind_all should succeed");
 }
@@ -107,7 +109,10 @@ async fn test_bind_all_empty() {
     let mut builder = VernalApplicationBuilder::new(tokio::runtime::Handle::current());
     let bindings: Vec<TraitBinding> = vec![];
     let result = builder.bind_all(bindings);
-    assert!(result.is_ok(), "bind_all with empty iterator should succeed");
+    assert!(
+        result.is_ok(),
+        "bind_all with empty iterator should succeed"
+    );
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -118,10 +123,14 @@ async fn test_bind_all_empty() {
 #[tokio::test]
 async fn test_register_bundle() {
     let mut builder = VernalApplicationBuilder::new(tokio::runtime::Handle::current());
-    let defs = vec![ComponentDefinition::singleton::<SimpleComponent, _>(|_| SimpleComponent)];
-    let bindings = vec![
-        TraitBinding::new::<dyn std::any::Any + Send + Sync, SimpleComponent, _>(|c| c),
-    ];
+    let defs = vec![ComponentDefinition::singleton::<SimpleComponent, _>(|_| {
+        SimpleComponent
+    })];
+    let bindings = vec![TraitBinding::new::<
+        dyn std::any::Any + Send + Sync,
+        SimpleComponent,
+        _,
+    >(|c| c)];
     let result = builder.register_bundle(defs, bindings);
     assert!(result.is_ok(), "register_bundle should succeed");
 }
@@ -133,7 +142,10 @@ async fn test_register_bundle_empty() {
     let defs: Vec<ComponentDefinition> = vec![];
     let bindings: Vec<TraitBinding> = vec![];
     let result = builder.register_bundle(defs, bindings);
-    assert!(result.is_ok(), "register_bundle with empty iterators should succeed");
+    assert!(
+        result.is_ok(),
+        "register_bundle with empty iterators should succeed"
+    );
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -151,7 +163,11 @@ async fn test_context_id_not_empty() {
 async fn test_context_id_contains_prefix() {
     let context = build_context();
     let id = context.id();
-    assert!(id.contains("vernal-context"), "id should contain 'vernal-context' prefix, got: {}", id);
+    assert!(
+        id.contains("vernal-context"),
+        "id should contain 'vernal-context' prefix, got: {}",
+        id
+    );
 }
 
 #[tokio::test]
@@ -200,7 +216,10 @@ async fn test_context_set_application_name() {
     let context = build_context();
     context.set_application_name("my-app".to_string());
     let name = context.application_name();
-    assert_eq!(name, "my-app", "set_application_name should change the name");
+    assert_eq!(
+        name, "my-app",
+        "set_application_name should change the name"
+    );
 }
 
 #[tokio::test]
@@ -208,14 +227,20 @@ async fn test_context_set_application_name_empty() {
     let context = build_context();
     context.set_application_name(String::new());
     let name = context.application_name();
-    assert!(name.is_empty(), "set_application_name with empty string should work");
+    assert!(
+        name.is_empty(),
+        "set_application_name with empty string should work"
+    );
 }
 
 #[tokio::test]
 async fn test_context_display_name_default() {
     let context = build_context();
     let name = context.display_name();
-    assert!(!name.is_empty(), "display_name should not be empty by default");
+    assert!(
+        !name.is_empty(),
+        "display_name should not be empty by default"
+    );
 }
 
 #[tokio::test]
@@ -231,7 +256,10 @@ async fn test_context_set_display_name() {
     let context = build_context();
     context.set_display_name("My Application".to_string());
     let name = context.display_name();
-    assert_eq!(name, "My Application", "set_display_name should change the display name");
+    assert_eq!(
+        name, "My Application",
+        "set_display_name should change the display name"
+    );
 }
 
 #[tokio::test]
@@ -257,14 +285,21 @@ async fn test_context_set_parent_none() {
     context.set_parent(Some(parent.clone()));
     assert!(context.parent().is_some());
     context.set_parent(None);
-    assert!(context.parent().is_none(), "parent should be None after set_parent(None)");
+    assert!(
+        context.parent().is_none(),
+        "parent should be None after set_parent(None)"
+    );
 }
 
 #[tokio::test]
 async fn test_context_startup_date() {
     let context = build_context();
     let date = context.startup_date();
-    assert!(date > 0, "startup_date should be greater than 0, got: {}", date);
+    assert!(
+        date > 0,
+        "startup_date should be greater than 0, got: {}",
+        date
+    );
 }
 
 #[tokio::test]
@@ -329,7 +364,11 @@ async fn test_project_status_stable() {
     let context = build_context();
     let report1 = context.startup_report().await;
     let report2 = context.startup_report().await;
-    assert_eq!(report1.project_status(), report2.project_status(), "project_status should be stable");
+    assert_eq!(
+        report1.project_status(),
+        report2.project_status(),
+        "project_status should be stable"
+    );
 }
 
 #[tokio::test]
@@ -345,7 +384,10 @@ async fn test_minimum_rust_version() {
     let context = build_context();
     let report = context.startup_report().await;
     let version = report.minimum_rust_version();
-    assert!(!version.is_empty(), "minimum_rust_version should not be empty");
+    assert!(
+        !version.is_empty(),
+        "minimum_rust_version should not be empty"
+    );
 }
 
 #[tokio::test]
@@ -433,7 +475,9 @@ async fn test_report_observations() {
 #[tokio::test]
 async fn test_register_all() {
     let mut builder = VernalApplicationBuilder::new(tokio::runtime::Handle::current());
-    let defs = vec![ComponentDefinition::singleton::<SimpleComponent, _>(|_| SimpleComponent)];
+    let defs = vec![ComponentDefinition::singleton::<SimpleComponent, _>(|_| {
+        SimpleComponent
+    })];
     let result = builder.register_all(defs);
     assert!(result.is_ok(), "register_all should succeed");
 }
@@ -443,7 +487,10 @@ async fn test_register_all_empty() {
     let mut builder = VernalApplicationBuilder::new(tokio::runtime::Handle::current());
     let defs: Vec<ComponentDefinition> = vec![];
     let result = builder.register_all(defs);
-    assert!(result.is_ok(), "register_all with empty iterator should succeed");
+    assert!(
+        result.is_ok(),
+        "register_all with empty iterator should succeed"
+    );
 }
 
 #[tokio::test]
@@ -478,7 +525,10 @@ async fn test_event_listener_qualified() {
 async fn test_register_event_listener_component() {
     let mut builder = VernalApplicationBuilder::new(tokio::runtime::Handle::current());
     let result = builder.register_event_listener_component::<TestEvent, TestEventListener>();
-    assert!(result.is_ok(), "register_event_listener_component should succeed");
+    assert!(
+        result.is_ok(),
+        "register_event_listener_component should succeed"
+    );
 }
 
 #[tokio::test]

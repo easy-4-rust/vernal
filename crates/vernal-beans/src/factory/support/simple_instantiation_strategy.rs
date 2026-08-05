@@ -24,7 +24,9 @@ pub struct SimpleInstantiationStrategy;
 
 impl SimpleInstantiationStrategy {
     /// 创建简单实例化策略。
-    pub fn new() -> Self { Self }
+    pub fn new() -> Self {
+        Self
+    }
 
     /// 使用工厂闭包实例化 Bean。
     ///
@@ -58,7 +60,8 @@ impl InstantiationStrategy for SimpleInstantiationStrategy {
         Err(format!(
             "SimpleInstantiationStrategy: Bean '{}' requires a factory closure",
             bean_class
-        ).into())
+        )
+        .into())
     }
 }
 
@@ -69,7 +72,9 @@ mod tests {
     #[test]
     fn instantiate_with_factory() {
         let strategy = SimpleInstantiationStrategy::new();
-        let result = strategy.instantiate_with_factory(&|| Arc::new(42_i32)).unwrap();
+        let result = strategy
+            .instantiate_with_factory(&|| Arc::new(42_i32))
+            .unwrap();
         assert_eq!(result.downcast_ref::<i32>(), Some(&42));
     }
 
@@ -77,15 +82,15 @@ mod tests {
     fn instantiate_with_args() {
         let strategy = SimpleInstantiationStrategy::new();
         let args: Vec<Arc<dyn Any + Send + Sync>> = vec![Arc::new(10_i32), Arc::new(20_i32)];
-        let result = strategy.instantiate_with_args(
-            &|args| {
-                let sum: i32 = args.iter()
-                    .filter_map(|a| a.downcast_ref::<i32>())
-                    .sum();
-                Arc::new(sum)
-            },
-            &args,
-        ).unwrap();
+        let result = strategy
+            .instantiate_with_args(
+                &|args| {
+                    let sum: i32 = args.iter().filter_map(|a| a.downcast_ref::<i32>()).sum();
+                    Arc::new(sum)
+                },
+                &args,
+            )
+            .unwrap();
         assert_eq!(result.downcast_ref::<i32>(), Some(&30));
     }
 

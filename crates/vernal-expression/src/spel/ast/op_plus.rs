@@ -124,13 +124,20 @@ impl OpPlus {
             ExpressionValue::DateTime(dt) => dt.to_string(),
             ExpressionValue::Duration(d) => d.to_string(),
             ExpressionValue::List(l) => {
-                let items: Vec<String> = l.iter().map(|v| Self::value_to_string(v.value())).collect();
+                let items: Vec<String> =
+                    l.iter().map(|v| Self::value_to_string(v.value())).collect();
                 format!("[{}]", items.join(", "))
             }
             ExpressionValue::Map(m) => {
                 let entries: Vec<String> = m
                     .iter()
-                    .map(|(k, v)| format!("{}: {}", Self::value_to_string(k.value()), Self::value_to_string(v.value())))
+                    .map(|(k, v)| {
+                        format!(
+                            "{}: {}",
+                            Self::value_to_string(k.value()),
+                            Self::value_to_string(v.value())
+                        )
+                    })
                     .collect();
                 format!("{{{}}}", entries.join(", "))
             }

@@ -41,8 +41,8 @@ impl Logger for CompositeLog {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::Arc;
+    use std::sync::atomic::{AtomicUsize, Ordering};
 
     struct CountingLogger {
         count: Arc<AtomicUsize>,
@@ -60,8 +60,12 @@ mod tests {
         let first = Arc::new(AtomicUsize::new(0));
         let second = Arc::new(AtomicUsize::new(0));
         let mut composite = CompositeLog::new(vec![
-            Box::new(CountingLogger { count: first.clone() }),
-            Box::new(CountingLogger { count: second.clone() }),
+            Box::new(CountingLogger {
+                count: first.clone(),
+            }),
+            Box::new(CountingLogger {
+                count: second.clone(),
+            }),
         ]);
         composite.log(LogLevel::Info, "hello");
         assert_eq!(first.load(Ordering::SeqCst), 1);

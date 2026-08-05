@@ -11,7 +11,10 @@ use crate::target_source_error::TargetSourceError;
 /// 对应 spring-aop `TargetSourceCreator`。
 pub trait TargetSourceCreator: Send + Sync + 'static {
     /// 获取目标源。
-    fn get_target_source(&self, target_class: &str) -> Result<Box<dyn TargetSource>, TargetSourceError>;
+    fn get_target_source(
+        &self,
+        target_class: &str,
+    ) -> Result<Box<dyn TargetSource>, TargetSourceError>;
 }
 
 /// 基于闭包的目标源创建器。
@@ -36,7 +39,10 @@ impl<F> TargetSourceCreator for FnTargetSourceCreator<F>
 where
     F: Fn(&str) -> Result<Box<dyn TargetSource>, TargetSourceError> + Send + Sync + 'static,
 {
-    fn get_target_source(&self, target_class: &str) -> Result<Box<dyn TargetSource>, TargetSourceError> {
+    fn get_target_source(
+        &self,
+        target_class: &str,
+    ) -> Result<Box<dyn TargetSource>, TargetSourceError> {
         (self.factory)(target_class)
     }
 }

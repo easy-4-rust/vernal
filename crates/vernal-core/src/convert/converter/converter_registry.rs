@@ -26,8 +26,7 @@ use crate::convert::ConversionError;
 /// 类型擦除的转换器函数:`&str` → `Result<String, ConversionError>`。
 ///
 /// 对标 Spring `Converter<? super S, ? extends T>` 的运行时形态。
-pub type ErasedConverter =
-    Box<dyn Fn(&str) -> Result<String, ConversionError> + Send + Sync>;
+pub type ErasedConverter = Box<dyn Fn(&str) -> Result<String, ConversionError> + Send + Sync>;
 
 /// 转换器注册表 trait。
 ///
@@ -60,12 +59,7 @@ pub trait ConverterRegistry: Send + Sync {
     /// 注册一个类型擦除的转换器。
     ///
     /// 对标 Spring `<S, T> void addConverter(Class<S> sourceType, Class<T> targetType, Converter<? super S, ? extends T> converter)`。
-    fn add_converter(
-        &self,
-        source_type: TypeId,
-        target_type: TypeId,
-        converter: ErasedConverter,
-    );
+    fn add_converter(&self, source_type: TypeId, target_type: TypeId, converter: ErasedConverter);
 
     /// 移除指定类型对的转换器。
     ///
@@ -130,12 +124,7 @@ impl Default for TypeIdConverterRegistry {
 }
 
 impl ConverterRegistry for TypeIdConverterRegistry {
-    fn add_converter(
-        &self,
-        source_type: TypeId,
-        target_type: TypeId,
-        converter: ErasedConverter,
-    ) {
+    fn add_converter(&self, source_type: TypeId, target_type: TypeId, converter: ErasedConverter) {
         let mut map = self.converters.lock().unwrap();
         map.insert((source_type, target_type), converter);
     }

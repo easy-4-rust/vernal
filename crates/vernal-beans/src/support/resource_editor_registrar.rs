@@ -52,12 +52,18 @@ impl ResourceEditorRegistrar {
 
     /// 注册单个编辑器类型。
     pub fn register_editor(&self, editor_type: impl Into<String>) {
-        self.registered_editors.lock().unwrap().insert(editor_type.into());
+        self.registered_editors
+            .lock()
+            .unwrap()
+            .insert(editor_type.into());
     }
 
     /// 检查编辑器是否已注册。
     pub fn is_registered(&self, editor_type: &str) -> bool {
-        self.registered_editors.lock().unwrap().contains(editor_type)
+        self.registered_editors
+            .lock()
+            .unwrap()
+            .contains(editor_type)
     }
 
     /// 获取已注册的编辑器数量。
@@ -67,7 +73,12 @@ impl ResourceEditorRegistrar {
 
     /// 获取所有已注册的编辑器类型。
     pub fn registered_editors(&self) -> Vec<String> {
-        self.registered_editors.lock().unwrap().iter().cloned().collect()
+        self.registered_editors
+            .lock()
+            .unwrap()
+            .iter()
+            .cloned()
+            .collect()
     }
 }
 

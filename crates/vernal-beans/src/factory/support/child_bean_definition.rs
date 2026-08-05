@@ -11,10 +11,10 @@
 //! Spring 的 `ChildBeanDefinition` 在运行时会与父定义合并。
 //! 在 vernal 中，`ChildBeanDefinition` 保存父名称，合并逻辑由容器处理。
 
-use crate::factory::support::abstract_bean_definition::AbstractBeanDefinition;
-use crate::factory::config::bean_definition::BeanDefinition;
 use crate::component_key::ComponentKey;
 use crate::component_scope::Scope;
+use crate::factory::config::bean_definition::BeanDefinition;
+use crate::factory::support::abstract_bean_definition::AbstractBeanDefinition;
 
 /// 子 Bean 定义。
 ///
@@ -53,7 +53,9 @@ impl ChildBeanDefinition {
     }
 
     /// 获取父 Bean 定义名称。
-    pub fn parent_name(&self) -> &str { &self.parent_name }
+    pub fn parent_name(&self) -> &str {
+        &self.parent_name
+    }
 
     /// 设置 Bean 类名。
     pub fn set_bean_class_name(&mut self, name: impl Into<String>) {
@@ -78,10 +80,18 @@ impl BeanDefinition for ChildBeanDefinition {
     fn bean_class_name(&self) -> &str {
         self.base.bean_class_name().unwrap_or("unknown")
     }
-    fn scope(&self) -> Scope { self.base.scope() }
-    fn is_lazy_init(&self) -> bool { self.base.is_lazy_init() }
-    fn is_primary(&self) -> bool { self.base.is_primary() }
-    fn parent_name(&self) -> Option<&str> { Some(&self.parent_name) }
+    fn scope(&self) -> Scope {
+        self.base.scope()
+    }
+    fn is_lazy_init(&self) -> bool {
+        self.base.is_lazy_init()
+    }
+    fn is_primary(&self) -> bool {
+        self.base.is_primary()
+    }
+    fn parent_name(&self) -> Option<&str> {
+        Some(&self.parent_name)
+    }
 }
 
 #[cfg(test)]

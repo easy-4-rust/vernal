@@ -82,7 +82,10 @@ impl<S: CacheOperationSource> JCacheCacheAspect<S> {
         callback: F,
     ) -> CacheResult
     where
-        F: FnOnce() -> Result<Box<dyn std::any::Any + Send + Sync>, Box<dyn std::any::Any + Send + Sync>>,
+        F: FnOnce() -> Result<
+            Box<dyn std::any::Any + Send + Sync>,
+            Box<dyn std::any::Any + Send + Sync>,
+        >,
     {
         // 实际实现需要调用 CacheAspectSupport
         match callback() {
@@ -99,7 +102,10 @@ mod tests {
 
     struct MockInvoker;
     impl CacheOperationInvoker for MockInvoker {
-        fn invoke(&self) -> Result<Box<dyn std::any::Any + Send + Sync>, Box<dyn std::any::Any + Send + Sync>> {
+        fn invoke(
+            &self,
+        ) -> Result<Box<dyn std::any::Any + Send + Sync>, Box<dyn std::any::Any + Send + Sync>>
+        {
             Ok(Box::new(42) as Box<dyn std::any::Any + Send + Sync>)
         }
     }

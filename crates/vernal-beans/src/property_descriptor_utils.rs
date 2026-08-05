@@ -35,9 +35,22 @@ impl PropertyDescriptorUtils {
     pub fn is_simple_type_name(type_name: &str) -> bool {
         matches!(
             type_name,
-            "bool" | "i8" | "i16" | "i32" | "i64" | "i128"
-                | "u8" | "u16" | "u32" | "u64" | "u128"
-                | "f32" | "f64" | "String" | "str" | "char"
+            "bool"
+                | "i8"
+                | "i16"
+                | "i32"
+                | "i64"
+                | "i128"
+                | "u8"
+                | "u16"
+                | "u32"
+                | "u64"
+                | "u128"
+                | "f32"
+                | "f64"
+                | "String"
+                | "str"
+                | "char"
         )
     }
 
@@ -64,9 +77,13 @@ mod tests {
     #[test]
     fn test_is_simple_type() {
         assert!(PropertyDescriptorUtils::is_simple_type(TypeId::of::<i32>()));
-        assert!(PropertyDescriptorUtils::is_simple_type(TypeId::of::<String>()));
+        assert!(PropertyDescriptorUtils::is_simple_type(
+            TypeId::of::<String>()
+        ));
         assert!(PropertyDescriptorUtils::is_simple_type(TypeId::of::<bool>()));
-        assert!(!PropertyDescriptorUtils::is_simple_type(TypeId::of::<Vec<String>>()));
+        assert!(!PropertyDescriptorUtils::is_simple_type(TypeId::of::<
+            Vec<String>,
+        >()));
     }
 
     #[test]
@@ -78,7 +95,13 @@ mod tests {
 
     #[test]
     fn test_get_default_property_name() {
-        assert_eq!(PropertyDescriptorUtils::get_default_property_name("String"), "string");
-        assert_eq!(PropertyDescriptorUtils::get_default_property_name("MyType"), "myType");
+        assert_eq!(
+            PropertyDescriptorUtils::get_default_property_name("String"),
+            "string"
+        );
+        assert_eq!(
+            PropertyDescriptorUtils::get_default_property_name("MyType"),
+            "myType"
+        );
     }
 }

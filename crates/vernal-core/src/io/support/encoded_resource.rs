@@ -46,8 +46,7 @@ impl EncodedResource {
     /// 读取或解码失败时返回 [`std::io::Error`]。
     pub fn read_text(&self) -> io::Result<String> {
         let bytes = self.resource.read_bytes()?;
-        String::from_utf8(bytes)
-            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+        String::from_utf8(bytes).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
     }
 
     /// 生成诊断描述（对标 Spring `getDescription`）。

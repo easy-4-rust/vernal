@@ -14,8 +14,8 @@
 //! - `autowire_mode` — 自动装配模式
 //! - `init_method_name` / `destroy_method_name` — 生命周期方法
 
-use crate::factory::config::bean_definition::BeanDefinition;
 use crate::component_scope::Scope;
+use crate::factory::config::bean_definition::BeanDefinition;
 
 use crate::component_key::ComponentKey;
 

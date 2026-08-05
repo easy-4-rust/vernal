@@ -4,9 +4,15 @@ use std::sync::Arc;
 
 fn make_container() -> vernal_beans::Container {
     let mut b = vernal_beans::RegistryBuilder::new();
-    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
-    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<i32, _>(|_| 42i32));
-    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<f64, _>(|_| 3.14f64));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(
+        |_| "hello".to_string(),
+    ));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<i32, _>(
+        |_| 42i32,
+    ));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<f64, _>(
+        |_| 3.14f64,
+    ));
     vernal_beans::Container::new(b.build().unwrap())
 }
 
@@ -26,7 +32,10 @@ fn container_resolve_in_scope() {
 fn container_resolve_qualified() {
     let mut b = vernal_beans::RegistryBuilder::new();
     let q = vernal_beans::Qualifier::new("primary").unwrap();
-    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "primary".to_string()).qualified(q.clone()));
+    let _ = b.register(
+        vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "primary".to_string())
+            .qualified(q.clone()),
+    );
     let c = vernal_beans::Container::new(b.build().unwrap());
     let val: Arc<String> = c.resolve_qualified(&q).unwrap();
     assert_eq!(*val, "primary");
@@ -107,14 +116,20 @@ fn bf_contains_bean() {
 fn bf_is_singleton() {
     use vernal_beans::BeanFactory;
     let c = make_container();
-    assert!(c.is_singleton(&vernal_beans::ComponentKey::of::<String>()).unwrap());
+    assert!(
+        c.is_singleton(&vernal_beans::ComponentKey::of::<String>())
+            .unwrap()
+    );
 }
 
 #[test]
 fn bf_is_prototype() {
     use vernal_beans::BeanFactory;
     let c = make_container();
-    assert!(!c.is_prototype(&vernal_beans::ComponentKey::of::<String>()).unwrap());
+    assert!(
+        !c.is_prototype(&vernal_beans::ComponentKey::of::<String>())
+            .unwrap()
+    );
 }
 
 #[test]
@@ -137,7 +152,10 @@ fn bf_get_aliases() {
 fn bf_is_type_match() {
     use vernal_beans::BeanFactory;
     let c = make_container();
-    assert!(c.is_type_match(&vernal_beans::ComponentKey::of::<String>(), std::any::TypeId::of::<String>()));
+    assert!(c.is_type_match(
+        &vernal_beans::ComponentKey::of::<String>(),
+        std::any::TypeId::of::<String>()
+    ));
 }
 
 #[test]
@@ -206,7 +224,10 @@ fn acbf_autowire_modes() {
 fn acbf_resolve_named_bean() {
     use vernal_beans::AutowireCapableBeanFactory;
     let c = make_container();
-    assert!(c.resolve_named_bean(std::any::TypeId::of::<String>()).is_ok());
+    assert!(
+        c.resolve_named_bean(std::any::TypeId::of::<String>())
+            .is_ok()
+    );
 }
 
 #[test]
@@ -223,8 +244,8 @@ fn acbf_type_converter() {
 
 #[test]
 fn bdr_register_and_remove() {
-    use vernal_beans::BeanDefinitionRegistry;
     use vernal_beans::BeanDefinition;
+    use vernal_beans::BeanDefinitionRegistry;
     use vernal_beans::RootBeanDefinition;
     let mut c = vernal_beans::Container::new(vernal_beans::RegistryBuilder::new().build().unwrap());
     let def = Box::new(RootBeanDefinition::new()) as Box<dyn BeanDefinition>;
@@ -419,7 +440,9 @@ fn bean_wrapper_set_get_property() {
     use vernal_beans::property_accessor::PropertyAccessor;
     let wrapper = BeanWrapperImpl::new(Arc::new("test".to_string()));
     wrapper.register_property("name", std::any::TypeId::of::<String>());
-    wrapper.set_property_value("name", Arc::new("Alice".to_string())).unwrap();
+    wrapper
+        .set_property_value("name", Arc::new("Alice".to_string()))
+        .unwrap();
     let val = wrapper.get_property_value("name").unwrap();
     assert_eq!(val.downcast_ref::<String>().unwrap(), "Alice");
 }
@@ -437,14 +460,22 @@ fn bean_wrapper_readonly() {
 
 #[test]
 fn bean_wrapper_nested_property() {
+    use std::collections::HashMap;
     use vernal_beans::bean_wrapper_impl::BeanWrapperImpl;
     use vernal_beans::property_accessor::PropertyAccessor;
-    use std::collections::HashMap;
     let wrapper = BeanWrapperImpl::new(Arc::new("test".to_string()));
-    wrapper.register_property("address", std::any::TypeId::of::<HashMap<String, Arc<dyn Any + Send + Sync>>>());
+    wrapper.register_property(
+        "address",
+        std::any::TypeId::of::<HashMap<String, Arc<dyn Any + Send + Sync>>>(),
+    );
     let mut inner = HashMap::new();
-    inner.insert("city".to_string(), Arc::new("Beijing".to_string()) as Arc<dyn Any + Send + Sync>);
-    wrapper.set_property_value("address", Arc::new(inner)).unwrap();
+    inner.insert(
+        "city".to_string(),
+        Arc::new("Beijing".to_string()) as Arc<dyn Any + Send + Sync>,
+    );
+    wrapper
+        .set_property_value("address", Arc::new(inner))
+        .unwrap();
     let val = wrapper.get_property_value("address.city");
     assert!(val.is_ok());
     assert_eq!(val.unwrap().downcast_ref::<String>().unwrap(), "Beijing");
@@ -456,7 +487,10 @@ fn bean_wrapper_property_type() {
     use vernal_beans::property_accessor::PropertyAccessor;
     let wrapper = BeanWrapperImpl::new(Arc::new("test".to_string()));
     wrapper.register_property("name", std::any::TypeId::of::<String>());
-    assert_eq!(wrapper.get_property_type("name"), Some(std::any::TypeId::of::<String>()));
+    assert_eq!(
+        wrapper.get_property_type("name"),
+        Some(std::any::TypeId::of::<String>())
+    );
     assert_eq!(wrapper.get_property_type("missing"), None);
 }
 
@@ -486,8 +520,8 @@ fn bean_wrapper_nonexistent_property() {
 
 #[test]
 fn root_bean_definition_basic() {
-    use vernal_beans::RootBeanDefinition;
     use vernal_beans::BeanDefinition;
+    use vernal_beans::RootBeanDefinition;
     let rbd = RootBeanDefinition::new();
     assert_eq!(rbd.scope(), vernal_beans::Scope::Singleton);
     assert!(!rbd.is_abstract());
@@ -570,7 +604,8 @@ fn cav_basic() {
 #[test]
 fn dependency_display() {
     let d1 = vernal_beans::Dependency::of::<String>();
-    let d2 = vernal_beans::Dependency::qualified::<String>(vernal_beans::Qualifier::new("q").unwrap());
+    let d2 =
+        vernal_beans::Dependency::qualified::<String>(vernal_beans::Qualifier::new("q").unwrap());
     let d3 = vernal_beans::Dependency::optional_of::<String>();
     let d4 = vernal_beans::Dependency::provider_of::<String>();
     let d5 = vernal_beans::Dependency::trait_of::<dyn std::fmt::Debug + Send + Sync>();
@@ -587,18 +622,46 @@ fn dependency_display() {
 
 #[test]
 fn resolve_error_display() {
-    use vernal_beans::{ResolveError, ComponentKey, TraitKey, ScopeKey};
+    use vernal_beans::{ComponentKey, ResolveError, ScopeKey, TraitKey};
     let errors: Vec<ResolveError> = vec![
-        ResolveError::NotFound { component: "t".into(), path: vec!["r".into()] },
-        ResolveError::Ambiguous { component: "t".into(), candidates: vec!["a".into(), "b".into()], path: vec!["r".into()] },
-        ResolveError::UndeclaredDependency { component: ComponentKey::of::<String>(), dependency: "d".into() },
-        ResolveError::TypeMismatch { component: ComponentKey::of::<String>() },
-        ResolveError::TraitBindingTypeMismatch { binding: TraitKey::of::<dyn std::fmt::Debug>(), target: ComponentKey::of::<i32>() },
-        ResolveError::Construction { component: ComponentKey::of::<String>(), source: Arc::new(std::io::Error::new(std::io::ErrorKind::Other, "e")) },
-        ResolveError::CircularRuntime { path: vec!["a".into(), "b".into(), "c".into()] },
-        ResolveError::ProviderUsedDuringConstruction { component: ComponentKey::of::<String>(), dependency: "d".into() },
-        ResolveError::ScopeNotActive { component: ComponentKey::of::<String>(), scope: ScopeKey::of::<String>() },
-        ResolveError::ScopeOwnerMismatch { scope: ScopeKey::of::<String>() },
+        ResolveError::NotFound {
+            component: "t".into(),
+            path: vec!["r".into()],
+        },
+        ResolveError::Ambiguous {
+            component: "t".into(),
+            candidates: vec!["a".into(), "b".into()],
+            path: vec!["r".into()],
+        },
+        ResolveError::UndeclaredDependency {
+            component: ComponentKey::of::<String>(),
+            dependency: "d".into(),
+        },
+        ResolveError::TypeMismatch {
+            component: ComponentKey::of::<String>(),
+        },
+        ResolveError::TraitBindingTypeMismatch {
+            binding: TraitKey::of::<dyn std::fmt::Debug>(),
+            target: ComponentKey::of::<i32>(),
+        },
+        ResolveError::Construction {
+            component: ComponentKey::of::<String>(),
+            source: Arc::new(std::io::Error::new(std::io::ErrorKind::Other, "e")),
+        },
+        ResolveError::CircularRuntime {
+            path: vec!["a".into(), "b".into(), "c".into()],
+        },
+        ResolveError::ProviderUsedDuringConstruction {
+            component: ComponentKey::of::<String>(),
+            dependency: "d".into(),
+        },
+        ResolveError::ScopeNotActive {
+            component: ComponentKey::of::<String>(),
+            scope: ScopeKey::of::<String>(),
+        },
+        ResolveError::ScopeOwnerMismatch {
+            scope: ScopeKey::of::<String>(),
+        },
     ];
     for e in &errors {
         let s = format!("{}", e);

@@ -32,7 +32,12 @@ impl InternalParseException {
     }
 
     /// 通过代码与 inserts 快捷构造。
-    pub fn new(expression: impl Into<String>, position: usize, code: SpelMessage, inserts: &[&str]) -> Self {
+    pub fn new(
+        expression: impl Into<String>,
+        position: usize,
+        code: SpelMessage,
+        inserts: &[&str],
+    ) -> Self {
         Self {
             cause: SpelParseException::new(expression, position, code, inserts),
         }

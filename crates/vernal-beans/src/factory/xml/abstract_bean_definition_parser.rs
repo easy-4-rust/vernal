@@ -11,7 +11,6 @@
 //! 3. 调用 `doParse` 子类自定义逻辑
 //! 4. 注册到 BeanDefinitionRegistry
 
-
 /// 抽象 Bean 定义解析器。
 ///
 /// 对应 Spring 的 `AbstractBeanDefinitionParser`。
@@ -57,7 +56,8 @@ pub trait AbstractBeanDefinitionParser: Send + Sync {
         attributes: &[(String, String)],
     ) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
         // 提取 id
-        let id = attributes.iter()
+        let id = attributes
+            .iter()
             .find(|(k, _)| k == "id")
             .map(|(_, v)| v.clone());
 
@@ -91,7 +91,9 @@ mod tests {
 
     impl TestParser {
         fn new(class_name: &str) -> Self {
-            Self { class_name: class_name.to_string() }
+            Self {
+                class_name: class_name.to_string(),
+            }
         }
     }
 
@@ -105,7 +107,8 @@ mod tests {
             _element_name: &str,
             attributes: &[(String, String)],
         ) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
-            let id = attributes.iter()
+            let id = attributes
+                .iter()
                 .find(|(k, _)| k == "id")
                 .map(|(_, v)| v.clone())
                 .unwrap_or_else(|| "default".to_string());

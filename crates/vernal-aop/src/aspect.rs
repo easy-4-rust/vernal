@@ -187,7 +187,9 @@ mod additional_tests {
         fn before<'a>(
             &'a self,
             _inv: &'a Invocation,
-        ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), InvocationError>> + Send + 'a>> {
+        ) -> std::pin::Pin<
+            Box<dyn std::future::Future<Output = Result<(), InvocationError>> + Send + 'a>,
+        > {
             Box::pin(async { Err(InvocationError::Cancelled) })
         }
     }
@@ -196,9 +198,12 @@ mod additional_tests {
     async fn around_before_fails_shortcuts() {
         let aspect = BeforeFailsAspect;
         let inv = Arc::new(Invocation::new(Operation::new("Service", "method")));
-        let next = Next::new(&[], crate::target_ref::TargetRef::Static(&|_| {
-            Box::pin(async { Ok(Box::new(42i32) as InvocationValue) })
-        }));
+        let next = Next::new(
+            &[],
+            crate::target_ref::TargetRef::Static(&|_| {
+                Box::pin(async { Ok(Box::new(42i32) as InvocationValue) })
+            }),
+        );
         let result = aspect.around(inv, next).await;
         assert!(result.is_err());
     }
@@ -214,7 +219,9 @@ mod aspect_coverage_tests {
         fn before<'a>(
             &'a self,
             _inv: &'a Invocation,
-        ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), InvocationError>> + Send + 'a>> {
+        ) -> std::pin::Pin<
+            Box<dyn std::future::Future<Output = Result<(), InvocationError>> + Send + 'a>,
+        > {
             Box::pin(async { Ok(()) })
         }
 
@@ -263,9 +270,12 @@ mod aspect_coverage_tests {
     async fn custom_aspect_around_success() {
         let aspect = CustomAspect;
         let inv = Arc::new(Invocation::new(Operation::new("Service", "method")));
-        let next = Next::new(&[], crate::target_ref::TargetRef::Static(&|_| {
-            Box::pin(async { Ok(Box::new(42i32) as InvocationValue) })
-        }));
+        let next = Next::new(
+            &[],
+            crate::target_ref::TargetRef::Static(&|_| {
+                Box::pin(async { Ok(Box::new(42i32) as InvocationValue) })
+            }),
+        );
         let result = aspect.around(inv, next).await;
         assert!(result.is_ok());
     }
@@ -274,9 +284,12 @@ mod aspect_coverage_tests {
     async fn custom_aspect_around_failure() {
         let aspect = CustomAspect;
         let inv = Arc::new(Invocation::new(Operation::new("Service", "method")));
-        let next = Next::new(&[], crate::target_ref::TargetRef::Static(&|_| {
-            Box::pin(async { Err(InvocationError::Cancelled) })
-        }));
+        let next = Next::new(
+            &[],
+            crate::target_ref::TargetRef::Static(&|_| {
+                Box::pin(async { Err(InvocationError::Cancelled) })
+            }),
+        );
         let result = aspect.around(inv, next).await;
         assert!(result.is_err());
     }
@@ -292,7 +305,9 @@ mod aspect_final_tests {
         fn before<'a>(
             &'a self,
             _inv: &'a Invocation,
-        ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), InvocationError>> + Send + 'a>> {
+        ) -> std::pin::Pin<
+            Box<dyn std::future::Future<Output = Result<(), InvocationError>> + Send + 'a>,
+        > {
             Box::pin(async { Ok(()) })
         }
 
@@ -317,9 +332,12 @@ mod aspect_final_tests {
     async fn custom_aspect_around_success() {
         let aspect = CustomAspect;
         let inv = Arc::new(Invocation::new(Operation::new("Service", "method")));
-        let next = Next::new(&[], crate::target_ref::TargetRef::Static(&|_| {
-            Box::pin(async { Ok(Box::new(42i32) as InvocationValue) })
-        }));
+        let next = Next::new(
+            &[],
+            crate::target_ref::TargetRef::Static(&|_| {
+                Box::pin(async { Ok(Box::new(42i32) as InvocationValue) })
+            }),
+        );
         let result = aspect.around(inv, next).await;
         assert!(result.is_ok());
     }
@@ -328,9 +346,12 @@ mod aspect_final_tests {
     async fn custom_aspect_around_failure() {
         let aspect = CustomAspect;
         let inv = Arc::new(Invocation::new(Operation::new("Service", "method")));
-        let next = Next::new(&[], crate::target_ref::TargetRef::Static(&|_| {
-            Box::pin(async { Err(InvocationError::Cancelled) })
-        }));
+        let next = Next::new(
+            &[],
+            crate::target_ref::TargetRef::Static(&|_| {
+                Box::pin(async { Err(InvocationError::Cancelled) })
+            }),
+        );
         let result = aspect.around(inv, next).await;
         assert!(result.is_err());
     }

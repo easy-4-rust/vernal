@@ -43,7 +43,11 @@ impl DestructionBeanPostProcessor {
 
     /// 检查指定 Bean 是否已被销毁。
     pub fn is_destroyed(&self, bean_name: &str) -> bool {
-        self.destroyed_beans.lock().unwrap().iter().any(|n| n == bean_name)
+        self.destroyed_beans
+            .lock()
+            .unwrap()
+            .iter()
+            .any(|n| n == bean_name)
     }
 
     /// 清空已销毁记录。
@@ -59,7 +63,10 @@ impl BeanPostProcessor for DestructionBeanPostProcessor {
         bean_name: &str,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         // 记录已销毁的 Bean
-        self.destroyed_beans.lock().unwrap().push(bean_name.to_string());
+        self.destroyed_beans
+            .lock()
+            .unwrap()
+            .push(bean_name.to_string());
 
         // 在实际实现中，这里会检查 Bean 是否实现了 DisposableBean
         // 并调用 destroy()
@@ -111,8 +118,12 @@ mod tests {
         let bean1 = 1_i32;
         let bean2 = 2_i32;
 
-        processor.post_process_before_destruction(&bean1, "bean1").unwrap();
-        processor.post_process_before_destruction(&bean2, "bean2").unwrap();
+        processor
+            .post_process_before_destruction(&bean1, "bean1")
+            .unwrap();
+        processor
+            .post_process_before_destruction(&bean2, "bean2")
+            .unwrap();
 
         assert_eq!(processor.destroyed_count(), 2);
         processor.clear_destroyed();

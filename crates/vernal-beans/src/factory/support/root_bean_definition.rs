@@ -5,8 +5,8 @@
 //! 表示一个完整的、无父级的 Bean 定义。这是 Bean 定义层次结构中最常用的类型，
 //! 包含所有 Bean 元数据：作用域、依赖、初始化/销毁方法、构造参数等。
 
-use crate::factory::config::bean_definition::{self, BeanDefinition};
 use crate::component_scope::Scope;
+use crate::factory::config::bean_definition::{self, BeanDefinition};
 use crate::factory::config::constructor_argument_values::ConstructorArgumentValues;
 use crate::mutable_property_values::MutablePropertyValues;
 

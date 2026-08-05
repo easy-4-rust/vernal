@@ -157,21 +157,21 @@ mod tests {
 
     #[test]
     fn target_display() {
-        let err = LocalInvocationError::target(std::io::Error::new(std::io::ErrorKind::Other, "test"));
+        let err =
+            LocalInvocationError::target(std::io::Error::new(std::io::ErrorKind::Other, "test"));
         assert!(format!("{}", err).contains("target failed"));
     }
 
     #[test]
     fn return_type_mismatch_display() {
-        let err = LocalInvocationError::ReturnTypeMismatch {
-            expected: "i32",
-        };
+        let err = LocalInvocationError::ReturnTypeMismatch { expected: "i32" };
         assert!(format!("{}", err).contains("return type mismatch"));
     }
 
     #[test]
     fn target_source() {
-        let err = LocalInvocationError::target(std::io::Error::new(std::io::ErrorKind::Other, "test"));
+        let err =
+            LocalInvocationError::target(std::io::Error::new(std::io::ErrorKind::Other, "test"));
         assert!(err.source().is_some());
     }
 

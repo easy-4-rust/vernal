@@ -139,19 +139,13 @@ mod tests {
     #[test]
     fn trailing_hyphen() {
         // 尾部连字符：被消费，不产生额外字符
-        assert_eq!(
-            Conventions::attribute_name_to_property_name("foo-"),
-            "foo"
-        );
+        assert_eq!(Conventions::attribute_name_to_property_name("foo-"), "foo");
     }
 
     #[test]
     fn leading_hyphen() {
         // 开头连字符：第一个字符大写
-        assert_eq!(
-            Conventions::attribute_name_to_property_name("-foo"),
-            "Foo"
-        );
+        assert_eq!(Conventions::attribute_name_to_property_name("-foo"), "Foo");
     }
 
     #[test]
@@ -188,8 +182,7 @@ mod tests {
 
     #[test]
     fn qualified_name_str() {
-        let qualified =
-            Conventions::get_qualified_attribute_name_str("com.myapp.SomeClass", "foo");
+        let qualified = Conventions::get_qualified_attribute_name_str("com.myapp.SomeClass", "foo");
         assert_eq!(qualified, "com.myapp.SomeClass.foo");
     }
 

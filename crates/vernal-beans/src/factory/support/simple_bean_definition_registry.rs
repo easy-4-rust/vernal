@@ -24,7 +24,9 @@ pub struct SimpleBeanDefinitionRegistry {
 
 impl SimpleBeanDefinitionRegistry {
     /// 创建空的注册表。
-    pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
 
     /// 清空所有定义。
     pub fn clear(&mut self) {
@@ -53,7 +55,10 @@ impl BeanDefinitionRegistry for SimpleBeanDefinitionRegistry {
         name: String,
         def: Box<dyn BeanDefinition>,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        self.definitions.lock().unwrap().insert(name, Arc::from(def));
+        self.definitions
+            .lock()
+            .unwrap()
+            .insert(name, Arc::from(def));
         Ok(())
     }
 
@@ -61,10 +66,14 @@ impl BeanDefinitionRegistry for SimpleBeanDefinitionRegistry {
         &mut self,
         name: &str,
     ) -> Result<Box<dyn BeanDefinition>, Box<dyn std::error::Error + Send + Sync>> {
-        self.definitions.lock().unwrap().remove(name)
+        self.definitions
+            .lock()
+            .unwrap()
+            .remove(name)
             .map(|_arc| {
                 // 将 Arc 转换为 Box - 创建一个空壳
-                Box::new(crate::factory::support::root_bean_definition::RootBeanDefinition::new()) as Box<dyn BeanDefinition>
+                Box::new(crate::factory::support::root_bean_definition::RootBeanDefinition::new())
+                    as Box<dyn BeanDefinition>
             })
             .ok_or_else(|| format!("No bean definition with name '{}'", name).into())
     }
@@ -103,7 +112,9 @@ mod tests {
     fn register_and_check() {
         let mut registry = SimpleBeanDefinitionRegistry::new();
         let def = RootBeanDefinition::new();
-        registry.register_bean_definition("myBean".to_string(), Box::new(def)).unwrap();
+        registry
+            .register_bean_definition("myBean".to_string(), Box::new(def))
+            .unwrap();
 
         assert!(registry.contains("myBean"));
         assert!(registry.contains_bean_definition("myBean"));
@@ -114,7 +125,9 @@ mod tests {
     fn remove_bean_definition() {
         let mut registry = SimpleBeanDefinitionRegistry::new();
         let def = RootBeanDefinition::new();
-        registry.register_bean_definition("test".to_string(), Box::new(def)).unwrap();
+        registry
+            .register_bean_definition("test".to_string(), Box::new(def))
+            .unwrap();
 
         assert!(registry.contains("test"));
         registry.remove_bean_definition("test").unwrap();
@@ -131,8 +144,12 @@ mod tests {
     #[test]
     fn bean_definition_names() {
         let mut registry = SimpleBeanDefinitionRegistry::new();
-        registry.register_bean_definition("a".to_string(), Box::new(RootBeanDefinition::new())).unwrap();
-        registry.register_bean_definition("b".to_string(), Box::new(RootBeanDefinition::new())).unwrap();
+        registry
+            .register_bean_definition("a".to_string(), Box::new(RootBeanDefinition::new()))
+            .unwrap();
+        registry
+            .register_bean_definition("b".to_string(), Box::new(RootBeanDefinition::new()))
+            .unwrap();
 
         let mut names = registry.bean_definition_names();
         names.sort();

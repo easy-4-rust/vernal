@@ -35,11 +35,7 @@ struct SortState {
 
 impl MutableSortDefinition {
     /// 创建可变排序定义。
-    pub fn new(
-        property: impl Into<String>,
-        ignore_case: bool,
-        ascending: bool,
-    ) -> Self {
+    pub fn new(property: impl Into<String>, ignore_case: bool, ascending: bool) -> Self {
         Self {
             inner: std::sync::Mutex::new(SortState {
                 property: property.into(),
@@ -115,7 +111,11 @@ impl fmt::Display for MutableSortDefinition {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let state = self.inner.lock().unwrap();
         let direction = if state.ascending { "ASC" } else { "DESC" };
-        let case = if state.ignore_case { "IGNORE CASE" } else { "CASE SENSITIVE" };
+        let case = if state.ignore_case {
+            "IGNORE CASE"
+        } else {
+            "CASE SENSITIVE"
+        };
         write!(f, "{} {} {}", state.property, direction, case)
     }
 }

@@ -60,7 +60,11 @@ impl ClassLoaderAwareProcessor {
 
     /// 检查指定 Bean 是否已被注入。
     pub fn is_injected(&self, bean_name: &str) -> bool {
-        self.injected_beans.lock().unwrap().iter().any(|n| n == bean_name)
+        self.injected_beans
+            .lock()
+            .unwrap()
+            .iter()
+            .any(|n| n == bean_name)
     }
 
     /// 清空已注入记录。
@@ -78,7 +82,10 @@ impl BeanPostProcessor for ClassLoaderAwareProcessor {
         // 在实际实现中，这里会检查 Bean 是否实现了 BeanClassLoaderAware
         // 如果是，则调用 set_bean_class_loader(&self.class_loader_name)
 
-        self.injected_beans.lock().unwrap().push(bean_name.to_string());
+        self.injected_beans
+            .lock()
+            .unwrap()
+            .push(bean_name.to_string());
 
         Ok(Some(bean))
     }

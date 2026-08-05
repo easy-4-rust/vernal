@@ -15,11 +15,7 @@ pub trait PropertyEditorRegistry: Send + Sync {
     /// 注册自定义属性编辑器。
     ///
     /// 对应 Java 方法：`void registerCustomEditor(Class<?> requiredType, PropertyEditor propertyEditor)`
-    fn register_custom_editor(
-        &mut self,
-        required_type: TypeId,
-        editor: Box<dyn PropertyEditor>,
-    );
+    fn register_custom_editor(&mut self, required_type: TypeId, editor: Box<dyn PropertyEditor>);
 
     /// 注册自定义属性编辑器（带属性路径）。
     ///
@@ -78,11 +74,7 @@ impl Default for SimplePropertyEditorRegistry {
 }
 
 impl PropertyEditorRegistry for SimplePropertyEditorRegistry {
-    fn register_custom_editor(
-        &mut self,
-        required_type: TypeId,
-        editor: Box<dyn PropertyEditor>,
-    ) {
+    fn register_custom_editor(&mut self, required_type: TypeId, editor: Box<dyn PropertyEditor>) {
         self.type_editors.insert(required_type, editor);
     }
 
@@ -118,7 +110,10 @@ impl PropertyEditorRegistry for SimplePropertyEditorRegistry {
     ) -> Option<&'a mut (dyn PropertyEditor + 'a)> {
         // 先查找路径特定的编辑器
         if let Some(path) = property_path {
-            if let Some(editor) = self.path_editors.get_mut(&(required_type, path.to_string())) {
+            if let Some(editor) = self
+                .path_editors
+                .get_mut(&(required_type, path.to_string()))
+            {
                 return Some(&mut **editor);
             }
         }
@@ -130,7 +125,8 @@ impl PropertyEditorRegistry for SimplePropertyEditorRegistry {
     }
 
     fn has_custom_editor(&self, required_type: TypeId, property_path: Option<&str>) -> bool {
-        self.find_custom_editor(required_type, property_path).is_some()
+        self.find_custom_editor(required_type, property_path)
+            .is_some()
     }
 }
 
@@ -157,7 +153,10 @@ mod tests {
             TypeId::of::<String>()
         }
 
-        fn set_as_text(&mut self, text: &str) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        fn set_as_text(
+            &mut self,
+            text: &str,
+        ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             self.value = Some(text.to_string());
             Ok(())
         }
@@ -204,7 +203,11 @@ mod tests {
     #[test]
     fn test_find_editor_returns_none_when_empty() {
         let registry = SimplePropertyEditorRegistry::new();
-        assert!(registry.find_custom_editor(TypeId::of::<String>(), None).is_none());
+        assert!(
+            registry
+                .find_custom_editor(TypeId::of::<String>(), None)
+                .is_none()
+        );
     }
 
     #[test]
@@ -228,7 +231,11 @@ mod tests {
 
         let mut path_editor = TestEditor::new();
         path_editor.set_as_text("path_level").unwrap();
-        registry.register_custom_editor_for_path(TypeId::of::<String>(), "name", Box::new(path_editor));
+        registry.register_custom_editor_for_path(
+            TypeId::of::<String>(),
+            "name",
+            Box::new(path_editor),
+        );
 
         // Path-specific editor takes priority
         let found = registry.find_custom_editor(TypeId::of::<String>(), Some("name"));
@@ -268,7 +275,11 @@ mod tests {
     #[test]
     fn test_find_editor_mut_returns_none_when_empty() {
         let mut registry = SimplePropertyEditorRegistry::new();
-        assert!(registry.find_custom_editor_mut(TypeId::of::<String>(), None).is_none());
+        assert!(
+            registry
+                .find_custom_editor_mut(TypeId::of::<String>(), None)
+                .is_none()
+        );
     }
 
     #[test]
@@ -301,7 +312,11 @@ mod tests {
     #[test]
     fn find_editor_mut_returns_none_for_missing() {
         let mut registry = SimplePropertyEditorRegistry::new();
-        assert!(registry.find_custom_editor_mut(TypeId::of::<i32>(), None).is_none());
+        assert!(
+            registry
+                .find_custom_editor_mut(TypeId::of::<i32>(), None)
+                .is_none()
+        );
     }
 
     #[test]
@@ -349,11 +364,19 @@ mod tests {
         let mut registry = SimplePropertyEditorRegistry::new();
         let mut editor1 = TestEditor::new();
         editor1.set_as_text("first").unwrap();
-        registry.register_custom_editor_for_path(TypeId::of::<String>(), "field", Box::new(editor1));
+        registry.register_custom_editor_for_path(
+            TypeId::of::<String>(),
+            "field",
+            Box::new(editor1),
+        );
 
         let mut editor2 = TestEditor::new();
         editor2.set_as_text("second").unwrap();
-        registry.register_custom_editor_for_path(TypeId::of::<String>(), "field", Box::new(editor2));
+        registry.register_custom_editor_for_path(
+            TypeId::of::<String>(),
+            "field",
+            Box::new(editor2),
+        );
 
         let found = registry.find_custom_editor(TypeId::of::<String>(), Some("field"));
         assert_eq!(found.unwrap().get_as_text(), Some("second".to_string()));
@@ -362,7 +385,11 @@ mod tests {
     #[test]
     fn default_trait_works() {
         let registry = SimplePropertyEditorRegistry::default();
-        assert!(registry.find_custom_editor(TypeId::of::<String>(), None).is_none());
+        assert!(
+            registry
+                .find_custom_editor(TypeId::of::<String>(), None)
+                .is_none()
+        );
     }
 
     #[test]
@@ -392,7 +419,11 @@ mod tests {
 
         let mut path_editor = TestEditor::new();
         path_editor.set_as_text("path_level").unwrap();
-        registry.register_custom_editor_for_path(TypeId::of::<String>(), "name", Box::new(path_editor));
+        registry.register_custom_editor_for_path(
+            TypeId::of::<String>(),
+            "name",
+            Box::new(path_editor),
+        );
 
         // Path-specific editor takes priority
         let found = registry.find_custom_editor_mut(TypeId::of::<String>(), Some("name"));
@@ -412,7 +443,11 @@ mod tests {
     fn has_custom_editor_path_and_type() {
         let mut registry = SimplePropertyEditorRegistry::new();
         registry.register_custom_editor(TypeId::of::<String>(), Box::new(TestEditor::new()));
-        registry.register_custom_editor_for_path(TypeId::of::<i32>(), "field", Box::new(TestEditor::new()));
+        registry.register_custom_editor_for_path(
+            TypeId::of::<i32>(),
+            "field",
+            Box::new(TestEditor::new()),
+        );
 
         assert!(registry.has_custom_editor(TypeId::of::<String>(), None));
         assert!(registry.has_custom_editor(TypeId::of::<i32>(), Some("field")));
@@ -422,7 +457,11 @@ mod tests {
     #[test]
     fn find_editor_path_not_found_no_type_editor() {
         let mut registry = SimplePropertyEditorRegistry::new();
-        registry.register_custom_editor_for_path(TypeId::of::<String>(), "field1", Box::new(TestEditor::new()));
+        registry.register_custom_editor_for_path(
+            TypeId::of::<String>(),
+            "field1",
+            Box::new(TestEditor::new()),
+        );
         let found = registry.find_custom_editor(TypeId::of::<String>(), Some("field2"));
         assert!(found.is_none());
     }
@@ -430,7 +469,11 @@ mod tests {
     #[test]
     fn find_editor_mut_path_not_found_no_type_editor() {
         let mut registry = SimplePropertyEditorRegistry::new();
-        registry.register_custom_editor_for_path(TypeId::of::<String>(), "field1", Box::new(TestEditor::new()));
+        registry.register_custom_editor_for_path(
+            TypeId::of::<String>(),
+            "field1",
+            Box::new(TestEditor::new()),
+        );
         let found = registry.find_custom_editor_mut(TypeId::of::<String>(), Some("field2"));
         assert!(found.is_none());
     }
@@ -464,7 +507,11 @@ mod tests {
     fn has_custom_editor_with_path_and_type() {
         let mut registry = SimplePropertyEditorRegistry::new();
         registry.register_custom_editor(TypeId::of::<String>(), Box::new(TestEditor::new()));
-        registry.register_custom_editor_for_path(TypeId::of::<i32>(), "field", Box::new(TestEditor::new()));
+        registry.register_custom_editor_for_path(
+            TypeId::of::<i32>(),
+            "field",
+            Box::new(TestEditor::new()),
+        );
         assert!(registry.has_custom_editor(TypeId::of::<String>(), None));
         assert!(registry.has_custom_editor(TypeId::of::<String>(), Some("any")));
         assert!(registry.has_custom_editor(TypeId::of::<i32>(), Some("field")));
@@ -485,8 +532,16 @@ mod tests {
     #[test]
     fn register_multiple_path_editors() {
         let mut registry = SimplePropertyEditorRegistry::new();
-        registry.register_custom_editor_for_path(TypeId::of::<String>(), "field1", Box::new(TestEditor::new()));
-        registry.register_custom_editor_for_path(TypeId::of::<String>(), "field2", Box::new(TestEditor::new()));
+        registry.register_custom_editor_for_path(
+            TypeId::of::<String>(),
+            "field1",
+            Box::new(TestEditor::new()),
+        );
+        registry.register_custom_editor_for_path(
+            TypeId::of::<String>(),
+            "field2",
+            Box::new(TestEditor::new()),
+        );
         assert!(registry.has_custom_editor(TypeId::of::<String>(), Some("field1")));
         assert!(registry.has_custom_editor(TypeId::of::<String>(), Some("field2")));
         assert!(!registry.has_custom_editor(TypeId::of::<String>(), Some("field3")));

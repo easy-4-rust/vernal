@@ -77,10 +77,16 @@ impl ArgumentConvertingMethodInvoker {
     /// 调用方法（使用闭包）。
     pub fn invoke(
         &self,
-        invoker: &dyn Fn(&[Arc<dyn Any + Send + Sync>]) -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>>,
+        invoker: &dyn Fn(
+            &[Arc<dyn Any + Send + Sync>],
+        ) -> Result<
+            Arc<dyn Any + Send + Sync>,
+            Box<dyn std::error::Error + Send + Sync>,
+        >,
         args: &[Arc<dyn Any + Send + Sync>],
     ) -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> {
-        self.validate_args(args).map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { e.into() })?;
+        self.validate_args(args)
+            .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { e.into() })?;
         invoker(args)
     }
 }
@@ -94,14 +100,16 @@ mod tests {
         let invoker = ArgumentConvertingMethodInvoker::new("add")
             .with_parameter_types(vec!["i32".to_string(), "i32".to_string()]);
 
-        let result = invoker.invoke(
-            &|args| {
-                let a = args[0].downcast_ref::<i32>().unwrap();
-                let b = args[1].downcast_ref::<i32>().unwrap();
-                Ok(Arc::new(a + b))
-            },
-            &[Arc::new(3_i32), Arc::new(4_i32)],
-        ).unwrap();
+        let result = invoker
+            .invoke(
+                &|args| {
+                    let a = args[0].downcast_ref::<i32>().unwrap();
+                    let b = args[1].downcast_ref::<i32>().unwrap();
+                    Ok(Arc::new(a + b))
+                },
+                &[Arc::new(3_i32), Arc::new(4_i32)],
+            )
+            .unwrap();
 
         assert_eq!(result.downcast_ref::<i32>(), Some(&7));
     }
@@ -111,20 +119,16 @@ mod tests {
         let invoker = ArgumentConvertingMethodInvoker::new("add")
             .with_parameter_types(vec!["i32".to_string(), "i32".to_string()]);
 
-        let result = invoker.invoke(
-            &|_| Ok(Arc::new(0)),
-            &[Arc::new(1_i32)],
-        );
+        let result = invoker.invoke(&|_| Ok(Arc::new(0)), &[Arc::new(1_i32)]);
         assert!(result.is_err());
     }
 
     #[test]
     fn invoke_without_type_checks() {
         let invoker = ArgumentConvertingMethodInvoker::new("echo");
-        let result = invoker.invoke(
-            &|args| Ok(Arc::clone(&args[0])),
-            &[Arc::new(42_i32)],
-        ).unwrap();
+        let result = invoker
+            .invoke(&|args| Ok(Arc::clone(&args[0])), &[Arc::new(42_i32)])
+            .unwrap();
         assert_eq!(result.downcast_ref::<i32>(), Some(&42));
     }
 

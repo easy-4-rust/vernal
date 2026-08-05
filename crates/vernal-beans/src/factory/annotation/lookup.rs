@@ -20,25 +20,41 @@ impl Lookup {
     ///
     /// # 参数
     /// - `value` — 要查找的 Bean 名称（空字符串表示按类型查找）
-    pub fn new(value: String) -> Self { Self { value } }
+    pub fn new(value: String) -> Self {
+        Self { value }
+    }
 
     /// 创建按类型查找的 @Lookup 注解（名称为空字符串）。
-    pub fn by_type() -> Self { Self { value: String::new() } }
+    pub fn by_type() -> Self {
+        Self {
+            value: String::new(),
+        }
+    }
 
     /// 获取要查找的 Bean 名称。
-    pub fn value(&self) -> &str { &self.value }
+    pub fn value(&self) -> &str {
+        &self.value
+    }
 
     /// 是否按类型查找（value 为空）。
-    pub fn is_by_type(&self) -> bool { self.value.is_empty() }
+    pub fn is_by_type(&self) -> bool {
+        self.value.is_empty()
+    }
 
     /// 是否按名称查找。
-    pub fn is_by_name(&self) -> bool { !self.value.is_empty() }
+    pub fn is_by_name(&self) -> bool {
+        !self.value.is_empty()
+    }
 
     /// 获取值的长度。
-    pub fn len(&self) -> usize { self.value.len() }
+    pub fn len(&self) -> usize {
+        self.value.len()
+    }
 
     /// 值是否为空。
-    pub fn is_empty(&self) -> bool { self.value.is_empty() }
+    pub fn is_empty(&self) -> bool {
+        self.value.is_empty()
+    }
 
     /// 创建一个按名称查找的 @Lookup 注解。
     pub fn by_name(name: impl Into<String>) -> Self {
@@ -47,7 +63,9 @@ impl Lookup {
 }
 
 impl Default for Lookup {
-    fn default() -> Self { Self::by_type() }
+    fn default() -> Self {
+        Self::by_type()
+    }
 }
 
 #[cfg(test)]

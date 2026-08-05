@@ -40,9 +40,7 @@ mod tests {
         // A 类（合同对齐）：对标 Spring 默认工厂解析 properties
         let factory = DefaultPropertySourceFactory;
         let resource = crate::io::ByteArrayResource::new(b"k=v\n".to_vec());
-        let source = factory
-            .create_property_source("config", &resource)
-            .unwrap();
+        let source = factory.create_property_source("config", &resource).unwrap();
         assert_eq!(source.name(), "config");
         assert_eq!(source.get_property("k").as_deref(), Some("v"));
     }

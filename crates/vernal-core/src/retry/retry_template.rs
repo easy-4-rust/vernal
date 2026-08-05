@@ -2,9 +2,9 @@
 //!
 //! 对标 Spring `org.springframework.core.retry.RetryTemplate`。
 
+use super::RetryPolicy;
 use super::default_retry_policy::DefaultRetryPolicy;
 use super::retry_operations::RetryOperations;
-use super::RetryPolicy;
 
 /// 重试模板。
 ///
@@ -79,8 +79,8 @@ impl RetryTemplate {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::atomic::{AtomicU32, Ordering};
     use std::sync::Arc;
+    use std::sync::atomic::{AtomicU32, Ordering};
 
     #[test]
     fn succeeds_on_first_attempt() {

@@ -6,8 +6,8 @@
 //! 在 Spring 中，此类在 Bean 实例化阶段被调用，将 `BeanDefinition`
 //! 中的字符串值替换为容器中的实际对象。
 
-use std::sync::Mutex;
 use std::collections::HashMap;
+use std::sync::Mutex;
 
 /// Spring 风格 Bean 定义值解析器。
 ///
@@ -21,7 +21,11 @@ pub struct BeanDefinitionValueResolver {
 
 impl BeanDefinitionValueResolver {
     /// 创建新的值解析器。
-    pub fn new() -> Self { Self { resolved_values: Mutex::new(HashMap::new()) } }
+    pub fn new() -> Self {
+        Self {
+            resolved_values: Mutex::new(HashMap::new()),
+        }
+    }
 
     /// 注册一个已解析的键值对。
     pub fn resolve(&self, key: String, value: String) {
@@ -57,7 +61,11 @@ impl BeanDefinitionValueResolver {
     }
 }
 
-impl Default for BeanDefinitionValueResolver { fn default() -> Self { Self::new() } }
+impl Default for BeanDefinitionValueResolver {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 #[cfg(test)]
 mod tests {

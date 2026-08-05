@@ -55,13 +55,15 @@ mod tests {
 
     #[test]
     fn test_configuration_creation() {
-        let config = AspectJCachingConfiguration::new(Arc::new(AnnotationCacheOperationSource::new()));
+        let config =
+            AspectJCachingConfiguration::new(Arc::new(AnnotationCacheOperationSource::new()));
         assert!(config.get_aspect().is_none());
     }
 
     #[test]
     fn test_configuration_register() {
-        let config = AspectJCachingConfiguration::new(Arc::new(AnnotationCacheOperationSource::new()));
+        let config =
+            AspectJCachingConfiguration::new(Arc::new(AnnotationCacheOperationSource::new()));
         let aspect = config.register();
         assert!(config.get_aspect().is_some());
         // 两次注册返回同一个实例
@@ -71,7 +73,8 @@ mod tests {
 
     #[test]
     fn test_configuration_register_multiple() {
-        let config = AspectJCachingConfiguration::new(Arc::new(AnnotationCacheOperationSource::new()));
+        let config =
+            AspectJCachingConfiguration::new(Arc::new(AnnotationCacheOperationSource::new()));
         let _ = config.register();
         let _ = config.register();
         let _ = config.register();

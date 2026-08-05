@@ -5,9 +5,9 @@
 //! 通用的 Bean 定义实现，支持 Parent-Child 继承。
 //! 与 RootBeanDefinition 不同，GenericBeanDefinition 可以有父级。
 
-use crate::factory::annotation::autowire::Autowire;
-use crate::factory::config::bean_definition::{ self };
 use crate::component_scope::Scope;
+use crate::factory::annotation::autowire::Autowire;
+use crate::factory::config::bean_definition::{self};
 use crate::factory::config::constructor_argument_values::ConstructorArgumentValues;
 use crate::mutable_property_values::MutablePropertyValues;
 

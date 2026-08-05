@@ -5,9 +5,9 @@
 use std::io;
 use std::path::PathBuf;
 
+use super::ResourceLoader;
 use super::file_system_resource::FileSystemResource;
 use super::resource::Resource;
-use super::ResourceLoader;
 
 /// 文件系统资源加载器。
 ///

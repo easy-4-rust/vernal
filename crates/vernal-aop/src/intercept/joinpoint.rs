@@ -72,7 +72,13 @@ pub trait MethodInvocation: Joinpoint {
 /// 对应 vernal-aop 的 `Next`，用于推进拦截器链。
 pub struct InvocationChain {
     operation: Operation,
-    interceptors: Vec<Box<dyn Fn(&dyn Any) -> Result<Box<dyn Any>, Box<dyn std::error::Error + Send + Sync>> + Send + Sync>>,
+    interceptors: Vec<
+        Box<
+            dyn Fn(&dyn Any) -> Result<Box<dyn Any>, Box<dyn std::error::Error + Send + Sync>>
+                + Send
+                + Sync,
+        >,
+    >,
     current_index: usize,
 }
 
@@ -89,7 +95,11 @@ impl InvocationChain {
     /// 添加拦截器。
     pub fn add_interceptor(
         &mut self,
-        interceptor: Box<dyn Fn(&dyn Any) -> Result<Box<dyn Any>, Box<dyn std::error::Error + Send + Sync>> + Send + Sync>,
+        interceptor: Box<
+            dyn Fn(&dyn Any) -> Result<Box<dyn Any>, Box<dyn std::error::Error + Send + Sync>>
+                + Send
+                + Sync,
+        >,
     ) {
         self.interceptors.push(interceptor);
     }

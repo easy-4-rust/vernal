@@ -2,7 +2,7 @@
 //!
 //! 对标 Spring `org.springframework.core.convert.support.StringToNumberConverterFactory`。
 
-use crate::convert::{ConversionError, Convertible, Converter, ConverterFactory};
+use crate::convert::{ConversionError, Converter, ConverterFactory, Convertible};
 
 /// 字符串 → 数字转换器工厂。
 ///

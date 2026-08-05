@@ -19,13 +19,21 @@ pub trait ObjectFactory<T: Any + Send + Sync>: Send + Sync {
 
 /// ObjectFactory 的闭包实现。
 pub struct ClosureObjectFactory<T: Any + Send + Sync> {
-    creator: Box<dyn Fn() -> Result<Arc<T>, Box<dyn std::error::Error + Send + Sync>> + Send + Sync>,
+    creator:
+        Box<dyn Fn() -> Result<Arc<T>, Box<dyn std::error::Error + Send + Sync>> + Send + Sync>,
 }
 
 impl<T: Any + Send + Sync> ClosureObjectFactory<T> {
     /// 创建一个新的实例。
-    pub fn new(creator: impl Fn() -> Result<Arc<T>, Box<dyn std::error::Error + Send + Sync>> + Send + Sync + 'static) -> Self {
-        Self { creator: Box::new(creator) }
+    pub fn new(
+        creator: impl Fn() -> Result<Arc<T>, Box<dyn std::error::Error + Send + Sync>>
+        + Send
+        + Sync
+        + 'static,
+    ) -> Self {
+        Self {
+            creator: Box::new(creator),
+        }
     }
 }
 

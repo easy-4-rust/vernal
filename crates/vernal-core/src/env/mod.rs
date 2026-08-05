@@ -10,9 +10,9 @@ mod command_line_property_source;
 mod composite_property_source;
 mod configurable_environment;
 mod configurable_property_resolver;
+mod enumerable_property_source;
 mod environment;
 mod environment_capable;
-mod enumerable_property_source;
 mod map_property_source;
 mod missing_required_properties_exception;
 mod mutable_property_sources;
@@ -35,9 +35,9 @@ pub use command_line_property_source::CommandLinePropertySource;
 pub use composite_property_source::CompositePropertySource;
 pub use configurable_environment::ConfigurableEnvironment;
 pub use configurable_property_resolver::ConfigurablePropertyResolver;
+pub use enumerable_property_source::EnumerablePropertySource;
 pub use environment::Environment;
 pub use environment_capable::EnvironmentCapable;
-pub use enumerable_property_source::EnumerablePropertySource;
 pub use map_property_source::MapPropertySource;
 pub use missing_required_properties_exception::MissingRequiredPropertiesException;
 pub use mutable_property_sources::MutablePropertySources;
@@ -110,7 +110,10 @@ mod tests {
     fn standard_environment_active_profiles() {
         let mut env = StandardEnvironment::new();
         env.set_active_profiles(vec!["dev".to_string(), "test".to_string()]);
-        assert_eq!(env.get_active_profiles(), vec!["dev".to_string(), "test".to_string()]);
+        assert_eq!(
+            env.get_active_profiles(),
+            vec!["dev".to_string(), "test".to_string()]
+        );
         assert!(env.accepts_profiles(&["dev"]));
         assert!(!env.accepts_profiles(&["prod"]));
     }

@@ -19,8 +19,7 @@ use crate::typed_value::TypedValue;
 type PropertyReadFn = Arc<dyn Fn(&str) -> Result<TypedValue, AccessException> + Send + Sync>;
 
 /// 属性写入闭包类型。
-type PropertyWriteFn =
-    Arc<dyn Fn(&str, &TypedValue) -> Result<(), AccessException> + Send + Sync>;
+type PropertyWriteFn = Arc<dyn Fn(&str, &TypedValue) -> Result<(), AccessException> + Send + Sync>;
 
 /// Vernal 属性访问器（对标 Spring BeanFactory 属性集成）。
 ///
@@ -225,10 +224,12 @@ mod tests {
     #[test]
     fn new_read_write() {
         let accessor = VernalPropertyAccessor::with_write(
-            |name| Ok(TypedValue::new(
-                ExpressionValue::String(format!("read:{}", name)),
-                TypeDescriptor::STRING,
-            )),
+            |name| {
+                Ok(TypedValue::new(
+                    ExpressionValue::String(format!("read:{}", name)),
+                    TypeDescriptor::STRING,
+                ))
+            },
             |_name, _value| Ok(()),
         );
         let ctx = StandardEvaluationContext::new(TypedValue::null());
@@ -250,7 +251,11 @@ mod tests {
         assert!(!accessor.can_read(&ctx, &target, "prop"));
         assert!(!accessor.can_write(&ctx, &target, "prop"));
         assert!(accessor.read(&ctx, &target, "prop").is_err());
-        assert!(accessor.write(&ctx, &target, "prop", &TypedValue::null()).is_err());
+        assert!(
+            accessor
+                .write(&ctx, &target, "prop", &TypedValue::null())
+                .is_err()
+        );
     }
 
     #[test]
@@ -270,7 +275,10 @@ mod tests {
 
         assert!(accessor.can_read(&ctx, &target, "prop"));
         let result = accessor.read(&ctx, &target, "prop").unwrap();
-        assert_eq!(*result.value(), ExpressionValue::String("dynamic:prop".into()));
+        assert_eq!(
+            *result.value(),
+            ExpressionValue::String("dynamic:prop".into())
+        );
     }
 
     #[test]

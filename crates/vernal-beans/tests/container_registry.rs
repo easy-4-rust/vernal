@@ -1,10 +1,9 @@
 //! Container BeanDefinitionRegistry trait 实现测试。
 
-
+use vernal_beans::BeanDefinitionRegistry;
 use vernal_beans::ComponentDefinition;
 use vernal_beans::RegistryBuilder;
 use vernal_beans::Resolver;
-use vernal_beans::BeanDefinitionRegistry;
 
 // ── 测试类型 ─────────────────────────────────────────────────────────────
 

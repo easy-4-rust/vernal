@@ -12,7 +12,10 @@ use crate::bean_info_factory::BeanInfoFactory;
 pub struct ExtendedBeanInfoFactory;
 
 impl BeanInfoFactory for ExtendedBeanInfoFactory {
-    fn get_bean_info_entries(&self, _type_id: TypeId) -> Option<crate::bean_info_factory::BeanInfoEntries> {
+    fn get_bean_info_entries(
+        &self,
+        _type_id: TypeId,
+    ) -> Option<crate::bean_info_factory::BeanInfoEntries> {
         Some(crate::bean_info_factory::BeanInfoEntries::new())
     }
 }

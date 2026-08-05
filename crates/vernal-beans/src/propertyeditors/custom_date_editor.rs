@@ -96,7 +96,8 @@ impl PropertyEditor for CustomDateEditor {
             ) {
                 if year > 0 && month >= 1 && month <= 12 && day >= 1 && day <= 31 {
                     // 简化的时间戳计算（近似值）
-                    let days = (year as i64 - 1970) * 365 + (month as i64 - 1) * 30 + day as i64 - 1;
+                    let days =
+                        (year as i64 - 1970) * 365 + (month as i64 - 1) * 30 + day as i64 - 1;
                     self.value = Some(days * 86400000);
                     return Ok(());
                 }

@@ -56,13 +56,19 @@ impl NestedCheckedException {
 impl fmt::Display for NestedCheckedException {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let cause_text = self.cause.as_deref().map(ToString::to_string);
-        write!(f, "{}", NestedExceptionUtils::build_message(&self.message, cause_text.as_deref()))
+        write!(
+            f,
+            "{}",
+            NestedExceptionUtils::build_message(&self.message, cause_text.as_deref())
+        )
     }
 }
 
 impl std::error::Error for NestedCheckedException {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        self.cause.as_deref().map(|c| c as &(dyn std::error::Error + 'static))
+        self.cause
+            .as_deref()
+            .map(|c| c as &(dyn std::error::Error + 'static))
     }
 }
 
@@ -92,7 +98,10 @@ mod tests {
     fn nested_message_and_root_cause() {
         // A 类（合同对齐）：对标 Spring 嵌套诊断
         let err = NestedCheckedException::with_cause("parse error", Box::new(IoLeaf));
-        assert_eq!(err.to_string(), "parse error; nested exception is io failure");
+        assert_eq!(
+            err.to_string(),
+            "parse error; nested exception is io failure"
+        );
         assert_eq!(err.root_cause().unwrap().to_string(), "io failure");
     }
 

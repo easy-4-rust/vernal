@@ -433,12 +433,24 @@ mod tests {
         #[derive(Debug)]
         struct SupportBean;
         impl BeanDefinition for SupportBean {
-            fn bean_name(&self) -> &ComponentKey { unimplemented!() }
-            fn bean_class_name(&self) -> &str { "SupportBean" }
-            fn scope(&self) -> Scope { Scope::Singleton }
-            fn is_lazy_init(&self) -> bool { false }
-            fn is_primary(&self) -> bool { false }
-            fn role(&self) -> i32 { ROLE_SUPPORT }
+            fn bean_name(&self) -> &ComponentKey {
+                unimplemented!()
+            }
+            fn bean_class_name(&self) -> &str {
+                "SupportBean"
+            }
+            fn scope(&self) -> Scope {
+                Scope::Singleton
+            }
+            fn is_lazy_init(&self) -> bool {
+                false
+            }
+            fn is_primary(&self) -> bool {
+                false
+            }
+            fn role(&self) -> i32 {
+                ROLE_SUPPORT
+            }
         }
         let bd = SupportBean;
         assert_eq!(bd.role(), ROLE_SUPPORT);
@@ -449,12 +461,24 @@ mod tests {
         #[derive(Debug)]
         struct InfraBean;
         impl BeanDefinition for InfraBean {
-            fn bean_name(&self) -> &ComponentKey { unimplemented!() }
-            fn bean_class_name(&self) -> &str { "InfraBean" }
-            fn scope(&self) -> Scope { Scope::Singleton }
-            fn is_lazy_init(&self) -> bool { false }
-            fn is_primary(&self) -> bool { false }
-            fn role(&self) -> i32 { ROLE_INFRASTRUCTURE }
+            fn bean_name(&self) -> &ComponentKey {
+                unimplemented!()
+            }
+            fn bean_class_name(&self) -> &str {
+                "InfraBean"
+            }
+            fn scope(&self) -> Scope {
+                Scope::Singleton
+            }
+            fn is_lazy_init(&self) -> bool {
+                false
+            }
+            fn is_primary(&self) -> bool {
+                false
+            }
+            fn role(&self) -> i32 {
+                ROLE_INFRASTRUCTURE
+            }
         }
         let bd = InfraBean;
         assert_eq!(bd.role(), ROLE_INFRASTRUCTURE);
@@ -566,12 +590,24 @@ mod tests {
         #[derive(Debug)]
         struct FallbackBean;
         impl BeanDefinition for FallbackBean {
-            fn bean_name(&self) -> &ComponentKey { unimplemented!() }
-            fn bean_class_name(&self) -> &str { "FallbackBean" }
-            fn scope(&self) -> Scope { Scope::Singleton }
-            fn is_lazy_init(&self) -> bool { false }
-            fn is_primary(&self) -> bool { false }
-            fn is_fallback(&self) -> bool { true }
+            fn bean_name(&self) -> &ComponentKey {
+                unimplemented!()
+            }
+            fn bean_class_name(&self) -> &str {
+                "FallbackBean"
+            }
+            fn scope(&self) -> Scope {
+                Scope::Singleton
+            }
+            fn is_lazy_init(&self) -> bool {
+                false
+            }
+            fn is_primary(&self) -> bool {
+                false
+            }
+            fn is_fallback(&self) -> bool {
+                true
+            }
         }
         let bd = FallbackBean;
         assert!(bd.is_fallback());
@@ -582,12 +618,24 @@ mod tests {
         #[derive(Debug)]
         struct NoAutowireBean;
         impl BeanDefinition for NoAutowireBean {
-            fn bean_name(&self) -> &ComponentKey { unimplemented!() }
-            fn bean_class_name(&self) -> &str { "NoAutowireBean" }
-            fn scope(&self) -> Scope { Scope::Singleton }
-            fn is_lazy_init(&self) -> bool { false }
-            fn is_primary(&self) -> bool { false }
-            fn is_autowire_candidate(&self) -> bool { false }
+            fn bean_name(&self) -> &ComponentKey {
+                unimplemented!()
+            }
+            fn bean_class_name(&self) -> &str {
+                "NoAutowireBean"
+            }
+            fn scope(&self) -> Scope {
+                Scope::Singleton
+            }
+            fn is_lazy_init(&self) -> bool {
+                false
+            }
+            fn is_primary(&self) -> bool {
+                false
+            }
+            fn is_autowire_candidate(&self) -> bool {
+                false
+            }
         }
         let bd = NoAutowireBean;
         assert!(!bd.is_autowire_candidate());
@@ -598,12 +646,24 @@ mod tests {
         #[derive(Debug)]
         struct DescribedBean;
         impl BeanDefinition for DescribedBean {
-            fn bean_name(&self) -> &ComponentKey { unimplemented!() }
-            fn bean_class_name(&self) -> &str { "DescribedBean" }
-            fn scope(&self) -> Scope { Scope::Singleton }
-            fn is_lazy_init(&self) -> bool { false }
-            fn is_primary(&self) -> bool { false }
-            fn description(&self) -> Option<&str> { Some("A described bean") }
+            fn bean_name(&self) -> &ComponentKey {
+                unimplemented!()
+            }
+            fn bean_class_name(&self) -> &str {
+                "DescribedBean"
+            }
+            fn scope(&self) -> Scope {
+                Scope::Singleton
+            }
+            fn is_lazy_init(&self) -> bool {
+                false
+            }
+            fn is_primary(&self) -> bool {
+                false
+            }
+            fn description(&self) -> Option<&str> {
+                Some("A described bean")
+            }
         }
         let bd = DescribedBean;
         assert_eq!(bd.description(), Some("A described bean"));
@@ -614,12 +674,24 @@ mod tests {
         #[derive(Debug)]
         struct ChildBean;
         impl BeanDefinition for ChildBean {
-            fn bean_name(&self) -> &ComponentKey { unimplemented!() }
-            fn bean_class_name(&self) -> &str { "ChildBean" }
-            fn scope(&self) -> Scope { Scope::Singleton }
-            fn is_lazy_init(&self) -> bool { false }
-            fn is_primary(&self) -> bool { false }
-            fn parent_name(&self) -> Option<&str> { Some("ParentBean") }
+            fn bean_name(&self) -> &ComponentKey {
+                unimplemented!()
+            }
+            fn bean_class_name(&self) -> &str {
+                "ChildBean"
+            }
+            fn scope(&self) -> Scope {
+                Scope::Singleton
+            }
+            fn is_lazy_init(&self) -> bool {
+                false
+            }
+            fn is_primary(&self) -> bool {
+                false
+            }
+            fn parent_name(&self) -> Option<&str> {
+                Some("ParentBean")
+            }
         }
         let bd = ChildBean;
         assert_eq!(bd.parent_name(), Some("ParentBean"));
@@ -630,13 +702,27 @@ mod tests {
         #[derive(Debug)]
         struct FactoryCreatedBean;
         impl BeanDefinition for FactoryCreatedBean {
-            fn bean_name(&self) -> &ComponentKey { unimplemented!() }
-            fn bean_class_name(&self) -> &str { "FactoryCreatedBean" }
-            fn scope(&self) -> Scope { Scope::Singleton }
-            fn is_lazy_init(&self) -> bool { false }
-            fn is_primary(&self) -> bool { false }
-            fn factory_bean_name(&self) -> Option<&str> { Some("myFactory") }
-            fn factory_method_name(&self) -> Option<&str> { Some("create") }
+            fn bean_name(&self) -> &ComponentKey {
+                unimplemented!()
+            }
+            fn bean_class_name(&self) -> &str {
+                "FactoryCreatedBean"
+            }
+            fn scope(&self) -> Scope {
+                Scope::Singleton
+            }
+            fn is_lazy_init(&self) -> bool {
+                false
+            }
+            fn is_primary(&self) -> bool {
+                false
+            }
+            fn factory_bean_name(&self) -> Option<&str> {
+                Some("myFactory")
+            }
+            fn factory_method_name(&self) -> Option<&str> {
+                Some("create")
+            }
         }
         let bd = FactoryCreatedBean;
         assert_eq!(bd.factory_bean_name(), Some("myFactory"));
@@ -648,13 +734,27 @@ mod tests {
         #[derive(Debug)]
         struct LifecycleBean;
         impl BeanDefinition for LifecycleBean {
-            fn bean_name(&self) -> &ComponentKey { unimplemented!() }
-            fn bean_class_name(&self) -> &str { "LifecycleBean" }
-            fn scope(&self) -> Scope { Scope::Singleton }
-            fn is_lazy_init(&self) -> bool { false }
-            fn is_primary(&self) -> bool { false }
-            fn init_method_name(&self) -> Option<&str> { Some("init") }
-            fn destroy_method_name(&self) -> Option<&str> { Some("destroy") }
+            fn bean_name(&self) -> &ComponentKey {
+                unimplemented!()
+            }
+            fn bean_class_name(&self) -> &str {
+                "LifecycleBean"
+            }
+            fn scope(&self) -> Scope {
+                Scope::Singleton
+            }
+            fn is_lazy_init(&self) -> bool {
+                false
+            }
+            fn is_primary(&self) -> bool {
+                false
+            }
+            fn init_method_name(&self) -> Option<&str> {
+                Some("init")
+            }
+            fn destroy_method_name(&self) -> Option<&str> {
+                Some("destroy")
+            }
         }
         let bd = LifecycleBean;
         assert_eq!(bd.init_method_name(), Some("init"));
@@ -666,12 +766,24 @@ mod tests {
         #[derive(Debug)]
         struct AbstractBean;
         impl BeanDefinition for AbstractBean {
-            fn bean_name(&self) -> &ComponentKey { unimplemented!() }
-            fn bean_class_name(&self) -> &str { "AbstractBean" }
-            fn scope(&self) -> Scope { Scope::Singleton }
-            fn is_lazy_init(&self) -> bool { false }
-            fn is_primary(&self) -> bool { false }
-            fn is_abstract(&self) -> bool { true }
+            fn bean_name(&self) -> &ComponentKey {
+                unimplemented!()
+            }
+            fn bean_class_name(&self) -> &str {
+                "AbstractBean"
+            }
+            fn scope(&self) -> Scope {
+                Scope::Singleton
+            }
+            fn is_lazy_init(&self) -> bool {
+                false
+            }
+            fn is_primary(&self) -> bool {
+                false
+            }
+            fn is_abstract(&self) -> bool {
+                true
+            }
         }
         let bd = AbstractBean;
         assert!(bd.is_abstract());
@@ -682,12 +794,24 @@ mod tests {
         #[derive(Debug)]
         struct ResourceBean;
         impl BeanDefinition for ResourceBean {
-            fn bean_name(&self) -> &ComponentKey { unimplemented!() }
-            fn bean_class_name(&self) -> &str { "ResourceBean" }
-            fn scope(&self) -> Scope { Scope::Singleton }
-            fn is_lazy_init(&self) -> bool { false }
-            fn is_primary(&self) -> bool { false }
-            fn resource_description(&self) -> Option<&str> { Some("classpath:config.xml") }
+            fn bean_name(&self) -> &ComponentKey {
+                unimplemented!()
+            }
+            fn bean_class_name(&self) -> &str {
+                "ResourceBean"
+            }
+            fn scope(&self) -> Scope {
+                Scope::Singleton
+            }
+            fn is_lazy_init(&self) -> bool {
+                false
+            }
+            fn is_primary(&self) -> bool {
+                false
+            }
+            fn resource_description(&self) -> Option<&str> {
+                Some("classpath:config.xml")
+            }
         }
         let bd = ResourceBean;
         assert_eq!(bd.resource_description(), Some("classpath:config.xml"));

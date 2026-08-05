@@ -40,7 +40,9 @@ impl PatternMatchUtils {
     /// 对标 Spring `simpleMatchIgnoreCase(String[] patterns, String str)`（since 6.1.20）。
     #[must_use]
     pub fn simple_match_any_ignore_case(patterns: &[&str], s: &str) -> bool {
-        patterns.iter().any(|p| Self::simple_match_ignore_case(p, s))
+        patterns
+            .iter()
+            .any(|p| Self::simple_match_ignore_case(p, s))
     }
 
     /// 核心递归匹配逻辑，严格翻译 Spring 私有方法 `simpleMatch(pattern, str, ignoreCase)`。
@@ -69,8 +71,7 @@ impl PatternMatchUtils {
             if next_star.is_none() {
                 let part = after_first_star;
                 return if ignore_case {
-                    s.len() >= part.len()
-                        && s[s.len() - part.len()..].eq_ignore_ascii_case(part)
+                    s.len() >= part.len() && s[s.len() - part.len()..].eq_ignore_ascii_case(part)
                 } else {
                     s.ends_with(part)
                 };
@@ -102,11 +103,7 @@ impl PatternMatchUtils {
         let prefix_len = first_index;
         s.len() >= prefix_len
             && Self::starts_with(pattern, &s[..prefix_len], ignore_case)
-            && Self::do_simple_match(
-                &pattern[first_index..],
-                &s[prefix_len..],
-                ignore_case,
-            )
+            && Self::do_simple_match(&pattern[first_index..], &s[prefix_len..], ignore_case)
     }
 
     /// 检查 pattern 是否以 part 开头（可忽略大小写）。
@@ -215,23 +212,40 @@ mod tests {
 
     #[test]
     fn ignore_case_wildcard() {
-        assert!(PatternMatchUtils::simple_match_ignore_case("ABC*", "abcdef"));
-        assert!(PatternMatchUtils::simple_match_ignore_case("*DEF", "abcDEF"));
-        assert!(PatternMatchUtils::simple_match_ignore_case("*ABC*", "xxABcyy"));
+        assert!(PatternMatchUtils::simple_match_ignore_case(
+            "ABC*", "abcdef"
+        ));
+        assert!(PatternMatchUtils::simple_match_ignore_case(
+            "*DEF", "abcDEF"
+        ));
+        assert!(PatternMatchUtils::simple_match_ignore_case(
+            "*ABC*", "xxABcyy"
+        ));
     }
 
     #[test]
     fn ignore_case_multi_segment() {
-        assert!(PatternMatchUtils::simple_match_ignore_case("a*B*c", "AxxByyC"));
+        assert!(PatternMatchUtils::simple_match_ignore_case(
+            "a*B*c", "AxxByyC"
+        ));
     }
 
     // ── 多模式匹配 ──
 
     #[test]
     fn any_match() {
-        assert!(PatternMatchUtils::simple_match_any(&["foo*", "bar*"], "foobar"));
-        assert!(PatternMatchUtils::simple_match_any(&["foo*", "bar*"], "barbaz"));
-        assert!(!PatternMatchUtils::simple_match_any(&["foo*", "bar*"], "baz"));
+        assert!(PatternMatchUtils::simple_match_any(
+            &["foo*", "bar*"],
+            "foobar"
+        ));
+        assert!(PatternMatchUtils::simple_match_any(
+            &["foo*", "bar*"],
+            "barbaz"
+        ));
+        assert!(!PatternMatchUtils::simple_match_any(
+            &["foo*", "bar*"],
+            "baz"
+        ));
     }
 
     #[test]
@@ -241,7 +255,10 @@ mod tests {
 
     #[test]
     fn any_match_ignore_case() {
-        assert!(PatternMatchUtils::simple_match_any_ignore_case(&["FOO*", "BAR*"], "foobar"));
+        assert!(PatternMatchUtils::simple_match_any_ignore_case(
+            &["FOO*", "BAR*"],
+            "foobar"
+        ));
     }
 
     // ── 边界情况（对标 Spring 测试）──
@@ -268,24 +285,37 @@ mod tests {
     #[test]
     fn simple_match_any_first_pattern_misses_second_hits() {
         // 对标 Spring: simpleMatch(String[], String) 逐个尝试
-        assert!(PatternMatchUtils::simple_match_any(&["xyz*", "abc*"], "abcdef"));
+        assert!(PatternMatchUtils::simple_match_any(
+            &["xyz*", "abc*"],
+            "abcdef"
+        ));
     }
 
     #[test]
     fn simple_match_any_all_miss() {
-        assert!(!PatternMatchUtils::simple_match_any(&["foo*", "bar*", "baz*"], "qux"));
+        assert!(!PatternMatchUtils::simple_match_any(
+            &["foo*", "bar*", "baz*"],
+            "qux"
+        ));
     }
 
     #[test]
     fn ignore_case_suffix_with_uppercase_pattern() {
         // 对标 Spring: simpleMatchIgnoreCase("*DEF", "abcdef")
-        assert!(PatternMatchUtils::simple_match_ignore_case("*DEF", "abcdef"));
-        assert!(!PatternMatchUtils::simple_match_ignore_case("*XYZ", "abcdef"));
+        assert!(PatternMatchUtils::simple_match_ignore_case(
+            "*DEF", "abcdef"
+        ));
+        assert!(!PatternMatchUtils::simple_match_ignore_case(
+            "*XYZ", "abcdef"
+        ));
     }
 
     #[test]
     fn ignore_case_prefix_with_mixed_case() {
-        assert!(PatternMatchUtils::simple_match_ignore_case("HeLLo*", "hElLo world"));
+        assert!(PatternMatchUtils::simple_match_ignore_case(
+            "HeLLo*",
+            "hElLo world"
+        ));
     }
 
     // ── 覆盖 index_of 私有函数分支 ──
@@ -294,38 +324,23 @@ mod tests {
     fn index_of_ignore_case_empty_other_returns_start() {
         // 对标 Spring: indexOf(str, "", startIndex, true) 应返回 startIndex
         // 覆盖行 132: other.is_empty() && ignore_case → Some(start)
-        assert_eq!(
-            PatternMatchUtils::index_of("hello", "", 3, true),
-            Some(3)
-        );
-        assert_eq!(
-            PatternMatchUtils::index_of("hello", "", 0, true),
-            Some(0)
-        );
+        assert_eq!(PatternMatchUtils::index_of("hello", "", 3, true), Some(3));
+        assert_eq!(PatternMatchUtils::index_of("hello", "", 0, true), Some(0));
     }
 
     #[test]
     fn index_of_ignore_case_remaining_too_short_returns_none() {
         // 对标 Spring: remaining string too short for pattern
         // 覆盖行 137: start + other_bytes.len() > str_bytes.len() → None
-        assert_eq!(
-            PatternMatchUtils::index_of("ab", "abc", 0, true),
-            None
-        );
+        assert_eq!(PatternMatchUtils::index_of("ab", "abc", 0, true), None);
     }
 
     #[test]
     fn index_of_ignore_case_no_match_returns_none() {
         // 对标 Spring: pattern not found with ignoreCase
         // 覆盖行 150: for loop exhausted → None
-        assert_eq!(
-            PatternMatchUtils::index_of("hello", "xyz", 0, true),
-            None
-        );
-        assert_eq!(
-            PatternMatchUtils::index_of("abc", "def", 1, true),
-            None
-        );
+        assert_eq!(PatternMatchUtils::index_of("hello", "xyz", 0, true), None);
+        assert_eq!(PatternMatchUtils::index_of("abc", "def", 1, true), None);
     }
 
     // ── 覆盖多段通配符回溯搜索（行 94-95）──

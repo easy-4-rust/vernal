@@ -47,11 +47,7 @@ pub struct SimpleSortDefinition {
 
 impl SimpleSortDefinition {
     /// 创建简单排序定义。
-    pub fn new(
-        property: impl Into<String>,
-        ignore_case: bool,
-        ascending: bool,
-    ) -> Self {
+    pub fn new(property: impl Into<String>, ignore_case: bool, ascending: bool) -> Self {
         Self {
             property: property.into(),
             ignore_case,
@@ -91,7 +87,11 @@ impl fmt::Display for SimpleSortDefinition {
             "{} {} {}",
             self.property,
             if self.ascending { "ASC" } else { "DESC" },
-            if self.ignore_case { "(ignore case)" } else { "(case sensitive)" }
+            if self.ignore_case {
+                "(ignore case)"
+            } else {
+                "(case sensitive)"
+            }
         )
     }
 }

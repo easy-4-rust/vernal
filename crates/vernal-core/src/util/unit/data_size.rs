@@ -401,9 +401,11 @@ mod tests {
 
     #[test]
     fn comparable_via_ord() {
-        let mut sizes = [DataSize::of_megabytes(5),
+        let mut sizes = [
+            DataSize::of_megabytes(5),
             DataSize::of_bytes(100),
-            DataSize::of_kilobytes(1)];
+            DataSize::of_kilobytes(1),
+        ];
         sizes.sort();
         assert_eq!(sizes[0].to_bytes(), 100);
         assert_eq!(sizes[1].to_bytes(), 1024);
@@ -429,10 +431,7 @@ mod tests {
         // 1GB - 1 字节向下取整为 0
         assert_eq!(DataSize::of_bytes(BYTES_PER_GB - 1).to_gigabytes(), 0);
         // 2.5GB 向下取整为 2
-        assert_eq!(
-            DataSize::of_bytes(BYTES_PER_GB * 5 / 2).to_gigabytes(),
-            2
-        );
+        assert_eq!(DataSize::of_bytes(BYTES_PER_GB * 5 / 2).to_gigabytes(), 2);
     }
 
     #[test]

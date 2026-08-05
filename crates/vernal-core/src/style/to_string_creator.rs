@@ -4,8 +4,8 @@
 
 use std::fmt::Write;
 
-use super::default_to_string_styler::DefaultToStringStyler;
 use super::ToStringStyler;
+use super::default_to_string_styler::DefaultToStringStyler;
 
 /// 字符串化构建器。
 ///
@@ -45,7 +45,8 @@ impl<'a> ToStringCreator<'a> {
             self.buffer.push(',');
         }
         self.first_field = false;
-        self.styler.style_field(&mut self.buffer, field_name, &value_text);
+        self.styler
+            .style_field(&mut self.buffer, field_name, &value_text);
         self
     }
 

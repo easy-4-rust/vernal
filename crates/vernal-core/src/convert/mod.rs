@@ -7,11 +7,10 @@ mod conversion_error;
 mod conversion_exception;
 mod conversion_failed_exception;
 mod conversion_service;
-mod convertible;
 mod converter;
 mod converter_not_found_error;
 mod converter_not_found_exception;
-pub mod support;
+mod convertible;
 mod duration_converter;
 mod enum_converter;
 mod number_converter;
@@ -19,6 +18,7 @@ mod option_converter;
 mod path_converter;
 mod socket_addr_converter;
 mod string_converter;
+pub mod support;
 
 #[cfg(feature = "convert-bytes")]
 mod bytes_converter;
@@ -33,18 +33,19 @@ mod uuid_converter;
 
 pub use boolean_converter::BooleanConverter;
 pub use conversion_error::ConversionError;
-pub use conversion_service::ConversionService;
-pub use convertible::Convertible;
-pub use converter::Converter;
-pub use converter_not_found_error::{converter_not_found, is_converter_not_found};
 pub use conversion_exception::ConversionException;
 pub use conversion_failed_exception::ConversionFailedException;
+pub use conversion_service::ConversionService;
+pub use converter::Converter;
 pub use converter::{
-    AlwaysMatchConverter, ClosureGenericConverter, ConditionalConverter, ConditionalGenericConverter,
-    ConvertiblePair, ConverterFactory, ConverterRegistry, ConvertingComparator, ErasedConverter,
-    GenericConverter, NeverMatchConverter, TypeIdConverterRegistry, TypePairConditionalConverter,
+    AlwaysMatchConverter, ClosureGenericConverter, ConditionalConverter,
+    ConditionalGenericConverter, ConverterFactory, ConverterRegistry, ConvertiblePair,
+    ConvertingComparator, ErasedConverter, GenericConverter, NeverMatchConverter,
+    TypeIdConverterRegistry, TypePairConditionalConverter,
 };
+pub use converter_not_found_error::{converter_not_found, is_converter_not_found};
 pub use converter_not_found_exception::ConverterNotFoundException;
+pub use convertible::Convertible;
 pub use duration_converter::DurationConverter;
 pub use enum_converter::convert_enum;
 pub use number_converter::NumberConverter;

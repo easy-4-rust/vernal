@@ -67,10 +67,7 @@ impl SpelNode for CompoundExpression {
     }
 
     fn end_position(&self) -> usize {
-        self.children
-            .last()
-            .map(|c| c.end_position())
-            .unwrap_or(0)
+        self.children.last().map(|c| c.end_position()).unwrap_or(0)
     }
 
     fn to_string_ast(&self) -> String {

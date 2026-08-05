@@ -43,7 +43,8 @@ impl PropertyEditor for PropertyValuesEditor {
             if let Some((key, value)) = part.split_once('=') {
                 pvs.add(crate::property_value::PropertyValue::new(
                     key.trim(),
-                    std::sync::Arc::new(value.trim().to_string()) as std::sync::Arc<dyn std::any::Any + Send + Sync>,
+                    std::sync::Arc::new(value.trim().to_string())
+                        as std::sync::Arc<dyn std::any::Any + Send + Sync>,
                 ));
             }
         }
@@ -56,7 +57,8 @@ impl PropertyEditor for PropertyValuesEditor {
             pvs.property_values()
                 .iter()
                 .map(|pv| {
-                    let value_str = pv.value()
+                    let value_str = pv
+                        .value()
                         .downcast_ref::<String>()
                         .map(|s| s.as_str())
                         .unwrap_or("?");
@@ -114,13 +116,19 @@ mod tests {
     #[test]
     fn test_target_type() {
         let editor = PropertyValuesEditor::new();
-        assert_eq!(editor.target_type(), TypeId::of::<MutablePropertyValuesImpl>());
+        assert_eq!(
+            editor.target_type(),
+            TypeId::of::<MutablePropertyValuesImpl>()
+        );
     }
 
     #[test]
     fn test_get_value_type() {
         let editor = PropertyValuesEditor::new();
-        assert_eq!(editor.get_value_type(), TypeId::of::<MutablePropertyValuesImpl>());
+        assert_eq!(
+            editor.get_value_type(),
+            TypeId::of::<MutablePropertyValuesImpl>()
+        );
     }
 
     #[test]
@@ -140,7 +148,12 @@ mod tests {
         let mut editor = PropertyValuesEditor::new();
         editor.set_as_text("key=value").unwrap();
         assert!(editor.get_value().is_some());
-        assert!(editor.get_value().unwrap().is::<MutablePropertyValuesImpl>());
+        assert!(
+            editor
+                .get_value()
+                .unwrap()
+                .is::<MutablePropertyValuesImpl>()
+        );
     }
 
     #[test]
@@ -171,7 +184,9 @@ mod tests {
     #[test]
     fn test_set_as_text_whitespace_trimmed() {
         let mut editor = PropertyValuesEditor::new();
-        editor.set_as_text("  key = value  ,  key2 = value2  ").unwrap();
+        editor
+            .set_as_text("  key = value  ,  key2 = value2  ")
+            .unwrap();
         let pvs = editor.property_values().unwrap();
         assert_eq!(pvs.len(), 2);
     }
@@ -193,7 +208,8 @@ mod tests {
     #[test]
     fn test_set_value_with_wrong_type_ignored() {
         let mut editor = PropertyValuesEditor::new();
-        let val: Arc<dyn std::any::Any + Send + Sync> = Arc::new("not_a_property_values".to_string());
+        let val: Arc<dyn std::any::Any + Send + Sync> =
+            Arc::new("not_a_property_values".to_string());
         editor.set_value(val);
         assert!(editor.property_values().is_none());
     }

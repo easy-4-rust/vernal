@@ -76,9 +76,11 @@ fn application_scope_destroy() {
 #[test]
 fn bean_definition_utils_generate_bean_name() {
     use vernal_beans::bean_definition_utils;
-    
-    
-    let name = bean_definition_utils::generate_bean_name(Some("com.example.MyService"), &vernal_beans::SimpleBeanDefinitionRegistry::new());
+
+    let name = bean_definition_utils::generate_bean_name(
+        Some("com.example.MyService"),
+        &vernal_beans::SimpleBeanDefinitionRegistry::new(),
+    );
     assert!(!name.is_empty());
 }
 
@@ -315,8 +317,12 @@ fn registry_builder_empty() {
 #[test]
 fn registry_builder_multiple_types() {
     let mut b = vernal_beans::RegistryBuilder::new();
-    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
-    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<i32, _>(|_| 42i32));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(
+        |_| "hello".to_string(),
+    ));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<i32, _>(
+        |_| 42i32,
+    ));
     let c = vernal_beans::Container::new(b.build().unwrap());
     let s: Arc<String> = c.resolve().unwrap();
     let i: Arc<i32> = c.resolve().unwrap();
@@ -328,8 +334,13 @@ fn registry_builder_multiple_types() {
 fn registry_builder_with_qualifier() {
     let mut b = vernal_beans::RegistryBuilder::new();
     let q = vernal_beans::Qualifier::new("primary").unwrap();
-    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "primary".to_string()).qualified(q.clone()));
-    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "default".to_string()));
+    let _ = b.register(
+        vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "primary".to_string())
+            .qualified(q.clone()),
+    );
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(
+        |_| "default".to_string(),
+    ));
     let c = vernal_beans::Container::new(b.build().unwrap());
     let val: Arc<String> = c.resolve_qualified(&q).unwrap();
     assert_eq!(*val, "primary");
@@ -341,8 +352,8 @@ fn registry_builder_with_qualifier() {
 
 #[test]
 fn root_bean_definition_basic() {
-    use vernal_beans::RootBeanDefinition;
     use vernal_beans::BeanDefinition;
+    use vernal_beans::RootBeanDefinition;
     let rbd = RootBeanDefinition::new();
     assert_eq!(rbd.scope(), vernal_beans::Scope::Singleton);
     assert!(!rbd.is_abstract());
@@ -425,7 +436,8 @@ fn cav_basic() {
 #[test]
 fn dependency_display() {
     let d1 = vernal_beans::Dependency::of::<String>();
-    let d2 = vernal_beans::Dependency::qualified::<String>(vernal_beans::Qualifier::new("q").unwrap());
+    let d2 =
+        vernal_beans::Dependency::qualified::<String>(vernal_beans::Qualifier::new("q").unwrap());
     let d3 = vernal_beans::Dependency::optional_of::<String>();
     let d4 = vernal_beans::Dependency::provider_of::<String>();
     let d5 = vernal_beans::Dependency::trait_of::<dyn std::fmt::Debug + Send + Sync>();
@@ -442,18 +454,46 @@ fn dependency_display() {
 
 #[test]
 fn resolve_error_display() {
-    use vernal_beans::{ResolveError, ComponentKey, TraitKey, ScopeKey};
+    use vernal_beans::{ComponentKey, ResolveError, ScopeKey, TraitKey};
     let errors: Vec<ResolveError> = vec![
-        ResolveError::NotFound { component: "t".into(), path: vec!["r".into()] },
-        ResolveError::Ambiguous { component: "t".into(), candidates: vec!["a".into(), "b".into()], path: vec!["r".into()] },
-        ResolveError::UndeclaredDependency { component: ComponentKey::of::<String>(), dependency: "d".into() },
-        ResolveError::TypeMismatch { component: ComponentKey::of::<String>() },
-        ResolveError::TraitBindingTypeMismatch { binding: TraitKey::of::<dyn std::fmt::Debug>(), target: ComponentKey::of::<i32>() },
-        ResolveError::Construction { component: ComponentKey::of::<String>(), source: Arc::new(std::io::Error::new(std::io::ErrorKind::Other, "e")) },
-        ResolveError::CircularRuntime { path: vec!["a".into(), "b".into(), "c".into()] },
-        ResolveError::ProviderUsedDuringConstruction { component: ComponentKey::of::<String>(), dependency: "d".into() },
-        ResolveError::ScopeNotActive { component: ComponentKey::of::<String>(), scope: ScopeKey::of::<String>() },
-        ResolveError::ScopeOwnerMismatch { scope: ScopeKey::of::<String>() },
+        ResolveError::NotFound {
+            component: "t".into(),
+            path: vec!["r".into()],
+        },
+        ResolveError::Ambiguous {
+            component: "t".into(),
+            candidates: vec!["a".into(), "b".into()],
+            path: vec!["r".into()],
+        },
+        ResolveError::UndeclaredDependency {
+            component: ComponentKey::of::<String>(),
+            dependency: "d".into(),
+        },
+        ResolveError::TypeMismatch {
+            component: ComponentKey::of::<String>(),
+        },
+        ResolveError::TraitBindingTypeMismatch {
+            binding: TraitKey::of::<dyn std::fmt::Debug>(),
+            target: ComponentKey::of::<i32>(),
+        },
+        ResolveError::Construction {
+            component: ComponentKey::of::<String>(),
+            source: Arc::new(std::io::Error::new(std::io::ErrorKind::Other, "e")),
+        },
+        ResolveError::CircularRuntime {
+            path: vec!["a".into(), "b".into(), "c".into()],
+        },
+        ResolveError::ProviderUsedDuringConstruction {
+            component: ComponentKey::of::<String>(),
+            dependency: "d".into(),
+        },
+        ResolveError::ScopeNotActive {
+            component: ComponentKey::of::<String>(),
+            scope: ScopeKey::of::<String>(),
+        },
+        ResolveError::ScopeOwnerMismatch {
+            scope: ScopeKey::of::<String>(),
+        },
     ];
     for e in &errors {
         let s = format!("{}", e);

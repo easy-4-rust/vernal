@@ -143,11 +143,15 @@ mod tests {
 #[cfg(test)]
 mod additional_tests {
     use super::*;
-    use crate::{Operation, LocalInvocationFuture};
+    use crate::{LocalInvocationFuture, Operation};
 
     struct TestLocalInterceptor;
     impl LocalInterceptor for TestLocalInterceptor {
-        fn intercept_local<'a>(&'a self, invocation: Arc<Invocation>, next: LocalNext<'a>) -> LocalInvocationFuture<'a> {
+        fn intercept_local<'a>(
+            &'a self,
+            invocation: Arc<Invocation>,
+            next: LocalNext<'a>,
+        ) -> LocalInvocationFuture<'a> {
             next.run(invocation)
         }
     }
@@ -175,9 +179,8 @@ mod additional_tests {
         let plan = LocalInvocationPlan::new(op, vec![]);
         let different_op = Operation::new("Other", "method");
         let invocation = Arc::new(Invocation::new(different_op));
-        let target: Rc<LocalInvocationTarget> = Rc::new(|_| {
-            Box::pin(async { Ok(Box::new(42i32) as crate::LocalInvocationValue) })
-        });
+        let target: Rc<LocalInvocationTarget> =
+            Rc::new(|_| Box::pin(async { Ok(Box::new(42i32) as crate::LocalInvocationValue) }));
         let result = plan.invoke(invocation, target).await;
         assert!(result.is_err());
     }
@@ -187,9 +190,8 @@ mod additional_tests {
         let op = Operation::new("Service", "method");
         let plan = LocalInvocationPlan::new(op.clone(), vec![]);
         let invocation = Arc::new(Invocation::new(op));
-        let target: Rc<LocalInvocationTarget> = Rc::new(|_| {
-            Box::pin(async { Ok(Box::new(42i32) as crate::LocalInvocationValue) })
-        });
+        let target: Rc<LocalInvocationTarget> =
+            Rc::new(|_| Box::pin(async { Ok(Box::new(42i32) as crate::LocalInvocationValue) }));
         let result = plan.invoke(invocation, target).await;
         assert!(result.is_ok());
     }

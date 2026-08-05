@@ -151,8 +151,11 @@ mod additional_tests {
     fn default_advisor_with_tag_pointcut() {
         let pc = crate::TagPointcut::new("secured").unwrap();
         let advisor = DefaultPointcutAdvisor::new(pc, NopInterceptor);
-        let op = Operation::new("Service", "method")
-            .with_metadata(crate::OperationMetadata::empty().with_tag("secured").unwrap());
+        let op = Operation::new("Service", "method").with_metadata(
+            crate::OperationMetadata::empty()
+                .with_tag("secured")
+                .unwrap(),
+        );
         assert!(advisor.pointcut().matches(&op));
     }
 
@@ -160,8 +163,11 @@ mod additional_tests {
     fn default_advisor_with_qualifier_pointcut() {
         let pc = crate::QualifierPointcut::new("primary").unwrap();
         let advisor = DefaultPointcutAdvisor::new(pc, NopInterceptor);
-        let op = Operation::new("Service", "method")
-            .with_metadata(crate::OperationMetadata::empty().with_qualifier("primary").unwrap());
+        let op = Operation::new("Service", "method").with_metadata(
+            crate::OperationMetadata::empty()
+                .with_qualifier("primary")
+                .unwrap(),
+        );
         assert!(advisor.pointcut().matches(&op));
     }
 }

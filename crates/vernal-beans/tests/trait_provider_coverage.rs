@@ -3,14 +3,7 @@
 use std::any::Any;
 use std::sync::Arc;
 
-use vernal_beans::{
-    ComponentDefinition,
-    Container,
-    RegistryBuilder,
-    Resolver,
-    TraitBinding,
-};
-
+use vernal_beans::{ComponentDefinition, Container, RegistryBuilder, Resolver, TraitBinding};
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TraitProvider 测试
@@ -23,15 +16,15 @@ fn trait_provider_get() {
 
     // 注册 String 组件
     builder
-        .register(ComponentDefinition::singleton::<String, _>(|_resolver: &Resolver| {
-            "hello".to_string()
-        }))
+        .register(ComponentDefinition::singleton::<String, _>(
+            |_resolver: &Resolver| "hello".to_string(),
+        ))
         .unwrap();
 
     // 添加 trait binding: String -> dyn Any + Send + Sync
-    let binding = TraitBinding::new::<dyn Any + Send + Sync, String, _>(
-        |arc| arc as Arc<dyn Any + Send + Sync>,
-    );
+    let binding = TraitBinding::new::<dyn Any + Send + Sync, String, _>(|arc| {
+        arc as Arc<dyn Any + Send + Sync>
+    });
     builder.bind(binding).unwrap();
 
     // 注册一个使用 trait_provider 的组件
@@ -42,7 +35,8 @@ fn trait_provider_get() {
             return 42;
         }
         0
-    }).depends_on_trait_provider::<dyn Any + Send + Sync>();
+    })
+    .depends_on_trait_provider::<dyn Any + Send + Sync>();
     builder.register(def).unwrap();
 
     let registry = builder.build().unwrap();
@@ -59,15 +53,15 @@ fn trait_provider_get_in() {
 
     // 注册 String 组件
     builder
-        .register(ComponentDefinition::singleton::<String, _>(|_resolver: &Resolver| {
-            "hello".to_string()
-        }))
+        .register(ComponentDefinition::singleton::<String, _>(
+            |_resolver: &Resolver| "hello".to_string(),
+        ))
         .unwrap();
 
     // 添加 trait binding
-    let binding = TraitBinding::new::<dyn Any + Send + Sync, String, _>(
-        |arc| arc as Arc<dyn Any + Send + Sync>,
-    );
+    let binding = TraitBinding::new::<dyn Any + Send + Sync, String, _>(|arc| {
+        arc as Arc<dyn Any + Send + Sync>
+    });
     builder.bind(binding).unwrap();
 
     let registry = builder.build().unwrap();
@@ -77,13 +71,13 @@ fn trait_provider_get_in() {
     // 注册一个使用 trait_provider.get_in 的组件
     let mut builder2 = RegistryBuilder::new();
     builder2
-        .register(ComponentDefinition::singleton::<String, _>(|_resolver: &Resolver| {
-            "hello".to_string()
-        }))
+        .register(ComponentDefinition::singleton::<String, _>(
+            |_resolver: &Resolver| "hello".to_string(),
+        ))
         .unwrap();
-    let binding2 = TraitBinding::new::<dyn Any + Send + Sync, String, _>(
-        |arc| arc as Arc<dyn Any + Send + Sync>,
-    );
+    let binding2 = TraitBinding::new::<dyn Any + Send + Sync, String, _>(|arc| {
+        arc as Arc<dyn Any + Send + Sync>
+    });
     builder2.bind(binding2).unwrap();
 
     let def = ComponentDefinition::singleton::<i32, _>(move |resolver: &Resolver| {
@@ -93,7 +87,8 @@ fn trait_provider_get_in() {
             return 42;
         }
         0
-    }).depends_on_trait_provider::<dyn Any + Send + Sync>();
+    })
+    .depends_on_trait_provider::<dyn Any + Send + Sync>();
     builder2.register(def).unwrap();
 
     let container2 = Container::new(builder2.build().unwrap());
@@ -108,15 +103,15 @@ fn trait_provider_get_if_available() {
 
     // 注册 String 组件
     builder
-        .register(ComponentDefinition::singleton::<String, _>(|_resolver: &Resolver| {
-            "hello".to_string()
-        }))
+        .register(ComponentDefinition::singleton::<String, _>(
+            |_resolver: &Resolver| "hello".to_string(),
+        ))
         .unwrap();
 
     // 添加 trait binding
-    let binding = TraitBinding::new::<dyn Any + Send + Sync, String, _>(
-        |arc| arc as Arc<dyn Any + Send + Sync>,
-    );
+    let binding = TraitBinding::new::<dyn Any + Send + Sync, String, _>(|arc| {
+        arc as Arc<dyn Any + Send + Sync>
+    });
     builder.bind(binding).unwrap();
 
     // 注册一个使用 trait_provider.get_if_available 的组件
@@ -127,7 +122,8 @@ fn trait_provider_get_if_available() {
             return 42;
         }
         0
-    }).depends_on_trait_provider::<dyn Any + Send + Sync>();
+    })
+    .depends_on_trait_provider::<dyn Any + Send + Sync>();
     builder.register(def).unwrap();
 
     let registry = builder.build().unwrap();
@@ -144,15 +140,15 @@ fn trait_provider_get_if_available_in() {
 
     // 注册 String 组件
     builder
-        .register(ComponentDefinition::singleton::<String, _>(|_resolver: &Resolver| {
-            "hello".to_string()
-        }))
+        .register(ComponentDefinition::singleton::<String, _>(
+            |_resolver: &Resolver| "hello".to_string(),
+        ))
         .unwrap();
 
     // 添加 trait binding
-    let binding = TraitBinding::new::<dyn Any + Send + Sync, String, _>(
-        |arc| arc as Arc<dyn Any + Send + Sync>,
-    );
+    let binding = TraitBinding::new::<dyn Any + Send + Sync, String, _>(|arc| {
+        arc as Arc<dyn Any + Send + Sync>
+    });
     builder.bind(binding).unwrap();
 
     let registry = builder.build().unwrap();
@@ -162,13 +158,13 @@ fn trait_provider_get_if_available_in() {
     // 注册一个使用 trait_provider.get_if_available_in 的组件
     let mut builder2 = RegistryBuilder::new();
     builder2
-        .register(ComponentDefinition::singleton::<String, _>(|_resolver: &Resolver| {
-            "hello".to_string()
-        }))
+        .register(ComponentDefinition::singleton::<String, _>(
+            |_resolver: &Resolver| "hello".to_string(),
+        ))
         .unwrap();
-    let binding2 = TraitBinding::new::<dyn Any + Send + Sync, String, _>(
-        |arc| arc as Arc<dyn Any + Send + Sync>,
-    );
+    let binding2 = TraitBinding::new::<dyn Any + Send + Sync, String, _>(|arc| {
+        arc as Arc<dyn Any + Send + Sync>
+    });
     builder2.bind(binding2).unwrap();
 
     let def = ComponentDefinition::singleton::<i32, _>(move |resolver: &Resolver| {
@@ -178,7 +174,8 @@ fn trait_provider_get_if_available_in() {
             return 42;
         }
         0
-    }).depends_on_trait_provider::<dyn Any + Send + Sync>();
+    })
+    .depends_on_trait_provider::<dyn Any + Send + Sync>();
     builder2.register(def).unwrap();
 
     let container2 = Container::new(builder2.build().unwrap());
@@ -193,15 +190,15 @@ fn trait_provider_is_optional() {
 
     // 注册 String 组件
     builder
-        .register(ComponentDefinition::singleton::<String, _>(|_resolver: &Resolver| {
-            "hello".to_string()
-        }))
+        .register(ComponentDefinition::singleton::<String, _>(
+            |_resolver: &Resolver| "hello".to_string(),
+        ))
         .unwrap();
 
     // 添加 trait binding
-    let binding = TraitBinding::new::<dyn Any + Send + Sync, String, _>(
-        |arc| arc as Arc<dyn Any + Send + Sync>,
-    );
+    let binding = TraitBinding::new::<dyn Any + Send + Sync, String, _>(|arc| {
+        arc as Arc<dyn Any + Send + Sync>
+    });
     builder.bind(binding).unwrap();
 
     // 注册一个使用 optional trait_provider 的组件
@@ -211,7 +208,8 @@ fn trait_provider_is_optional() {
             return 42;
         }
         0
-    }).depends_on_optional_trait_provider::<dyn Any + Send + Sync>();
+    })
+    .depends_on_optional_trait_provider::<dyn Any + Send + Sync>();
     builder.register(def).unwrap();
 
     let registry = builder.build().unwrap();
@@ -228,15 +226,15 @@ fn trait_provider_clone() {
 
     // 注册 String 组件
     builder
-        .register(ComponentDefinition::singleton::<String, _>(|_resolver: &Resolver| {
-            "hello".to_string()
-        }))
+        .register(ComponentDefinition::singleton::<String, _>(
+            |_resolver: &Resolver| "hello".to_string(),
+        ))
         .unwrap();
 
     // 添加 trait binding
-    let binding = TraitBinding::new::<dyn Any + Send + Sync, String, _>(
-        |arc| arc as Arc<dyn Any + Send + Sync>,
-    );
+    let binding = TraitBinding::new::<dyn Any + Send + Sync, String, _>(|arc| {
+        arc as Arc<dyn Any + Send + Sync>
+    });
     builder.bind(binding).unwrap();
 
     // 注册一个使用 trait_provider.clone 的组件
@@ -247,7 +245,8 @@ fn trait_provider_clone() {
             return 42;
         }
         0
-    }).depends_on_trait_provider::<dyn Any + Send + Sync>();
+    })
+    .depends_on_trait_provider::<dyn Any + Send + Sync>();
     builder.register(def).unwrap();
 
     let registry = builder.build().unwrap();
@@ -264,15 +263,15 @@ fn trait_provider_debug() {
 
     // 注册 String 组件
     builder
-        .register(ComponentDefinition::singleton::<String, _>(|_resolver: &Resolver| {
-            "hello".to_string()
-        }))
+        .register(ComponentDefinition::singleton::<String, _>(
+            |_resolver: &Resolver| "hello".to_string(),
+        ))
         .unwrap();
 
     // 添加 trait binding
-    let binding = TraitBinding::new::<dyn Any + Send + Sync, String, _>(
-        |arc| arc as Arc<dyn Any + Send + Sync>,
-    );
+    let binding = TraitBinding::new::<dyn Any + Send + Sync, String, _>(|arc| {
+        arc as Arc<dyn Any + Send + Sync>
+    });
     builder.bind(binding).unwrap();
 
     // 注册一个使用 trait_provider.debug 的组件
@@ -284,7 +283,8 @@ fn trait_provider_debug() {
             return 42;
         }
         0
-    }).depends_on_trait_provider::<dyn Any + Send + Sync>();
+    })
+    .depends_on_trait_provider::<dyn Any + Send + Sync>();
     builder.register(def).unwrap();
 
     let registry = builder.build().unwrap();
@@ -303,16 +303,15 @@ fn trait_provider_not_found() {
 
     // 注册 String 组件（不添加 trait binding）
     builder
-        .register(ComponentDefinition::singleton::<String, _>(|_resolver: &Resolver| {
-            "hello".to_string()
-        }))
+        .register(ComponentDefinition::singleton::<String, _>(
+            |_resolver: &Resolver| "hello".to_string(),
+        ))
         .unwrap();
 
     // 尝试注册一个使用 trait_provider 的组件（没有 trait binding）
     // 这应该在 build() 时失败
-    let def = ComponentDefinition::singleton::<i32, _>(|_resolver: &Resolver| {
-        42
-    }).depends_on_trait_provider::<dyn Any + Send + Sync>();
+    let def = ComponentDefinition::singleton::<i32, _>(|_resolver: &Resolver| 42)
+        .depends_on_trait_provider::<dyn Any + Send + Sync>();
     builder.register(def).unwrap();
 
     // build 应该失败，因为缺少 trait binding

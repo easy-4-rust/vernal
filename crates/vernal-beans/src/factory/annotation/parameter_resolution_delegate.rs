@@ -66,7 +66,11 @@ impl ParameterResolutionDelegate {
     }
 }
 
-impl Default for ParameterResolutionDelegate { fn default() -> Self { Self::new() } }
+impl Default for ParameterResolutionDelegate {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 #[cfg(test)]
 mod tests {

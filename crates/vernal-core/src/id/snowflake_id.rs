@@ -376,10 +376,10 @@ mod tests {
     #[test]
     fn multiple_ids_are_unique() {
         let generator = SnowflakeId::new(1).unwrap();
-        let ids: std::collections::HashSet<String> = (0..100).map(|_| generator.next_id()).collect();
+        let ids: std::collections::HashSet<String> =
+            (0..100).map(|_| generator.next_id()).collect();
         assert_eq!(ids.len(), 100);
     }
-
 
     #[test]
     fn next_id_returns_clock_moved_backwards_when_last_is_in_future() {

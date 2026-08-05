@@ -58,5 +58,7 @@ impl AutowiredArguments {
 }
 
 impl Default for AutowiredArguments {
-    fn default() -> Self { Self::empty() }
+    fn default() -> Self {
+        Self::empty()
+    }
 }

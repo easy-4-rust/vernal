@@ -4,15 +4,23 @@ use std::sync::Arc;
 
 fn make_container() -> vernal_beans::Container {
     let mut b = vernal_beans::RegistryBuilder::new();
-    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
-    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<i32, _>(|_| 42i32));
-    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<f64, _>(|_| 3.14f64));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(
+        |_| "hello".to_string(),
+    ));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<i32, _>(
+        |_| 42i32,
+    ));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<f64, _>(
+        |_| 3.14f64,
+    ));
     vernal_beans::Container::new(b.build().unwrap())
 }
 
 fn make_transient_container() -> vernal_beans::Container {
     let mut b = vernal_beans::RegistryBuilder::new();
-    let _ = b.register(vernal_beans::ComponentDefinition::transient::<String, _>(|_| "transient".to_string()));
+    let _ = b.register(vernal_beans::ComponentDefinition::transient::<String, _>(
+        |_| "transient".to_string(),
+    ));
     vernal_beans::Container::new(b.build().unwrap())
 }
 
@@ -21,7 +29,10 @@ fn make_transient_container() -> vernal_beans::Container {
 fn resolve_qualified_in_basic() {
     let mut b = vernal_beans::RegistryBuilder::new();
     let q = vernal_beans::Qualifier::new("q1").unwrap();
-    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "q_val".to_string()).qualified(q.clone()));
+    let _ = b.register(
+        vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "q_val".to_string())
+            .qualified(q.clone()),
+    );
     let c = vernal_beans::Container::new(b.build().unwrap());
     let scope = c.open_scope::<String>();
     let val: Arc<String> = c.resolve_qualified_in(&q, &scope).unwrap();
@@ -32,7 +43,10 @@ fn resolve_qualified_in_basic() {
 fn resolve_qualified_in_wrong_scope() {
     let mut b = vernal_beans::RegistryBuilder::new();
     let q = vernal_beans::Qualifier::new("q2").unwrap();
-    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "v".to_string()).qualified(q.clone()));
+    let _ = b.register(
+        vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "v".to_string())
+            .qualified(q.clone()),
+    );
     let c1 = vernal_beans::Container::new(b.build().unwrap());
     let c2 = vernal_beans::Container::new(vernal_beans::RegistryBuilder::new().build().unwrap());
     let scope_from_c2 = c2.open_scope::<String>();
@@ -64,7 +78,8 @@ fn resolve_qualified_trait_in_no_binding() {
     let c = make_container();
     let q = vernal_beans::Qualifier::new("missing").unwrap();
     let scope = c.open_scope::<String>();
-    let val: Result<Arc<dyn std::fmt::Debug + Send + Sync>, _> = c.resolve_qualified_trait_in(&q, &scope);
+    let val: Result<Arc<dyn std::fmt::Debug + Send + Sync>, _> =
+        c.resolve_qualified_trait_in(&q, &scope);
     assert!(val.is_err());
 }
 
@@ -74,7 +89,8 @@ fn resolve_qualified_trait_in_wrong_scope() {
     let c2 = vernal_beans::Container::new(vernal_beans::RegistryBuilder::new().build().unwrap());
     let q = vernal_beans::Qualifier::new("x").unwrap();
     let scope_from_c2 = c2.open_scope::<String>();
-    let val: Result<Arc<dyn std::fmt::Debug + Send + Sync>, _> = c1.resolve_qualified_trait_in(&q, &scope_from_c2);
+    let val: Result<Arc<dyn std::fmt::Debug + Send + Sync>, _> =
+        c1.resolve_qualified_trait_in(&q, &scope_from_c2);
     assert!(val.is_err());
 }
 
@@ -83,7 +99,8 @@ fn resolve_qualified_trait_in_wrong_scope() {
 fn resolve_all_traits_in_no_binding() {
     let c = make_container();
     let scope = c.open_scope::<String>();
-    let val: Result<Vec<Arc<dyn std::fmt::Debug + Send + Sync>>, _> = c.resolve_all_traits_in(&scope);
+    let val: Result<Vec<Arc<dyn std::fmt::Debug + Send + Sync>>, _> =
+        c.resolve_all_traits_in(&scope);
     assert!(val.unwrap().is_empty());
 }
 
@@ -92,7 +109,8 @@ fn resolve_all_traits_in_wrong_scope() {
     let c1 = make_container();
     let c2 = vernal_beans::Container::new(vernal_beans::RegistryBuilder::new().build().unwrap());
     let scope_from_c2 = c2.open_scope::<String>();
-    let val: Result<Vec<Arc<dyn std::fmt::Debug + Send + Sync>>, _> = c1.resolve_all_traits_in(&scope_from_c2);
+    let val: Result<Vec<Arc<dyn std::fmt::Debug + Send + Sync>>, _> =
+        c1.resolve_all_traits_in(&scope_from_c2);
     assert!(val.is_err());
 }
 
@@ -126,14 +144,20 @@ fn bf_get_type_not_found() {
 fn bf_is_singleton_not_found() {
     use vernal_beans::BeanFactory;
     let c = make_container();
-    assert!(c.is_singleton(&vernal_beans::ComponentKey::of::<bool>()).is_err());
+    assert!(
+        c.is_singleton(&vernal_beans::ComponentKey::of::<bool>())
+            .is_err()
+    );
 }
 
 #[test]
 fn bf_is_prototype_not_found() {
     use vernal_beans::BeanFactory;
     let c = make_container();
-    assert!(c.is_prototype(&vernal_beans::ComponentKey::of::<bool>()).is_err());
+    assert!(
+        c.is_prototype(&vernal_beans::ComponentKey::of::<bool>())
+            .is_err()
+    );
 }
 
 // ═══ configure_bean ═══
@@ -238,7 +262,11 @@ fn acbf_resolve_dependency_found() {
     use vernal_beans::AutowireCapableBeanFactory;
     use vernal_beans::factory::support::dependency_descriptor::DependencyDescriptor;
     let c = make_container();
-    let dd = DependencyDescriptor::new(std::any::TypeId::of::<String>(), "alloc::string::String".to_string(), true);
+    let dd = DependencyDescriptor::new(
+        std::any::TypeId::of::<String>(),
+        "alloc::string::String".to_string(),
+        true,
+    );
     let result = c.resolve_dependency(&dd, None);
     // May succeed or fail depending on internal resolution; just exercise the code path
     let _ = result;
@@ -276,8 +304,8 @@ fn acbf_set_type_converter() {
 // ═══ remove_bean_definition (dynamic) ═══
 #[test]
 fn bdr_remove_dynamic_bean_definition() {
-    use vernal_beans::BeanDefinitionRegistry;
     use vernal_beans::BeanDefinition;
+    use vernal_beans::BeanDefinitionRegistry;
     use vernal_beans::RootBeanDefinition;
     let mut c = vernal_beans::Container::new(vernal_beans::RegistryBuilder::new().build().unwrap());
     let def = Box::new(RootBeanDefinition::new()) as Box<dyn BeanDefinition>;
@@ -297,12 +325,13 @@ fn bdr_remove_nonexistent_bean_definition() {
 // ═══ get_bean_definition ═══
 #[test]
 fn bdr_get_bean_definition_found() {
-    use vernal_beans::BeanDefinitionRegistry;
     use vernal_beans::BeanDefinition;
+    use vernal_beans::BeanDefinitionRegistry;
     use vernal_beans::RootBeanDefinition;
     let mut c = vernal_beans::Container::new(vernal_beans::RegistryBuilder::new().build().unwrap());
     let def = Box::new(RootBeanDefinition::new()) as Box<dyn BeanDefinition>;
-    c.register_bean_definition("dyn_get".to_string(), def).unwrap();
+    c.register_bean_definition("dyn_get".to_string(), def)
+        .unwrap();
     let bd = c.get_bean_definition("dyn_get");
     assert!(bd.is_some());
 }
@@ -318,12 +347,13 @@ fn bdr_get_bean_definition_not_found() {
 // ═══ bean_definition_names with dynamic ═══
 #[test]
 fn bdr_bean_definition_names_with_dynamic() {
-    use vernal_beans::BeanDefinitionRegistry;
     use vernal_beans::BeanDefinition;
+    use vernal_beans::BeanDefinitionRegistry;
     use vernal_beans::RootBeanDefinition;
     let mut c = vernal_beans::Container::new(vernal_beans::RegistryBuilder::new().build().unwrap());
     let def = Box::new(RootBeanDefinition::new()) as Box<dyn BeanDefinition>;
-    c.register_bean_definition("dyn_name".to_string(), def).unwrap();
+    c.register_bean_definition("dyn_name".to_string(), def)
+        .unwrap();
     let names = c.bean_definition_names();
     assert!(names.contains(&"dyn_name".to_string()));
 }
@@ -372,8 +402,8 @@ fn hbf_parent_bean_factory_none() {
 
 #[test]
 fn hbf_parent_bean_factory_set() {
-    use vernal_beans::HierarchicalBeanFactory;
     use vernal_beans::ConfigurableBeanFactory;
+    use vernal_beans::HierarchicalBeanFactory;
     let mut child = make_container();
     let parent = make_container();
     child.set_parent_bean_factory(Arc::new(parent)).unwrap();
@@ -415,7 +445,9 @@ fn lbf_bean_names_for_type_id_empty() {
 fn lbf_beans_of_type_id() {
     use vernal_beans::ListableBeanFactory;
     let c = make_container();
-    let beans = c.beans_of_type_id(std::any::TypeId::of::<String>(), true, true).unwrap();
+    let beans = c
+        .beans_of_type_id(std::any::TypeId::of::<String>(), true, true)
+        .unwrap();
     assert!(!beans.is_empty());
 }
 
@@ -423,7 +455,9 @@ fn lbf_beans_of_type_id() {
 fn lbf_beans_of_type_id_empty() {
     use vernal_beans::ListableBeanFactory;
     let c = make_container();
-    let beans = c.beans_of_type_id(std::any::TypeId::of::<bool>(), true, true).unwrap();
+    let beans = c
+        .beans_of_type_id(std::any::TypeId::of::<bool>(), true, true)
+        .unwrap();
     assert!(beans.is_empty());
 }
 
@@ -503,25 +537,27 @@ fn cbf_is_factory_bean() {
 // ═══ bean_definition_count with dynamic ═══
 #[test]
 fn bdr_bean_definition_count_with_dynamic() {
-    use vernal_beans::BeanDefinitionRegistry;
     use vernal_beans::BeanDefinition;
+    use vernal_beans::BeanDefinitionRegistry;
     use vernal_beans::RootBeanDefinition;
     let mut c = vernal_beans::Container::new(vernal_beans::RegistryBuilder::new().build().unwrap());
     let def = Box::new(RootBeanDefinition::new()) as Box<dyn BeanDefinition>;
-    c.register_bean_definition("cnt_dyn".to_string(), def).unwrap();
+    c.register_bean_definition("cnt_dyn".to_string(), def)
+        .unwrap();
     assert!(c.bean_definition_count() >= 1);
 }
 
 // ═══ contains_bean_definition with dynamic ═══
 #[test]
 fn bdr_contains_bean_definition_dynamic() {
-    use vernal_beans::BeanDefinitionRegistry;
     use vernal_beans::BeanDefinition;
+    use vernal_beans::BeanDefinitionRegistry;
     use vernal_beans::RootBeanDefinition;
     let mut c = vernal_beans::Container::new(vernal_beans::RegistryBuilder::new().build().unwrap());
     assert!(!c.contains_bean_definition("dyn_contains"));
     let def = Box::new(RootBeanDefinition::new()) as Box<dyn BeanDefinition>;
-    c.register_bean_definition("dyn_contains".to_string(), def).unwrap();
+    c.register_bean_definition("dyn_contains".to_string(), def)
+        .unwrap();
     assert!(c.contains_bean_definition("dyn_contains"));
 }
 
@@ -530,7 +566,9 @@ fn bdr_contains_bean_definition_dynamic() {
 fn bf_get_bean_provider_if_available() {
     use vernal_beans::BeanFactory;
     let c = make_container();
-    let provider = c.get_bean_provider_by_type_id(std::any::TypeId::of::<String>()).unwrap();
+    let provider = c
+        .get_bean_provider_by_type_id(std::any::TypeId::of::<String>())
+        .unwrap();
     // if_available may return None if bean not yet constructed; exercise the code path
     let _val = provider.if_available();
 }
@@ -538,8 +576,8 @@ fn bf_get_bean_provider_if_available() {
 // ═══ register_bean_definition duplicate ═══
 #[test]
 fn bdr_register_duplicate() {
-    use vernal_beans::BeanDefinitionRegistry;
     use vernal_beans::BeanDefinition;
+    use vernal_beans::BeanDefinitionRegistry;
     use vernal_beans::RootBeanDefinition;
     let mut c = vernal_beans::Container::new(vernal_beans::RegistryBuilder::new().build().unwrap());
     let def1 = Box::new(RootBeanDefinition::new()) as Box<dyn BeanDefinition>;
@@ -599,7 +637,8 @@ fn proxy_bean_definition_methods() {
     use vernal_beans::BeanDefinitionRegistry;
     let mut c = vernal_beans::Container::new(vernal_beans::RegistryBuilder::new().build().unwrap());
     let def = Box::new(vernal_beans::RootBeanDefinition::new()) as Box<dyn BeanDefinition>;
-    c.register_bean_definition("proxy_test".to_string(), def).unwrap();
+    c.register_bean_definition("proxy_test".to_string(), def)
+        .unwrap();
     let bd = c.get_bean_definition("proxy_test").unwrap();
     // bean_class_name comes from the underlying definition (may be "unknown" for default RootBeanDefinition)
     assert!(!bd.bean_class_name().is_empty());
@@ -761,8 +800,8 @@ fn rbd_all_setters_getters() {
 
 #[test]
 fn rbd_from_generic() {
-    use vernal_beans::RootBeanDefinition;
     use vernal_beans::GenericBeanDefinition;
+    use vernal_beans::RootBeanDefinition;
     let mut gbd = GenericBeanDefinition::new();
     gbd.set_bean_class_name("com.example.Generic");
     let rbd = RootBeanDefinition::from_generic(gbd);
@@ -812,7 +851,8 @@ fn abf_singleton_ops() {
 fn abf_alias_ops() {
     use vernal_beans::factory::support::abstract_bean_factory::AbstractBeanFactory;
     let abf = AbstractBeanFactory::new();
-    abf.register_alias("myAlias".to_string(), "realBean".to_string()).unwrap();
+    abf.register_alias("myAlias".to_string(), "realBean".to_string())
+        .unwrap();
     assert_eq!(abf.resolve_alias("myAlias"), "realBean");
     assert_eq!(abf.alias_count(), 1);
 }
@@ -821,18 +861,22 @@ fn abf_alias_ops() {
 fn abf_alias_already_exists() {
     use vernal_beans::factory::support::abstract_bean_factory::AbstractBeanFactory;
     let abf = AbstractBeanFactory::new();
-    abf.register_alias("myAlias".to_string(), "beanA".to_string()).unwrap();
+    abf.register_alias("myAlias".to_string(), "beanA".to_string())
+        .unwrap();
     // Same alias pointing to different bean should fail
     let result = abf.register_alias("myAlias".to_string(), "beanB".to_string());
     assert!(result.is_err());
     // Same alias pointing to same bean is OK (idempotent)
-    assert!(abf.register_alias("myAlias".to_string(), "beanA".to_string()).is_ok());
+    assert!(
+        abf.register_alias("myAlias".to_string(), "beanA".to_string())
+            .is_ok()
+    );
 }
 
 #[test]
 fn abf_scope_ops() {
-    use vernal_beans::factory::support::abstract_bean_factory::AbstractBeanFactory;
     use vernal_beans::ScopeKey;
+    use vernal_beans::factory::support::abstract_bean_factory::AbstractBeanFactory;
     let abf = AbstractBeanFactory::new();
     abf.register_scope("request".to_string(), ScopeKey::of::<String>());
     assert!(abf.contains_scope("request"));
@@ -879,7 +923,10 @@ fn dlbf_type_mapping() {
     assert_eq!(dlbf.type_mapping_count(), 1);
     let names = dlbf.get_bean_names_for_type(std::any::TypeId::of::<String>());
     assert!(names.contains(&"myString".to_string()));
-    assert!(dlbf.get_bean_names_for_type(std::any::TypeId::of::<i32>()).is_empty());
+    assert!(
+        dlbf.get_bean_names_for_type(std::any::TypeId::of::<i32>())
+            .is_empty()
+    );
 }
 
 #[test]
@@ -887,7 +934,8 @@ fn dlbf_dependency_descriptor() {
     use vernal_beans::factory::support::default_listable_bean_factory::DefaultListableBeanFactory;
     use vernal_beans::factory::support::dependency_descriptor::DependencyDescriptor;
     let dlbf = DefaultListableBeanFactory::new();
-    let dd = DependencyDescriptor::new(std::any::TypeId::of::<String>(), "String".to_string(), true);
+    let dd =
+        DependencyDescriptor::new(std::any::TypeId::of::<String>(), "String".to_string(), true);
     dlbf.register_dependency_descriptor("myBean".to_string(), dd);
     let retrieved = dlbf.get_dependency_descriptor("myBean");
     assert!(retrieved.is_some());
@@ -897,8 +945,8 @@ fn dlbf_dependency_descriptor() {
 // ═══ Property Editors ═══
 #[test]
 fn byte_array_property_editor() {
-    use vernal_beans::propertyeditors::byte_array_property_editor::ByteArrayPropertyEditor;
     use vernal_beans::property_editor::PropertyEditor;
+    use vernal_beans::propertyeditors::byte_array_property_editor::ByteArrayPropertyEditor;
     let mut editor = ByteArrayPropertyEditor::new();
     assert_eq!(editor.target_type(), std::any::TypeId::of::<Vec<u8>>());
     assert!(editor.get_as_text().is_none());
@@ -914,8 +962,8 @@ fn byte_array_property_editor() {
 
 #[test]
 fn char_array_property_editor() {
-    use vernal_beans::propertyeditors::char_array_property_editor::CharArrayPropertyEditor;
     use vernal_beans::property_editor::PropertyEditor;
+    use vernal_beans::propertyeditors::char_array_property_editor::CharArrayPropertyEditor;
     let mut editor = CharArrayPropertyEditor::new();
     assert!(editor.get_as_text().is_none());
     editor.set_as_text("abc").unwrap();
@@ -926,8 +974,8 @@ fn char_array_property_editor() {
 
 #[test]
 fn charset_property_editor() {
-    use vernal_beans::propertyeditors::charset_editor::CharsetEditor;
     use vernal_beans::property_editor::PropertyEditor;
+    use vernal_beans::propertyeditors::charset_editor::CharsetEditor;
     let mut editor = CharsetEditor::new();
     assert!(editor.get_as_text().is_none());
     editor.set_as_text("UTF-8").unwrap();
@@ -936,8 +984,8 @@ fn charset_property_editor() {
 
 #[test]
 fn file_array_editor() {
-    use vernal_beans::propertyeditors::file_editor::FileEditor;
     use vernal_beans::property_editor::PropertyEditor;
+    use vernal_beans::propertyeditors::file_editor::FileEditor;
     let mut editor = FileEditor::new();
     assert!(editor.get_as_text().is_none());
     editor.set_as_text("/tmp/a,/tmp/b").unwrap();
@@ -946,8 +994,8 @@ fn file_array_editor() {
 
 #[test]
 fn input_source_editor() {
-    use vernal_beans::propertyeditors::input_source_editor::InputSourceEditor;
     use vernal_beans::property_editor::PropertyEditor;
+    use vernal_beans::propertyeditors::input_source_editor::InputSourceEditor;
     let mut editor = InputSourceEditor::new();
     assert!(editor.get_as_text().is_none());
     editor.set_as_text("<xml/>").unwrap();
@@ -956,8 +1004,8 @@ fn input_source_editor() {
 
 #[test]
 fn path_property_editor() {
-    use vernal_beans::propertyeditors::path_editor::PathEditor;
     use vernal_beans::property_editor::PropertyEditor;
+    use vernal_beans::propertyeditors::path_editor::PathEditor;
     let mut editor = PathEditor::new();
     assert!(editor.get_as_text().is_none());
     editor.set_as_text("/usr/local").unwrap();
@@ -966,8 +1014,8 @@ fn path_property_editor() {
 
 #[test]
 fn resource_bundle_editor() {
-    use vernal_beans::propertyeditors::resource_bundle_editor::ResourceBundleEditor;
     use vernal_beans::property_editor::PropertyEditor;
+    use vernal_beans::propertyeditors::resource_bundle_editor::ResourceBundleEditor;
     let mut editor = ResourceBundleEditor::new();
     assert!(editor.get_as_text().is_none());
     editor.set_as_text("messages").unwrap();
@@ -977,8 +1025,8 @@ fn resource_bundle_editor() {
 // ═══ StandardBeanExpressionResolver ═══
 #[test]
 fn standard_bean_expression_resolver_basic() {
-    use vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver;
     use vernal_beans::BeanExpressionResolver;
+    use vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver;
     let resolver = StandardBeanExpressionResolver::new();
     // Non-expression string should pass through
     let result = resolver.evaluate("simple_string", None);
@@ -987,8 +1035,8 @@ fn standard_bean_expression_resolver_basic() {
 
 #[test]
 fn standard_bean_expression_resolver_expression() {
-    use vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver;
     use vernal_beans::BeanExpressionResolver;
+    use vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver;
     let resolver = StandardBeanExpressionResolver::new();
     // Expression with #{} should be evaluated
     let result = resolver.evaluate("#{1 + 2}", None);
@@ -1001,7 +1049,11 @@ fn bean_scope_remove_default() {
     use vernal_beans::bean_scope::BeanScope;
     struct TestScope;
     impl BeanScope for TestScope {
-        fn get(&self, _name: &str, _factory: &dyn Fn() -> Box<dyn Any + Send + Sync>) -> Result<Box<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> {
+        fn get(
+            &self,
+            _name: &str,
+            _factory: &dyn Fn() -> Box<dyn Any + Send + Sync>,
+        ) -> Result<Box<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> {
             Ok(Box::new("val"))
         }
     }

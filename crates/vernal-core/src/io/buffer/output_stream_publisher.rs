@@ -85,10 +85,7 @@ impl Default for OutputStreamPublisher {
 impl Write for OutputStreamPublisher {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         if self.closed {
-            return Err(io::Error::new(
-                io::ErrorKind::BrokenPipe,
-                "发布器已关闭",
-            ));
+            return Err(io::Error::new(io::ErrorKind::BrokenPipe, "发布器已关闭"));
         }
         let factory = DefaultDataBufferFactory::new();
         self.current

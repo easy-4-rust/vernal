@@ -72,7 +72,11 @@ impl BeanDefinitionStoreException {
 impl fmt::Display for BeanDefinitionStoreException {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let Some(ref resource) = self.resource_description {
-            write!(f, "Failed to read bean definition from '{}': {}", resource, self.message)
+            write!(
+                f,
+                "Failed to read bean definition from '{}': {}",
+                resource, self.message
+            )
         } else {
             write!(f, "Bean definition store error: {}", self.message)
         }
@@ -81,7 +85,9 @@ impl fmt::Display for BeanDefinitionStoreException {
 
 impl std::error::Error for BeanDefinitionStoreException {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        self.source.as_ref().map(|e| e.as_ref() as &(dyn std::error::Error + 'static))
+        self.source
+            .as_ref()
+            .map(|e| e.as_ref() as &(dyn std::error::Error + 'static))
     }
 }
 

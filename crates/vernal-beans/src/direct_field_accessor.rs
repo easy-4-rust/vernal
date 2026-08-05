@@ -34,13 +34,12 @@ impl DirectFieldAccessor {
 
     /// 获取字段值。
     pub fn get_field_value(&self, field_name: &str) -> Option<Box<dyn Any + Send + Sync>> {
-        self.fields
-            .read()
-            .ok()
-            .and_then(|fields| fields.get(field_name).map(|_| {
+        self.fields.read().ok().and_then(|fields| {
+            fields.get(field_name).map(|_| {
                 // 由于 dyn Any 不实现 Clone，返回一个占位值
                 Box::new(()) as Box<dyn Any + Send + Sync>
-            }))
+            })
+        })
     }
 
     /// 设置字段值。
@@ -93,10 +92,12 @@ impl DirectFieldAccessor {
         self.custom_editors
             .read()
             .ok()
-            .and_then(|editors| editors.get(&type_id).map(|_| {
-                // 由于 PropertyEditor 不实现 Clone，返回 None
-                None
-            }))
+            .and_then(|editors| {
+                editors.get(&type_id).map(|_| {
+                    // 由于 PropertyEditor 不实现 Clone，返回 None
+                    None
+                })
+            })
             .flatten()
     }
 }
@@ -150,7 +151,10 @@ mod tests {
         let accessor = DirectFieldAccessor::new(String::from("test"));
         assert!(accessor.get_field_type("missing").is_none());
         accessor.set_field_value("count", 42i32);
-        assert_eq!(accessor.get_field_type("count"), Some(std::any::TypeId::of::<i32>()));
+        assert_eq!(
+            accessor.get_field_type("count"),
+            Some(std::any::TypeId::of::<i32>())
+        );
     }
 
     #[test]
@@ -182,12 +186,25 @@ mod tests {
 
         struct DummyEditor;
         impl PropertyEditor for DummyEditor {
-            fn target_type(&self) -> TypeId { TypeId::of::<String>() }
-            fn set_as_text(&mut self, _: &str) -> Result<(), Box<dyn std::error::Error + Send + Sync>> { Ok(()) }
-            fn get_as_text(&self) -> Option<String> { None }
+            fn target_type(&self) -> TypeId {
+                TypeId::of::<String>()
+            }
+            fn set_as_text(
+                &mut self,
+                _: &str,
+            ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+                Ok(())
+            }
+            fn get_as_text(&self) -> Option<String> {
+                None
+            }
             fn set_value(&mut self, _: Arc<dyn std::any::Any + Send + Sync>) {}
-            fn get_value(&self) -> Option<&dyn std::any::Any> { None }
-            fn get_value_type(&self) -> TypeId { TypeId::of::<String>() }
+            fn get_value(&self) -> Option<&dyn std::any::Any> {
+                None
+            }
+            fn get_value_type(&self) -> TypeId {
+                TypeId::of::<String>()
+            }
         }
 
         let accessor = DirectFieldAccessor::new(String::from("test"));
@@ -213,15 +230,24 @@ mod tests {
         let accessor = DirectFieldAccessor::new(String::from("test"));
         accessor.set_field_value("val", 1i32);
         accessor.set_field_value("val", 2i32);
-        assert_eq!(accessor.get_field_type("val"), Some(std::any::TypeId::of::<i32>()));
+        assert_eq!(
+            accessor.get_field_type("val"),
+            Some(std::any::TypeId::of::<i32>())
+        );
     }
 
     #[test]
     fn test_field_type_changes() {
         let accessor = DirectFieldAccessor::new(String::from("test"));
         accessor.set_field_value("dynamic", 42i32);
-        assert_eq!(accessor.get_field_type("dynamic"), Some(std::any::TypeId::of::<i32>()));
+        assert_eq!(
+            accessor.get_field_type("dynamic"),
+            Some(std::any::TypeId::of::<i32>())
+        );
         accessor.set_field_value("dynamic", "now_string".to_string());
-        assert_eq!(accessor.get_field_type("dynamic"), Some(std::any::TypeId::of::<String>()));
+        assert_eq!(
+            accessor.get_field_type("dynamic"),
+            Some(std::any::TypeId::of::<String>())
+        );
     }
 }

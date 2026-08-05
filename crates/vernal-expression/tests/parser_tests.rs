@@ -48,12 +48,18 @@ fn literal_real() {
 
 #[test]
 fn literal_string_single_quotes() {
-    assert_eq!(eval("'hello'"), ExpressionValue::String("hello".to_string()));
+    assert_eq!(
+        eval("'hello'"),
+        ExpressionValue::String("hello".to_string())
+    );
 }
 
 #[test]
 fn literal_string_double_quotes() {
-    assert_eq!(eval(r#""world""#), ExpressionValue::String("world".to_string()));
+    assert_eq!(
+        eval(r#""world""#),
+        ExpressionValue::String("world".to_string())
+    );
 }
 
 #[test]
@@ -236,7 +242,10 @@ fn precedence_with_parens() {
 
 #[test]
 fn string_literal_with_spaces() {
-    assert_eq!(eval("'hello world'"), ExpressionValue::String("hello world".to_string()));
+    assert_eq!(
+        eval("'hello world'"),
+        ExpressionValue::String("hello world".to_string())
+    );
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -449,5 +458,10 @@ fn debug_five_ast() {
     // Let's check what AST we get
     let ctx = StandardEvaluationContext::new(TypedValue::null());
     let r = e.get_value_with_context(&ctx).unwrap();
-    assert_eq!(*r.value(), ExpressionValue::Int(5), "5 should parse to Int(5), got {:?}", r.value());
+    assert_eq!(
+        *r.value(),
+        ExpressionValue::Int(5),
+        "5 should parse to Int(5), got {:?}",
+        r.value()
+    );
 }

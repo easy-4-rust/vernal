@@ -4,10 +4,9 @@
 //!
 //! 处理 `@Configuration` / `@Bean` 注解，注册配置类中定义的 Bean。
 
-
-use crate::factory::support::bean_definition_registry::BeanDefinitionRegistry;
 use crate::factory::config::bean_factory_post_processor::BeanFactoryPostProcessor;
 use crate::factory::config::configurable_listable_bean_factory::ConfigurableListableBeanFactory;
+use crate::factory::support::bean_definition_registry::BeanDefinitionRegistry;
 
 /// Spring 风格的配置类后处理器。
 ///

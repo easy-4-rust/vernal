@@ -3,7 +3,7 @@
 //! 对标 Spring `org.springframework.core.convert.support.StringToPatternConverter`
 //! （Java 中以 `Pattern.compile` 表达）。仅在 feature `convert-regex` 下编译。
 
-use crate::convert::{ConversionError, Convertible, Converter};
+use crate::convert::{ConversionError, Converter, Convertible};
 
 /// 字符串 → 正则模式转换器。
 ///

@@ -14,13 +14,21 @@ pub trait BeanDefinitionCustomizer: Send + Sync {
 
 /// BeanDefinitionCustomizer 的闭包实现。
 pub struct ClosureBeanDefinitionCustomizer {
-    callback: Box<dyn Fn(&str) -> Result<(), Box<dyn std::error::Error + Send + Sync>> + Send + Sync>,
+    callback:
+        Box<dyn Fn(&str) -> Result<(), Box<dyn std::error::Error + Send + Sync>> + Send + Sync>,
 }
 
 impl ClosureBeanDefinitionCustomizer {
     /// 创建一个新的实例。
-    pub fn new(callback: impl Fn(&str) -> Result<(), Box<dyn std::error::Error + Send + Sync>> + Send + Sync + 'static) -> Self {
-        Self { callback: Box::new(callback) }
+    pub fn new(
+        callback: impl Fn(&str) -> Result<(), Box<dyn std::error::Error + Send + Sync>>
+        + Send
+        + Sync
+        + 'static,
+    ) -> Self {
+        Self {
+            callback: Box::new(callback),
+        }
     }
 }
 

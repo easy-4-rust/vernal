@@ -29,9 +29,10 @@ impl VernalProperties {
     /// 对应 Java: `SpringProperties.getProperty(String)`
     #[must_use]
     pub fn get_property(key: &str) -> Option<String> {
-        PROPERTIES.read().ok().and_then(|guard| {
-            guard.as_ref().and_then(|map| map.get(key).cloned())
-        })
+        PROPERTIES
+            .read()
+            .ok()
+            .and_then(|guard| guard.as_ref().and_then(|map| map.get(key).cloned()))
     }
 
     /// 设置属性值（传 `None` 表示删除）。

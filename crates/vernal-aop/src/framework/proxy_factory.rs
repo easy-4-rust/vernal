@@ -5,11 +5,11 @@
 
 use std::sync::Arc;
 
+use super::advised_support::AdvisedSupport;
+use super::aop_proxy::AopProxy;
 use crate::Advisor;
 use crate::Interceptor;
 use crate::target_source::TargetSource;
-use super::advised_support::AdvisedSupport;
-use super::aop_proxy::AopProxy;
 
 /// 代理工厂。
 ///
@@ -90,7 +90,9 @@ impl ProxyFactory {
 
     /// 设置是否代理目标类。
     pub fn set_proxy_target_class(&mut self, proxy_target_class: bool) {
-        self.advised.config_mut().set_proxy_target_class(proxy_target_class);
+        self.advised
+            .config_mut()
+            .set_proxy_target_class(proxy_target_class);
     }
 
     /// 是否代理目标类。
@@ -206,7 +208,11 @@ mod additional_tests {
 
     struct TestInterceptor;
     impl crate::Interceptor for TestInterceptor {
-        fn intercept<'a>(&'a self, invocation: Arc<crate::Invocation>, next: crate::Next<'a>) -> crate::InvocationFuture<'a> {
+        fn intercept<'a>(
+            &'a self,
+            invocation: Arc<crate::Invocation>,
+            next: crate::Next<'a>,
+        ) -> crate::InvocationFuture<'a> {
             next.run(invocation)
         }
     }
@@ -216,7 +222,9 @@ mod additional_tests {
         fn target_class(&self) -> Option<&str> {
             Some("TestTarget")
         }
-        fn get_target(&self) -> Result<Box<dyn std::any::Any>, crate::target_source_error::TargetSourceError> {
+        fn get_target(
+            &self,
+        ) -> Result<Box<dyn std::any::Any>, crate::target_source_error::TargetSourceError> {
             Ok(Box::new(42i32))
         }
     }

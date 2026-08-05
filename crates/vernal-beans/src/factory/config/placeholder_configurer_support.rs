@@ -82,11 +82,7 @@ impl PlaceholderConfigurerSupport {
     }
 
     /// 解析占位符。
-    pub fn parse_placeholders(
-        &self,
-        text: &str,
-        properties: &HashMap<String, String>,
-    ) -> String {
+    pub fn parse_placeholders(&self, text: &str, properties: &HashMap<String, String>) -> String {
         let mut result = text.to_string();
         while let Some(start) = result.find(&self.placeholder_prefix) {
             if let Some(end) = result[start..].find(&self.placeholder_suffix) {

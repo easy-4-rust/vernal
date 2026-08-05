@@ -5,8 +5,12 @@ use std::sync::atomic::{AtomicU32, Ordering};
 
 fn make_container() -> vernal_beans::Container {
     let mut b = vernal_beans::RegistryBuilder::new();
-    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
-    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<i32, _>(|_| 42i32));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(
+        |_| "hello".to_string(),
+    ));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<i32, _>(
+        |_| 42i32,
+    ));
     vernal_beans::Container::new(b.build().unwrap())
 }
 
@@ -43,7 +47,8 @@ fn bean_post_processor_full_lifecycle() {
             &self,
             bean: Arc<dyn Any + Send + Sync>,
             _bean_name: &str,
-        ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>> {
+        ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>>
+        {
             self.before_init.fetch_add(1, Ordering::SeqCst);
             Ok(Some(bean))
         }
@@ -51,7 +56,8 @@ fn bean_post_processor_full_lifecycle() {
             &self,
             bean: Arc<dyn Any + Send + Sync>,
             _bean_name: &str,
-        ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>> {
+        ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>>
+        {
             self.after_init.fetch_add(1, Ordering::SeqCst);
             Ok(Some(bean))
         }
@@ -59,7 +65,8 @@ fn bean_post_processor_full_lifecycle() {
             &self,
             _bean_class: &str,
             _bean_name: &str,
-        ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>> {
+        ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>>
+        {
             self.before_instantiation.fetch_add(1, Ordering::SeqCst);
             Ok(None)
         }
@@ -132,7 +139,8 @@ fn bean_post_processor_proxy_before_instantiation() {
             &self,
             _bean_class: &str,
             _bean_name: &str,
-        ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>> {
+        ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>>
+        {
             Ok(Some(Arc::new("proxy_object".to_string())))
         }
         fn post_process_after_instantiation(
@@ -149,7 +157,10 @@ fn bean_post_processor_proxy_before_instantiation() {
     assert!(result.is_ok());
     let proxy = result.unwrap();
     assert!(proxy.is_some());
-    assert_eq!(proxy.unwrap().downcast_ref::<String>().unwrap(), "proxy_object");
+    assert_eq!(
+        proxy.unwrap().downcast_ref::<String>().unwrap(),
+        "proxy_object"
+    );
 }
 
 #[test]
@@ -201,14 +212,17 @@ fn container_with_post_processor_chain() {
     use vernal_beans::BeanPostProcessor;
 
     #[allow(dead_code)]
-        struct CountingPP {
+    struct CountingPP {
         id: u32,
         count: AtomicU32,
     }
 
     impl CountingPP {
         fn new(id: u32) -> Self {
-            Self { id, count: AtomicU32::new(0) }
+            Self {
+                id,
+                count: AtomicU32::new(0),
+            }
         }
     }
 
@@ -217,7 +231,8 @@ fn container_with_post_processor_chain() {
             &self,
             bean: Arc<dyn Any + Send + Sync>,
             _bean_name: &str,
-        ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>> {
+        ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>>
+        {
             self.count.fetch_add(1, Ordering::SeqCst);
             Ok(Some(bean))
         }
@@ -225,7 +240,8 @@ fn container_with_post_processor_chain() {
             &self,
             bean: Arc<dyn Any + Send + Sync>,
             _bean_name: &str,
-        ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>> {
+        ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>>
+        {
             self.count.fetch_add(1, Ordering::SeqCst);
             Ok(Some(bean))
         }
@@ -236,7 +252,9 @@ fn container_with_post_processor_chain() {
     let pp3 = Arc::new(CountingPP::new(3));
 
     let mut b = vernal_beans::RegistryBuilder::new();
-    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(
+        |_| "hello".to_string(),
+    ));
     let mut c = vernal_beans::Container::new(b.build().unwrap());
 
     c.add_bean_post_processor(pp1.clone());
@@ -255,8 +273,12 @@ fn container_with_post_processor_chain() {
 #[test]
 fn container_warm_up() {
     let mut b = vernal_beans::RegistryBuilder::new();
-    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
-    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<i32, _>(|_| 42i32));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(
+        |_| "hello".to_string(),
+    ));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<i32, _>(
+        |_| 42i32,
+    ));
     let c = vernal_beans::Container::new(b.build().unwrap());
 
     assert!(c.warm_up().is_ok());
@@ -269,7 +291,9 @@ fn container_warm_up() {
 fn container_destroy_bean_instance() {
     use vernal_beans::AutowireCapableBeanFactory;
     let mut b = vernal_beans::RegistryBuilder::new();
-    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(
+        |_| "hello".to_string(),
+    ));
     let c = vernal_beans::Container::new(b.build().unwrap());
 
     let result = c.destroy_bean_instance("test_bean", &"test");
@@ -282,10 +306,12 @@ fn container_destroy_bean_instance() {
 
 #[test]
 fn initializing_bean_trait() {
-    use vernal_beans::InitializingBean;
     use vernal_beans::Aware;
+    use vernal_beans::InitializingBean;
 
-    struct MyBean { initialized: bool }
+    struct MyBean {
+        initialized: bool,
+    }
     impl Aware for MyBean {}
     impl InitializingBean for MyBean {
         fn after_properties_set(&mut self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
@@ -302,19 +328,24 @@ fn initializing_bean_trait() {
 
 #[test]
 fn disposable_bean_trait() {
-    use vernal_beans::DisposableBean;
     use vernal_beans::Aware;
+    use vernal_beans::DisposableBean;
 
-    struct MyDisposable { destroyed: std::sync::atomic::AtomicBool }
+    struct MyDisposable {
+        destroyed: std::sync::atomic::AtomicBool,
+    }
     impl Aware for MyDisposable {}
     impl DisposableBean for MyDisposable {
         fn destroy(&self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-            self.destroyed.store(true, std::sync::atomic::Ordering::SeqCst);
+            self.destroyed
+                .store(true, std::sync::atomic::Ordering::SeqCst);
             Ok(())
         }
     }
 
-    let bean = MyDisposable { destroyed: std::sync::atomic::AtomicBool::new(false) };
+    let bean = MyDisposable {
+        destroyed: std::sync::atomic::AtomicBool::new(false),
+    };
     assert!(!bean.destroyed.load(std::sync::atomic::Ordering::SeqCst));
     bean.destroy().unwrap();
     assert!(bean.destroyed.load(std::sync::atomic::Ordering::SeqCst));
@@ -324,21 +355,38 @@ fn disposable_bean_trait() {
 fn smart_initializing_singleton_trait() {
     use vernal_beans::SmartInitializingSingleton;
 
-    struct MySingleton { instantiated: std::sync::atomic::AtomicBool }
+    struct MySingleton {
+        instantiated: std::sync::atomic::AtomicBool,
+    }
     impl MySingleton {
-        fn new() -> Self { Self { instantiated: std::sync::atomic::AtomicBool::new(false) } }
+        fn new() -> Self {
+            Self {
+                instantiated: std::sync::atomic::AtomicBool::new(false),
+            }
+        }
     }
     impl SmartInitializingSingleton for MySingleton {
-        fn after_singletons_instantiated(&self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-            self.instantiated.store(true, std::sync::atomic::Ordering::SeqCst);
+        fn after_singletons_instantiated(
+            &self,
+        ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+            self.instantiated
+                .store(true, std::sync::atomic::Ordering::SeqCst);
             Ok(())
         }
     }
 
     let singleton = MySingleton::new();
-    assert!(!singleton.instantiated.load(std::sync::atomic::Ordering::SeqCst));
+    assert!(
+        !singleton
+            .instantiated
+            .load(std::sync::atomic::Ordering::SeqCst)
+    );
     singleton.after_singletons_instantiated().unwrap();
-    assert!(singleton.instantiated.load(std::sync::atomic::Ordering::SeqCst));
+    assert!(
+        singleton
+            .instantiated
+            .load(std::sync::atomic::Ordering::SeqCst)
+    );
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -350,7 +398,9 @@ fn aware_trait() {
     use vernal_beans::Aware;
     use vernal_beans::BeanNameAware;
 
-    struct MyAwareBean { bean_name: Option<String> }
+    struct MyAwareBean {
+        bean_name: Option<String>,
+    }
     impl Aware for MyAwareBean {}
     impl BeanNameAware for MyAwareBean {
         fn set_bean_name(&mut self, name: &str) {
@@ -371,7 +421,9 @@ fn aware_trait() {
 #[test]
 fn early_bean_reference_register_and_get() {
     let mut b = vernal_beans::RegistryBuilder::new();
-    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(
+        |_| "hello".to_string(),
+    ));
     let c = vernal_beans::Container::new(b.build().unwrap());
 
     let key = vernal_beans::ComponentKey::of::<String>();
@@ -380,13 +432,18 @@ fn early_bean_reference_register_and_get() {
 
     let result = c.get_early_bean_reference(&key);
     assert!(result.is_some());
-    assert_eq!(result.unwrap().downcast_ref::<String>().unwrap(), "early_value");
+    assert_eq!(
+        result.unwrap().downcast_ref::<String>().unwrap(),
+        "early_value"
+    );
 }
 
 #[test]
 fn early_bean_reference_not_found() {
     let mut b = vernal_beans::RegistryBuilder::new();
-    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(
+        |_| "hello".to_string(),
+    ));
     let c = vernal_beans::Container::new(b.build().unwrap());
 
     let key = vernal_beans::ComponentKey::of::<i32>();
@@ -397,7 +454,9 @@ fn early_bean_reference_not_found() {
 #[test]
 fn early_bean_reference_remove() {
     let mut b = vernal_beans::RegistryBuilder::new();
-    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(
+        |_| "hello".to_string(),
+    ));
     let c = vernal_beans::Container::new(b.build().unwrap());
 
     let key = vernal_beans::ComponentKey::of::<String>();

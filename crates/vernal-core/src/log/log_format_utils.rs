@@ -45,7 +45,10 @@ mod tests {
     #[test]
     fn truncates_long_values() {
         // A 类（合同对齐）：对标 Spring formatValue limit
-        assert_eq!(LogFormatUtils::format_value("hello world", 5), "hello... (truncated)");
+        assert_eq!(
+            LogFormatUtils::format_value("hello world", 5),
+            "hello... (truncated)"
+        );
         assert_eq!(LogFormatUtils::format_value("short", 100), "short");
     }
 

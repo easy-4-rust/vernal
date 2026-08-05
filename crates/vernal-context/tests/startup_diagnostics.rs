@@ -59,7 +59,10 @@ async fn report_tracks_registry_aop_subsystems_and_lifecycle_without_mutability(
     let ready = context.startup_report().await;
     assert_eq!(ready.context_state(), ContextState::Ready.as_str());
     assert_eq!(ready.framework_version(), env!("CARGO_PKG_VERSION"));
-    assert_eq!(ready.minimum_rust_version(), vernal_core::MINIMUM_RUST_VERSION);
+    assert_eq!(
+        ready.minimum_rust_version(),
+        vernal_core::MINIMUM_RUST_VERSION
+    );
     assert_eq!(ready.environment().property_sources(), ["application"]);
     assert_eq!(ready.environment().active_profiles(), ["production"]);
     assert_eq!(ready.environment().default_profiles(), ["default"]);

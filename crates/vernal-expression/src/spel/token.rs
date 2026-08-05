@@ -31,7 +31,12 @@ impl Token {
 
     /// 创建带 payload 的 token（标识符 / 字面量 / 关键字）。
     #[must_use]
-    pub fn with_data(kind: TokenKind, data: impl Into<String>, start_pos: usize, end_pos: usize) -> Self {
+    pub fn with_data(
+        kind: TokenKind,
+        data: impl Into<String>,
+        start_pos: usize,
+        end_pos: usize,
+    ) -> Self {
         Self {
             kind,
             data: Some(data.into()),

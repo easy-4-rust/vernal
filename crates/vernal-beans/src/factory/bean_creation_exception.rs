@@ -4,7 +4,6 @@
 
 use std::fmt;
 
-
 /// Bean 创建失败时抛出的异常。
 ///
 /// 对应 Java 类：`org.springframework.beans.factory.BeanCreationException`。
@@ -96,7 +95,9 @@ impl fmt::Display for BeanCreationException {
 
 impl std::error::Error for BeanCreationException {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        self.source.as_ref().map(|e| e.as_ref() as &(dyn std::error::Error + 'static))
+        self.source
+            .as_ref()
+            .map(|e| e.as_ref() as &(dyn std::error::Error + 'static))
     }
 }
 

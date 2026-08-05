@@ -23,7 +23,8 @@ use crate::factory::support::simple_instantiation_strategy::SimpleInstantiationS
 ///
 /// 对应 Spring 的 `MethodReplacer` 接口。
 /// 接收原始方法调用的参数，返回替换后的结果。
-pub type MethodReplacerFn = Arc<dyn Fn(&[Arc<dyn Any + Send + Sync>]) -> Arc<dyn Any + Send + Sync> + Send + Sync>;
+pub type MethodReplacerFn =
+    Arc<dyn Fn(&[Arc<dyn Any + Send + Sync>]) -> Arc<dyn Any + Send + Sync> + Send + Sync>;
 
 /// CGLIB 子类实例化策略。
 ///
@@ -94,7 +95,8 @@ impl CglibSubclassingInstantiationStrategy {
         Err(format!(
             "CglibSubclassingInstantiationStrategy: no method replacement for '{}::{}'",
             bean_name, method_name
-        ).into())
+        )
+        .into())
     }
 }
 
@@ -136,7 +138,9 @@ mod tests {
         assert!(strategy.has_method_replacement("myBean", "compute"));
         assert_eq!(strategy.replacement_count(), 1);
 
-        let result = strategy.invoke_with_replacement("myBean", "compute", &[Arc::new(21_i32)]).unwrap();
+        let result = strategy
+            .invoke_with_replacement("myBean", "compute", &[Arc::new(21_i32)])
+            .unwrap();
         assert_eq!(result.downcast_ref::<i32>(), Some(&42));
     }
 
@@ -181,7 +185,9 @@ mod tests {
         let mut strategy = CglibSubclassingInstantiationStrategy::new();
         let replacer: MethodReplacerFn = Arc::new(|_| Arc::new("result".to_string()));
         strategy.register_method_replacement("bean", "method", replacer);
-        let result = strategy.invoke_with_replacement("bean", "method", &[]).unwrap();
+        let result = strategy
+            .invoke_with_replacement("bean", "method", &[])
+            .unwrap();
         assert_eq!(*result.downcast_ref::<String>().unwrap(), "result");
     }
 

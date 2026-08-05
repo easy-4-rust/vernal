@@ -89,12 +89,14 @@ impl PropertyEditor for CustomNumberEditor {
 
         match self.number_type {
             NumberType::I64 => {
-                let v: i64 = trimmed.parse()
+                let v: i64 = trimmed
+                    .parse()
                     .map_err(|_| format!("Cannot parse '{}' as i64", trimmed))?;
                 self.value = Some(v as f64);
             }
             NumberType::F64 => {
-                let v: f64 = trimmed.parse()
+                let v: f64 = trimmed
+                    .parse()
                     .map_err(|_| format!("Cannot parse '{}' as f64", trimmed))?;
                 self.value = Some(v);
             }

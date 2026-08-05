@@ -20,8 +20,8 @@
 //! - 注入元数据（qualifier 等）
 
 use std::any::{Any, TypeId};
-use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 
 use crate::factory::config::bean_post_processor::BeanPostProcessor;
 
@@ -125,13 +125,19 @@ impl AutowiredAnnotationBeanPostProcessor {
     /// - `field_type` — 字段类型
     pub fn register_field(&self, type_id: TypeId, field_name: String, field_type: TypeId) {
         let mut cache = self.field_cache.lock().unwrap();
-        cache.entry(type_id).or_default().push(InjectionPoint::new(field_name, field_type));
+        cache
+            .entry(type_id)
+            .or_default()
+            .push(InjectionPoint::new(field_name, field_type));
     }
 
     /// 注册方法注入点。
     pub fn register_method(&self, type_id: TypeId, method_name: String, param_type: TypeId) {
         let mut cache = self.method_cache.lock().unwrap();
-        cache.entry(type_id).or_default().push(InjectionPoint::new(method_name, param_type));
+        cache
+            .entry(type_id)
+            .or_default()
+            .push(InjectionPoint::new(method_name, param_type));
     }
 
     /// 注册带有详细配置的字段注入点。
@@ -180,7 +186,9 @@ impl AutowiredAnnotationBeanPostProcessor {
 
     /// 获取字段注入点列表。
     pub fn get_field_injection_points(&self, type_id: TypeId) -> Vec<InjectionPoint> {
-        self.field_cache.lock().unwrap()
+        self.field_cache
+            .lock()
+            .unwrap()
             .get(&type_id)
             .cloned()
             .unwrap_or_default()
@@ -188,7 +196,9 @@ impl AutowiredAnnotationBeanPostProcessor {
 
     /// 获取字段注入点名称列表。
     pub fn get_field_injection_names(&self, type_id: TypeId) -> Vec<String> {
-        self.field_cache.lock().unwrap()
+        self.field_cache
+            .lock()
+            .unwrap()
             .get(&type_id)
             .map(|points| points.iter().map(|p| p.member_name.clone()).collect())
             .unwrap_or_default()
@@ -196,7 +206,9 @@ impl AutowiredAnnotationBeanPostProcessor {
 
     /// 获取方法注入点列表。
     pub fn get_method_injection_points(&self, type_id: TypeId) -> Vec<InjectionPoint> {
-        self.method_cache.lock().unwrap()
+        self.method_cache
+            .lock()
+            .unwrap()
             .get(&type_id)
             .cloned()
             .unwrap_or_default()
@@ -204,7 +216,9 @@ impl AutowiredAnnotationBeanPostProcessor {
 
     /// 获取方法注入点名称列表。
     pub fn get_method_injection_names(&self, type_id: TypeId) -> Vec<String> {
-        self.method_cache.lock().unwrap()
+        self.method_cache
+            .lock()
+            .unwrap()
             .get(&type_id)
             .map(|points| points.iter().map(|p| p.member_name.clone()).collect())
             .unwrap_or_default()
@@ -267,7 +281,9 @@ impl AutowiredAnnotationBeanPostProcessor {
 }
 
 impl Default for AutowiredAnnotationBeanPostProcessor {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl BeanPostProcessor for AutowiredAnnotationBeanPostProcessor {
@@ -348,8 +364,12 @@ mod tests {
     #[test]
     fn post_process_records_processed_count() {
         let processor = AutowiredAnnotationBeanPostProcessor::new();
-        processor.post_process_before_initialization(Arc::new(1), "bean1").unwrap();
-        processor.post_process_before_initialization(Arc::new(2), "bean2").unwrap();
+        processor
+            .post_process_before_initialization(Arc::new(1), "bean1")
+            .unwrap();
+        processor
+            .post_process_before_initialization(Arc::new(2), "bean2")
+            .unwrap();
 
         assert_eq!(processor.processed_count(), 2);
     }
@@ -361,7 +381,11 @@ mod tests {
         processor.register_method(TypeId::of::<String>(), "m".to_string(), TypeId::of::<i32>());
 
         processor.clear();
-        assert!(processor.get_field_injection_names(TypeId::of::<String>()).is_empty());
+        assert!(
+            processor
+                .get_field_injection_names(TypeId::of::<String>())
+                .is_empty()
+        );
         assert_eq!(processor.processed_count(), 0);
     }
 
@@ -469,7 +493,9 @@ mod tests {
     fn post_process_after_initialization_returns_bean() {
         let processor = AutowiredAnnotationBeanPostProcessor::new();
         let bean = Arc::new(42i32);
-        let result = processor.post_process_after_initialization(bean.clone(), "testBean").unwrap();
+        let result = processor
+            .post_process_after_initialization(bean.clone(), "testBean")
+            .unwrap();
         assert!(result.is_some());
     }
 
@@ -477,7 +503,9 @@ mod tests {
     fn post_process_before_initialization_returns_bean() {
         let processor = AutowiredAnnotationBeanPostProcessor::new();
         let bean = Arc::new("hello".to_string());
-        let result = processor.post_process_before_initialization(bean.clone(), "testBean").unwrap();
+        let result = processor
+            .post_process_before_initialization(bean.clone(), "testBean")
+            .unwrap();
         assert!(result.is_some());
     }
 
@@ -547,8 +575,12 @@ mod tests {
     #[test]
     fn clear_resets_processed_count() {
         let processor = AutowiredAnnotationBeanPostProcessor::new();
-        processor.post_process_before_initialization(Arc::new(1), "b1").unwrap();
-        processor.post_process_before_initialization(Arc::new(2), "b2").unwrap();
+        processor
+            .post_process_before_initialization(Arc::new(1), "b1")
+            .unwrap();
+        processor
+            .post_process_before_initialization(Arc::new(2), "b2")
+            .unwrap();
         assert_eq!(processor.processed_count(), 2);
 
         processor.clear();

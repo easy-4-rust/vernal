@@ -8,8 +8,8 @@ use std::any::Any;
 use std::sync::Arc;
 
 use crate::factory::bean_factory::BeanFactory;
-use crate::factory::support::dependency_descriptor::DependencyDescriptor;
 use crate::factory::config::named_bean_holder::NamedBeanHolder;
+use crate::factory::support::dependency_descriptor::DependencyDescriptor;
 use crate::type_converter::TypeConverter;
 
 /// Spring 风格的自动装配能力 BeanFactory 接口。

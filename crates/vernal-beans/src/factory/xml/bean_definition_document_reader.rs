@@ -10,7 +10,6 @@
 //! 2. 遍历子元素，委托给对应的解析器
 //! 3. 处理 `<import>`、`<alias>`、`<bean>` 和自定义元素
 
-
 /// Bean 定义文档读取器接口。
 ///
 /// 对应 Spring 的 `BeanDefinitionDocumentReader`。
@@ -109,11 +108,19 @@ mod tests {
     fn document_reader_counts_beans() {
         let reader = DefaultBeanDefinitionDocumentReader::new();
         let elements = vec![
-            ("bean".to_string(), vec![("id".to_string(), "a".to_string())]),
-            ("bean".to_string(), vec![("id".to_string(), "b".to_string())]),
+            (
+                "bean".to_string(),
+                vec![("id".to_string(), "a".to_string())],
+            ),
+            (
+                "bean".to_string(),
+                vec![("id".to_string(), "b".to_string())],
+            ),
             ("import".to_string(), vec![]),
         ];
-        let count = reader.register_bean_definitions("beans", &[], &elements).unwrap();
+        let count = reader
+            .register_bean_definitions("beans", &[], &elements)
+            .unwrap();
         assert_eq!(count, 2);
     }
 
@@ -124,7 +131,9 @@ mod tests {
             ("default-lazy-init".to_string(), "true".to_string()),
             ("default-autowire".to_string(), "byName".to_string()),
         ];
-        reader.register_bean_definitions("beans", &attrs, &[]).unwrap();
+        reader
+            .register_bean_definitions("beans", &attrs, &[])
+            .unwrap();
         let defaults = reader.defaults();
         assert_eq!(defaults.default_lazy_init, Some(true));
         assert_eq!(defaults.default_autowire, Some("byName".to_string()));

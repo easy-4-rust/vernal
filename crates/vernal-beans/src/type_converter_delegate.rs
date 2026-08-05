@@ -357,7 +357,9 @@ mod tests {
             Ok(Box::new(*n as i64))
         });
         let value: Box<dyn Any> = Box::new(42i32);
-        let result = delegate.convert_if_necessary(None, &*value, TypeId::of::<i64>()).unwrap();
+        let result = delegate
+            .convert_if_necessary(None, &*value, TypeId::of::<i64>())
+            .unwrap();
         assert_eq!(*result.downcast::<i64>().unwrap(), 42i64);
     }
 
@@ -367,7 +369,9 @@ mod tests {
     fn convert_same_type_returns_owned() {
         let delegate = TypeConverterDelegate::new();
         let value = "hello".to_string();
-        let result = delegate.convert_if_necessary(None, &value, TypeId::of::<String>()).unwrap();
+        let result = delegate
+            .convert_if_necessary(None, &value, TypeId::of::<String>())
+            .unwrap();
         assert_eq!(*result.downcast::<String>().unwrap(), "hello");
     }
 
@@ -375,7 +379,9 @@ mod tests {
     fn convert_same_type_i32() {
         let delegate = TypeConverterDelegate::new();
         let value = 42i32;
-        let result = delegate.convert_if_necessary(None, &value, TypeId::of::<i32>()).unwrap();
+        let result = delegate
+            .convert_if_necessary(None, &value, TypeId::of::<i32>())
+            .unwrap();
         assert_eq!(*result.downcast::<i32>().unwrap(), 42);
     }
 
@@ -383,7 +389,9 @@ mod tests {
     fn convert_same_type_i64() {
         let delegate = TypeConverterDelegate::new();
         let value = 42i64;
-        let result = delegate.convert_if_necessary(None, &value, TypeId::of::<i64>()).unwrap();
+        let result = delegate
+            .convert_if_necessary(None, &value, TypeId::of::<i64>())
+            .unwrap();
         assert_eq!(*result.downcast::<i64>().unwrap(), 42i64);
     }
 
@@ -391,7 +399,9 @@ mod tests {
     fn convert_same_type_u32() {
         let delegate = TypeConverterDelegate::new();
         let value = 42u32;
-        let result = delegate.convert_if_necessary(None, &value, TypeId::of::<u32>()).unwrap();
+        let result = delegate
+            .convert_if_necessary(None, &value, TypeId::of::<u32>())
+            .unwrap();
         assert_eq!(*result.downcast::<u32>().unwrap(), 42u32);
     }
 
@@ -399,7 +409,9 @@ mod tests {
     fn convert_same_type_u64() {
         let delegate = TypeConverterDelegate::new();
         let value = 42u64;
-        let result = delegate.convert_if_necessary(None, &value, TypeId::of::<u64>()).unwrap();
+        let result = delegate
+            .convert_if_necessary(None, &value, TypeId::of::<u64>())
+            .unwrap();
         assert_eq!(*result.downcast::<u64>().unwrap(), 42u64);
     }
 
@@ -407,7 +419,9 @@ mod tests {
     fn convert_same_type_f32() {
         let delegate = TypeConverterDelegate::new();
         let value = 1.5f32;
-        let result = delegate.convert_if_necessary(None, &value, TypeId::of::<f32>()).unwrap();
+        let result = delegate
+            .convert_if_necessary(None, &value, TypeId::of::<f32>())
+            .unwrap();
         assert_eq!(*result.downcast::<f32>().unwrap(), 1.5f32);
     }
 
@@ -415,7 +429,9 @@ mod tests {
     fn convert_same_type_f64() {
         let delegate = TypeConverterDelegate::new();
         let value = 3.14f64;
-        let result = delegate.convert_if_necessary(None, &value, TypeId::of::<f64>()).unwrap();
+        let result = delegate
+            .convert_if_necessary(None, &value, TypeId::of::<f64>())
+            .unwrap();
         let val = *result.downcast::<f64>().unwrap();
         assert!((val - 3.14).abs() < f64::EPSILON);
     }
@@ -424,7 +440,9 @@ mod tests {
     fn convert_same_type_bool() {
         let delegate = TypeConverterDelegate::new();
         let value = true;
-        let result = delegate.convert_if_necessary(None, &value, TypeId::of::<bool>()).unwrap();
+        let result = delegate
+            .convert_if_necessary(None, &value, TypeId::of::<bool>())
+            .unwrap();
         assert!(*result.downcast::<bool>().unwrap());
     }
 
@@ -432,7 +450,9 @@ mod tests {
     fn convert_same_type_char() {
         let delegate = TypeConverterDelegate::new();
         let value = 'x';
-        let result = delegate.convert_if_necessary(None, &value, TypeId::of::<char>()).unwrap();
+        let result = delegate
+            .convert_if_necessary(None, &value, TypeId::of::<char>())
+            .unwrap();
         assert_eq!(*result.downcast::<char>().unwrap(), 'x');
     }
 
@@ -440,7 +460,9 @@ mod tests {
     fn convert_same_type_vec_u8() {
         let delegate = TypeConverterDelegate::new();
         let value = vec![1u8, 2, 3];
-        let result = delegate.convert_if_necessary(None, &value, TypeId::of::<Vec<u8>>()).unwrap();
+        let result = delegate
+            .convert_if_necessary(None, &value, TypeId::of::<Vec<u8>>())
+            .unwrap();
         assert_eq!(*result.downcast::<Vec<u8>>().unwrap(), vec![1u8, 2, 3]);
     }
 
@@ -448,8 +470,13 @@ mod tests {
     fn convert_same_type_vec_string() {
         let delegate = TypeConverterDelegate::new();
         let value = vec!["a".to_string(), "b".to_string()];
-        let result = delegate.convert_if_necessary(None, &value, TypeId::of::<Vec<String>>()).unwrap();
-        assert_eq!(*result.downcast::<Vec<String>>().unwrap(), vec!["a".to_string(), "b".to_string()]);
+        let result = delegate
+            .convert_if_necessary(None, &value, TypeId::of::<Vec<String>>())
+            .unwrap();
+        assert_eq!(
+            *result.downcast::<Vec<String>>().unwrap(),
+            vec!["a".to_string(), "b".to_string()]
+        );
     }
 
     #[test]
@@ -457,7 +484,9 @@ mod tests {
         let delegate = TypeConverterDelegate::new();
         let mut value = HashMap::new();
         value.insert("k".to_string(), "v".to_string());
-        let result = delegate.convert_if_necessary(None, &value, TypeId::of::<HashMap<String, String>>()).unwrap();
+        let result = delegate
+            .convert_if_necessary(None, &value, TypeId::of::<HashMap<String, String>>())
+            .unwrap();
         let map = result.downcast::<HashMap<String, String>>().unwrap();
         assert_eq!(map.get("k").unwrap(), "v");
     }
@@ -661,7 +690,10 @@ mod tests {
     fn value_to_owned_vec_string() {
         let value = vec!["a".to_string()];
         let result = super::value_to_owned(&value).unwrap();
-        assert_eq!(*result.downcast::<Vec<String>>().unwrap(), vec!["a".to_string()]);
+        assert_eq!(
+            *result.downcast::<Vec<String>>().unwrap(),
+            vec!["a".to_string()]
+        );
     }
 
     #[test]
@@ -752,7 +784,9 @@ mod tests {
             Ok(Box::new(*n + 100))
         });
         let value = 42i32;
-        let result = delegate.convert_if_necessary(None, &value, TypeId::of::<i32>()).unwrap();
+        let result = delegate
+            .convert_if_necessary(None, &value, TypeId::of::<i32>())
+            .unwrap();
         assert_eq!(*result.downcast::<i32>().unwrap(), 142);
     }
 
@@ -766,7 +800,9 @@ mod tests {
         });
         // Try to convert i32 -> i32 (should use same-type path, not custom converter)
         let value = 42i32;
-        let result = delegate.convert_if_necessary(None, &value, TypeId::of::<i32>()).unwrap();
+        let result = delegate
+            .convert_if_necessary(None, &value, TypeId::of::<i32>())
+            .unwrap();
         assert_eq!(*result.downcast::<i32>().unwrap(), 42);
     }
 
@@ -784,7 +820,9 @@ mod tests {
     fn convert_string_to_string_same_type() {
         let delegate = TypeConverterDelegate::new();
         let value = "hello".to_string();
-        let result = delegate.convert_if_necessary(None, &value, TypeId::of::<String>()).unwrap();
+        let result = delegate
+            .convert_if_necessary(None, &value, TypeId::of::<String>())
+            .unwrap();
         assert_eq!(*result.downcast::<String>().unwrap(), "hello");
     }
 
@@ -792,7 +830,9 @@ mod tests {
     fn convert_with_property_name_string() {
         let delegate = TypeConverterDelegate::new();
         let value = "test".to_string();
-        let result = delegate.convert_if_necessary(Some("myField"), &value, TypeId::of::<String>()).unwrap();
+        let result = delegate
+            .convert_if_necessary(Some("myField"), &value, TypeId::of::<String>())
+            .unwrap();
         assert_eq!(*result.downcast::<String>().unwrap(), "test");
     }
 
@@ -833,7 +873,9 @@ mod tests {
             Ok(Box::new(n))
         });
         let value = "42".to_string();
-        let result = delegate.convert_if_necessary(None, &value, TypeId::of::<i32>()).unwrap();
+        let result = delegate
+            .convert_if_necessary(None, &value, TypeId::of::<i32>())
+            .unwrap();
         assert_eq!(*result.downcast::<i32>().unwrap(), 42);
     }
 

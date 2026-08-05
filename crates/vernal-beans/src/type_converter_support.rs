@@ -186,13 +186,16 @@ impl TypeConverterSupport {
         value: &str,
         target_type_name: &str,
     ) -> Result<Option<Box<dyn Any>>, TypeMismatchException> {
-        value.parse::<T>().map(|v| Some(Box::new(v) as Box<dyn Any>)).map_err(|_| {
-            TypeMismatchException::with_details(
-                format!("Cannot convert '{}' to {}", value, target_type_name),
-                target_type_name.to_string(),
-                value.to_string(),
-            )
-        })
+        value
+            .parse::<T>()
+            .map(|v| Some(Box::new(v) as Box<dyn Any>))
+            .map_err(|_| {
+                TypeMismatchException::with_details(
+                    format!("Cannot convert '{}' to {}", value, target_type_name),
+                    target_type_name.to_string(),
+                    value.to_string(),
+                )
+            })
     }
 }
 
@@ -208,11 +211,15 @@ impl TypeConverter for TypeConverterSupport {
             let type_name = Self::type_id_to_name(target_type);
             match self.convert_string(s, type_name) {
                 Ok(Some(v)) => Self::box_to_send_sync(v),
-                Ok(None) => Err(Box::new(TypeMismatchException::new("Conversion returned None"))),
+                Ok(None) => Err(Box::new(TypeMismatchException::new(
+                    "Conversion returned None",
+                ))),
                 Err(e) => Err(Box::new(e)),
             }
         } else {
-            Err(Box::new(TypeMismatchException::new("Unsupported source type")))
+            Err(Box::new(TypeMismatchException::new(
+                "Unsupported source type",
+            )))
         }
     }
 }
@@ -220,17 +227,27 @@ impl TypeConverter for TypeConverterSupport {
 impl TypeConverterSupport {
     /// 将 TypeId 映射为类型名。
     fn type_id_to_name(type_id: std::any::TypeId) -> &'static str {
-        if type_id == std::any::TypeId::of::<i32>() { "i32" }
-        else if type_id == std::any::TypeId::of::<i64>() { "i64" }
-        else if type_id == std::any::TypeId::of::<f32>() { "f32" }
-        else if type_id == std::any::TypeId::of::<f64>() { "f64" }
-        else if type_id == std::any::TypeId::of::<bool>() { "bool" }
-        else if type_id == std::any::TypeId::of::<String>() { "String" }
-        else { "unknown" }
+        if type_id == std::any::TypeId::of::<i32>() {
+            "i32"
+        } else if type_id == std::any::TypeId::of::<i64>() {
+            "i64"
+        } else if type_id == std::any::TypeId::of::<f32>() {
+            "f32"
+        } else if type_id == std::any::TypeId::of::<f64>() {
+            "f64"
+        } else if type_id == std::any::TypeId::of::<bool>() {
+            "bool"
+        } else if type_id == std::any::TypeId::of::<String>() {
+            "String"
+        } else {
+            "unknown"
+        }
     }
 
     /// 将 Box<dyn Any> 转换为 Box<dyn Any + Send + Sync>。
-    fn box_to_send_sync(v: Box<dyn Any>) -> Result<Box<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> {
+    fn box_to_send_sync(
+        v: Box<dyn Any>,
+    ) -> Result<Box<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> {
         let v = match v.downcast::<String>() {
             Ok(s) => return Ok(s),
             Err(v) => v,
@@ -281,7 +298,7 @@ impl TypeConverterSupport {
         };
         match v.downcast::<char>() {
             Ok(c) => return Ok(c),
-            Err(_) => {},
+            Err(_) => {}
         }
         Err(Box::new(TypeMismatchException::new("Cannot convert value")))
     }
@@ -605,7 +622,8 @@ mod tests {
     #[test]
     fn convert_unsupported_target_type() {
         let converter = TypeConverterSupport::new();
-        let result = converter.convert_if_necessary(Some(Box::new("abc".to_string())), "CustomType");
+        let result =
+            converter.convert_if_necessary(Some(Box::new("abc".to_string())), "CustomType");
         assert!(result.is_err());
     }
 
@@ -850,7 +868,12 @@ mod tests {
         use crate::type_converter::TypeConverter;
         let converter = TypeConverterSupport::new();
         let value = "42".to_string();
-        let result = TypeConverter::convert_if_necessary(&converter, None, &value, std::any::TypeId::of::<i32>());
+        let result = TypeConverter::convert_if_necessary(
+            &converter,
+            None,
+            &value,
+            std::any::TypeId::of::<i32>(),
+        );
         assert!(result.is_ok());
         assert_eq!(*result.unwrap().downcast::<i32>().unwrap(), 42);
     }
@@ -860,7 +883,12 @@ mod tests {
         use crate::type_converter::TypeConverter;
         let converter = TypeConverterSupport::new();
         let value = "42".to_string();
-        let result = TypeConverter::convert_if_necessary(&converter, None, &value, std::any::TypeId::of::<i64>());
+        let result = TypeConverter::convert_if_necessary(
+            &converter,
+            None,
+            &value,
+            std::any::TypeId::of::<i64>(),
+        );
         assert!(result.is_ok());
         assert_eq!(*result.unwrap().downcast::<i64>().unwrap(), 42i64);
     }
@@ -870,7 +898,12 @@ mod tests {
         use crate::type_converter::TypeConverter;
         let converter = TypeConverterSupport::new();
         let value = "1.5".to_string();
-        let result = TypeConverter::convert_if_necessary(&converter, None, &value, std::any::TypeId::of::<f32>());
+        let result = TypeConverter::convert_if_necessary(
+            &converter,
+            None,
+            &value,
+            std::any::TypeId::of::<f32>(),
+        );
         assert!(result.is_ok());
         let val = *result.unwrap().downcast::<f32>().unwrap();
         assert!((val - 1.5f32).abs() < f32::EPSILON);
@@ -881,7 +914,12 @@ mod tests {
         use crate::type_converter::TypeConverter;
         let converter = TypeConverterSupport::new();
         let value = "3.14".to_string();
-        let result = TypeConverter::convert_if_necessary(&converter, None, &value, std::any::TypeId::of::<f64>());
+        let result = TypeConverter::convert_if_necessary(
+            &converter,
+            None,
+            &value,
+            std::any::TypeId::of::<f64>(),
+        );
         assert!(result.is_ok());
         let val = *result.unwrap().downcast::<f64>().unwrap();
         assert!((val - 3.14).abs() < f64::EPSILON);
@@ -892,7 +930,12 @@ mod tests {
         use crate::type_converter::TypeConverter;
         let converter = TypeConverterSupport::new();
         let value = "true".to_string();
-        let result = TypeConverter::convert_if_necessary(&converter, None, &value, std::any::TypeId::of::<bool>());
+        let result = TypeConverter::convert_if_necessary(
+            &converter,
+            None,
+            &value,
+            std::any::TypeId::of::<bool>(),
+        );
         assert!(result.is_ok());
         assert!(*result.unwrap().downcast::<bool>().unwrap());
     }
@@ -902,7 +945,12 @@ mod tests {
         use crate::type_converter::TypeConverter;
         let converter = TypeConverterSupport::new();
         let value = "hello".to_string();
-        let result = TypeConverter::convert_if_necessary(&converter, None, &value, std::any::TypeId::of::<String>());
+        let result = TypeConverter::convert_if_necessary(
+            &converter,
+            None,
+            &value,
+            std::any::TypeId::of::<String>(),
+        );
         assert!(result.is_ok());
         assert_eq!(*result.unwrap().downcast::<String>().unwrap(), "hello");
     }
@@ -912,7 +960,12 @@ mod tests {
         use crate::type_converter::TypeConverter;
         let converter = TypeConverterSupport::new();
         let value = 42i32;
-        let result = TypeConverter::convert_if_necessary(&converter, None, &value, std::any::TypeId::of::<String>());
+        let result = TypeConverter::convert_if_necessary(
+            &converter,
+            None,
+            &value,
+            std::any::TypeId::of::<String>(),
+        );
         assert!(result.is_err());
     }
 
@@ -921,7 +974,12 @@ mod tests {
         use crate::type_converter::TypeConverter;
         let converter = TypeConverterSupport::new();
         let value = "abc".to_string();
-        let result = TypeConverter::convert_if_necessary(&converter, None, &value, std::any::TypeId::of::<i32>());
+        let result = TypeConverter::convert_if_necessary(
+            &converter,
+            None,
+            &value,
+            std::any::TypeId::of::<i32>(),
+        );
         assert!(result.is_err());
     }
 
@@ -929,37 +987,58 @@ mod tests {
 
     #[test]
     fn type_id_to_name_i32() {
-        assert_eq!(TypeConverterSupport::type_id_to_name(std::any::TypeId::of::<i32>()), "i32");
+        assert_eq!(
+            TypeConverterSupport::type_id_to_name(std::any::TypeId::of::<i32>()),
+            "i32"
+        );
     }
 
     #[test]
     fn type_id_to_name_i64() {
-        assert_eq!(TypeConverterSupport::type_id_to_name(std::any::TypeId::of::<i64>()), "i64");
+        assert_eq!(
+            TypeConverterSupport::type_id_to_name(std::any::TypeId::of::<i64>()),
+            "i64"
+        );
     }
 
     #[test]
     fn type_id_to_name_f32() {
-        assert_eq!(TypeConverterSupport::type_id_to_name(std::any::TypeId::of::<f32>()), "f32");
+        assert_eq!(
+            TypeConverterSupport::type_id_to_name(std::any::TypeId::of::<f32>()),
+            "f32"
+        );
     }
 
     #[test]
     fn type_id_to_name_f64() {
-        assert_eq!(TypeConverterSupport::type_id_to_name(std::any::TypeId::of::<f64>()), "f64");
+        assert_eq!(
+            TypeConverterSupport::type_id_to_name(std::any::TypeId::of::<f64>()),
+            "f64"
+        );
     }
 
     #[test]
     fn type_id_to_name_bool() {
-        assert_eq!(TypeConverterSupport::type_id_to_name(std::any::TypeId::of::<bool>()), "bool");
+        assert_eq!(
+            TypeConverterSupport::type_id_to_name(std::any::TypeId::of::<bool>()),
+            "bool"
+        );
     }
 
     #[test]
     fn type_id_to_name_string() {
-        assert_eq!(TypeConverterSupport::type_id_to_name(std::any::TypeId::of::<String>()), "String");
+        assert_eq!(
+            TypeConverterSupport::type_id_to_name(std::any::TypeId::of::<String>()),
+            "String"
+        );
     }
 
     #[test]
     fn type_id_to_name_unknown() {
-        assert_eq!(TypeConverterSupport::type_id_to_name(std::any::TypeId::of::<Vec<u8>>()), "unknown");
+        assert_eq!(
+            TypeConverterSupport::type_id_to_name(std::any::TypeId::of::<Vec<u8>>()),
+            "unknown"
+        );
     }
 
     // ── box_to_send_sync ─────────────────────────────────────────────────

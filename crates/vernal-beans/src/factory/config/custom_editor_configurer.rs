@@ -1,8 +1,8 @@
 //! CustomEditorConfigurer — Spring 风格的自定义编辑器配置器。
+use crate::property_editor::PropertyEditor;
 use std::any::TypeId;
 use std::collections::HashMap;
 use std::fmt;
-use crate::property_editor::PropertyEditor;
 
 /// Spring 风格的自定义编辑器配置器。
 pub struct CustomEditorConfigurer {
@@ -11,7 +11,11 @@ pub struct CustomEditorConfigurer {
 
 impl CustomEditorConfigurer {
     /// 创建一个新的实例。
-    pub fn new() -> Self { Self { editors: HashMap::new() } }
+    pub fn new() -> Self {
+        Self {
+            editors: HashMap::new(),
+        }
+    }
     /// 注册自定义编辑器。
     pub fn register_custom_editor(&mut self, type_id: TypeId, editor: Box<dyn PropertyEditor>) {
         self.editors.insert(type_id, editor);
@@ -21,13 +25,19 @@ impl CustomEditorConfigurer {
         self.editors.get(&type_id).map(|e| e.as_ref())
     }
     /// 判断是否自定义编辑器。
-    pub fn has_custom_editor(&self, type_id: TypeId) -> bool { self.editors.contains_key(&type_id) }
+    pub fn has_custom_editor(&self, type_id: TypeId) -> bool {
+        self.editors.contains_key(&type_id)
+    }
     /// 获取编辑器数量。
-    pub fn editor_count(&self) -> usize { self.editors.len() }
+    pub fn editor_count(&self) -> usize {
+        self.editors.len()
+    }
 }
 
 impl Default for CustomEditorConfigurer {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl fmt::Debug for CustomEditorConfigurer {
@@ -50,23 +60,36 @@ mod tests {
     }
 
     impl StubEditor {
-        fn new() -> Self { Self { text: None } }
+        fn new() -> Self {
+            Self { text: None }
+        }
     }
 
     impl PropertyEditor for StubEditor {
-        fn target_type(&self) -> TypeId { TypeId::of::<String>() }
-        fn set_as_text(&mut self, text: &str) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        fn target_type(&self) -> TypeId {
+            TypeId::of::<String>()
+        }
+        fn set_as_text(
+            &mut self,
+            text: &str,
+        ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             self.text = Some(text.to_string());
             Ok(())
         }
-        fn get_as_text(&self) -> Option<String> { self.text.clone() }
+        fn get_as_text(&self) -> Option<String> {
+            self.text.clone()
+        }
         fn set_value(&mut self, value: Arc<dyn Any + Send + Sync>) {
             if let Some(s) = value.downcast_ref::<String>() {
                 self.text = Some(s.clone());
             }
         }
-        fn get_value(&self) -> Option<&dyn Any> { self.text.as_ref().map(|v| v as &dyn Any) }
-        fn get_value_type(&self) -> TypeId { TypeId::of::<String>() }
+        fn get_value(&self) -> Option<&dyn Any> {
+            self.text.as_ref().map(|v| v as &dyn Any)
+        }
+        fn get_value_type(&self) -> TypeId {
+            TypeId::of::<String>()
+        }
     }
 
     #[test]
@@ -103,7 +126,9 @@ mod tests {
         editor.set_as_text("test_value").unwrap();
         configurer.register_custom_editor(TypeId::of::<String>(), Box::new(editor));
 
-        let found = configurer.get_custom_editor(TypeId::of::<String>()).unwrap();
+        let found = configurer
+            .get_custom_editor(TypeId::of::<String>())
+            .unwrap();
         assert_eq!(found.get_as_text(), Some("test_value".to_string()));
     }
 
@@ -119,7 +144,9 @@ mod tests {
         configurer.register_custom_editor(TypeId::of::<String>(), Box::new(editor2));
 
         assert_eq!(configurer.editor_count(), 1);
-        let found = configurer.get_custom_editor(TypeId::of::<String>()).unwrap();
+        let found = configurer
+            .get_custom_editor(TypeId::of::<String>())
+            .unwrap();
         assert_eq!(found.get_as_text(), Some("second".to_string()));
     }
 

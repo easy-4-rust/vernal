@@ -127,16 +127,24 @@ impl GenericAnnotatedBeanDefinition {
     }
 
     /// 获取 Bean 类名。
-    pub fn bean_class_name(&self) -> &str { &self.bean_class_name }
+    pub fn bean_class_name(&self) -> &str {
+        &self.bean_class_name
+    }
 }
 
 impl AnnotatedBeanDefinition for GenericAnnotatedBeanDefinition {
-    fn get_metadata(&self) -> Option<BeanMetadata> { Some(self.metadata.clone()) }
+    fn get_metadata(&self) -> Option<BeanMetadata> {
+        Some(self.metadata.clone())
+    }
     fn is_factory_method(&self, name: &str) -> bool {
         self.factory_method.as_deref() == Some(name)
     }
-    fn get_factory_method_name(&self) -> Option<String> { self.factory_method.clone() }
-    fn get_bean_type(&self) -> TypeId { TypeId::of::<Self>() }
+    fn get_factory_method_name(&self) -> Option<String> {
+        self.factory_method.clone()
+    }
+    fn get_bean_type(&self) -> TypeId {
+        TypeId::of::<Self>()
+    }
 }
 
 #[cfg(test)]
@@ -178,15 +186,16 @@ mod tests {
 
         assert!(def.is_factory_method("createBean"));
         assert!(!def.is_factory_method("other"));
-        assert_eq!(def.get_factory_method_name(), Some("createBean".to_string()));
+        assert_eq!(
+            def.get_factory_method_name(),
+            Some("createBean".to_string())
+        );
     }
 
     #[test]
     fn annotated_definition_with_metadata() {
-        let metadata = BeanMetadata::new("Config".to_string(), 0)
-            .with_configuration(true);
-        let def = GenericAnnotatedBeanDefinition::new("Config".to_string())
-            .with_metadata(metadata);
+        let metadata = BeanMetadata::new("Config".to_string(), 0).with_configuration(true);
+        let def = GenericAnnotatedBeanDefinition::new("Config".to_string()).with_metadata(metadata);
 
         let meta = def.get_metadata().unwrap();
         assert!(meta.is_configuration);

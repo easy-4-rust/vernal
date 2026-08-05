@@ -44,7 +44,8 @@ impl DefaultNamespaceHandlerResolver {
         namespace_uri: impl Into<String>,
         handler_description: impl Into<String>,
     ) {
-        self.handler_mappings.insert(namespace_uri.into(), handler_description.into());
+        self.handler_mappings
+            .insert(namespace_uri.into(), handler_description.into());
     }
 
     /// 获取已注册的处理器数量。
@@ -54,7 +55,8 @@ impl DefaultNamespaceHandlerResolver {
 
     /// 获取解析次数。
     pub fn resolve_count(&self) -> u32 {
-        self.resolve_count.load(std::sync::atomic::Ordering::Relaxed)
+        self.resolve_count
+            .load(std::sync::atomic::Ordering::Relaxed)
     }
 
     /// 获取所有注册的命名空间 URI。
@@ -68,7 +70,8 @@ impl NamespaceHandlerResolver for DefaultNamespaceHandlerResolver {
         &self,
         namespace_uri: &str,
     ) -> Result<Box<dyn NamespaceHandler>, Box<dyn std::error::Error + Send + Sync>> {
-        self.resolve_count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        self.resolve_count
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
 
         if let Some(desc) = self.handler_mappings.get(namespace_uri) {
             // 返回一个描述性的错误，说明需要具体的 NamespaceHandler 实现
@@ -76,12 +79,14 @@ impl NamespaceHandlerResolver for DefaultNamespaceHandlerResolver {
                 "DefaultNamespaceHandlerResolver: handler '{}' registered for '{}', \
                  but concrete implementation not yet available",
                 desc, namespace_uri
-            ).into())
+            )
+            .into())
         } else {
             Err(format!(
                 "DefaultNamespaceHandlerResolver: no handler registered for namespace '{}'",
                 namespace_uri
-            ).into())
+            )
+            .into())
         }
     }
 }
@@ -98,7 +103,11 @@ mod tests {
             "ContextNamespaceHandler",
         );
         assert_eq!(resolver.handler_count(), 1);
-        assert!(resolver.registered_uris().contains(&"http://www.springframework.org/schema/context".to_string()));
+        assert!(
+            resolver
+                .registered_uris()
+                .contains(&"http://www.springframework.org/schema/context".to_string())
+        );
     }
 
     #[test]

@@ -111,15 +111,16 @@ impl PropertyPlaceholderConfigurer {
                     &result[start + self.placeholder_prefix.len()..start + end];
 
                 // 检查是否有默认值
-                let (key, default_value) =
-                    if let Some(separator_pos) = placeholder_content.find(&self.value_separator) {
-                        (
-                            &placeholder_content[..separator_pos],
-                            Some(&placeholder_content[separator_pos + self.value_separator.len()..]),
-                        )
-                    } else {
-                        (placeholder_content, None)
-                    };
+                let (key, default_value) = if let Some(separator_pos) =
+                    placeholder_content.find(&self.value_separator)
+                {
+                    (
+                        &placeholder_content[..separator_pos],
+                        Some(&placeholder_content[separator_pos + self.value_separator.len()..]),
+                    )
+                } else {
+                    (placeholder_content, None)
+                };
 
                 if let Some(resolved) = self.properties.get(key) {
                     result = format!(

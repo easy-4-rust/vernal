@@ -65,12 +65,16 @@ mod tests {
 #[cfg(test)]
 mod additional_tests {
     use super::*;
-    use std::sync::Arc;
     use crate::any_pointcut::AnyPointcut;
+    use std::sync::Arc;
 
     struct TestInterceptor;
     impl crate::Interceptor for TestInterceptor {
-        fn intercept<'a>(&'a self, invocation: Arc<crate::Invocation>, next: crate::Next<'a>) -> crate::InvocationFuture<'a> {
+        fn intercept<'a>(
+            &'a self,
+            invocation: Arc<crate::Invocation>,
+            next: crate::Next<'a>,
+        ) -> crate::InvocationFuture<'a> {
             next.run(invocation)
         }
     }
@@ -107,12 +111,16 @@ mod additional_tests {
 #[cfg(test)]
 mod aop_proxy_utils_tests {
     use super::*;
-    use std::sync::Arc;
     use crate::any_pointcut::AnyPointcut;
+    use std::sync::Arc;
 
     struct TestInterceptor;
     impl crate::Interceptor for TestInterceptor {
-        fn intercept<'a>(&'a self, invocation: Arc<crate::Invocation>, next: crate::Next<'a>) -> crate::InvocationFuture<'a> {
+        fn intercept<'a>(
+            &'a self,
+            invocation: Arc<crate::Invocation>,
+            next: crate::Next<'a>,
+        ) -> crate::InvocationFuture<'a> {
             next.run(invocation)
         }
     }

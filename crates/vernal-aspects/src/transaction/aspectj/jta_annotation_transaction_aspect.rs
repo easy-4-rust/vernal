@@ -103,7 +103,9 @@ mod tests {
         fn get_transaction_attribute(&self, _: &MethodMetadata) -> Option<TransactionAttribute> {
             Some(TransactionAttribute::default())
         }
-        fn is_candidate_class(&self, _: &str) -> bool { true }
+        fn is_candidate_class(&self, _: &str) -> bool {
+            true
+        }
     }
 
     #[test]

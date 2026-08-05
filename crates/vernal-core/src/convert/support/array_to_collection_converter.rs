@@ -2,7 +2,7 @@
 //!
 //! 对标 Spring `org.springframework.core.convert.support.ArrayToCollectionConverter`。
 
-use crate::convert::{ConversionError, Convertible, Converter};
+use crate::convert::{ConversionError, Converter, Convertible};
 
 /// 数组 → 集合转换器。
 ///

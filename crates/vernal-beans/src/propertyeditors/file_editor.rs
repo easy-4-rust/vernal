@@ -148,13 +148,19 @@ mod tests {
     fn relative_path() {
         let mut editor = FileEditor::new();
         editor.set_as_text("./relative/path.txt").unwrap();
-        assert_eq!(editor.get_as_text(), Some("./relative/path.txt".to_string()));
+        assert_eq!(
+            editor.get_as_text(),
+            Some("./relative/path.txt".to_string())
+        );
     }
 
     #[test]
     fn windows_style_path() {
         let mut editor = FileEditor::new();
         editor.set_as_text("C:\\Users\\test\\file.txt").unwrap();
-        assert_eq!(editor.get_as_text(), Some("C:\\Users\\test\\file.txt".to_string()));
+        assert_eq!(
+            editor.get_as_text(),
+            Some("C:\\Users\\test\\file.txt".to_string())
+        );
     }
 }

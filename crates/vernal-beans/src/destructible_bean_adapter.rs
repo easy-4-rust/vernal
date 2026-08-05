@@ -27,7 +27,8 @@ pub struct DisposableBeanAdapter {
     /// 自定义销毁方法名（仅用于诊断/日志）。
     destroy_method_name: Option<String>,
     /// 自定义销毁闭包（如果有）。
-    destroy_callback: Option<Arc<dyn Fn() -> Result<(), Box<dyn std::error::Error + Send + Sync>> + Send + Sync>>,
+    destroy_callback:
+        Option<Arc<dyn Fn() -> Result<(), Box<dyn std::error::Error + Send + Sync>> + Send + Sync>>,
 }
 
 impl DisposableBeanAdapter {
@@ -63,7 +64,9 @@ impl DisposableBeanAdapter {
         bean_name: impl Into<String>,
         bean: Arc<dyn Any + Send + Sync>,
         destroy_method_name: Option<String>,
-        destroy_callback: Arc<dyn Fn() -> Result<(), Box<dyn std::error::Error + Send + Sync>> + Send + Sync>,
+        destroy_callback: Arc<
+            dyn Fn() -> Result<(), Box<dyn std::error::Error + Send + Sync>> + Send + Sync,
+        >,
     ) -> Self {
         Self {
             bean_name: bean_name.into(),

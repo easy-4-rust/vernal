@@ -11,8 +11,8 @@
 //! 本实现通过 `get_value_state` 操作 `ExpressionState` 的 active context 栈，
 //! 实现与 Spring 完全一致的元素上下文替换。
 
-use super::spel_node::SpelNode;
 use super::super::expression_state::ExpressionState;
+use super::spel_node::SpelNode;
 use crate::evaluation_context::EvaluationContext;
 use crate::evaluation_exception::EvaluationException;
 use crate::typed_value::{ExpressionValue, TypeDescriptor, TypedValue};
@@ -27,13 +27,19 @@ impl Projection {
     /// 创建 Projection 节点。
     #[must_use]
     pub fn new(expression: Box<dyn SpelNode>) -> Self {
-        Self { expression, null_safe: false }
+        Self {
+            expression,
+            null_safe: false,
+        }
     }
 
     /// 创建 null-safe Projection 节点。
     #[must_use]
     pub fn new_null_safe(expression: Box<dyn SpelNode>) -> Self {
-        Self { expression, null_safe: true }
+        Self {
+            expression,
+            null_safe: true,
+        }
     }
 
     /// 获取投影表达式引用。
@@ -130,7 +136,11 @@ impl SpelNode for Projection {
         match source.value() {
             ExpressionValue::List(items) => self.project_list(items, state),
             ExpressionValue::Map(entries) => self.project_map(entries, state),
-            _ => Err(EvaluationException::new("", None, "投影运算需要列表或映射操作数")),
+            _ => Err(EvaluationException::new(
+                "",
+                None,
+                "投影运算需要列表或映射操作数",
+            )),
         }
     }
 
@@ -139,7 +149,11 @@ impl SpelNode for Projection {
     }
 
     fn get_child(&self, i: usize) -> Option<&dyn SpelNode> {
-        if i == 0 { Some(&*self.expression) } else { None }
+        if i == 0 {
+            Some(&*self.expression)
+        } else {
+            None
+        }
     }
 
     fn start_position(&self) -> usize {

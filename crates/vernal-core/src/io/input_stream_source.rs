@@ -33,8 +33,9 @@ mod tests {
     #[test]
     fn resource_is_input_stream_source() {
         // A 类（合同对齐）：对标 Spring `Resource extends InputStreamSource`
-        let source: Box<dyn InputStreamSource> =
-            Box::new(crate::io::ByteArrayResource::new("hello".as_bytes().to_vec()));
+        let source: Box<dyn InputStreamSource> = Box::new(crate::io::ByteArrayResource::new(
+            "hello".as_bytes().to_vec(),
+        ));
         assert_eq!(source.read_bytes().unwrap(), b"hello");
     }
 }

@@ -19,8 +19,7 @@ pub trait AbstractCharSequenceDecoder: AbstractDecoder {
     ///
     /// 非 UTF-8 输入返回 [`std::io::Error`]。
     fn decode_to_string(&self, bytes: &[u8]) -> io::Result<String> {
-        String::from_utf8(bytes.to_vec())
-            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+        String::from_utf8(bytes.to_vec()).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
     }
 }
 

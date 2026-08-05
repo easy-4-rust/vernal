@@ -40,7 +40,11 @@ impl MethodParameter {
     ///
     /// 对标 Spring `MethodParameter(Method, int)`。
     #[must_use]
-    pub fn for_method(containing_class: &'static str, method_name: &'static str, parameter_index: i32) -> Self {
+    pub fn for_method(
+        containing_class: &'static str,
+        method_name: &'static str,
+        parameter_index: i32,
+    ) -> Self {
         Self {
             containing_class,
             executable_name: method_name,
@@ -291,8 +295,8 @@ mod tests {
     fn display_format_with_name_and_return_type() {
         // 对标 Spring: Display 应正确格式化返回类型参数
         // 覆盖行 166: Display write! 宏的完整路径
-        let mp = MethodParameter::for_return_type("Service", "getResult")
-            .with_parameter_name("result");
+        let mp =
+            MethodParameter::for_return_type("Service", "getResult").with_parameter_name("result");
         let s = format!("{mp}");
         assert!(s.contains("Service"));
         assert!(s.contains("getResult"));

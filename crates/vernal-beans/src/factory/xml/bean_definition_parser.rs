@@ -59,9 +59,7 @@ impl ParseResult {
 
     /// 创建多 Bean 解析结果。
     pub fn multiple(names: Vec<String>) -> Self {
-        let bean_properties = names.iter()
-            .map(|n| (n.clone(), HashMap::new()))
-            .collect();
+        let bean_properties = names.iter().map(|n| (n.clone(), HashMap::new())).collect();
         Self {
             bean_names: names,
             bean_properties,
@@ -81,7 +79,8 @@ mod tests {
             _element_name: &str,
             attributes: &[(String, String)],
         ) -> Result<ParseResult, Box<dyn std::error::Error + Send + Sync>> {
-            let id = attributes.iter()
+            let id = attributes
+                .iter()
                 .find(|(k, _)| k == "id")
                 .map(|(_, v)| v.clone())
                 .unwrap_or_else(|| "default".to_string());

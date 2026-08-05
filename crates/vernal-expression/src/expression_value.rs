@@ -12,8 +12,8 @@ use chrono::{DateTime, Duration as ChronoDuration, Utc};
 use num_bigint::BigInt;
 use num_traits::Zero;
 
-use crate::typed_value::TypedValue;
 use crate::type_descriptor::{PrimitiveKind, TypeDescriptor};
+use crate::typed_value::TypedValue;
 
 /// 表达式值枚举（13 变体）。
 ///
@@ -189,12 +189,14 @@ impl PartialEq for ExpressionValue {
                 // 退化为逐元素 identity 比较，对 Phase F 跟踪；Phase F 把 TypedValue 派生
                 // PartialEq 后此处统一用 `a == b`。
                 a.len() == b.len()
-                    && a.iter().zip(b.iter()).all(|(x, y)| match (x.value(), y.value()) {
-                        (ExpressionValue::List(xs), ExpressionValue::List(ys)) => {
-                            xs.len() == ys.len()
-                        }
-                        _ => false,
-                    })
+                    && a.iter()
+                        .zip(b.iter())
+                        .all(|(x, y)| match (x.value(), y.value()) {
+                            (ExpressionValue::List(xs), ExpressionValue::List(ys)) => {
+                                xs.len() == ys.len()
+                            }
+                            _ => false,
+                        })
             }
             (Self::Map(a), Self::Map(b)) => a.len() == b.len(),
             (Self::DateTime(a), Self::DateTime(b)) => a == b,
@@ -231,7 +233,10 @@ mod tests {
 
     #[test]
     fn type_descriptor_null() {
-        assert_eq!(ExpressionValue::Null.type_descriptor(), TypeDescriptor::NULL);
+        assert_eq!(
+            ExpressionValue::Null.type_descriptor(),
+            TypeDescriptor::NULL
+        );
     }
 
     #[test]
@@ -244,7 +249,10 @@ mod tests {
 
     #[test]
     fn type_descriptor_int() {
-        assert_eq!(ExpressionValue::Int(42).type_descriptor(), TypeDescriptor::INT);
+        assert_eq!(
+            ExpressionValue::Int(42).type_descriptor(),
+            TypeDescriptor::INT
+        );
     }
 
     #[test]
@@ -324,7 +332,13 @@ mod tests {
     #[test]
     fn type_descriptor_object() {
         let td = ExpressionValue::object(42_i32).type_descriptor();
-        assert!(matches!(td, TypeDescriptor::Named { type_id: Some(_), .. }));
+        assert!(matches!(
+            td,
+            TypeDescriptor::Named {
+                type_id: Some(_),
+                ..
+            }
+        ));
     }
 
     // ── is_null() ─────────────────────────────────────────────────────
@@ -473,11 +487,19 @@ mod tests {
     fn as_any_none_for_complex_types() {
         assert!(ExpressionValue::Null.as_any().is_none());
         assert!(ExpressionValue::BigInt(BigInt::from(1)).as_any().is_none());
-        assert!(ExpressionValue::Decimal(BigDecimal::from(1)).as_any().is_none());
+        assert!(
+            ExpressionValue::Decimal(BigDecimal::from(1))
+                .as_any()
+                .is_none()
+        );
         assert!(ExpressionValue::List(vec![]).as_any().is_none());
         assert!(ExpressionValue::Map(vec![]).as_any().is_none());
         assert!(ExpressionValue::DateTime(Utc::now()).as_any().is_none());
-        assert!(ExpressionValue::Duration(ChronoDuration::seconds(1)).as_any().is_none());
+        assert!(
+            ExpressionValue::Duration(ChronoDuration::seconds(1))
+                .as_any()
+                .is_none()
+        );
         assert!(ExpressionValue::object(42_i32).as_any().is_none());
     }
 
@@ -615,8 +637,14 @@ mod tests {
 
     #[test]
     fn partial_eq_boolean() {
-        assert_eq!(ExpressionValue::Boolean(true), ExpressionValue::Boolean(true));
-        assert_ne!(ExpressionValue::Boolean(true), ExpressionValue::Boolean(false));
+        assert_eq!(
+            ExpressionValue::Boolean(true),
+            ExpressionValue::Boolean(true)
+        );
+        assert_ne!(
+            ExpressionValue::Boolean(true),
+            ExpressionValue::Boolean(false)
+        );
     }
 
     #[test]
@@ -675,7 +703,10 @@ mod tests {
     #[test]
     fn partial_eq_datetime() {
         let now = Utc::now();
-        assert_eq!(ExpressionValue::DateTime(now), ExpressionValue::DateTime(now));
+        assert_eq!(
+            ExpressionValue::DateTime(now),
+            ExpressionValue::DateTime(now)
+        );
     }
 
     #[test]
@@ -732,7 +763,13 @@ mod tests {
     fn from_type_id_dyn_string() {
         let s = String::from("hello");
         let td = TypeDescriptor::from_type_id_dyn(&s);
-        assert!(matches!(td, TypeDescriptor::Named { type_id: Some(_), .. }));
+        assert!(matches!(
+            td,
+            TypeDescriptor::Named {
+                type_id: Some(_),
+                ..
+            }
+        ));
     }
 
     #[test]

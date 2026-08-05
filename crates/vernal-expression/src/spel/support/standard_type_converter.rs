@@ -79,38 +79,30 @@ impl TypeConverter for StandardTypeConverter {
                 ))
             }
             // String → Int
-            (ExpressionValue::String(s), TypeDescriptor::Primitive(PrimitiveKind::Int)) => {
-                s.parse::<i64>()
-                    .map(|i| TypedValue::new(ExpressionValue::Int(i), TypeDescriptor::INT))
-                    .map_err(|_| {
-                        EvaluationException::new(
-                            "",
-                            None,
-                            format!("无法将 '{}' 转换为整数", s),
-                        )
-                    })
-            }
+            (ExpressionValue::String(s), TypeDescriptor::Primitive(PrimitiveKind::Int)) => s
+                .parse::<i64>()
+                .map(|i| TypedValue::new(ExpressionValue::Int(i), TypeDescriptor::INT))
+                .map_err(|_| {
+                    EvaluationException::new("", None, format!("无法将 '{}' 转换为整数", s))
+                }),
             // String → Float
-            (ExpressionValue::String(s), TypeDescriptor::Primitive(PrimitiveKind::Float)) => {
-                s.parse::<f64>()
-                    .map(|f| TypedValue::new(ExpressionValue::Float(f), TypeDescriptor::FLOAT))
-                    .map_err(|_| {
-                        EvaluationException::new(
-                            "",
-                            None,
-                            format!("无法将 '{}' 转换为浮点数", s),
-                        )
-                    })
-            }
+            (ExpressionValue::String(s), TypeDescriptor::Primitive(PrimitiveKind::Float)) => s
+                .parse::<f64>()
+                .map(|f| TypedValue::new(ExpressionValue::Float(f), TypeDescriptor::FLOAT))
+                .map_err(|_| {
+                    EvaluationException::new("", None, format!("无法将 '{}' 转换为浮点数", s))
+                }),
             // String → Boolean
             (ExpressionValue::String(s), TypeDescriptor::Primitive(PrimitiveKind::Boolean)) => {
                 match s.as_str() {
-                    "true" | "TRUE" | "True" | "1" => {
-                        Ok(TypedValue::new(ExpressionValue::Boolean(true), TypeDescriptor::BOOLEAN))
-                    }
-                    "false" | "FALSE" | "False" | "0" => {
-                        Ok(TypedValue::new(ExpressionValue::Boolean(false), TypeDescriptor::BOOLEAN))
-                    }
+                    "true" | "TRUE" | "True" | "1" => Ok(TypedValue::new(
+                        ExpressionValue::Boolean(true),
+                        TypeDescriptor::BOOLEAN,
+                    )),
+                    "false" | "FALSE" | "False" | "0" => Ok(TypedValue::new(
+                        ExpressionValue::Boolean(false),
+                        TypeDescriptor::BOOLEAN,
+                    )),
                     _ => Err(EvaluationException::new(
                         "",
                         None,
@@ -119,19 +111,13 @@ impl TypeConverter for StandardTypeConverter {
                 }
             }
             // Int → Float (widening)
-            (ExpressionValue::Int(i), TypeDescriptor::Primitive(PrimitiveKind::Float)) => {
-                Ok(TypedValue::new(
-                    ExpressionValue::Float(*i as f64),
-                    TypeDescriptor::FLOAT,
-                ))
-            }
+            (ExpressionValue::Int(i), TypeDescriptor::Primitive(PrimitiveKind::Float)) => Ok(
+                TypedValue::new(ExpressionValue::Float(*i as f64), TypeDescriptor::FLOAT),
+            ),
             // Float → Int (narrowing, truncation)
-            (ExpressionValue::Float(f), TypeDescriptor::Primitive(PrimitiveKind::Int)) => {
-                Ok(TypedValue::new(
-                    ExpressionValue::Int(*f as i64),
-                    TypeDescriptor::INT,
-                ))
-            }
+            (ExpressionValue::Float(f), TypeDescriptor::Primitive(PrimitiveKind::Int)) => Ok(
+                TypedValue::new(ExpressionValue::Int(*f as i64), TypeDescriptor::INT),
+            ),
             // Boolean → Int (false=0, true=1)
             (ExpressionValue::Boolean(b), TypeDescriptor::Primitive(PrimitiveKind::Int)) => {
                 Ok(TypedValue::new(
@@ -140,12 +126,9 @@ impl TypeConverter for StandardTypeConverter {
                 ))
             }
             // Int → Boolean (0=false, non-zero=true)
-            (ExpressionValue::Int(i), TypeDescriptor::Primitive(PrimitiveKind::Boolean)) => {
-                Ok(TypedValue::new(
-                    ExpressionValue::Boolean(*i != 0),
-                    TypeDescriptor::BOOLEAN,
-                ))
-            }
+            (ExpressionValue::Int(i), TypeDescriptor::Primitive(PrimitiveKind::Boolean)) => Ok(
+                TypedValue::new(ExpressionValue::Boolean(*i != 0), TypeDescriptor::BOOLEAN),
+            ),
             // Null → String
             (ExpressionValue::Null, TypeDescriptor::Primitive(PrimitiveKind::String)) => {
                 Ok(TypedValue::new(
@@ -169,46 +152,72 @@ mod tests {
     fn int_to_string() {
         let converter = StandardTypeConverter;
         let value = TypedValue::new(ExpressionValue::Int(42), TypeDescriptor::INT);
-        let result = converter.convert_value(&value, &TypeDescriptor::STRING).unwrap();
+        let result = converter
+            .convert_value(&value, &TypeDescriptor::STRING)
+            .unwrap();
         assert_eq!(*result.value(), ExpressionValue::String("42".to_string()));
     }
 
     #[test]
     fn string_to_int() {
         let converter = StandardTypeConverter;
-        let value = TypedValue::new(ExpressionValue::String("123".to_string()), TypeDescriptor::STRING);
-        let result = converter.convert_value(&value, &TypeDescriptor::INT).unwrap();
+        let value = TypedValue::new(
+            ExpressionValue::String("123".to_string()),
+            TypeDescriptor::STRING,
+        );
+        let result = converter
+            .convert_value(&value, &TypeDescriptor::INT)
+            .unwrap();
         assert_eq!(*result.value(), ExpressionValue::Int(123));
     }
 
     #[test]
     fn string_to_int_error() {
         let converter = StandardTypeConverter;
-        let value = TypedValue::new(ExpressionValue::String("abc".to_string()), TypeDescriptor::STRING);
-        assert!(converter.convert_value(&value, &TypeDescriptor::INT).is_err());
+        let value = TypedValue::new(
+            ExpressionValue::String("abc".to_string()),
+            TypeDescriptor::STRING,
+        );
+        assert!(
+            converter
+                .convert_value(&value, &TypeDescriptor::INT)
+                .is_err()
+        );
     }
 
     #[test]
     fn boolean_to_string() {
         let converter = StandardTypeConverter;
         let value = TypedValue::new(ExpressionValue::Boolean(true), TypeDescriptor::BOOLEAN);
-        let result = converter.convert_value(&value, &TypeDescriptor::STRING).unwrap();
+        let result = converter
+            .convert_value(&value, &TypeDescriptor::STRING)
+            .unwrap();
         assert_eq!(*result.value(), ExpressionValue::String("true".to_string()));
     }
 
     #[test]
     fn string_to_boolean_true() {
         let converter = StandardTypeConverter;
-        let value = TypedValue::new(ExpressionValue::String("true".to_string()), TypeDescriptor::STRING);
-        let result = converter.convert_value(&value, &TypeDescriptor::BOOLEAN).unwrap();
+        let value = TypedValue::new(
+            ExpressionValue::String("true".to_string()),
+            TypeDescriptor::STRING,
+        );
+        let result = converter
+            .convert_value(&value, &TypeDescriptor::BOOLEAN)
+            .unwrap();
         assert_eq!(*result.value(), ExpressionValue::Boolean(true));
     }
 
     #[test]
     fn string_to_boolean_false() {
         let converter = StandardTypeConverter;
-        let value = TypedValue::new(ExpressionValue::String("false".to_string()), TypeDescriptor::STRING);
-        let result = converter.convert_value(&value, &TypeDescriptor::BOOLEAN).unwrap();
+        let value = TypedValue::new(
+            ExpressionValue::String("false".to_string()),
+            TypeDescriptor::STRING,
+        );
+        let result = converter
+            .convert_value(&value, &TypeDescriptor::BOOLEAN)
+            .unwrap();
         assert_eq!(*result.value(), ExpressionValue::Boolean(false));
     }
 
@@ -216,7 +225,9 @@ mod tests {
     fn int_to_float_widening() {
         let converter = StandardTypeConverter;
         let value = TypedValue::new(ExpressionValue::Int(42), TypeDescriptor::INT);
-        let result = converter.convert_value(&value, &TypeDescriptor::FLOAT).unwrap();
+        let result = converter
+            .convert_value(&value, &TypeDescriptor::FLOAT)
+            .unwrap();
         assert_eq!(*result.value(), ExpressionValue::Float(42.0));
     }
 
@@ -224,7 +235,9 @@ mod tests {
     fn float_to_int_narrowing() {
         let converter = StandardTypeConverter;
         let value = TypedValue::new(ExpressionValue::Float(3.7), TypeDescriptor::FLOAT);
-        let result = converter.convert_value(&value, &TypeDescriptor::INT).unwrap();
+        let result = converter
+            .convert_value(&value, &TypeDescriptor::INT)
+            .unwrap();
         assert_eq!(*result.value(), ExpressionValue::Int(3));
     }
 

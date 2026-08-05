@@ -30,12 +30,15 @@ mod tests {
     fn parse_properties_basic() {
         // A 类（合同对齐）：注释与键值对解析
         let mut map = HashMap::new();
-        parse_properties("key1=value1
+        parse_properties(
+            "key1=value1
 # comment
 key2=value2
 
 ! c2
-k3=v3", &mut map);
+k3=v3",
+            &mut map,
+        );
         assert_eq!(map.get("key1").map(String::as_str), Some("value1"));
         assert_eq!(map.get("key2").map(String::as_str), Some("value2"));
         assert_eq!(map.get("k3").map(String::as_str), Some("v3"));

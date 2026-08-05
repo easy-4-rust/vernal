@@ -24,7 +24,9 @@ impl NestedExceptionUtils {
 
     /// 返回错误链中最底层原因（对标 Spring `getRootCause`）。
     #[must_use]
-    pub fn root_cause<'a>(error: &'a (dyn std::error::Error + 'a)) -> &'a (dyn std::error::Error + 'a) {
+    pub fn root_cause<'a>(
+        error: &'a (dyn std::error::Error + 'a),
+    ) -> &'a (dyn std::error::Error + 'a) {
         let mut current = error;
         while let Some(source) = current.source() {
             current = source;
@@ -72,7 +74,10 @@ mod tests {
             NestedExceptionUtils::build_message("failed", Some("root cause")),
             "failed; nested exception is root cause"
         );
-        assert_eq!(NestedExceptionUtils::build_message("failed", None), "failed");
+        assert_eq!(
+            NestedExceptionUtils::build_message("failed", None),
+            "failed"
+        );
     }
 
     #[test]

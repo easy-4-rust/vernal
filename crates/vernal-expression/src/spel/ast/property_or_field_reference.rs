@@ -2,8 +2,8 @@
 //!
 //! 对标 Spring 的 `PropertyOrFieldReference`：`name`、`age`、`?.name`
 
-use super::spel_node::SpelNode;
 use super::super::expression_state::ExpressionState;
+use super::spel_node::SpelNode;
 use crate::evaluation_context::EvaluationContext;
 use crate::evaluation_exception::EvaluationException;
 use crate::typed_value::TypedValue;
@@ -75,10 +75,7 @@ impl SpelNode for PropertyOrFieldReference {
         self.null_safe
     }
 
-    fn is_writable(
-        &self,
-        _context: &dyn EvaluationContext,
-    ) -> bool {
+    fn is_writable(&self, _context: &dyn EvaluationContext) -> bool {
         true
     }
 

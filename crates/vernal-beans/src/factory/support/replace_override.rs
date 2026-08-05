@@ -49,21 +49,33 @@ impl ReplaceOverride {
     }
 
     /// 获取被替换的方法名。
-    pub fn get_method_name(&self) -> &str { &self.method_name }
+    pub fn get_method_name(&self) -> &str {
+        &self.method_name
+    }
 
     /// 获取替换器的 Bean 名称。
-    pub fn get_replacer_name(&self) -> &str { &self.replacer_name }
+    pub fn get_replacer_name(&self) -> &str {
+        &self.replacer_name
+    }
 
     /// 获取类型标识符列表。
-    pub fn type_identifiers(&self) -> &[String] { &self.type_identifiers }
+    pub fn type_identifiers(&self) -> &[String] {
+        &self.type_identifiers
+    }
 
     /// 是否有类型标识符。
-    pub fn has_type_identifiers(&self) -> bool { !self.type_identifiers.is_empty() }
+    pub fn has_type_identifiers(&self) -> bool {
+        !self.type_identifiers.is_empty()
+    }
 }
 
 impl MethodOverride for ReplaceOverride {
-    fn get_method_name(&self) -> &str { &self.method_name }
-    fn is_applicable(&self) -> bool { true }
+    fn get_method_name(&self) -> &str {
+        &self.method_name
+    }
+    fn is_applicable(&self) -> bool {
+        true
+    }
 }
 
 #[cfg(test)]

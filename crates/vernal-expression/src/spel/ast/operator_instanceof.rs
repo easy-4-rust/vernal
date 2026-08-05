@@ -60,37 +60,127 @@ impl OperatorInstanceof {
                 matches!(raw, "boolean" | "Boolean" | "java.lang.Boolean")
             }
             ExpressionValue::Int(_) => {
-                matches!(raw, "int" | "Integer" | "java.lang.Integer" | "long" | "Long" | "java.lang.Long" | "Number" | "java.lang.Number" | "Object" | "java.lang.Object")
+                matches!(
+                    raw,
+                    "int"
+                        | "Integer"
+                        | "java.lang.Integer"
+                        | "long"
+                        | "Long"
+                        | "java.lang.Long"
+                        | "Number"
+                        | "java.lang.Number"
+                        | "Object"
+                        | "java.lang.Object"
+                )
             }
             ExpressionValue::Long(_) => {
-                matches!(raw, "long" | "Long" | "java.lang.Long" | "Number" | "java.lang.Number" | "Object" | "java.lang.Object")
+                matches!(
+                    raw,
+                    "long"
+                        | "Long"
+                        | "java.lang.Long"
+                        | "Number"
+                        | "java.lang.Number"
+                        | "Object"
+                        | "java.lang.Object"
+                )
             }
             ExpressionValue::Float(_) => {
-                matches!(raw, "float" | "Float" | "java.lang.Float" | "double" | "Double" | "java.lang.Double" | "Number" | "java.lang.Number" | "Object" | "java.lang.Object")
+                matches!(
+                    raw,
+                    "float"
+                        | "Float"
+                        | "java.lang.Float"
+                        | "double"
+                        | "Double"
+                        | "java.lang.Double"
+                        | "Number"
+                        | "java.lang.Number"
+                        | "Object"
+                        | "java.lang.Object"
+                )
             }
             ExpressionValue::Double(_) => {
-                matches!(raw, "double" | "Double" | "java.lang.Double" | "Number" | "java.lang.Number" | "Object" | "java.lang.Object")
+                matches!(
+                    raw,
+                    "double"
+                        | "Double"
+                        | "java.lang.Double"
+                        | "Number"
+                        | "java.lang.Number"
+                        | "Object"
+                        | "java.lang.Object"
+                )
             }
             ExpressionValue::BigInt(_) => {
-                matches!(raw, "BigInteger" | "java.math.BigInteger" | "Number" | "java.lang.Number" | "Object" | "java.lang.Object")
+                matches!(
+                    raw,
+                    "BigInteger"
+                        | "java.math.BigInteger"
+                        | "Number"
+                        | "java.lang.Number"
+                        | "Object"
+                        | "java.lang.Object"
+                )
             }
             ExpressionValue::Decimal(_) => {
-                matches!(raw, "BigDecimal" | "java.math.BigDecimal" | "Number" | "java.lang.Number" | "Object" | "java.lang.Object")
+                matches!(
+                    raw,
+                    "BigDecimal"
+                        | "java.math.BigDecimal"
+                        | "Number"
+                        | "java.lang.Number"
+                        | "Object"
+                        | "java.lang.Object"
+                )
             }
             ExpressionValue::Char(_) => {
-                matches!(raw, "char" | "Character" | "java.lang.Character" | "Object" | "java.lang.Object")
+                matches!(
+                    raw,
+                    "char" | "Character" | "java.lang.Character" | "Object" | "java.lang.Object"
+                )
             }
             ExpressionValue::String(_) => {
-                matches!(raw, "String" | "java.lang.String" | "CharSequence" | "java.lang.CharSequence" | "Object" | "java.lang.Object")
+                matches!(
+                    raw,
+                    "String"
+                        | "java.lang.String"
+                        | "CharSequence"
+                        | "java.lang.CharSequence"
+                        | "Object"
+                        | "java.lang.Object"
+                )
             }
             ExpressionValue::DateTime(_) => {
-                matches!(raw, "Date" | "java.util.Date" | "Instant" | "java.time.Instant" | "Object" | "java.lang.Object")
+                matches!(
+                    raw,
+                    "Date"
+                        | "java.util.Date"
+                        | "Instant"
+                        | "java.time.Instant"
+                        | "Object"
+                        | "java.lang.Object"
+                )
             }
             ExpressionValue::Duration(_) => {
-                matches!(raw, "Duration" | "java.time.Duration" | "Object" | "java.lang.Object")
+                matches!(
+                    raw,
+                    "Duration" | "java.time.Duration" | "Object" | "java.lang.Object"
+                )
             }
             ExpressionValue::List(_) => {
-                matches!(raw, "List" | "java.util.List" | "Collection" | "java.util.Collection" | "Iterable" | "java.lang.Iterable" | "Object" | "java.lang.Object")
+                matches!(
+                    raw,
+                    "List"
+                        | "java.util.List"
+                        | "Collection"
+                        | "java.util.Collection"
+                        | "Iterable"
+                        | "java.lang.Iterable"
+                        | "Object"
+                        | "java.lang.Object"
+                )
             }
             ExpressionValue::Map(_) => {
                 matches!(raw, "Map" | "java.util.Map" | "Object" | "java.lang.Object")
@@ -156,7 +246,10 @@ mod tests {
 
     fn eval_instanceof(_expr_str: &str, type_name: &str) -> bool {
         let node = OperatorInstanceof::new(
-            Box::new(crate::spel::ast::int_literal::IntLiteral::new(5, "5".to_string())),
+            Box::new(crate::spel::ast::int_literal::IntLiteral::new(
+                5,
+                "5".to_string(),
+            )),
             type_name.to_string(),
         );
         let ctx = crate::spel::support::standard_evaluation_context::StandardEvaluationContext::new(
@@ -167,7 +260,6 @@ mod tests {
             Err(_) => false,
         }
     }
-
 
     #[test]
     fn int_instanceof_int() {
@@ -201,7 +293,9 @@ mod tests {
     fn t_string_instanceof() {
         // OperatorInstanceof receives type_name from parser
         let node = OperatorInstanceof::new(
-            Box::new(crate::spel::ast::string_literal::StringLiteral::new("hello".to_string())),
+            Box::new(crate::spel::ast::string_literal::StringLiteral::new(
+                "hello".to_string(),
+            )),
             "T(String)".to_string(),
         );
         let ctx = crate::spel::support::standard_evaluation_context::StandardEvaluationContext::new(

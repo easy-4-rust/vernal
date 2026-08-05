@@ -22,14 +22,21 @@ pub struct ReflectiveMethodExecutor {
     /// 方法名称。
     name: String,
     /// 方法闭包（接收目标对象和参数，返回结果）。
-    method: Box<dyn Fn(&dyn std::any::Any, &[TypedValue]) -> Result<TypedValue, AccessException> + Send + Sync>,
+    method: Box<
+        dyn Fn(&dyn std::any::Any, &[TypedValue]) -> Result<TypedValue, AccessException>
+            + Send
+            + Sync,
+    >,
 }
 
 impl ReflectiveMethodExecutor {
     /// 创建反射方法执行器。
     pub fn new<F>(name: impl Into<String>, method: F) -> Self
     where
-        F: Fn(&dyn std::any::Any, &[TypedValue]) -> Result<TypedValue, AccessException> + Send + Sync + 'static,
+        F: Fn(&dyn std::any::Any, &[TypedValue]) -> Result<TypedValue, AccessException>
+            + Send
+            + Sync
+            + 'static,
     {
         Self {
             name: name.into(),
@@ -54,9 +61,12 @@ impl MethodExecutor for ReflectiveMethodExecutor {
         // 从 TypedValue 中提取目标对象
         let target_any: &dyn std::any::Any = match target.value() {
             ExpressionValue::Object(o) => o.as_ref(),
-            _ => return Err(AccessException::new(format!(
-                "方法 '{}' 的目标对象不是 Object 类型", self.name
-            ))),
+            _ => {
+                return Err(AccessException::new(format!(
+                    "方法 '{}' 的目标对象不是 Object 类型",
+                    self.name
+                )));
+            }
         };
 
         // 调用方法闭包
@@ -72,7 +82,10 @@ mod tests {
     #[test]
     fn create_executor() {
         let executor = ReflectiveMethodExecutor::new("test_method", |_target, _args| {
-            Ok(TypedValue::new(ExpressionValue::Int(42), TypeDescriptor::INT))
+            Ok(TypedValue::new(
+                ExpressionValue::Int(42),
+                TypeDescriptor::INT,
+            ))
         });
         assert_eq!(executor.name(), "test_method");
     }
@@ -80,7 +93,10 @@ mod tests {
     #[test]
     fn execute_returns_value() {
         let executor = ReflectiveMethodExecutor::new("test_method", |_target, _args| {
-            Ok(TypedValue::new(ExpressionValue::Int(42), TypeDescriptor::INT))
+            Ok(TypedValue::new(
+                ExpressionValue::Int(42),
+                TypeDescriptor::INT,
+            ))
         });
         let ctx = crate::spel::support::standard_evaluation_context::StandardEvaluationContext::new(
             TypedValue::null(),

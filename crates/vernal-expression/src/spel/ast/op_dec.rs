@@ -5,8 +5,8 @@
 //! 前缀 `--a`：先减1再返回新值。
 //! 后缀 `a--`：先返回旧值再减1。
 
-use super::spel_node::SpelNode;
 use super::super::expression_state::ExpressionState;
+use super::spel_node::SpelNode;
 use crate::evaluation_context::EvaluationContext;
 use crate::evaluation_exception::EvaluationException;
 use crate::spel::spel_message::SpelMessage;
@@ -62,11 +62,7 @@ impl SpelNode for OpDec {
         // 写回
         self.write_back(state, &new_tv)?;
 
-        if self.prefix {
-            Ok(new_tv)
-        } else {
-            Ok(value)
-        }
+        if self.prefix { Ok(new_tv) } else { Ok(value) }
     }
 
     fn is_writable(&self, _context: &dyn EvaluationContext) -> bool {

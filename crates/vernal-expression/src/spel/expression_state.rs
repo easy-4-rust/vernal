@@ -101,7 +101,9 @@ impl<'a> ExpressionState<'a> {
     /// 获取当前活动上下文对象（栈顶）。
     #[must_use]
     pub fn active_context_object(&self) -> &TypedValue {
-        self.active_context.last().expect("active context stack empty")
+        self.active_context
+            .last()
+            .expect("active context stack empty")
     }
 
     /// 压入活动上下文。
@@ -111,7 +113,9 @@ impl<'a> ExpressionState<'a> {
 
     /// 弹出活动上下文。
     pub fn pop_active_context_object(&mut self) -> TypedValue {
-        self.active_context.pop().expect("active context stack underflow")
+        self.active_context
+            .pop()
+            .expect("active context stack underflow")
     }
 
     /// 获取求值上下文。
@@ -206,13 +210,11 @@ impl<'a> ExpressionState<'a> {
     // ── 类型查找（对标 Spring ExpressionState.findType） ──
 
     /// 查找类型（对标 Spring `ExpressionState.findType()`）。
-    pub fn find_type(
-        &self,
-        type_name: &str,
-    ) -> Result<std::any::TypeId, SpelEvaluationException> {
-        let locator = self.context.type_locator().ok_or_else(|| {
-            SpelEvaluationException::new(SpelMessage::TypeNotFound, &[type_name])
-        })?;
+    pub fn find_type(&self, type_name: &str) -> Result<std::any::TypeId, SpelEvaluationException> {
+        let locator = self
+            .context
+            .type_locator()
+            .ok_or_else(|| SpelEvaluationException::new(SpelMessage::TypeNotFound, &[type_name]))?;
         locator.find_type(type_name).map_err(|e| {
             SpelEvaluationException::new(SpelMessage::TypeNotFound, &[type_name, &e.to_string()])
         })
@@ -265,14 +267,23 @@ mod tests {
         let v2 = TypedValue::new(ExpressionValue::Int(2), TypeDescriptor::INT);
 
         state.push_active_context_object(v1.clone());
-        assert_eq!(*state.active_context_object().value(), ExpressionValue::Int(1));
+        assert_eq!(
+            *state.active_context_object().value(),
+            ExpressionValue::Int(1)
+        );
 
         state.push_active_context_object(v2.clone());
-        assert_eq!(*state.active_context_object().value(), ExpressionValue::Int(2));
+        assert_eq!(
+            *state.active_context_object().value(),
+            ExpressionValue::Int(2)
+        );
 
         let popped = state.pop_active_context_object();
         assert_eq!(*popped.value(), ExpressionValue::Int(2));
-        assert_eq!(*state.active_context_object().value(), ExpressionValue::Int(1));
+        assert_eq!(
+            *state.active_context_object().value(),
+            ExpressionValue::Int(1)
+        );
 
         let popped = state.pop_active_context_object();
         assert_eq!(*popped.value(), ExpressionValue::Int(1));
@@ -284,7 +295,10 @@ mod tests {
         let ctx = make_ctx();
         let mut state = ExpressionState::new(&ctx);
 
-        let val = TypedValue::new(ExpressionValue::String("hello".into()), TypeDescriptor::STRING);
+        let val = TypedValue::new(
+            ExpressionValue::String("hello".into()),
+            TypeDescriptor::STRING,
+        );
         state.set_variable("greeting", val.clone());
 
         let found = state.lookup_variable("greeting").unwrap();

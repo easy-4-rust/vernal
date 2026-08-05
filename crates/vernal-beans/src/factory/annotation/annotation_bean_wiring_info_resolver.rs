@@ -78,7 +78,9 @@ impl AnnotationBeanWiringInfoResolver {
 }
 
 impl Default for AnnotationBeanWiringInfoResolver {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[cfg(test)]

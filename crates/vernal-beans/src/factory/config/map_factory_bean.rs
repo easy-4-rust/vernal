@@ -112,14 +112,8 @@ mod tests {
     #[test]
     fn test_map_factory_bean_with_entries() {
         let mut factory = MapFactoryBean::new();
-        factory.add_entry(
-            Arc::new(String::from("key1")),
-            Arc::new(100i32),
-        );
-        factory.add_entry(
-            Arc::new(String::from("key2")),
-            Arc::new(200i32),
-        );
+        factory.add_entry(Arc::new(String::from("key1")), Arc::new(100i32));
+        factory.add_entry(Arc::new(String::from("key2")), Arc::new(200i32));
 
         assert_eq!(factory.size(), 2);
         let map = factory.create_map();

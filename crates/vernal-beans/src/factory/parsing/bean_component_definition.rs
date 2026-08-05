@@ -118,8 +118,7 @@ mod tests {
 
     #[test]
     fn test_with_description() {
-        let def = BeanComponentDefinition::new("svc", "Svc")
-            .with_description("The main service");
+        let def = BeanComponentDefinition::new("svc", "Svc").with_description("The main service");
         assert_eq!(def.description(), Some("The main service"));
     }
 

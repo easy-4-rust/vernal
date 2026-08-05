@@ -7,12 +7,11 @@
 use std::sync::Arc;
 use std::time::Duration;
 
+use vernal_beans::{Component, ComponentDefinition, Qualifier};
 use vernal_context::{
     ApplicationEnvironment, ApplicationRunner, ConfigurationProperties,
-    ConfigurationPropertiesError, Lifecycle, ScheduledTask, TaskSchedule,
-    VernalApplicationBuilder,
+    ConfigurationPropertiesError, Lifecycle, ScheduledTask, TaskSchedule, VernalApplicationBuilder,
 };
-use vernal_beans::{Component, ComponentDefinition, Qualifier};
 
 // ════════════════════════════════════════════════════════════════════
 // 测试用类型
@@ -102,7 +101,9 @@ async fn test_configuration_properties_registration() {
 #[tokio::test]
 async fn test_register_all() {
     let mut builder = VernalApplicationBuilder::new(tokio::runtime::Handle::current());
-    let defs = vec![ComponentDefinition::singleton::<SimpleComponent, _>(|_| SimpleComponent)];
+    let defs = vec![ComponentDefinition::singleton::<SimpleComponent, _>(|_| {
+        SimpleComponent
+    })];
     let result = builder.register_all(defs);
     assert!(result.is_ok(), "register_all should succeed");
 }
@@ -113,7 +114,10 @@ async fn test_register_all_empty() {
     let mut builder = VernalApplicationBuilder::new(tokio::runtime::Handle::current());
     let defs: Vec<ComponentDefinition> = vec![];
     let result = builder.register_all(defs);
-    assert!(result.is_ok(), "register_all with empty iterator should succeed");
+    assert!(
+        result.is_ok(),
+        "register_all with empty iterator should succeed"
+    );
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -161,7 +165,10 @@ async fn test_event_listener_qualified() {
 async fn test_register_event_listener_component() {
     let mut builder = VernalApplicationBuilder::new(tokio::runtime::Handle::current());
     let result = builder.register_event_listener_component::<TestEvent, TestEventListener>();
-    assert!(result.is_ok(), "register_event_listener_component should succeed");
+    assert!(
+        result.is_ok(),
+        "register_event_listener_component should succeed"
+    );
 }
 
 /// 验证 register_application_runner 注册 Runner 组件

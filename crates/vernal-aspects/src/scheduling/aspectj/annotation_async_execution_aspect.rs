@@ -110,7 +110,16 @@ mod tests {
     #[test]
     fn test_annotation_async_execution_aspect_creation() {
         let aspect = AnnotationAsyncExecutionAspect::new();
-        assert!(aspect.get_inner().determine_async_executor(&super::super::abstract_async_execution_aspect::MethodMetadata::new("Foo", "bar", "void")).is_none());
+        assert!(
+            aspect
+                .get_inner()
+                .determine_async_executor(
+                    &super::super::abstract_async_execution_aspect::MethodMetadata::new(
+                        "Foo", "bar", "void"
+                    )
+                )
+                .is_none()
+        );
     }
 
     #[test]
@@ -164,7 +173,16 @@ mod tests {
     #[test]
     fn test_default() {
         let aspect = AnnotationAsyncExecutionAspect::default();
-        assert!(aspect.get_inner().determine_async_executor(&super::super::abstract_async_execution_aspect::MethodMetadata::new("Foo", "bar", "void")).is_none());
+        assert!(
+            aspect
+                .get_inner()
+                .determine_async_executor(
+                    &super::super::abstract_async_execution_aspect::MethodMetadata::new(
+                        "Foo", "bar", "void"
+                    )
+                )
+                .is_none()
+        );
     }
 
     #[test]

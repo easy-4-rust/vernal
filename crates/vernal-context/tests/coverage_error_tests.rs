@@ -2,10 +2,8 @@
 
 use std::error::Error;
 
-use vernal_context::{
-    ApplicationBuildError, ConditionError, ContextError, ContextState,
-};
 use vernal_beans::{ComponentKey, DefinitionError, GraphError, ResolveError};
+use vernal_context::{ApplicationBuildError, ConditionError, ContextError, ContextState};
 
 // ════════════════════════════════════════════════════════════════════
 // 测试: ApplicationBuildError Display variants
@@ -52,9 +50,7 @@ fn test_build_error_context_display() {
 #[test]
 fn test_build_error_condition_display() {
     let err = ApplicationBuildError::Condition {
-        source: ConditionError::DuplicateModule {
-            name: "test",
-        },
+        source: ConditionError::DuplicateModule { name: "test" },
     };
     let display = format!("{}", err);
     assert!(!display.is_empty());
@@ -115,9 +111,7 @@ fn test_build_error_source() {
 #[test]
 fn test_build_error_tokio_runtime_unavailable_display() {
     let source = tokio::runtime::Handle::try_current().err().unwrap();
-    let err = ApplicationBuildError::TokioRuntimeUnavailable {
-        source,
-    };
+    let err = ApplicationBuildError::TokioRuntimeUnavailable { source };
     let display = format!("{}", err);
     assert!(!display.is_empty());
 }
@@ -126,9 +120,7 @@ fn test_build_error_tokio_runtime_unavailable_display() {
 #[test]
 fn test_build_error_tokio_runtime_unavailable_source() {
     let source = tokio::runtime::Handle::try_current().err().unwrap();
-    let err = ApplicationBuildError::TokioRuntimeUnavailable {
-        source,
-    };
+    let err = ApplicationBuildError::TokioRuntimeUnavailable { source };
     let source = err.source();
     assert!(source.is_some());
 }
@@ -174,9 +166,7 @@ fn test_build_error_context_source() {
 #[test]
 fn test_build_error_condition_source() {
     let err = ApplicationBuildError::Condition {
-        source: ConditionError::DuplicateModule {
-            name: "test",
-        },
+        source: ConditionError::DuplicateModule { name: "test" },
     };
     let source = err.source();
     assert!(source.is_some());

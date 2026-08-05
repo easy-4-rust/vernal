@@ -265,10 +265,7 @@ impl ConditionalComponentModule {
     }
 
     /// 在冻结环境中执行一次条件判断。
-    pub fn matches(
-        &self,
-        environment: &ApplicationEnvironment,
-    ) -> Result<bool, ConditionError> {
+    pub fn matches(&self, environment: &ApplicationEnvironment) -> Result<bool, ConditionError> {
         self.condition.matches(environment).map_err(|source| {
             ConditionError::evaluation_failed(self.name, self.condition.name(), source)
         })

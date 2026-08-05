@@ -15,7 +15,9 @@ pub struct DeprecatedBeanWarner {
 impl DeprecatedBeanWarner {
     /// 创建一个新的实例。
     pub fn new() -> Self {
-        Self { deprecated_beans: Vec::new() }
+        Self {
+            deprecated_beans: Vec::new(),
+        }
     }
 
     /// 添加deprecatedBean。

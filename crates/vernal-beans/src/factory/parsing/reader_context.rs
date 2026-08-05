@@ -77,10 +77,16 @@ impl ReaderContext {
     }
 
     /// 报告一个自定义严重级别的问题。
-    pub fn report(&self, severity: ProblemSeverity, message: impl Into<String>, location: Location) {
+    pub fn report(
+        &self,
+        severity: ProblemSeverity,
+        message: impl Into<String>,
+        location: Location,
+    ) {
         match severity {
             ProblemSeverity::Error => {
-                self.problem_reporter.fatal(Problem::error(message, location));
+                self.problem_reporter
+                    .fatal(Problem::error(message, location));
             }
             ProblemSeverity::Warning => {
                 self.problem_reporter
@@ -136,7 +142,9 @@ mod tests {
         }
         impl SilentReporter {
             fn new() -> Self {
-                Self { count: Mutex::new(0) }
+                Self {
+                    count: Mutex::new(0),
+                }
             }
             fn count(&self) -> usize {
                 *self.count.lock().unwrap()
@@ -173,12 +181,20 @@ mod tests {
                     warnings: Mutex::new(0),
                 }
             }
-            fn fatal_count(&self) -> usize { *self.fatals.lock().unwrap() }
-            fn warning_count(&self) -> usize { *self.warnings.lock().unwrap() }
+            fn fatal_count(&self) -> usize {
+                *self.fatals.lock().unwrap()
+            }
+            fn warning_count(&self) -> usize {
+                *self.warnings.lock().unwrap()
+            }
         }
         impl ProblemReporter for CountingReporter {
-            fn fatal(&self, _problem: Problem) { *self.fatals.lock().unwrap() += 1; }
-            fn warning(&self, _problem: Problem) { *self.warnings.lock().unwrap() += 1; }
+            fn fatal(&self, _problem: Problem) {
+                *self.fatals.lock().unwrap() += 1;
+            }
+            fn warning(&self, _problem: Problem) {
+                *self.warnings.lock().unwrap() += 1;
+            }
         }
 
         let reporter = Arc::new(CountingReporter::new());
@@ -215,12 +231,18 @@ mod tests {
         }
         impl CountingReporter {
             fn new() -> Self {
-                Self { fatals: Mutex::new(0) }
+                Self {
+                    fatals: Mutex::new(0),
+                }
             }
-            fn fatal_count(&self) -> usize { *self.fatals.lock().unwrap() }
+            fn fatal_count(&self) -> usize {
+                *self.fatals.lock().unwrap()
+            }
         }
         impl ProblemReporter for CountingReporter {
-            fn fatal(&self, _problem: Problem) { *self.fatals.lock().unwrap() += 1; }
+            fn fatal(&self, _problem: Problem) {
+                *self.fatals.lock().unwrap() += 1;
+            }
             fn warning(&self, _problem: Problem) {}
         }
 
@@ -240,13 +262,19 @@ mod tests {
         }
         impl CountingReporter {
             fn new() -> Self {
-                Self { warnings: Mutex::new(0) }
+                Self {
+                    warnings: Mutex::new(0),
+                }
             }
-            fn warning_count(&self) -> usize { *self.warnings.lock().unwrap() }
+            fn warning_count(&self) -> usize {
+                *self.warnings.lock().unwrap()
+            }
         }
         impl ProblemReporter for CountingReporter {
             fn fatal(&self, _problem: Problem) {}
-            fn warning(&self, _problem: Problem) { *self.warnings.lock().unwrap() += 1; }
+            fn warning(&self, _problem: Problem) {
+                *self.warnings.lock().unwrap() += 1;
+            }
         }
 
         let reporter = Arc::new(CountingReporter::new());
@@ -265,19 +293,29 @@ mod tests {
         }
         impl CountingReporter {
             fn new() -> Self {
-                Self { fatals: Mutex::new(0) }
+                Self {
+                    fatals: Mutex::new(0),
+                }
             }
-            fn fatal_count(&self) -> usize { *self.fatals.lock().unwrap() }
+            fn fatal_count(&self) -> usize {
+                *self.fatals.lock().unwrap()
+            }
         }
         impl ProblemReporter for CountingReporter {
-            fn fatal(&self, _problem: Problem) { *self.fatals.lock().unwrap() += 1; }
+            fn fatal(&self, _problem: Problem) {
+                *self.fatals.lock().unwrap() += 1;
+            }
             fn warning(&self, _problem: Problem) {}
         }
 
         let reporter = Arc::new(CountingReporter::new());
         let ctx = ReaderContext::new(reporter.clone(), Arc::new(NullSourceExtractor::new()));
 
-        ctx.report(ProblemSeverity::Error, "error", Location::from_resource("test.xml"));
+        ctx.report(
+            ProblemSeverity::Error,
+            "error",
+            Location::from_resource("test.xml"),
+        );
         assert_eq!(reporter.fatal_count(), 1);
     }
 
@@ -290,19 +328,29 @@ mod tests {
         }
         impl CountingReporter {
             fn new() -> Self {
-                Self { warnings: Mutex::new(0) }
+                Self {
+                    warnings: Mutex::new(0),
+                }
             }
-            fn warning_count(&self) -> usize { *self.warnings.lock().unwrap() }
+            fn warning_count(&self) -> usize {
+                *self.warnings.lock().unwrap()
+            }
         }
         impl ProblemReporter for CountingReporter {
             fn fatal(&self, _problem: Problem) {}
-            fn warning(&self, _problem: Problem) { *self.warnings.lock().unwrap() += 1; }
+            fn warning(&self, _problem: Problem) {
+                *self.warnings.lock().unwrap() += 1;
+            }
         }
 
         let reporter = Arc::new(CountingReporter::new());
         let ctx = ReaderContext::new(reporter.clone(), Arc::new(NullSourceExtractor::new()));
 
-        ctx.report(ProblemSeverity::Warning, "warn", Location::from_resource("test.xml"));
+        ctx.report(
+            ProblemSeverity::Warning,
+            "warn",
+            Location::from_resource("test.xml"),
+        );
         assert_eq!(reporter.warning_count(), 1);
     }
 

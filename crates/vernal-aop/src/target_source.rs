@@ -114,7 +114,9 @@ impl fmt::Debug for SingletonTargetSource {
 /// 每次调用 `get_target()` 时通过闭包创建新目标。
 // 对标 Spring AOP 的 API 脚手架：LazyTargetSource 提供惰性目标源，暂未被内部调用。
 #[allow(dead_code)]
-pub struct LazyTargetSource<F: Fn() -> Result<Box<dyn Any + Send + Sync>, TargetSourceError> + Send + Sync + 'static> {
+pub struct LazyTargetSource<
+    F: Fn() -> Result<Box<dyn Any + Send + Sync>, TargetSourceError> + Send + Sync + 'static,
+> {
     factory: F,
     target_class: Option<String>,
 }
@@ -514,9 +516,8 @@ mod target_source_coverage_tests {
 
     #[test]
     fn lazy_target_source_get_target_error() {
-        let source = LazyTargetSource::new(|| {
-            Err(TargetSourceError::CreationFailed("test".to_string()))
-        });
+        let source =
+            LazyTargetSource::new(|| Err(TargetSourceError::CreationFailed("test".to_string())));
         let result = source.get_target();
         assert!(result.is_err());
     }

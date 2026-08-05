@@ -130,16 +130,14 @@ impl<S: TransactionAttributeSource> AnnotationTransactionAspect<S> {
             return false;
         }
 
-        let matches_type = self
-            .matches_execution_of_any_public_method_in_at_transactional_type(
-                method,
-                type_has_transactional_annotation,
-                type_in_transactional_scope,
-            );
-
-        let matches_method = self.matches_execution_of_transactional_method(
-            method_has_transactional_annotation,
+        let matches_type = self.matches_execution_of_any_public_method_in_at_transactional_type(
+            method,
+            type_has_transactional_annotation,
+            type_in_transactional_scope,
         );
+
+        let matches_method =
+            self.matches_execution_of_transactional_method(method_has_transactional_annotation);
 
         matches_type || matches_method
     }
@@ -214,22 +212,25 @@ mod tests {
         let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
 
         // 类型有 @Transactional 注解且在范围内
-        assert!(aspect
-            .matches_execution_of_any_public_method_in_at_transactional_type(
+        assert!(
+            aspect.matches_execution_of_any_public_method_in_at_transactional_type(
                 &method, true, true
-            ));
+            )
+        );
 
         // 类型没有 @Transactional 注解
-        assert!(!aspect
-            .matches_execution_of_any_public_method_in_at_transactional_type(
+        assert!(
+            !aspect.matches_execution_of_any_public_method_in_at_transactional_type(
                 &method, false, true
-            ));
+            )
+        );
 
         // 类型不在范围内
-        assert!(!aspect
-            .matches_execution_of_any_public_method_in_at_transactional_type(
+        assert!(
+            !aspect.matches_execution_of_any_public_method_in_at_transactional_type(
                 &method, true, false
-            ));
+            )
+        );
     }
 
     #[test]
@@ -252,24 +253,16 @@ mod tests {
         let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
 
         // this_object 不匹配时返回 false
-        assert!(!aspect.transactional_method_execution(
-            &method, true, true, true, false
-        ));
+        assert!(!aspect.transactional_method_execution(&method, true, true, true, false));
 
         // 类型匹配 + this_object 匹配
-        assert!(aspect.transactional_method_execution(
-            &method, true, true, false, true
-        ));
+        assert!(aspect.transactional_method_execution(&method, true, true, false, true));
 
         // 方法匹配 + this_object 匹配
-        assert!(aspect.transactional_method_execution(
-            &method, false, false, true, true
-        ));
+        assert!(aspect.transactional_method_execution(&method, false, false, true, true));
 
         // 都不匹配
-        assert!(!aspect.transactional_method_execution(
-            &method, false, false, false, true
-        ));
+        assert!(!aspect.transactional_method_execution(&method, false, false, false, true));
     }
 
     #[test]

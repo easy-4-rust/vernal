@@ -6,34 +6,12 @@ use std::any::{Any, TypeId};
 use std::sync::Arc;
 
 use vernal_beans::{
-    BeanDescCache,
-    BeanFactory,
-    BeanFactoryUtils,
-    ComponentDefinition,
-    ComponentKey,
-    ConfigurableBeanFactory,
-    ConfigurableListableBeanFactory,
-    Container,
-    ConversionServiceFactory,
-    DefinitionError,
-    DirectFieldAccessor,
-    GraphError,
-    HierarchicalBeanFactory,
-    ListableBeanFactory,
-    PropertyEditor,
-    PropertyEditorCache,
-    PropertyEditorRegistry,
-    Qualifier,
-    RegistryBuilder,
-    ResolveError,
-    RootBeanDefinition,
-    Scope,
-    ScopeError,
-    ScopeKey,
-    ScopeState,
-    TransientTracker,
+    BeanDescCache, BeanFactory, BeanFactoryUtils, ComponentDefinition, ComponentKey,
+    ConfigurableBeanFactory, ConfigurableListableBeanFactory, Container, ConversionServiceFactory,
+    DefinitionError, DirectFieldAccessor, GraphError, HierarchicalBeanFactory, ListableBeanFactory,
+    PropertyEditor, PropertyEditorCache, PropertyEditorRegistry, Qualifier, RegistryBuilder,
+    ResolveError, RootBeanDefinition, Scope, ScopeError, ScopeKey, ScopeState, TransientTracker,
 };
-
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Helpers
@@ -41,8 +19,10 @@ use vernal_beans::{
 
 fn make_container() -> Container {
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()))
-        .unwrap();
+    b.register(ComponentDefinition::singleton::<String, _>(|_| {
+        "hello".to_string()
+    }))
+    .unwrap();
     b.register(ComponentDefinition::singleton::<i32, _>(|_| 42i32))
         .unwrap();
     Container::new(b.build().unwrap())
@@ -50,8 +30,10 @@ fn make_container() -> Container {
 
 fn make_container_with_transient() -> Container {
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()))
-        .unwrap();
+    b.register(ComponentDefinition::singleton::<String, _>(|_| {
+        "hello".to_string()
+    }))
+    .unwrap();
     b.register(ComponentDefinition::transient::<i32, _>(|_| 99i32))
         .unwrap();
     Container::new(b.build().unwrap())
@@ -123,12 +105,10 @@ fn container_select_definition_ambiguous() {
     // Register two definitions of the same type with different qualifiers
     let q1 = Qualifier::new("a").unwrap();
     let q2 = Qualifier::new("b").unwrap();
-    let _ = b.register(
-        ComponentDefinition::singleton::<String, _>(|_| "a".to_string()).qualified(q1),
-    );
-    let _ = b.register(
-        ComponentDefinition::singleton::<String, _>(|_| "b".to_string()).qualified(q2),
-    );
+    let _ =
+        b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()).qualified(q1));
+    let _ =
+        b.register(ComponentDefinition::singleton::<String, _>(|_| "b".to_string()).qualified(q2));
     // Also register unqualified - this creates ambiguity when resolving without qualifier
     let _ = b.register(ComponentDefinition::singleton::<i32, _>(|_| 1i32));
     let c = Container::new(b.build().unwrap());
@@ -147,7 +127,9 @@ fn container_resolve_optional_not_found_returns_none() {
             "bool".to_string(),
             false, // not required
         );
-    let result = <Container as AutowireCapableBeanFactory>::resolve_dependency(&c, &descriptor, None).unwrap();
+    let result =
+        <Container as AutowireCapableBeanFactory>::resolve_dependency(&c, &descriptor, None)
+            .unwrap();
     assert!(result.is_none());
 }
 
@@ -161,7 +143,8 @@ fn container_resolve_dependency_required_not_found() {
             "bool".to_string(),
             true, // required
         );
-    let result = <Container as AutowireCapableBeanFactory>::resolve_dependency(&c, &descriptor, None);
+    let result =
+        <Container as AutowireCapableBeanFactory>::resolve_dependency(&c, &descriptor, None);
     assert!(result.is_err());
 }
 
@@ -177,7 +160,8 @@ fn container_resolve_dependency_found() {
             "alloc::string::String".to_string(),
             true,
         );
-    let result = <Container as AutowireCapableBeanFactory>::resolve_dependency(&c, &descriptor, None);
+    let result =
+        <Container as AutowireCapableBeanFactory>::resolve_dependency(&c, &descriptor, None);
     // May succeed or fail depending on descriptor type_id matching
     // The important thing is exercising the code path
     let _ = result;
@@ -328,14 +312,18 @@ fn container_unused_definitions_before_warm_up() {
 #[test]
 fn container_listable_beans_of_type_id_empty() {
     let c = Container::new(RegistryBuilder::new().build().unwrap());
-    let beans = c.beans_of_type_id(TypeId::of::<String>(), true, true).unwrap();
+    let beans = c
+        .beans_of_type_id(TypeId::of::<String>(), true, true)
+        .unwrap();
     assert!(beans.is_empty());
 }
 
 #[test]
 fn container_listable_beans_of_type_id_found() {
     let c = make_container();
-    let beans = c.beans_of_type_id(TypeId::of::<String>(), true, true).unwrap();
+    let beans = c
+        .beans_of_type_id(TypeId::of::<String>(), true, true)
+        .unwrap();
     assert_eq!(beans.len(), 1);
 }
 
@@ -376,7 +364,8 @@ fn container_contains_local_bean_dynamic() {
     c.register_bean_definition("localBean".to_string(), def)
         .unwrap();
     assert!(<Container as HierarchicalBeanFactory>::contains_local_bean(
-        &c, "localBean"
+        &c,
+        "localBean"
     ));
 }
 
@@ -392,10 +381,7 @@ fn container_contains_local_bean_from_registry() {
 #[test]
 fn container_contains_local_bean_not_found() {
     let c = make_container();
-    assert!(!<Container as HierarchicalBeanFactory>::contains_local_bean(
-        &c,
-        "nonexistent"
-    ));
+    assert!(!<Container as HierarchicalBeanFactory>::contains_local_bean(&c, "nonexistent"));
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -512,9 +498,15 @@ fn container_register_and_remove_bean_definition() {
     use vernal_beans::BeanDefinitionRegistry;
     let mut c = make_container();
     let def = Box::new(RootBeanDefinition::new());
-    <Container as BeanDefinitionRegistry>::register_bean_definition(&mut c, "newBean".to_string(), def).unwrap();
+    <Container as BeanDefinitionRegistry>::register_bean_definition(
+        &mut c,
+        "newBean".to_string(),
+        def,
+    )
+    .unwrap();
     assert!(<Container as BeanDefinitionRegistry>::contains_bean_definition(&c, "newBean"));
-    let removed = <Container as BeanDefinitionRegistry>::remove_bean_definition(&mut c, "newBean").unwrap();
+    let removed =
+        <Container as BeanDefinitionRegistry>::remove_bean_definition(&mut c, "newBean").unwrap();
     assert_eq!(removed.bean_class_name(), "unknown");
     assert!(!<Container as BeanDefinitionRegistry>::contains_bean_definition(&c, "newBean"));
 }
@@ -524,9 +516,14 @@ fn container_register_duplicate_bean_definition_fails() {
     use vernal_beans::BeanDefinitionRegistry;
     let mut c = make_container();
     let def = Box::new(RootBeanDefinition::new());
-    <Container as BeanDefinitionRegistry>::register_bean_definition(&mut c, "dup".to_string(), def).unwrap();
+    <Container as BeanDefinitionRegistry>::register_bean_definition(&mut c, "dup".to_string(), def)
+        .unwrap();
     let def2 = Box::new(RootBeanDefinition::new());
-    let result = <Container as BeanDefinitionRegistry>::register_bean_definition(&mut c, "dup".to_string(), def2);
+    let result = <Container as BeanDefinitionRegistry>::register_bean_definition(
+        &mut c,
+        "dup".to_string(),
+        def2,
+    );
     assert!(result.is_err());
 }
 
@@ -534,7 +531,10 @@ fn container_register_duplicate_bean_definition_fails() {
 fn container_remove_bean_definition_from_registry() {
     use vernal_beans::BeanDefinitionRegistry;
     let mut c = make_container();
-    let removed = <Container as BeanDefinitionRegistry>::remove_bean_definition(&mut c, "alloc::string::String");
+    let removed = <Container as BeanDefinitionRegistry>::remove_bean_definition(
+        &mut c,
+        "alloc::string::String",
+    );
     assert!(removed.is_ok());
 }
 
@@ -542,7 +542,8 @@ fn container_remove_bean_definition_from_registry() {
 fn container_remove_nonexistent_bean_definition() {
     use vernal_beans::BeanDefinitionRegistry;
     let mut c = make_container();
-    let result = <Container as BeanDefinitionRegistry>::remove_bean_definition(&mut c, "nonexistent");
+    let result =
+        <Container as BeanDefinitionRegistry>::remove_bean_definition(&mut c, "nonexistent");
     assert!(result.is_err());
 }
 
@@ -550,7 +551,8 @@ fn container_remove_nonexistent_bean_definition() {
 fn container_get_bean_definition_from_registry() {
     use vernal_beans::BeanDefinitionRegistry;
     let c = make_container();
-    let def = <Container as BeanDefinitionRegistry>::get_bean_definition(&c, "alloc::string::String");
+    let def =
+        <Container as BeanDefinitionRegistry>::get_bean_definition(&c, "alloc::string::String");
     assert!(def.is_some());
 }
 
@@ -559,7 +561,12 @@ fn container_get_bean_definition_dynamic() {
     use vernal_beans::BeanDefinitionRegistry;
     let mut c = make_container();
     let def = Box::new(RootBeanDefinition::new());
-    <Container as BeanDefinitionRegistry>::register_bean_definition(&mut c, "dynamic".to_string(), def).unwrap();
+    <Container as BeanDefinitionRegistry>::register_bean_definition(
+        &mut c,
+        "dynamic".to_string(),
+        def,
+    )
+    .unwrap();
     let found = <Container as BeanDefinitionRegistry>::get_bean_definition(&c, "dynamic");
     assert!(found.is_some());
 }
@@ -568,7 +575,9 @@ fn container_get_bean_definition_dynamic() {
 fn container_get_bean_definition_not_found() {
     use vernal_beans::BeanDefinitionRegistry;
     let c = make_container();
-    assert!(<Container as BeanDefinitionRegistry>::get_bean_definition(&c, "nonexistent").is_none());
+    assert!(
+        <Container as BeanDefinitionRegistry>::get_bean_definition(&c, "nonexistent").is_none()
+    );
 }
 
 #[test]
@@ -745,15 +754,15 @@ fn container_construct_with_post_processor() {
             &self,
             bean: Arc<dyn Any + Send + Sync>,
             _: &str,
-        ) -> Result<
-            Option<Arc<dyn Any + Send + Sync>>,
-            Box<dyn std::error::Error + Send + Sync>,
-        > {
+        ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>>
+        {
             Ok(Some(bean))
         }
     }
     let mut b = RegistryBuilder::new();
-    let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+    let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| {
+        "hello".to_string()
+    }));
     let mut c = Container::new(b.build().unwrap());
     c.add_bean_post_processor(Arc::new(MockPP));
     assert_eq!(c.bean_post_processor_count(), 1);
@@ -770,15 +779,15 @@ fn container_post_processor_none_return() {
             &self,
             _bean: Arc<dyn Any + Send + Sync>,
             _: &str,
-        ) -> Result<
-            Option<Arc<dyn Any + Send + Sync>>,
-            Box<dyn std::error::Error + Send + Sync>,
-        > {
+        ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>>
+        {
             Ok(None)
         }
     }
     let mut b = RegistryBuilder::new();
-    let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+    let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| {
+        "hello".to_string()
+    }));
     let mut c = Container::new(b.build().unwrap());
     c.add_bean_post_processor(Arc::new(NonePP));
     let val: Arc<String> = c.resolve().unwrap();
@@ -794,15 +803,15 @@ fn container_post_processor_error_ignored() {
             &self,
             _bean: Arc<dyn Any + Send + Sync>,
             _: &str,
-        ) -> Result<
-            Option<Arc<dyn Any + Send + Sync>>,
-            Box<dyn std::error::Error + Send + Sync>,
-        > {
+        ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>>
+        {
             Err("processor error".into())
         }
     }
     let mut b = RegistryBuilder::new();
-    let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
+    let _ = b.register(ComponentDefinition::singleton::<String, _>(|_| {
+        "hello".to_string()
+    }));
     let mut c = Container::new(b.build().unwrap());
     c.add_bean_post_processor(Arc::new(ErrorPP));
     let val: Arc<String> = c.resolve().unwrap();
@@ -898,7 +907,9 @@ fn container_bean_factory_provider_methods() {
     let c = make_container();
     // Resolve a singleton first so provider has something to return
     let _: Arc<String> = c.resolve().unwrap();
-    let provider = c.get_bean_provider_by_type_id(TypeId::of::<String>()).unwrap();
+    let provider = c
+        .get_bean_provider_by_type_id(TypeId::of::<String>())
+        .unwrap();
     let val = provider.get();
     assert!(val.is_ok());
     let if_available = provider.if_available();
@@ -914,7 +925,9 @@ fn container_bean_factory_provider_methods() {
 #[test]
 fn container_bean_factory_provider_empty() {
     let c = Container::new(RegistryBuilder::new().build().unwrap());
-    let provider = c.get_bean_provider_by_type_id(TypeId::of::<String>()).unwrap();
+    let provider = c
+        .get_bean_provider_by_type_id(TypeId::of::<String>())
+        .unwrap();
     let val = provider.get();
     assert!(val.is_err());
     assert!(provider.if_available().is_none());
@@ -1043,7 +1056,8 @@ fn property_editor_registry_has_custom_editor_path_specific() {
 
 #[test]
 fn property_editor_registry_support_full_lifecycle() {
-    let mut registry = vernal_beans::property_editor_registry_support::PropertyEditorRegistrySupport::new();
+    let mut registry =
+        vernal_beans::property_editor_registry_support::PropertyEditorRegistrySupport::new();
 
     // Register default editor
     registry.register_default_editor(TypeId::of::<i32>(), Box::new(StubEditor::new("default")));
@@ -1340,8 +1354,7 @@ fn bean_wrapper_info_no_nested_path() {
 #[test]
 fn bean_definition_utils_generate_bename_no_conflict() {
     let builder = RegistryBuilder::new();
-    let name =
-        vernal_beans::bean_definition_utils::generate_bean_name(Some("myBean"), &builder);
+    let name = vernal_beans::bean_definition_utils::generate_bean_name(Some("myBean"), &builder);
     assert_eq!(name, "myBean");
 }
 
@@ -1358,8 +1371,7 @@ fn bean_definition_utils_generate_bean_name_conflict() {
     builder
         .register(ComponentDefinition::shared_value(42i32))
         .unwrap();
-    let name =
-        vernal_beans::bean_definition_utils::generate_bean_name(Some("i32"), &builder);
+    let name = vernal_beans::bean_definition_utils::generate_bean_name(Some("i32"), &builder);
     assert_eq!(name, "i32#1");
 }
 
@@ -1665,10 +1677,12 @@ fn definition_error_all_variants() {
 #[test]
 fn registry_builder_validate_bindings_duplicate_exact() {
     let mut b = RegistryBuilder::new();
-    let binding1 =
-        vernal_beans::TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Debug + Send + Sync>);
-    let binding2 =
-        vernal_beans::TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Debug + Send + Sync>);
+    let binding1 = vernal_beans::TraitBinding::new(|s: Arc<String>| {
+        s as Arc<dyn std::fmt::Debug + Send + Sync>
+    });
+    let binding2 = vernal_beans::TraitBinding::new(|s: Arc<String>| {
+        s as Arc<dyn std::fmt::Debug + Send + Sync>
+    });
     b.bind_all(vec![binding1]).unwrap();
     let result = b.bind_all(vec![binding2]);
     assert!(result.is_err());
@@ -1678,12 +1692,14 @@ fn registry_builder_validate_bindings_duplicate_exact() {
 fn registry_builder_validate_bindings_duplicate_qualified() {
     let mut b = RegistryBuilder::new();
     let q = Qualifier::new("myqual").unwrap();
-    let binding1 =
-        vernal_beans::TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Debug + Send + Sync>)
-            .qualified(q.clone());
-    let binding2 =
-        vernal_beans::TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Debug + Send + Sync>)
-            .qualified(q);
+    let binding1 = vernal_beans::TraitBinding::new(|s: Arc<String>| {
+        s as Arc<dyn std::fmt::Debug + Send + Sync>
+    })
+    .qualified(q.clone());
+    let binding2 = vernal_beans::TraitBinding::new(|s: Arc<String>| {
+        s as Arc<dyn std::fmt::Debug + Send + Sync>
+    })
+    .qualified(q);
     b.bind_all(vec![binding1]).unwrap();
     let result = b.bind_all(vec![binding2]);
     assert!(result.is_err());
@@ -1692,12 +1708,14 @@ fn registry_builder_validate_bindings_duplicate_qualified() {
 #[test]
 fn registry_builder_validate_bindings_multiple_primary() {
     let mut b = RegistryBuilder::new();
-    let binding1 =
-        vernal_beans::TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>)
-            .primary();
-    let binding2 =
-        vernal_beans::TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>)
-            .primary();
+    let binding1 = vernal_beans::TraitBinding::new(|s: Arc<String>| {
+        s as Arc<dyn std::fmt::Display + Send + Sync>
+    })
+    .primary();
+    let binding2 = vernal_beans::TraitBinding::new(|i: Arc<i32>| {
+        i as Arc<dyn std::fmt::Display + Send + Sync>
+    })
+    .primary();
     let result = b.bind_all(vec![binding1, binding2]);
     assert!(result.is_err());
 }
@@ -1705,11 +1723,9 @@ fn registry_builder_validate_bindings_multiple_primary() {
 #[test]
 fn registry_builder_bind_chaining() {
     let mut b = RegistryBuilder::new();
-    b.bind(
-        vernal_beans::TraitBinding::new(|s: Arc<String>| {
-            s as Arc<dyn std::fmt::Display + Send + Sync>
-        }),
-    )
+    b.bind(vernal_beans::TraitBinding::new(|s: Arc<String>| {
+        s as Arc<dyn std::fmt::Display + Send + Sync>
+    }))
     .unwrap();
     assert!(!b.is_empty());
 }
@@ -1825,8 +1841,7 @@ fn component_definition_scopes() {
 #[test]
 fn component_definition_qualified() {
     let q = Qualifier::new("primary").unwrap();
-    let def =
-        ComponentDefinition::singleton::<String, _>(|_| "h".to_string()).qualified(q);
+    let def = ComponentDefinition::singleton::<String, _>(|_| "h".to_string()).qualified(q);
     assert!(def.key().qualifier().is_some());
 }
 
@@ -1977,8 +1992,7 @@ fn bean_factory_utils_all_methods() {
         1
     );
     assert_eq!(
-        BeanFactoryUtils::bean_names_for_type_including_ancestors(TypeId::of::<String>(), &c)
-            .len(),
+        BeanFactoryUtils::bean_names_for_type_including_ancestors(TypeId::of::<String>(), &c).len(),
         1
     );
 }
@@ -2015,9 +2029,15 @@ fn smart_post_processor_default_trait_methods() {
     let bean: Arc<dyn Any + Send + Sync> = Arc::new(42i32);
     let early = p.get_early_bean_reference(bean.clone(), "n");
     assert!(Arc::ptr_eq(&bean, &early));
-    assert!(p.post_process_before_instantiation("C", "n").unwrap().is_none());
+    assert!(
+        p.post_process_before_instantiation("C", "n")
+            .unwrap()
+            .is_none()
+    );
     assert!(p.post_process_after_instantiation(&42i32, "n").unwrap());
-    let r = p.post_process_before_initialization(bean.clone(), "n").unwrap();
+    let r = p
+        .post_process_before_initialization(bean.clone(), "n")
+        .unwrap();
     assert!(r.is_some() && Arc::ptr_eq(&bean, &r.unwrap()));
     let r = p.post_process_after_initialization(bean, "n").unwrap();
     assert!(r.is_some());

@@ -201,8 +201,8 @@ mod tests {
 
     #[test]
     fn with_optional_true() {
-        let desc = DependencyDescriptor::for_field(TypeId::of::<String>(), "String")
-            .with_optional(true);
+        let desc =
+            DependencyDescriptor::for_field(TypeId::of::<String>(), "String").with_optional(true);
         assert!(desc.is_optional());
     }
 
@@ -218,8 +218,8 @@ mod tests {
 
     #[test]
     fn with_multiple_true() {
-        let desc = DependencyDescriptor::for_field(TypeId::of::<String>(), "String")
-            .with_multiple(true);
+        let desc =
+            DependencyDescriptor::for_field(TypeId::of::<String>(), "String").with_multiple(true);
         assert!(desc.is_multiple());
     }
 
@@ -279,11 +279,12 @@ mod tests {
 
     #[test]
     fn full_builder_chain() {
-        let desc = DependencyDescriptor::for_constructor_parameter(0, TypeId::of::<String>(), "String")
-            .with_optional(true)
-            .with_multiple(true)
-            .with_qualifier("primary")
-            .with_containing_bean_name("myBean");
+        let desc =
+            DependencyDescriptor::for_constructor_parameter(0, TypeId::of::<String>(), "String")
+                .with_optional(true)
+                .with_multiple(true)
+                .with_qualifier("primary")
+                .with_containing_bean_name("myBean");
         assert_eq!(desc.type_id(), TypeId::of::<String>());
         assert_eq!(desc.type_name(), "String");
         assert_eq!(desc.field_index(), Some(0));

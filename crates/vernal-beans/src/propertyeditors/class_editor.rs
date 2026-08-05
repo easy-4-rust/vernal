@@ -79,7 +79,10 @@ mod tests {
     fn set_as_text_valid_class_name() {
         let mut editor = ClassEditor::new();
         editor.set_as_text("com.example.MyService").unwrap();
-        assert_eq!(editor.get_as_text(), Some("com.example.MyService".to_string()));
+        assert_eq!(
+            editor.get_as_text(),
+            Some("com.example.MyService".to_string())
+        );
     }
 
     #[test]
@@ -110,7 +113,10 @@ mod tests {
         let val: Arc<dyn Any + Send + Sync> = Arc::new("com.example.Service".to_string());
         editor.set_value(val);
         let retrieved = editor.get_value().unwrap();
-        assert_eq!(*retrieved.downcast_ref::<String>().unwrap(), "com.example.Service");
+        assert_eq!(
+            *retrieved.downcast_ref::<String>().unwrap(),
+            "com.example.Service"
+        );
     }
 
     #[test]

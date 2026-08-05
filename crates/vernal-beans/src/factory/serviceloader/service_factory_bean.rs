@@ -12,7 +12,6 @@
 //! - 插件架构中的服务发现
 //! - 需要通过接口获取唯一实现
 
-
 /// ServiceFactoryBean — Spring 风格的服务工厂 Bean。
 ///
 /// 对应 Java 类：`org.springframework.beans.factory.serviceloader.ServiceFactoryBean`。

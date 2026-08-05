@@ -5,9 +5,9 @@
 //! 扩展 `BeanFactoryPostProcessor`，在所有 Bean 定义加载完成后
 //! 可以动态注册新的 Bean 定义。
 
-use crate::factory::support::bean_definition_registry::BeanDefinitionRegistry;
 use crate::factory::config::bean_factory_post_processor::BeanFactoryPostProcessor;
 use crate::factory::config::configurable_listable_bean_factory::ConfigurableListableBeanFactory;
+use crate::factory::support::bean_definition_registry::BeanDefinitionRegistry;
 
 /// Spring 风格的 Bean 定义注册表后处理器接口。
 ///

@@ -23,44 +23,78 @@ pub struct Configurable {
 
 impl Configurable {
     /// 创建默认的 Configurable 注解（enabled=true, autowire=true, preConstruction=false）。
-    pub fn new() -> Self { Self { enabled: true, autowire: true, pre_construction: false } }
+    pub fn new() -> Self {
+        Self {
+            enabled: true,
+            autowire: true,
+            pre_construction: false,
+        }
+    }
 
     /// 是否启用。
-    pub fn enabled(&self) -> bool { self.enabled }
+    pub fn enabled(&self) -> bool {
+        self.enabled
+    }
 
     /// 设置启用状态。
-    pub fn set_enabled(&mut self, v: bool) { self.enabled = v; }
+    pub fn set_enabled(&mut self, v: bool) {
+        self.enabled = v;
+    }
 
     /// 是否自动装配。
-    pub fn is_autowire(&self) -> bool { self.autowire }
+    pub fn is_autowire(&self) -> bool {
+        self.autowire
+    }
 
     /// 设置自动装配。
-    pub fn set_autowire(&mut self, v: bool) { self.autowire = v; }
+    pub fn set_autowire(&mut self, v: bool) {
+        self.autowire = v;
+    }
 
     /// 是否预构建（在构造前完成依赖注入）。
-    pub fn is_pre_construction(&self) -> bool { self.pre_construction }
+    pub fn is_pre_construction(&self) -> bool {
+        self.pre_construction
+    }
 
     /// 设置预构建标志。
-    pub fn set_pre_construction(&mut self, v: bool) { self.pre_construction = v; }
+    pub fn set_pre_construction(&mut self, v: bool) {
+        self.pre_construction = v;
+    }
 
     /// 创建一个启用自动装配的配置。
     pub fn autowire_enabled() -> Self {
-        Self { enabled: true, autowire: true, pre_construction: false }
+        Self {
+            enabled: true,
+            autowire: true,
+            pre_construction: false,
+        }
     }
 
     /// 创建一个禁用自动装配的配置。
     pub fn autowire_disabled() -> Self {
-        Self { enabled: true, autowire: false, pre_construction: false }
+        Self {
+            enabled: true,
+            autowire: false,
+            pre_construction: false,
+        }
     }
 
     /// 创建一个启用预构建的配置。
     pub fn with_pre_construction() -> Self {
-        Self { enabled: true, autowire: true, pre_construction: true }
+        Self {
+            enabled: true,
+            autowire: true,
+            pre_construction: true,
+        }
     }
 
     /// 创建一个禁用的配置。
     pub fn disabled() -> Self {
-        Self { enabled: false, autowire: false, pre_construction: false }
+        Self {
+            enabled: false,
+            autowire: false,
+            pre_construction: false,
+        }
     }
 
     /// 检查是否所有选项都为默认值。
@@ -77,7 +111,11 @@ impl Configurable {
     }
 }
 
-impl Default for Configurable { fn default() -> Self { Self::new() } }
+impl Default for Configurable {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 #[cfg(test)]
 mod tests {

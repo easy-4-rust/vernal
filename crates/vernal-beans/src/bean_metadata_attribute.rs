@@ -83,7 +83,9 @@ impl BeanMetadataAttribute {
 
 impl BeanMetadataElement for BeanMetadataAttribute {
     fn source(&self) -> Option<&(dyn Any + 'static)> {
-        self.source.as_ref().map(|s| s.as_ref() as &(dyn Any + 'static))
+        self.source
+            .as_ref()
+            .map(|s| s.as_ref() as &(dyn Any + 'static))
     }
 }
 

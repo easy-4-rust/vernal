@@ -16,13 +16,21 @@ pub trait BeanFactoryInitializer<T: Any + Send + Sync>: Send + Sync {
 
 /// BeanFactoryInitializer 的闭包实现。
 pub struct ClosureBeanFactoryInitializer<T: Any + Send + Sync> {
-    callback: Box<dyn Fn(&mut T) -> Result<(), Box<dyn std::error::Error + Send + Sync>> + Send + Sync>,
+    callback:
+        Box<dyn Fn(&mut T) -> Result<(), Box<dyn std::error::Error + Send + Sync>> + Send + Sync>,
 }
 
 impl<T: Any + Send + Sync> ClosureBeanFactoryInitializer<T> {
     /// 创建一个新的实例。
-    pub fn new(callback: impl Fn(&mut T) -> Result<(), Box<dyn std::error::Error + Send + Sync>> + Send + Sync + 'static) -> Self {
-        Self { callback: Box::new(callback) }
+    pub fn new(
+        callback: impl Fn(&mut T) -> Result<(), Box<dyn std::error::Error + Send + Sync>>
+        + Send
+        + Sync
+        + 'static,
+    ) -> Self {
+        Self {
+            callback: Box::new(callback),
+        }
     }
 }
 

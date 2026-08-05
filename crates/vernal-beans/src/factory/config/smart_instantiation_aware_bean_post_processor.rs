@@ -24,11 +24,7 @@ pub trait SmartInstantiationAwareBeanPostProcessor: Send + Sync {
     ///
     /// 返回 Bean 的最终类型（可能是代理类型）。
     /// 默认返回 `None`（使用原始类型）。
-    fn predict_bean_type(
-        &self,
-        _bean_class: &str,
-        _bean_name: &str,
-    ) -> Option<String> {
+    fn predict_bean_type(&self, _bean_class: &str, _bean_name: &str) -> Option<String> {
         None
     }
 
@@ -128,11 +124,7 @@ impl Default for SimpleSmartInstantiationAwareBeanPostProcessor {
 }
 
 impl SmartInstantiationAwareBeanPostProcessor for SimpleSmartInstantiationAwareBeanPostProcessor {
-    fn predict_bean_type(
-        &self,
-        _bean_class: &str,
-        _bean_name: &str,
-    ) -> Option<String> {
+    fn predict_bean_type(&self, _bean_class: &str, _bean_name: &str) -> Option<String> {
         self.predicted_type.clone()
     }
 
@@ -163,7 +155,11 @@ mod tests {
 
         // 默认返回 None
         assert!(processor.predict_bean_type("MyClass", "myBean").is_none());
-        assert!(processor.determine_candidate_constructors("MyClass", "myBean").is_none());
+        assert!(
+            processor
+                .determine_candidate_constructors("MyClass", "myBean")
+                .is_none()
+        );
     }
 
     #[test]

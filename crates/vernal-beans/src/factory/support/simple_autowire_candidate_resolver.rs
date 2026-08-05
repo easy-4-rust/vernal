@@ -47,7 +47,10 @@ impl SimpleAutowireCandidateResolver {
 
     /// 排除指定 Bean 作为自动装配候选。
     pub fn exclude_bean(&self, bean_name: &str) {
-        self.excluded_beans.lock().unwrap().insert(bean_name.to_string());
+        self.excluded_beans
+            .lock()
+            .unwrap()
+            .insert(bean_name.to_string());
     }
 
     /// 恢复指定 Bean 的候选资格。

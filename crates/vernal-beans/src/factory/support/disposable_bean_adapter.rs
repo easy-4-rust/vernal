@@ -224,8 +224,7 @@ mod tests {
     #[test]
     fn with_order() {
         let bean = Arc::new(());
-        let adapter = DisposableBeanAdapter::new("bean".to_string(), bean)
-            .with_order(10);
+        let adapter = DisposableBeanAdapter::new("bean".to_string(), bean).with_order(10);
 
         assert_eq!(adapter.order(), 10);
     }

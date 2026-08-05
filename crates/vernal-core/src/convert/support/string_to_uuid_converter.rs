@@ -3,7 +3,7 @@
 //! 对标 Spring `org.springframework.core.convert.support.StringToUUIDConverter`。
 //! 仅在 feature `convert-uuid` 下编译。
 
-use crate::convert::{ConversionError, Convertible, Converter};
+use crate::convert::{ConversionError, Converter, Convertible};
 
 /// 字符串 → UUID 转换器。
 ///

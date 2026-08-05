@@ -50,7 +50,10 @@ impl PropertyEditorCache {
 
     /// 注册默认属性编辑器。
     pub fn register_default_editor(&self, type_id: TypeId, editor: Arc<dyn PropertyEditor>) {
-        self.default_editors.write().unwrap().insert(type_id, editor);
+        self.default_editors
+            .write()
+            .unwrap()
+            .insert(type_id, editor);
     }
 
     /// 查找默认属性编辑器。
@@ -140,9 +143,14 @@ mod tests {
     }
 
     impl PropertyEditor for StubEditor {
-        fn target_type(&self) -> TypeId { TypeId::of::<String>() }
+        fn target_type(&self) -> TypeId {
+            TypeId::of::<String>()
+        }
 
-        fn set_as_text(&mut self, text: &str) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        fn set_as_text(
+            &mut self,
+            text: &str,
+        ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             self.value = text.to_string();
             Ok(())
         }
@@ -161,7 +169,9 @@ mod tests {
             Some(&self.value)
         }
 
-        fn get_value_type(&self) -> TypeId { TypeId::of::<String>() }
+        fn get_value_type(&self) -> TypeId {
+            TypeId::of::<String>()
+        }
     }
 
     #[test]

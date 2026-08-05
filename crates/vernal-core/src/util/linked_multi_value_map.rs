@@ -36,7 +36,9 @@ impl<K: PartialEq, V> LinkedMultiValueMap<K, V> {
     /// 创建空的有序多值 Map。
     #[must_use]
     pub fn new() -> Self {
-        Self { entries: Vec::new() }
+        Self {
+            entries: Vec::new(),
+        }
     }
 
     /// 键数量。
@@ -144,8 +146,7 @@ impl<K: PartialEq + std::fmt::Debug, V: std::fmt::Debug> std::fmt::Debug
 
 impl<K: PartialEq, V> MultiValueMapTrait<K, V> for LinkedMultiValueMap<K, V> {
     fn get_first(&self, key: &K) -> Option<&V> {
-        self.index_of(key)
-            .and_then(|i| self.entries[i].1.first())
+        self.index_of(key).and_then(|i| self.entries[i].1.first())
     }
 
     fn add(&mut self, key: K, value: V) {

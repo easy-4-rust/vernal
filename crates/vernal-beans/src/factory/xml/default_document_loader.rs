@@ -6,7 +6,9 @@ use crate::factory::xml::document_loader::{Document, DocumentLoader, XmlElement}
 pub struct DefaultDocumentLoader;
 impl DefaultDocumentLoader {
     /// 创建一个新的实例。
-    pub fn new() -> Self { Self }
+    pub fn new() -> Self {
+        Self
+    }
 }
 impl DocumentLoader for DefaultDocumentLoader {
     fn load_document(
@@ -33,41 +35,28 @@ impl DocumentLoader for DefaultDocumentLoader {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::factory::xml::document_loader::{ValidationMode, DocumentLoader};
+    use crate::factory::xml::document_loader::{DocumentLoader, ValidationMode};
 
     #[test]
     fn new_loader() {
         let loader = DefaultDocumentLoader::new();
-        let result = loader.load_document(
-            "<beans/>",
-            None,
-            ValidationMode::None,
-            true,
-        );
+        let result = loader.load_document("<beans/>", None, ValidationMode::None, true);
         assert!(result.is_ok());
     }
 
     #[test]
     fn default_trait() {
         let loader = DefaultDocumentLoader::default();
-        let result = loader.load_document(
-            "",
-            None,
-            ValidationMode::None,
-            false,
-        );
+        let result = loader.load_document("", None, ValidationMode::None, false);
         assert!(result.is_ok());
     }
 
     #[test]
     fn load_document_returns_beans_root() {
         let loader = DefaultDocumentLoader::new();
-        let doc = loader.load_document(
-            "<beans><bean/></beans>",
-            None,
-            ValidationMode::Auto,
-            true,
-        ).unwrap();
+        let doc = loader
+            .load_document("<beans><bean/></beans>", None, ValidationMode::Auto, true)
+            .unwrap();
 
         assert!(doc.root_element.is_some());
         let root = doc.root_element.unwrap();
@@ -83,12 +72,7 @@ mod tests {
     fn clone_loader() {
         let loader = DefaultDocumentLoader::new();
         let cloned = loader.clone();
-        let result = cloned.load_document(
-            "test",
-            None,
-            ValidationMode::None,
-            true,
-        );
+        let result = cloned.load_document("test", None, ValidationMode::None, true);
         assert!(result.is_ok());
     }
 

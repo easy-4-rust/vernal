@@ -6,9 +6,9 @@
 //! 如果同名 Bean 已存在，则追加 `#N` 后缀以保证唯一性。
 
 use std::any::TypeId;
-use std::sync::atomic::{AtomicU32, Ordering};
 use std::collections::HashSet;
 use std::sync::Mutex;
+use std::sync::atomic::{AtomicU32, Ordering};
 
 use crate::factory::support::bean_name_generator::BeanNameGenerator;
 
@@ -53,7 +53,9 @@ impl BeanNameGenerator for DefaultBeanNameGenerator {
 }
 
 impl Default for DefaultBeanNameGenerator {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[cfg(test)]
@@ -63,8 +65,14 @@ mod tests {
     #[test]
     fn generates_sequential_names() {
         let generator = DefaultBeanNameGenerator::new();
-        assert_eq!(generator.generate_bean_name(TypeId::of::<String>()), "bean_0");
-        assert_eq!(generator.generate_bean_name(TypeId::of::<String>()), "bean_1");
+        assert_eq!(
+            generator.generate_bean_name(TypeId::of::<String>()),
+            "bean_0"
+        );
+        assert_eq!(
+            generator.generate_bean_name(TypeId::of::<String>()),
+            "bean_1"
+        );
         assert_eq!(generator.generate_bean_name(TypeId::of::<i32>()), "bean_2");
     }
 

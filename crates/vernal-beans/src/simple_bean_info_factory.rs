@@ -4,7 +4,7 @@
 
 use std::any::TypeId;
 
-use crate::bean_info_factory::{BeanInfoFactory, BeanInfoEntries};
+use crate::bean_info_factory::{BeanInfoEntries, BeanInfoFactory};
 
 /// 简单的 BeanInfo 工厂。
 ///

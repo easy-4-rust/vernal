@@ -8,8 +8,8 @@
 //! - String[Int] — 字符串字符索引
 //! - Object[property] — 对象属性访问（通过 PropertyAccessor）
 
-use super::spel_node::SpelNode;
 use super::super::expression_state::ExpressionState;
+use super::spel_node::SpelNode;
 use crate::evaluation_context::EvaluationContext;
 use crate::evaluation_exception::EvaluationException;
 use crate::spel::spel_message::SpelMessage;
@@ -25,13 +25,19 @@ impl Indexer {
     /// 创建索引访问节点。
     #[must_use]
     pub fn new(index: Box<dyn SpelNode>) -> Self {
-        Self { index, null_safe: false }
+        Self {
+            index,
+            null_safe: false,
+        }
     }
 
     /// 创建 null-safe Indexer 节点。
     #[must_use]
     pub fn new_null_safe(index: Box<dyn SpelNode>) -> Self {
-        Self { index, null_safe: true }
+        Self {
+            index,
+            null_safe: true,
+        }
     }
 }
 

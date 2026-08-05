@@ -41,11 +41,17 @@ impl Logger for TracingLogger {
 
     fn is_enabled(&self, level: LogLevel) -> bool {
         match level {
-            LogLevel::Trace => tracing::event_enabled!(tracing::Level::TRACE, "logger" = %self.name),
-            LogLevel::Debug => tracing::event_enabled!(tracing::Level::DEBUG, "logger" = %self.name),
+            LogLevel::Trace => {
+                tracing::event_enabled!(tracing::Level::TRACE, "logger" = %self.name)
+            }
+            LogLevel::Debug => {
+                tracing::event_enabled!(tracing::Level::DEBUG, "logger" = %self.name)
+            }
             LogLevel::Info => tracing::event_enabled!(tracing::Level::INFO, "logger" = %self.name),
             LogLevel::Warn => tracing::event_enabled!(tracing::Level::WARN, "logger" = %self.name),
-            LogLevel::Error => tracing::event_enabled!(tracing::Level::ERROR, "logger" = %self.name),
+            LogLevel::Error => {
+                tracing::event_enabled!(tracing::Level::ERROR, "logger" = %self.name)
+            }
         }
     }
 }

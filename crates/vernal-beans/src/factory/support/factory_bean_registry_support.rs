@@ -57,7 +57,10 @@ impl FactoryBeanRegistrySupport {
     pub fn get_object_from_factory_bean_with_closure(
         &self,
         bean_name: &str,
-        factory: &dyn Fn() -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>>,
+        factory: &dyn Fn() -> Result<
+            Arc<dyn Any + Send + Sync>,
+            Box<dyn std::error::Error + Send + Sync>,
+        >,
     ) -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> {
         // 检查缓存
         {

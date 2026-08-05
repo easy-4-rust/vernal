@@ -14,7 +14,9 @@ pub struct AutowireUtils;
 
 impl AutowireUtils {
     /// 创建工具实例。
-    pub fn new() -> Self { Self }
+    pub fn new() -> Self {
+        Self
+    }
 
     /// 判断名称是否为 setter/getter 前缀（set/get/is）。
     pub fn is_autowire_type(name: &str) -> bool {
@@ -65,7 +67,11 @@ impl AutowireUtils {
     }
 }
 
-impl Default for AutowireUtils { fn default() -> Self { Self::new() } }
+impl Default for AutowireUtils {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 #[cfg(test)]
 mod tests {

@@ -34,6 +34,9 @@ mod tests {
     fn serializer_produces_bytes() {
         // A 类（合同对齐）：对标 Spring 序列化输出
         let serializer = TextSerializer;
-        assert_eq!(serializer.serialize(&"hello".to_string()).unwrap(), b"hello");
+        assert_eq!(
+            serializer.serialize(&"hello".to_string()).unwrap(),
+            b"hello"
+        );
     }
 }

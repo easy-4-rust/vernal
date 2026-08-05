@@ -58,10 +58,7 @@ impl SubscriberInputStream {
 impl Read for SubscriberInputStream {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         if self.closed {
-            return Err(io::Error::new(
-                io::ErrorKind::BrokenPipe,
-                "输入流已关闭",
-            ));
+            return Err(io::Error::new(io::ErrorKind::BrokenPipe, "输入流已关闭"));
         }
         let mut total = 0;
         while total < buf.len() {

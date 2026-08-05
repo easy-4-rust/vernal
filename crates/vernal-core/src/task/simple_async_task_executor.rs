@@ -2,8 +2,8 @@
 //!
 //! 对标 Spring `org.springframework.core.task.SimpleAsyncTaskExecutor`。
 
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::task::TaskExecutor;
 
@@ -81,7 +81,10 @@ mod tests {
         executor.execute(Box::new(move || {
             tx.send("done").unwrap();
         }));
-        assert_eq!(rx.recv_timeout(std::time::Duration::from_secs(5)).unwrap(), "done");
+        assert_eq!(
+            rx.recv_timeout(std::time::Duration::from_secs(5)).unwrap(),
+            "done"
+        );
     }
 
     #[test]

@@ -82,7 +82,10 @@ mod tests {
                 )
             })
             .collect();
-        TypedValue::new(ExpressionValue::Map(entries), TypeDescriptor::from_type_name("Map"))
+        TypedValue::new(
+            ExpressionValue::Map(entries),
+            TypeDescriptor::from_type_name("Map"),
+        )
     }
 
     #[test]

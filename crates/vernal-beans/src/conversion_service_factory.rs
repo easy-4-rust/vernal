@@ -9,7 +9,6 @@
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 
-
 /// 转换服务工厂。
 ///
 /// 对应 Spring 的 `ConversionServiceFactory`。
@@ -18,7 +17,12 @@ use std::sync::{Arc, RwLock};
 /// 支持按源类型和目标类型的组合查找转换器。
 pub struct ConversionServiceFactory {
     /// 已注册的转换器映射：(源类型名, 目标类型名) -> 转换函数
-    converters: RwLock<HashMap<(String, String), Arc<dyn Fn(&dyn std::any::Any) -> Option<Box<dyn std::any::Any>> + Send + Sync>>>,
+    converters: RwLock<
+        HashMap<
+            (String, String),
+            Arc<dyn Fn(&dyn std::any::Any) -> Option<Box<dyn std::any::Any>> + Send + Sync>,
+        >,
+    >,
     /// 是否已注册默认转换器
     defaults_registered: RwLock<bool>,
 }
@@ -141,7 +145,8 @@ impl ConversionServiceFactory {
         }
 
         let converters = self.converters.read().unwrap();
-        if let Some(converter) = converters.get(&(source_type.to_string(), target_type.to_string())) {
+        if let Some(converter) = converters.get(&(source_type.to_string(), target_type.to_string()))
+        {
             Ok(converter(value))
         } else {
             Ok(None)

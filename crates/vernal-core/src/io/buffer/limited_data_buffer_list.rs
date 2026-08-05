@@ -90,8 +90,10 @@ mod tests {
     fn tracks_total_size() {
         // A 类（合同对齐）：对标 Spring 总量跟踪
         let mut list = LimitedDataBufferList::new(100);
-        list.add(Box::new(DefaultDataBuffer::from_bytes(b"0123456789".to_vec())))
-            .unwrap();
+        list.add(Box::new(DefaultDataBuffer::from_bytes(
+            b"0123456789".to_vec(),
+        )))
+        .unwrap();
         list.add(Box::new(DefaultDataBuffer::from_bytes(b"abc".to_vec())))
             .unwrap();
         assert_eq!(list.len(), 2);
@@ -103,7 +105,9 @@ mod tests {
         // C 类（错误路径）：超出上限抛 DataBufferLimitException
         let mut list = LimitedDataBufferList::new(5);
         let err = list
-            .add(Box::new(DefaultDataBuffer::from_bytes(b"0123456789".to_vec())))
+            .add(Box::new(DefaultDataBuffer::from_bytes(
+                b"0123456789".to_vec(),
+            )))
             .unwrap_err();
         assert_eq!(err.max_limit(), 5);
         assert!(list.is_empty());

@@ -82,11 +82,17 @@ mod tests {
 
     impl ProblemReporter for CollectingReporter {
         fn fatal(&self, problem: Problem) {
-            self.fatals.lock().unwrap().push(problem.message().to_string());
+            self.fatals
+                .lock()
+                .unwrap()
+                .push(problem.message().to_string());
         }
 
         fn warning(&self, problem: Problem) {
-            self.warnings.lock().unwrap().push(problem.message().to_string());
+            self.warnings
+                .lock()
+                .unwrap()
+                .push(problem.message().to_string());
         }
     }
 

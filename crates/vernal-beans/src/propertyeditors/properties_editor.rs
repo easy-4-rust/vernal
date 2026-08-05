@@ -71,7 +71,10 @@ mod tests {
     fn set_as_text_stores_value() {
         let mut editor = PropertiesEditor::new();
         editor.set_as_text("key1=value1\nkey2=value2").unwrap();
-        assert_eq!(editor.get_as_text(), Some("key1=value1\nkey2=value2".to_string()));
+        assert_eq!(
+            editor.get_as_text(),
+            Some("key1=value1\nkey2=value2".to_string())
+        );
     }
 
     #[test]

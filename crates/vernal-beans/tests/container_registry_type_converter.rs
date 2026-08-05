@@ -2,10 +2,10 @@
 
 use std::sync::Arc;
 
+use vernal_beans::BeanDefinitionRegistry;
 use vernal_beans::ComponentDefinition;
 use vernal_beans::RegistryBuilder;
 use vernal_beans::Resolver;
-use vernal_beans::BeanDefinitionRegistry;
 use vernal_beans::property_editor::PropertyEditor;
 use vernal_beans::type_converter_delegate::TypeConverterDelegate;
 

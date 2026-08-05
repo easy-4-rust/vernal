@@ -10,9 +10,8 @@ use super::token::Token;
 use super::token_kind::TokenKind;
 
 /// 替代运算符名（按字母序，对应 Spring `ALTERNATIVE_OPERATOR_NAMES`）。
-const ALTERNATIVE_OPERATOR_NAMES: &[&str] = &[
-    "DIV", "EQ", "GE", "GT", "LE", "LT", "MOD", "NE", "NOT",
-];
+const ALTERNATIVE_OPERATOR_NAMES: &[&str] =
+    &["DIV", "EQ", "GE", "GT", "LE", "LT", "MOD", "NE", "NOT"];
 
 /// 词法分析器（对标 Spring `Tokenizer`）。
 pub struct Tokenizer<'a> {
@@ -24,10 +23,7 @@ impl<'a> Tokenizer<'a> {
     /// 创建词法分析器。
     #[must_use]
     pub fn new(expression: &'a str) -> Self {
-        Self {
-            expression,
-            pos: 0,
-        }
+        Self { expression, pos: 0 }
     }
 
     /// 主入口：分词为完整 token 流。
@@ -104,7 +100,11 @@ impl<'a> Tokenizer<'a> {
                         tokens.push(Token::empty(TokenKind::SymbolicOr, start, start + 2));
                         self.pos += 2;
                     } else {
-                        return Err(self.error(start, SpelMessage::MissingCharacter, vec!["||".to_string()]));
+                        return Err(self.error(
+                            start,
+                            SpelMessage::MissingCharacter,
+                            vec!["||".to_string()],
+                        ));
                     }
                 }
 
@@ -311,7 +311,11 @@ impl<'a> Tokenizer<'a> {
         loop {
             match self.expression.as_bytes().get(self.pos).copied() {
                 None => {
-                    return Err(self.error(start, SpelMessage::NonTerminatingDoubleQuotedString, vec![]));
+                    return Err(self.error(
+                        start,
+                        SpelMessage::NonTerminatingDoubleQuotedString,
+                        vec![],
+                    ));
                 }
                 Some(b'"') => {
                     if self.peek_at(1) == Some(b'"') {
@@ -333,7 +337,8 @@ impl<'a> Tokenizer<'a> {
 
     fn lex_numeric_literal(&mut self, start: usize) -> Result<Token, InternalParseException> {
         // 0x 十六进制
-        if self.pos + 1 < self.expression.len() && self.expression.as_bytes()[self.pos] == b'0'
+        if self.pos + 1 < self.expression.len()
+            && self.expression.as_bytes()[self.pos] == b'0'
             && matches!(self.expression.as_bytes()[self.pos + 1], b'x' | b'X')
         {
             self.pos += 2;
@@ -347,7 +352,10 @@ impl<'a> Tokenizer<'a> {
                 }
             }
             let mut is_long = false;
-            if matches!(self.expression.as_bytes().get(self.pos).copied(), Some(b'L') | Some(b'l')) {
+            if matches!(
+                self.expression.as_bytes().get(self.pos).copied(),
+                Some(b'L') | Some(b'l')
+            ) {
                 is_long = true;
                 number.push(self.expression.as_bytes()[self.pos] as char);
                 self.pos += 1;
@@ -356,7 +364,11 @@ impl<'a> Tokenizer<'a> {
                 return Err(self.error(start, SpelMessage::NotAnInteger, vec!["".into()]));
             }
             let end = self.pos;
-            let kind = if is_long { TokenKind::LiteralHexLong } else { TokenKind::LiteralHexInt };
+            let kind = if is_long {
+                TokenKind::LiteralHexLong
+            } else {
+                TokenKind::LiteralHexInt
+            };
             return Ok(Token::with_data(kind, number, start, end));
         }
 
@@ -381,11 +393,17 @@ impl<'a> Tokenizer<'a> {
         }
 
         // 科学计数法
-        if matches!(self.expression.as_bytes().get(self.pos).copied(), Some(b'e') | Some(b'E')) {
+        if matches!(
+            self.expression.as_bytes().get(self.pos).copied(),
+            Some(b'e') | Some(b'E')
+        ) {
             is_real = true;
             number.push(self.expression.as_bytes()[self.pos] as char);
             self.pos += 1;
-            if matches!(self.expression.as_bytes().get(self.pos).copied(), Some(b'+') | Some(b'-')) {
+            if matches!(
+                self.expression.as_bytes().get(self.pos).copied(),
+                Some(b'+') | Some(b'-')
+            ) {
                 number.push(self.expression.as_bytes()[self.pos] as char);
                 self.pos += 1;
             }
@@ -418,7 +436,12 @@ impl<'a> Tokenizer<'a> {
                 number.push(self.expression.as_bytes()[self.pos] as char);
                 self.pos += 1;
                 let end = self.pos;
-                Ok(Token::with_data(TokenKind::LiteralRealFloat, number, start, end))
+                Ok(Token::with_data(
+                    TokenKind::LiteralRealFloat,
+                    number,
+                    start,
+                    end,
+                ))
             }
             Some(b'D') | Some(b'd') => {
                 number.push(self.expression.as_bytes()[self.pos] as char);
@@ -428,13 +451,21 @@ impl<'a> Tokenizer<'a> {
             }
             _ => {
                 let end = self.pos;
-                let kind = if is_real { TokenKind::LiteralReal } else { TokenKind::LiteralInt };
+                let kind = if is_real {
+                    TokenKind::LiteralReal
+                } else {
+                    TokenKind::LiteralInt
+                };
                 Ok(Token::with_data(kind, number, start, end))
             }
         }
     }
 
-    fn lex_identifier(&mut self, start: usize, started_with_dollar: bool) -> Result<Token, InternalParseException> {
+    fn lex_identifier(
+        &mut self,
+        start: usize,
+        started_with_dollar: bool,
+    ) -> Result<Token, InternalParseException> {
         let mut ident = String::new();
         if started_with_dollar {
             ident.push('$');
@@ -480,7 +511,8 @@ mod tests {
 
     fn t(input: &str) -> Vec<Token> {
         let mut tk = Tokenizer::new(input);
-        tk.tokenize().unwrap_or_else(|e| panic!("tokenize failed for {input:?}: {e:?}"))
+        tk.tokenize()
+            .unwrap_or_else(|e| panic!("tokenize failed for {input:?}: {e:?}"))
     }
 
     fn kinds(input: &str) -> Vec<TokenKind> {
@@ -583,7 +615,13 @@ mod tests {
 
     #[test]
     fn bean_and_factorybean_refs() {
-        assert_eq!(kinds("@bean"), vec![TokenKind::BeanRef, TokenKind::Identifier]);
-        assert_eq!(kinds("&factory"), vec![TokenKind::FactoryBeanRef, TokenKind::Identifier]);
+        assert_eq!(
+            kinds("@bean"),
+            vec![TokenKind::BeanRef, TokenKind::Identifier]
+        );
+        assert_eq!(
+            kinds("&factory"),
+            vec![TokenKind::FactoryBeanRef, TokenKind::Identifier]
+        );
     }
 }

@@ -51,8 +51,8 @@ impl TaskDecorator for CompositeTaskDecorator {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::Arc;
+    use std::sync::atomic::{AtomicUsize, Ordering};
 
     struct Counter {
         count: Arc<AtomicUsize>,
@@ -79,8 +79,14 @@ mod tests {
         // A 类（合同对齐）：对标 Spring 组合装饰顺序
         let count = Arc::new(AtomicUsize::new(0));
         let mut composite = CompositeTaskDecorator::new();
-        composite.add_decorator(Box::new(Counter { count: count.clone(), label: "a" }));
-        composite.add_decorator(Box::new(Counter { count: count.clone(), label: "b" }));
+        composite.add_decorator(Box::new(Counter {
+            count: count.clone(),
+            label: "a",
+        }));
+        composite.add_decorator(Box::new(Counter {
+            count: count.clone(),
+            label: "b",
+        }));
         let task = Box::new(|| {}) as Box<dyn FnOnce() + Send + 'static>;
         composite.decorate(task)();
         assert_eq!(count.load(Ordering::SeqCst), 2);

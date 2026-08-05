@@ -48,8 +48,8 @@ pub fn register_bean_definition(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::registry_builder::RegistryBuilder;
     use crate::ComponentDefinition;
+    use crate::registry_builder::RegistryBuilder;
 
     #[test]
     fn generate_bean_name_no_conflict() {
@@ -61,7 +61,9 @@ mod tests {
     #[test]
     fn generate_bean_name_with_conflict() {
         let mut builder = RegistryBuilder::new();
-        builder.register(ComponentDefinition::shared_value(42i32)).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(42i32))
+            .unwrap();
         // "i32" is already registered
         let name = generate_bean_name(Some("i32"), &builder);
         assert_eq!(name, "i32#1");
@@ -70,9 +72,13 @@ mod tests {
     #[test]
     fn generate_bean_name_multiple_conflicts() {
         let mut builder = RegistryBuilder::new();
-        builder.register(ComponentDefinition::shared_value(42i32)).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(42i32))
+            .unwrap();
         // Register "i32#1" as well
-        builder.register(ComponentDefinition::shared_value(100i64)).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(100i64))
+            .unwrap();
         // Now "i32" conflicts, "i32#1" also conflicts if it exists
         let name = generate_bean_name(Some("i32"), &builder);
         assert!(name.starts_with("i32#"));
@@ -89,7 +95,9 @@ mod tests {
     fn generate_bean_name_anonymous_conflict() {
         let mut builder = RegistryBuilder::new();
         // Register "anonymous" manually
-        builder.register(ComponentDefinition::shared_value("anon".to_string())).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value("anon".to_string()))
+            .unwrap();
         // We can't easily register "anonymous" but the logic is tested via the loop
         let name = generate_bean_name(None, &builder);
         // Should return "anonymous" since it's not in the registry
@@ -99,8 +107,12 @@ mod tests {
     #[test]
     fn generate_bean_name_unique_types() {
         let mut builder = RegistryBuilder::new();
-        builder.register(ComponentDefinition::shared_value(42i32)).unwrap();
-        builder.register(ComponentDefinition::shared_value("hello".to_string())).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(42i32))
+            .unwrap();
+        builder
+            .register(ComponentDefinition::shared_value("hello".to_string()))
+            .unwrap();
         let name = generate_bean_name(Some("f64"), &builder);
         assert_eq!(name, "f64");
     }
@@ -122,7 +134,9 @@ mod tests {
     #[test]
     fn generate_bean_name_numeric_suffix() {
         let mut builder = RegistryBuilder::new();
-        builder.register(ComponentDefinition::shared_value(42i32)).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(42i32))
+            .unwrap();
         // "i32" exists, so next should be "i32#1"
         let name = generate_bean_name(Some("i32"), &builder);
         assert_eq!(name, "i32#1");
@@ -132,7 +146,9 @@ mod tests {
     fn generate_bean_name_with_existing_numeric_suffix() {
         let mut builder = RegistryBuilder::new();
         // Register i32 so "i32" conflicts
-        builder.register(ComponentDefinition::shared_value(42i32)).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(42i32))
+            .unwrap();
         // The name "i32#1" is not registered, so it should be used
         let name = generate_bean_name(Some("i32"), &builder);
         assert_eq!(name, "i32#1");
@@ -164,7 +180,9 @@ mod tests {
     #[test]
     fn generate_bean_name_numeric_suffix_increments() {
         let mut builder = RegistryBuilder::new();
-        builder.register(ComponentDefinition::shared_value(42i32)).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(42i32))
+            .unwrap();
         // "i32" exists, so next should be "i32#1"
         let name = generate_bean_name(Some("i32"), &builder);
         assert_eq!(name, "i32#1");

@@ -98,12 +98,14 @@ mod tests {
 
     impl SimpleInterceptor for TestInterceptor {
         fn before(&self, _ctx: &SimpleInvocationContext) -> Result<(), BoxError> {
-            self.before_called.store(true, std::sync::atomic::Ordering::SeqCst);
+            self.before_called
+                .store(true, std::sync::atomic::Ordering::SeqCst);
             Ok(())
         }
 
         fn after(&self, _ctx: &SimpleInvocationContext, _result: &SimpleCallResult) {
-            self.after_called.store(true, std::sync::atomic::Ordering::SeqCst);
+            self.after_called
+                .store(true, std::sync::atomic::Ordering::SeqCst);
         }
     }
 
@@ -133,7 +135,11 @@ mod tests {
         let interceptor = TestInterceptor::new();
         let ctx = SimpleInvocationContext::new("test");
         let _ = interceptor.before(&ctx);
-        assert!(interceptor.before_called.load(std::sync::atomic::Ordering::SeqCst));
+        assert!(
+            interceptor
+                .before_called
+                .load(std::sync::atomic::Ordering::SeqCst)
+        );
     }
 
     #[test]
@@ -142,7 +148,11 @@ mod tests {
         let ctx = SimpleInvocationContext::new("test");
         let result = SimpleCallResult::ok();
         interceptor.after(&ctx, &result);
-        assert!(interceptor.after_called.load(std::sync::atomic::Ordering::SeqCst));
+        assert!(
+            interceptor
+                .after_called
+                .load(std::sync::atomic::Ordering::SeqCst)
+        );
     }
 
     #[test]
@@ -151,7 +161,15 @@ mod tests {
         let ctx = SimpleInvocationContext::new("test");
         let result = interceptor.around(&ctx, Box::new(|| SimpleCallResult::ok()));
         assert!(result.is_ok());
-        assert!(interceptor.before_called.load(std::sync::atomic::Ordering::SeqCst));
-        assert!(interceptor.after_called.load(std::sync::atomic::Ordering::SeqCst));
+        assert!(
+            interceptor
+                .before_called
+                .load(std::sync::atomic::Ordering::SeqCst)
+        );
+        assert!(
+            interceptor
+                .after_called
+                .load(std::sync::atomic::Ordering::SeqCst)
+        );
     }
 }

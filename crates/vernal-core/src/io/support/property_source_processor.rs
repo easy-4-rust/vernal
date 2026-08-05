@@ -36,7 +36,11 @@ impl PropertySourceProcessor {
     }
 
     /// 注册命名工厂（对标 Spring 按 `factoryBeanName` 从容器取工厂 Bean）。
-    pub fn register_factory(&mut self, name: impl Into<String>, factory: Box<dyn PropertySourceFactory>) {
+    pub fn register_factory(
+        &mut self,
+        name: impl Into<String>,
+        factory: Box<dyn PropertySourceFactory>,
+    ) {
         self.factories.insert(name.into(), factory);
     }
 
@@ -70,16 +74,16 @@ impl PropertySourceProcessor {
         self.process_resource(environment, descriptor, resource)
     }
 
-/// 缺失资源处置：按开关忽略或报错。
-fn handle_missing(descriptor: &PropertySourceDescriptor, location: &str) -> io::Result<()> {
-    if descriptor.ignore_resource_not_found() {
-        return Ok(());
+    /// 缺失资源处置：按开关忽略或报错。
+    fn handle_missing(descriptor: &PropertySourceDescriptor, location: &str) -> io::Result<()> {
+        if descriptor.ignore_resource_not_found() {
+            return Ok(());
+        }
+        Err(io::Error::new(
+            io::ErrorKind::NotFound,
+            format!("属性源资源未找到: {location}"),
+        ))
     }
-    Err(io::Error::new(
-        io::ErrorKind::NotFound,
-        format!("属性源资源未找到: {location}"),
-    ))
-}
 
     /// 通过工厂创建属性源并追加到环境末尾。
     fn process_resource(
@@ -99,8 +103,7 @@ fn handle_missing(descriptor: &PropertySourceDescriptor, location: &str) -> io::
                 factory.create_property_source(descriptor.name(), resource)?
             }
             None => {
-                DefaultPropertySourceFactory
-                    .create_property_source(descriptor.name(), resource)?
+                DefaultPropertySourceFactory.create_property_source(descriptor.name(), resource)?
             }
         };
         environment.property_sources().add_last(source);
@@ -141,7 +144,10 @@ mod tests {
         let descriptor = descriptor_with_resource(false);
         processor.process(&mut environment, &descriptor).unwrap();
         assert!(environment.property_sources().contains("config"));
-        assert_eq!(environment.get_property("host"), Some("localhost".to_string()));
+        assert_eq!(
+            environment.get_property("host"),
+            Some("localhost".to_string())
+        );
     }
 
     #[test]
@@ -189,10 +195,7 @@ mod tests {
             ) -> io::Result<Box<dyn PropertySource>> {
                 let text = resource.read_string()?;
                 let mut map = HashMap::new();
-                map.insert(
-                    "raw".to_string(),
-                    text.trim().to_uppercase(),
-                );
+                map.insert("raw".to_string(), text.trim().to_uppercase());
                 Ok(Box::new(MapPropertySource::new(name.to_string(), map)))
             }
         }

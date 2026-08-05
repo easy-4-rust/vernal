@@ -28,7 +28,8 @@ mod tests {
                 buffer.close();
             }
         }
-        let mut buffers: Vec<Box<dyn CloseableDataBuffer>> = vec![Box::new(DefaultDataBuffer::new())];
+        let mut buffers: Vec<Box<dyn CloseableDataBuffer>> =
+            vec![Box::new(DefaultDataBuffer::new())];
         close_all(&mut buffers);
     }
 }

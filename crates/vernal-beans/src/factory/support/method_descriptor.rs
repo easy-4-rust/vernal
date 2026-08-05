@@ -53,22 +53,34 @@ impl MethodDescriptor {
     }
 
     /// 获取方法名。
-    pub fn get_name(&self) -> &str { &self.name }
+    pub fn get_name(&self) -> &str {
+        &self.name
+    }
 
     /// 获取返回类型名。
-    pub fn get_return_type(&self) -> &str { &self.return_type }
+    pub fn get_return_type(&self) -> &str {
+        &self.return_type
+    }
 
     /// 获取参数类型列表。
-    pub fn get_parameter_types(&self) -> &[String] { &self.parameter_types }
+    pub fn get_parameter_types(&self) -> &[String] {
+        &self.parameter_types
+    }
 
     /// 获取参数数量。
-    pub fn parameter_count(&self) -> usize { self.parameter_types.len() }
+    pub fn parameter_count(&self) -> usize {
+        self.parameter_types.len()
+    }
 
     /// 是否无参数方法。
-    pub fn is_no_arg(&self) -> bool { self.parameter_types.is_empty() }
+    pub fn is_no_arg(&self) -> bool {
+        self.parameter_types.is_empty()
+    }
 
     /// 是否公开方法。
-    pub fn is_public(&self) -> bool { self.is_public }
+    pub fn is_public(&self) -> bool {
+        self.is_public
+    }
 }
 
 #[cfg(test)]

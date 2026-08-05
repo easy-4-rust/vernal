@@ -1,9 +1,11 @@
-use std::any::TypeId;
-use crate::factory::annotation::annotated_bean_definition::{AnnotatedBeanDefinition, BeanMetadata};
-use crate::factory::config::bean_definition::BeanDefinition;
 use crate::component_key::ComponentKey;
 use crate::component_scope::Scope;
+use crate::factory::annotation::annotated_bean_definition::{
+    AnnotatedBeanDefinition, BeanMetadata,
+};
+use crate::factory::config::bean_definition::BeanDefinition;
 use crate::factory::support::generic_bean_definition::GenericBeanDefinition;
+use std::any::TypeId;
 
 /// Spring 风格的注解驱动通用 Bean 定义。
 #[derive(Clone, Debug)]
@@ -25,20 +27,38 @@ impl AnnotatedGenericBeanDefinition {
 }
 
 impl BeanDefinition for AnnotatedGenericBeanDefinition {
-    fn bean_name(&self) -> &ComponentKey { unimplemented!() }
-    fn bean_class_name(&self) -> &str { self.inner.get_bean_class_name().unwrap_or("unknown") }
-    fn scope(&self) -> Scope { self.inner.scope() }
-    fn is_lazy_init(&self) -> bool { self.inner.is_lazy_init() }
-    fn is_primary(&self) -> bool { self.inner.is_primary() }
+    fn bean_name(&self) -> &ComponentKey {
+        unimplemented!()
+    }
+    fn bean_class_name(&self) -> &str {
+        self.inner.get_bean_class_name().unwrap_or("unknown")
+    }
+    fn scope(&self) -> Scope {
+        self.inner.scope()
+    }
+    fn is_lazy_init(&self) -> bool {
+        self.inner.is_lazy_init()
+    }
+    fn is_primary(&self) -> bool {
+        self.inner.is_primary()
+    }
 }
 
 impl AnnotatedBeanDefinition for AnnotatedGenericBeanDefinition {
     fn get_metadata(&self) -> Option<BeanMetadata> {
-        self.annotation_metadata.as_ref().map(|name| BeanMetadata::new(name.clone(), 0))
+        self.annotation_metadata
+            .as_ref()
+            .map(|name| BeanMetadata::new(name.clone(), 0))
     }
-    fn is_factory_method(&self, _name: &str) -> bool { false }
-    fn get_factory_method_name(&self) -> Option<String> { None }
-    fn get_bean_type(&self) -> TypeId { TypeId::of::<Self>() }
+    fn is_factory_method(&self, _name: &str) -> bool {
+        false
+    }
+    fn get_factory_method_name(&self) -> Option<String> {
+        None
+    }
+    fn get_bean_type(&self) -> TypeId {
+        TypeId::of::<Self>()
+    }
 }
 
 #[cfg(test)]
@@ -95,7 +115,10 @@ mod tests {
     #[test]
     fn is_factory_method_always_false() {
         let def = AnnotatedGenericBeanDefinition::new("Test");
-        assert!(!AnnotatedBeanDefinition::is_factory_method(&def, "any_method"));
+        assert!(!AnnotatedBeanDefinition::is_factory_method(
+            &def,
+            "any_method"
+        ));
     }
 
     #[test]

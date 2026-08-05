@@ -78,37 +78,58 @@ impl PointcutMatcher {
     /// 匹配组合 pointcut：`execution(public * ((@Transactional *)+).*(..)) && within(@Transactional *)`。
     pub fn match_transactional_type(method: &MethodMetadata) -> bool {
         Self::match_execution_public(method)
-            && Self::match_within_annotation(method, "org.springframework.transaction.annotation.Transactional")
+            && Self::match_within_annotation(
+                method,
+                "org.springframework.transaction.annotation.Transactional",
+            )
     }
 
     /// 匹配组合 pointcut：`execution(@Transactional * *(..))`。
     pub fn match_transactional_method(method: &MethodMetadata) -> bool {
-        Self::match_execution_with_annotation(method, "org.springframework.transaction.annotation.Transactional")
+        Self::match_execution_with_annotation(
+            method,
+            "org.springframework.transaction.annotation.Transactional",
+        )
     }
 
     /// 匹配组合 pointcut：`execution(@Cacheable * *(..))`。
     pub fn match_cacheable_method(method: &MethodMetadata) -> bool {
-        Self::match_execution_with_annotation(method, "org.springframework.cache.annotation.Cacheable")
+        Self::match_execution_with_annotation(
+            method,
+            "org.springframework.cache.annotation.Cacheable",
+        )
     }
 
     /// 匹配组合 pointcut：`execution(@CacheEvict * *(..))`。
     pub fn match_cache_evict_method(method: &MethodMetadata) -> bool {
-        Self::match_execution_with_annotation(method, "org.springframework.cache.annotation.CacheEvict")
+        Self::match_execution_with_annotation(
+            method,
+            "org.springframework.cache.annotation.CacheEvict",
+        )
     }
 
     /// 匹配组合 pointcut：`execution(@CachePut * *(..))`。
     pub fn match_cache_put_method(method: &MethodMetadata) -> bool {
-        Self::match_execution_with_annotation(method, "org.springframework.cache.annotation.CachePut")
+        Self::match_execution_with_annotation(
+            method,
+            "org.springframework.cache.annotation.CachePut",
+        )
     }
 
     /// 匹配组合 pointcut：`execution(@Async (void || Future+) *(..))`。
     pub fn match_async_method(method: &MethodMetadata) -> bool {
-        Self::match_execution_with_annotation(method, "org.springframework.scheduling.annotation.Async")
+        Self::match_execution_with_annotation(
+            method,
+            "org.springframework.scheduling.annotation.Async",
+        )
     }
 
     /// 匹配组合 pointcut：`execution(@Configurable * *(..))`。
     pub fn match_configurable_method(method: &MethodMetadata) -> bool {
-        Self::match_execution_with_annotation(method, "org.springframework.beans.factory.annotation.Configurable")
+        Self::match_execution_with_annotation(
+            method,
+            "org.springframework.beans.factory.annotation.Configurable",
+        )
     }
 }
 
@@ -135,8 +156,9 @@ mod tests {
 
     #[test]
     fn test_match_execution_with_annotation() {
-        let meta = MethodMetadata::new("Foo", "bar")
-            .set_method_annotations(vec!["org.springframework.transaction.annotation.Transactional"]);
+        let meta = MethodMetadata::new("Foo", "bar").set_method_annotations(vec![
+            "org.springframework.transaction.annotation.Transactional",
+        ]);
         assert!(PointcutMatcher::match_execution_with_annotation(
             &meta,
             "org.springframework.transaction.annotation.Transactional"
@@ -149,8 +171,9 @@ mod tests {
 
     #[test]
     fn test_match_within_annotation() {
-        let meta = MethodMetadata::new("Foo", "bar")
-            .set_type_annotations(vec!["org.springframework.transaction.annotation.Transactional"]);
+        let meta = MethodMetadata::new("Foo", "bar").set_type_annotations(vec![
+            "org.springframework.transaction.annotation.Transactional",
+        ]);
         assert!(PointcutMatcher::match_within_annotation(
             &meta,
             "org.springframework.transaction.annotation.Transactional"
@@ -159,15 +182,17 @@ mod tests {
 
     #[test]
     fn test_match_transactional_type() {
-        let meta = MethodMetadata::new("Foo", "bar")
-            .set_type_annotations(vec!["org.springframework.transaction.annotation.Transactional"]);
+        let meta = MethodMetadata::new("Foo", "bar").set_type_annotations(vec![
+            "org.springframework.transaction.annotation.Transactional",
+        ]);
         assert!(PointcutMatcher::match_transactional_type(&meta));
     }
 
     #[test]
     fn test_match_transactional_method() {
-        let meta = MethodMetadata::new("Foo", "bar")
-            .set_method_annotations(vec!["org.springframework.transaction.annotation.Transactional"]);
+        let meta = MethodMetadata::new("Foo", "bar").set_method_annotations(vec![
+            "org.springframework.transaction.annotation.Transactional",
+        ]);
         assert!(PointcutMatcher::match_transactional_method(&meta));
     }
 
@@ -187,8 +212,9 @@ mod tests {
 
     #[test]
     fn test_match_configurable_method() {
-        let meta = MethodMetadata::new("Foo", "bar")
-            .set_method_annotations(vec!["org.springframework.beans.factory.annotation.Configurable"]);
+        let meta = MethodMetadata::new("Foo", "bar").set_method_annotations(vec![
+            "org.springframework.beans.factory.annotation.Configurable",
+        ]);
         assert!(PointcutMatcher::match_configurable_method(&meta));
     }
 
@@ -227,11 +253,10 @@ mod tests {
 
     #[test]
     fn test_match_multiple_annotations() {
-        let meta = MethodMetadata::new("Foo", "bar")
-            .set_method_annotations(vec![
-                "org.springframework.transaction.annotation.Transactional",
-                "org.springframework.cache.annotation.Cacheable",
-            ]);
+        let meta = MethodMetadata::new("Foo", "bar").set_method_annotations(vec![
+            "org.springframework.transaction.annotation.Transactional",
+            "org.springframework.cache.annotation.Cacheable",
+        ]);
         assert!(PointcutMatcher::match_transactional_method(&meta));
         assert!(PointcutMatcher::match_cacheable_method(&meta));
     }
@@ -258,7 +283,10 @@ mod tests {
     #[test]
     fn test_match_within_no_annotations() {
         let meta = MethodMetadata::new("Foo", "bar");
-        assert!(!PointcutMatcher::match_within_annotation(&meta, "Transactional"));
+        assert!(!PointcutMatcher::match_within_annotation(
+            &meta,
+            "Transactional"
+        ));
     }
 
     #[test]

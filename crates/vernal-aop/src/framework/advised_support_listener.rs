@@ -18,12 +18,17 @@ pub trait AdvisedSupportListener: Send + Sync + 'static {
 }
 
 /// 基于闭包的通知支持监听器。
-pub struct FnAdvisedSupportListener<F1: Fn(&Advisor) + Send + Sync + 'static, F2: Fn(&Advisor) + Send + Sync + 'static> {
+pub struct FnAdvisedSupportListener<
+    F1: Fn(&Advisor) + Send + Sync + 'static,
+    F2: Fn(&Advisor) + Send + Sync + 'static,
+> {
     on_activated: F1,
     on_deactivated: F2,
 }
 
-impl<F1: Fn(&Advisor) + Send + Sync + 'static, F2: Fn(&Advisor) + Send + Sync + 'static> FnAdvisedSupportListener<F1, F2> {
+impl<F1: Fn(&Advisor) + Send + Sync + 'static, F2: Fn(&Advisor) + Send + Sync + 'static>
+    FnAdvisedSupportListener<F1, F2>
+{
     /// 创建基于闭包的通知支持监听器。
     pub fn new(on_activated: F1, on_deactivated: F2) -> Self {
         Self {
@@ -33,7 +38,9 @@ impl<F1: Fn(&Advisor) + Send + Sync + 'static, F2: Fn(&Advisor) + Send + Sync + 
     }
 }
 
-impl<F1: Fn(&Advisor) + Send + Sync + 'static, F2: Fn(&Advisor) + Send + Sync + 'static> AdvisedSupportListener for FnAdvisedSupportListener<F1, F2> {
+impl<F1: Fn(&Advisor) + Send + Sync + 'static, F2: Fn(&Advisor) + Send + Sync + 'static>
+    AdvisedSupportListener for FnAdvisedSupportListener<F1, F2>
+{
     fn advice_activated(&self, advisor: &Advisor) {
         (self.on_activated)(advisor);
     }
@@ -52,14 +59,18 @@ impl std::fmt::Debug for dyn AdvisedSupportListener {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::Arc;
+    use std::sync::atomic::{AtomicUsize, Ordering};
 
     #[test]
     fn fn_advised_support_listener() {
         struct TestInterceptor;
         impl crate::Interceptor for TestInterceptor {
-            fn intercept<'a>(&'a self, invocation: Arc<crate::Invocation>, next: crate::Next<'a>) -> crate::InvocationFuture<'a> {
+            fn intercept<'a>(
+                &'a self,
+                invocation: Arc<crate::Invocation>,
+                next: crate::Next<'a>,
+            ) -> crate::InvocationFuture<'a> {
                 next.run(invocation)
             }
         }
@@ -79,11 +90,8 @@ mod tests {
             },
         );
 
-        let advisor = crate::Advisor::new(
-            crate::any_pointcut::AnyPointcut::new(),
-            TestInterceptor,
-            0,
-        );
+        let advisor =
+            crate::Advisor::new(crate::any_pointcut::AnyPointcut::new(), TestInterceptor, 0);
 
         listener.advice_activated(&advisor);
         assert_eq!(activated_count.load(Ordering::SeqCst), 1);

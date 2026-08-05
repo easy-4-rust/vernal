@@ -139,7 +139,12 @@ mod tests {
 
     #[test]
     fn safe_methods_are_idempotent() {
-        for m in [HttpMethod::Get, HttpMethod::Head, HttpMethod::Options, HttpMethod::Trace] {
+        for m in [
+            HttpMethod::Get,
+            HttpMethod::Head,
+            HttpMethod::Options,
+            HttpMethod::Trace,
+        ] {
             assert!(m.is_safe());
             assert!(m.is_idempotent());
         }

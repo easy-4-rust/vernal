@@ -161,7 +161,10 @@ mod tests {
     fn get_or_insert_creates_and_caches() {
         let cache = BeanDescCache::new();
         let desc: Arc<dyn BeanDescriptor> = cache.get_or_insert::<String, _>(|| {
-            Arc::new(TestBeanDescriptor { bean_name: "String", props: [] })
+            Arc::new(TestBeanDescriptor {
+                bean_name: "String",
+                props: [],
+            })
         });
         assert_eq!(desc.name(), "String");
         assert_eq!(cache.len(), 1);
@@ -171,7 +174,10 @@ mod tests {
     fn get_or_insert_returns_cached_on_second_call() {
         let cache = BeanDescCache::new();
         let desc1: Arc<dyn BeanDescriptor> = cache.get_or_insert::<i32, _>(|| {
-            Arc::new(TestBeanDescriptor { bean_name: "i32", props: [] })
+            Arc::new(TestBeanDescriptor {
+                bean_name: "i32",
+                props: [],
+            })
         });
         let desc2: Arc<dyn BeanDescriptor> = cache.get_or_insert::<i32, _>(|| {
             panic!("Factory should not be called again");
@@ -183,10 +189,16 @@ mod tests {
     fn different_types_cached_separately() {
         let cache = BeanDescCache::new();
         let _: Arc<dyn BeanDescriptor> = cache.get_or_insert::<String, _>(|| {
-            Arc::new(TestBeanDescriptor { bean_name: "String", props: [] })
+            Arc::new(TestBeanDescriptor {
+                bean_name: "String",
+                props: [],
+            })
         });
         let _: Arc<dyn BeanDescriptor> = cache.get_or_insert::<i32, _>(|| {
-            Arc::new(TestBeanDescriptor { bean_name: "i32", props: [] })
+            Arc::new(TestBeanDescriptor {
+                bean_name: "i32",
+                props: [],
+            })
         });
         assert_eq!(cache.len(), 2);
     }
@@ -195,7 +207,10 @@ mod tests {
     fn clear_removes_all_entries() {
         let cache = BeanDescCache::new();
         let _: Arc<dyn BeanDescriptor> = cache.get_or_insert::<String, _>(|| {
-            Arc::new(TestBeanDescriptor { bean_name: "String", props: [] })
+            Arc::new(TestBeanDescriptor {
+                bean_name: "String",
+                props: [],
+            })
         });
         assert_eq!(cache.len(), 1);
         cache.clear();
@@ -207,11 +222,17 @@ mod tests {
         let cache = BeanDescCache::new();
         assert_eq!(cache.len(), 0);
         let _: Arc<dyn BeanDescriptor> = cache.get_or_insert::<String, _>(|| {
-            Arc::new(TestBeanDescriptor { bean_name: "String", props: [] })
+            Arc::new(TestBeanDescriptor {
+                bean_name: "String",
+                props: [],
+            })
         });
         assert_eq!(cache.len(), 1);
         let _: Arc<dyn BeanDescriptor> = cache.get_or_insert::<i32, _>(|| {
-            Arc::new(TestBeanDescriptor { bean_name: "i32", props: [] })
+            Arc::new(TestBeanDescriptor {
+                bean_name: "i32",
+                props: [],
+            })
         });
         assert_eq!(cache.len(), 2);
     }

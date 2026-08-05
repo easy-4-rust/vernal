@@ -189,7 +189,12 @@ impl PropertyAccessor for AbstractPropertyAccessor {
     }
 
     fn get_property_names(&self) -> Vec<String> {
-        self.property_types.read().unwrap().keys().cloned().collect()
+        self.property_types
+            .read()
+            .unwrap()
+            .keys()
+            .cloned()
+            .collect()
     }
 }
 

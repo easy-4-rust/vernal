@@ -11,8 +11,8 @@
 //! 本实现通过 `get_value_state` 操作 `ExpressionState` 的 active context 栈，
 //! 实现与 Spring 完全一致的元素上下文替换。
 
-use super::spel_node::SpelNode;
 use super::super::expression_state::ExpressionState;
+use super::spel_node::SpelNode;
 use crate::evaluation_context::EvaluationContext;
 use crate::evaluation_exception::EvaluationException;
 use crate::typed_value::{ExpressionValue, TypeDescriptor, TypedValue};
@@ -39,13 +39,21 @@ impl Selection {
     /// 创建 Selection 节点。
     #[must_use]
     pub fn new(criteria: Box<dyn SpelNode>, variant: SelectionVariant) -> Self {
-        Self { criteria, variant, null_safe: false }
+        Self {
+            criteria,
+            variant,
+            null_safe: false,
+        }
     }
 
     /// 创建 null-safe Selection 节点。
     #[must_use]
     pub fn new_null_safe(criteria: Box<dyn SpelNode>, variant: SelectionVariant) -> Self {
-        Self { criteria, variant, null_safe: true }
+        Self {
+            criteria,
+            variant,
+            null_safe: true,
+        }
     }
 
     /// 获取过滤条件引用。

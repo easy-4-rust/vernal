@@ -9,16 +9,11 @@ mod aspect;
 mod aspect_adapter;
 mod aspect_error;
 mod aspect_rs_adapter;
-mod class_filter;
-mod method_matcher;
-mod target_source;
-pub mod target_source_error;
-mod singleton_target_source;
-mod lazy_target_source;
 mod borrowed_invocation_argument;
 mod borrowed_invocation_future_target;
 mod borrowed_invocation_target;
 mod borrowed_local_invocation_target;
+mod class_filter;
 mod component_pointcut;
 mod interceptor;
 mod introduction_advisor;
@@ -32,6 +27,7 @@ mod invocation_plan_builder;
 mod invocation_plan_catalog;
 mod invocation_plan_catalog_initialization_error;
 mod invocation_result;
+mod lazy_target_source;
 mod local_advisor;
 mod local_interceptor;
 mod local_invocation_error;
@@ -41,6 +37,7 @@ mod local_invocation_plan_catalog;
 mod local_invocation_result;
 mod local_next;
 mod local_target_ref;
+mod method_matcher;
 mod method_pointcut;
 mod next;
 mod not_pointcut;
@@ -55,16 +52,19 @@ mod owned_invocation_argument;
 pub mod pointcut;
 mod pointcut_advisor;
 mod pointcut_ext;
+mod proxy_method_invocation;
 mod qualifier_pointcut;
 mod shared_invocation_argument;
 mod simple_call_result;
 mod simple_interceptor;
 mod simple_interceptor_chain;
 mod simple_invocation_context;
-mod proxy_method_invocation;
+mod singleton_target_source;
 mod spring_proxy;
 mod tag_pointcut;
 mod target_ref;
+mod target_source;
+pub mod target_source_error;
 mod true_class_filter;
 mod true_method_matcher;
 mod true_pointcut;
@@ -75,7 +75,6 @@ pub mod framework;
 pub mod intercept;
 pub mod support;
 
-pub use framework::Advised;
 pub use advisor::Advisor;
 pub use and_pointcut::AndPointcut;
 pub use any_pointcut::AnyPointcut;
@@ -84,31 +83,35 @@ pub use aspect::Aspect;
 pub use aspect_adapter::AspectAdapter;
 pub use aspect_error::AspectError;
 pub use aspect_rs_adapter::AspectRsAdapter;
-pub use class_filter::{ClassFilter, ClassFilterFactory, TrueClassFilter, FnClassFilter};
-pub use method_matcher::{MethodMatcher, MethodMatcherFactory, TrueMethodMatcher, StaticMethodMatcher, DynamicMethodMatcher};
-pub use target_source::{TargetSource, TargetClassAware};
-pub use target_source_error::TargetSourceError;
-pub use singleton_target_source::SingletonTargetSource;
-pub use lazy_target_source::LazyTargetSource;
 pub use borrowed_invocation_argument::BorrowedInvocationArgument;
 pub use borrowed_invocation_future_target::BorrowedInvocationFutureTarget;
 pub use borrowed_invocation_target::BorrowedInvocationTarget;
 pub use borrowed_local_invocation_target::BorrowedLocalInvocationTarget;
+pub use class_filter::{ClassFilter, ClassFilterFactory, FnClassFilter, TrueClassFilter};
 pub use component_pointcut::ComponentPointcut;
-pub use support::DefaultPointcutAdvisor;
+pub use framework::Advised;
 pub use interceptor::Interceptor;
+pub use lazy_target_source::LazyTargetSource;
+pub use method_matcher::{
+    DynamicMethodMatcher, MethodMatcher, MethodMatcherFactory, StaticMethodMatcher,
+    TrueMethodMatcher,
+};
+pub use singleton_target_source::SingletonTargetSource;
+pub use support::DefaultPointcutAdvisor;
+pub use target_source::{TargetClassAware, TargetSource};
+pub use target_source_error::TargetSourceError;
 
 // 业务切面直接 re-export（基于 aspect-rs aspect-std）
 // 通过 AspectRsAdapter 可将这些同步 Aspect 适配为异步 Interceptor
+pub use aspect_std::validation::{CustomValidator, NotEmptyValidator, RangeValidator};
 pub use aspect_std::{
-    CircuitState, LoggingAspect, TimingAspect, MetricsAspect, CachingAspect,
-    RateLimitAspect, CircuitBreakerAspect, AuthorizationAspect, AllowlistAspect,
-    AuthMode, ValidationAspect, ValidationRule,
+    AllowlistAspect, AuthMode, AuthorizationAspect, CachingAspect, CircuitBreakerAspect,
+    CircuitState, LoggingAspect, MetricsAspect, RateLimitAspect, TimingAspect, ValidationAspect,
+    ValidationRule,
 };
-pub use aspect_std::validation::{NotEmptyValidator, RangeValidator, CustomValidator};
+pub use intercept::Invocation;
 pub use introduction_advisor::IntroductionAdvisor;
 pub use introduction_info::IntroductionInfo;
-pub use intercept::Invocation;
 pub use invocation_context::InvocationContext;
 pub use invocation_error::InvocationError;
 pub use invocation_id::InvocationId;

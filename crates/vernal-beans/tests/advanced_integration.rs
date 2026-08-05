@@ -7,6 +7,7 @@ use std::any::Any;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+use vernal_beans::BeanPostProcessor;
 use vernal_beans::ComponentDefinition;
 use vernal_beans::FactoryBean;
 use vernal_beans::GenericBeanDefinition;
@@ -14,7 +15,6 @@ use vernal_beans::RegistryBuilder;
 use vernal_beans::Resolver;
 use vernal_beans::RootBeanDefinition;
 use vernal_beans::Scope;
-use vernal_beans::BeanPostProcessor;
 use vernal_beans::bean_scope::BeanScope;
 
 // ── 测试类型 ─────────────────────────────────────────────────────────────
@@ -149,7 +149,10 @@ fn generic_bean_definition_defaults() {
     assert!(!bd.is_primary());
     assert!(!bd.is_fallback());
     assert!(!bd.is_synthetic());
-    assert_eq!(bd.role(), vernal_beans::factory::config::bean_definition::ROLE_APPLICATION);
+    assert_eq!(
+        bd.role(),
+        vernal_beans::factory::config::bean_definition::ROLE_APPLICATION
+    );
 }
 
 /// 验证 GenericBeanDefinition parent_name。

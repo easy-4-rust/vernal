@@ -95,7 +95,10 @@ impl BeanDescriptorUtils {
     pub fn is_integer_type_name(type_name: &str) -> bool {
         matches!(
             type_name,
-            "i8" | "i16" | "i32" | "i64" | "i128"
+            "i8" | "i16"
+                | "i32"
+                | "i64"
+                | "i128"
                 | "u8"
                 | "u16"
                 | "u32"
@@ -209,10 +212,7 @@ mod tests {
             BeanDescriptorUtils::get_default_property_name("MyType"),
             "myType"
         );
-        assert_eq!(
-            BeanDescriptorUtils::get_default_property_name("ABC"),
-            "aBC"
-        );
+        assert_eq!(BeanDescriptorUtils::get_default_property_name("ABC"), "aBC");
         assert_eq!(BeanDescriptorUtils::get_default_property_name(""), "");
     }
 }

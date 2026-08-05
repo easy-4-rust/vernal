@@ -21,7 +21,11 @@ pub struct BeanRegistryAdapter {
 
 impl BeanRegistryAdapter {
     /// 创建空的注册表适配器。
-    pub fn new() -> Self { Self { beans: Mutex::new(HashMap::new()) } }
+    pub fn new() -> Self {
+        Self {
+            beans: Mutex::new(HashMap::new()),
+        }
+    }
 
     /// 注册一个 Bean 名称到类型的映射。
     pub fn register(&self, name: String, type_id: TypeId) {
@@ -84,16 +88,29 @@ impl BeanRegistryAdapter {
 
     /// 检查指定 TypeId 是否有注册的 Bean。
     pub fn has_type(&self, type_id: TypeId) -> bool {
-        self.beans.lock().unwrap().values().any(|&tid| tid == type_id)
+        self.beans
+            .lock()
+            .unwrap()
+            .values()
+            .any(|&tid| tid == type_id)
     }
 
     /// 获取指定 TypeId 的 Bean 数量。
     pub fn count_by_type(&self, type_id: TypeId) -> usize {
-        self.beans.lock().unwrap().values().filter(|&&tid| tid == type_id).count()
+        self.beans
+            .lock()
+            .unwrap()
+            .values()
+            .filter(|&&tid| tid == type_id)
+            .count()
     }
 }
 
-impl Default for BeanRegistryAdapter { fn default() -> Self { Self::new() } }
+impl Default for BeanRegistryAdapter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 #[cfg(test)]
 mod tests {

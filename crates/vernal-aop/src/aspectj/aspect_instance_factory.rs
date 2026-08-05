@@ -43,7 +43,9 @@ pub enum AspectInstanceError {
 impl fmt::Display for AspectInstanceError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            AspectInstanceError::CreationFailed(msg) => write!(f, "Aspect instance creation failed: {}", msg),
+            AspectInstanceError::CreationFailed(msg) => {
+                write!(f, "Aspect instance creation failed: {}", msg)
+            }
             AspectInstanceError::TypeMismatch(msg) => write!(f, "Type mismatch: {}", msg),
         }
     }
@@ -87,7 +89,9 @@ impl AspectInstanceFactory for SingletonAspectInstanceFactory {
 }
 
 /// 延迟切面实例工厂。
-pub struct LazyAspectInstanceFactory<F: Fn() -> Result<Box<dyn Any + Send + Sync>, AspectInstanceError> + Send + Sync + 'static> {
+pub struct LazyAspectInstanceFactory<
+    F: Fn() -> Result<Box<dyn Any + Send + Sync>, AspectInstanceError> + Send + Sync + 'static,
+> {
     factory: F,
     aspect_type: String,
 }
@@ -145,10 +149,7 @@ mod tests {
 
     #[test]
     fn lazy_aspect_instance_factory() {
-        let factory = LazyAspectInstanceFactory::new(
-            || Ok(Box::new(42i32)),
-            "i32",
-        );
+        let factory = LazyAspectInstanceFactory::new(|| Ok(Box::new(42i32)), "i32");
         assert_eq!(factory.get_aspect_type(), "i32");
         assert!(!factory.is_singleton());
 
@@ -219,10 +220,7 @@ mod additional_tests {
 
     #[test]
     fn lazy_aspect_instance_factory_debug() {
-        let factory = LazyAspectInstanceFactory::new(
-            || Ok(Box::new(42i32)),
-            "i32",
-        );
+        let factory = LazyAspectInstanceFactory::new(|| Ok(Box::new(42i32)), "i32");
         // LazyAspectInstanceFactory doesn't implement Debug, but we can test its methods
         assert_eq!(factory.get_aspect_type(), "i32");
     }

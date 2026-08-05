@@ -440,7 +440,6 @@ mod tests {
         assert!(map.into_inner().is_empty());
     }
 
-
     #[test]
     fn deref_and_deref_mut() {
         let mut map = MultiValueMap::new();
@@ -547,5 +546,4 @@ mod tests {
         let all = trait_ref.get_all(&"k").unwrap();
         assert_eq!(all, &[10, 20][..]);
     }
-
 }

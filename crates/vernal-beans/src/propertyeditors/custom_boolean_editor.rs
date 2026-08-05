@@ -32,8 +32,18 @@ impl CustomBooleanEditor {
     pub fn new() -> Self {
         Self {
             value: None,
-            true_strings: vec!["true".to_string(), "on".to_string(), "yes".to_string(), "1".to_string()],
-            false_strings: vec!["false".to_string(), "off".to_string(), "no".to_string(), "0".to_string()],
+            true_strings: vec![
+                "true".to_string(),
+                "on".to_string(),
+                "yes".to_string(),
+                "1".to_string(),
+            ],
+            false_strings: vec![
+                "false".to_string(),
+                "off".to_string(),
+                "no".to_string(),
+                "0".to_string(),
+            ],
             allow_empty: true,
         }
     }
@@ -92,7 +102,13 @@ impl PropertyEditor for CustomBooleanEditor {
     }
 
     fn get_as_text(&self) -> Option<String> {
-        self.value.map(|v| if v { "true".to_string() } else { "false".to_string() })
+        self.value.map(|v| {
+            if v {
+                "true".to_string()
+            } else {
+                "false".to_string()
+            }
+        })
     }
 
     fn set_value(&mut self, value: Arc<dyn Any + Send + Sync>) {

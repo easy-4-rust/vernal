@@ -307,90 +307,198 @@ impl SpelMessage {
     pub fn default_message(self) -> &'static str {
         match self {
             Self::TypeConversionError => "Type conversion problem, cannot convert from {0} to {1}",
-            Self::ConstructorNotFound => "Constructor call: No suitable constructor found on type {0} for arguments {1}",
-            Self::ConstructorInvocationProblem => "A problem occurred whilst attempting to construct an object of type '{0}' using arguments '{1}'",
+            Self::ConstructorNotFound => {
+                "Constructor call: No suitable constructor found on type {0} for arguments {1}"
+            }
+            Self::ConstructorInvocationProblem => {
+                "A problem occurred whilst attempting to construct an object of type '{0}' using arguments '{1}'"
+            }
             Self::MethodNotFound => "Method call: Method {0} cannot be found on type {1}",
             Self::TypeNotFound => "Type cannot be found '{0}'",
             Self::FunctionNotDefined => "Function '{0}' could not be found",
-            Self::PropertyOrFieldNotReadableOnNull => "Property or field '{0}' cannot be found on null",
-            Self::PropertyOrFieldNotReadable => "Property or field '{0}' cannot be found on object of type '{1}' - maybe not public or not valid?",
-            Self::PropertyOrFieldNotWritableOnNull => "Property or field '{0}' cannot be set on null",
-            Self::PropertyOrFieldNotWritable => "Property or field '{0}' cannot be set on object of type '{1}' - maybe not public or not writable?",
-            Self::MethodCallOnNullObjectNotAllowed => "Method call: Attempted to call method {0} on null context object",
+            Self::PropertyOrFieldNotReadableOnNull => {
+                "Property or field '{0}' cannot be found on null"
+            }
+            Self::PropertyOrFieldNotReadable => {
+                "Property or field '{0}' cannot be found on object of type '{1}' - maybe not public or not valid?"
+            }
+            Self::PropertyOrFieldNotWritableOnNull => {
+                "Property or field '{0}' cannot be set on null"
+            }
+            Self::PropertyOrFieldNotWritable => {
+                "Property or field '{0}' cannot be set on object of type '{1}' - maybe not public or not writable?"
+            }
+            Self::MethodCallOnNullObjectNotAllowed => {
+                "Method call: Attempted to call method {0} on null context object"
+            }
             Self::CannotIndexIntoNullValue => "Cannot index into a null value",
             Self::NotComparable => "Cannot compare instances of {0} and {1}",
-            Self::IncorrectNumberOfArgumentsToFunction => "Incorrect number of arguments for function '{0}': {1} supplied but function takes {2}",
+            Self::IncorrectNumberOfArgumentsToFunction => {
+                "Incorrect number of arguments for function '{0}': {1} supplied but function takes {2}"
+            }
             Self::InvalidTypeForSelection => "Cannot perform selection on input data of type '{0}'",
-            Self::ResultOfSelectionCriteriaIsNotBoolean => "Result of selection criteria is not boolean",
-            Self::BetweenRightOperandMustBeTwoElementList => "Right operand for the 'between' operator has to be a two-element list",
+            Self::ResultOfSelectionCriteriaIsNotBoolean => {
+                "Result of selection criteria is not boolean"
+            }
+            Self::BetweenRightOperandMustBeTwoElementList => {
+                "Right operand for the 'between' operator has to be a two-element list"
+            }
             Self::InvalidPattern => "Pattern is not valid '{0}'",
             Self::ProjectionNotSupportedOnType => "Projection is not supported on the type '{0}'",
-            Self::ArgListShouldNotBeEvaluated => "The argument list of a lambda expression should never have getValue() called upon it",
-            Self::ExceptionDuringPropertyRead => "A problem occurred whilst attempting to access the property '{0}': '{1}'",
-            Self::FunctionReferenceCannotBeInvoked => "The function '{0}' mapped to an object of type '{1}' cannot be invoked",
-            Self::ExceptionDuringFunctionCall => "A problem occurred whilst attempting to invoke the function '{0}': '{1}'",
+            Self::ArgListShouldNotBeEvaluated => {
+                "The argument list of a lambda expression should never have getValue() called upon it"
+            }
+            Self::ExceptionDuringPropertyRead => {
+                "A problem occurred whilst attempting to access the property '{0}': '{1}'"
+            }
+            Self::FunctionReferenceCannotBeInvoked => {
+                "The function '{0}' mapped to an object of type '{1}' cannot be invoked"
+            }
+            Self::ExceptionDuringFunctionCall => {
+                "A problem occurred whilst attempting to invoke the function '{0}': '{1}'"
+            }
             Self::ArrayIndexOutOfBounds => "The array has '{0}' elements, index '{1}' is invalid",
-            Self::CollectionIndexOutOfBounds => "The collection has '{0}' elements, index '{1}' is invalid",
-            Self::StringIndexOutOfBounds => "The string has '{0}' characters, index '{1}' is invalid",
+            Self::CollectionIndexOutOfBounds => {
+                "The collection has '{0}' elements, index '{1}' is invalid"
+            }
+            Self::StringIndexOutOfBounds => {
+                "The string has '{0}' characters, index '{1}' is invalid"
+            }
             Self::IndexingNotSupportedForType => "Indexing into type '{0}' is not supported",
-            Self::InstanceOfOperatorNeedsClassOperand => "The operator 'instanceof' needs the right operand to be a class, not a '{0}'",
-            Self::ExceptionDuringMethodInvocation => "A problem occurred when trying to execute method '{0}' on object of type '{1}': '{2}'",
-            Self::OperatorNotSupportedBetweenTypes => "The operator '{0}' is not supported between objects of type '{1}' and '{2}'",
+            Self::InstanceOfOperatorNeedsClassOperand => {
+                "The operator 'instanceof' needs the right operand to be a class, not a '{0}'"
+            }
+            Self::ExceptionDuringMethodInvocation => {
+                "A problem occurred when trying to execute method '{0}' on object of type '{1}': '{2}'"
+            }
+            Self::OperatorNotSupportedBetweenTypes => {
+                "The operator '{0}' is not supported between objects of type '{1}' and '{2}'"
+            }
             Self::ProblemLocatingMethod => "Problem locating method {0} on type {1}",
-            Self::SetValueNotSupported => "setValue(ExpressionState, Object) not supported for '{0}'",
-            Self::MultiplePossibleMethods => "Method call of '{0}' is ambiguous, supported type conversions allow multiple variants to match",
-            Self::ExceptionDuringPropertyWrite => "A problem occurred whilst attempting to set the property '{0}': {1}",
+            Self::SetValueNotSupported => {
+                "setValue(ExpressionState, Object) not supported for '{0}'"
+            }
+            Self::MultiplePossibleMethods => {
+                "Method call of '{0}' is ambiguous, supported type conversions allow multiple variants to match"
+            }
+            Self::ExceptionDuringPropertyWrite => {
+                "A problem occurred whilst attempting to set the property '{0}': {1}"
+            }
             Self::NotAnInteger => "The value '{0}' cannot be parsed as an int",
             Self::NotALong => "The value '{0}' cannot be parsed as a long",
-            Self::InvalidFirstOperandForMatchesOperator => "First operand to matches operator must be a string. '{0}' is not",
-            Self::InvalidSecondOperandForMatchesOperator => "Second operand to matches operator must be a string. '{0}' is not",
-            Self::FunctionMustBeStatic => "Only static methods can be called via function references. The method '{0}' referred to by name '{1}' is not static.",
+            Self::InvalidFirstOperandForMatchesOperator => {
+                "First operand to matches operator must be a string. '{0}' is not"
+            }
+            Self::InvalidSecondOperandForMatchesOperator => {
+                "Second operand to matches operator must be a string. '{0}' is not"
+            }
+            Self::FunctionMustBeStatic => {
+                "Only static methods can be called via function references. The method '{0}' referred to by name '{1}' is not static."
+            }
             Self::NotAReal => "The value '{0}' cannot be parsed as a double",
-            Self::MoreInput => "After parsing a valid expression, there is still more data in the expression: '{0}'",
+            Self::MoreInput => {
+                "After parsing a valid expression, there is still more data in the expression: '{0}'"
+            }
             Self::RightOperandProblem => "Problem parsing right operand",
             Self::NotExpectedToken => "Unexpected token. Expected '{0}' but was '{1}'",
             Self::Ood => "Unexpectedly ran out of input",
             Self::NonTerminatingDoubleQuotedString => "Cannot find terminating \" for string",
             Self::NonTerminatingQuotedString => "Cannot find terminating ' for string",
-            Self::MissingLeadingZeroForNumber => "A real number must be prefixed by zero, it cannot start with just '.'",
+            Self::MissingLeadingZeroForNumber => {
+                "A real number must be prefixed by zero, it cannot start with just '.'"
+            }
             Self::RealCannotBeLong => "Real number cannot be suffixed with a long (L or l) suffix",
             Self::UnexpectedDataAfterDot => "Unexpected data after '.': '{0}'",
-            Self::MissingConstructorArguments => "The arguments '(...)' for the constructor call are missing",
+            Self::MissingConstructorArguments => {
+                "The arguments '(...)' for the constructor call are missing"
+            }
             Self::RunOutOfArguments => "Unexpectedly ran out of arguments",
             Self::UnableToGrowCollection => "Unable to grow collection",
-            Self::UnableToGrowCollectionUnknownElementType => "Unable to grow collection: unable to determine list element type",
-            Self::UnableToCreateListForIndexing => "Unable to dynamically create a List to replace a null value",
-            Self::UnableToCreateMapForIndexing => "Unable to dynamically create a Map to replace a null value",
-            Self::UnableToDynamicallyCreateObject => "Unable to dynamically create instance of '{0}' to replace a null value",
-            Self::NoBeanResolverRegistered => "No bean resolver registered in the context to resolve access to bean '{0}'",
-            Self::ExceptionDuringBeanResolution => "A problem occurred when trying to resolve bean '{0}': '{1}'",
-            Self::InvalidBeanReference => "@ or & can only be followed by an identifier or a quoted name",
-            Self::TypeNameExpectedForArrayConstruction => "Expected the type of the new array to be specified as a String but found '{0}'",
-            Self::IncorrectElementTypeForArray => "The array of type '{0}' cannot have an element of type '{1}' inserted",
-            Self::MultidimArrayInitializerNotSupported => "Using an initializer to build a multi-dimensional array is not currently supported",
+            Self::UnableToGrowCollectionUnknownElementType => {
+                "Unable to grow collection: unable to determine list element type"
+            }
+            Self::UnableToCreateListForIndexing => {
+                "Unable to dynamically create a List to replace a null value"
+            }
+            Self::UnableToCreateMapForIndexing => {
+                "Unable to dynamically create a Map to replace a null value"
+            }
+            Self::UnableToDynamicallyCreateObject => {
+                "Unable to dynamically create instance of '{0}' to replace a null value"
+            }
+            Self::NoBeanResolverRegistered => {
+                "No bean resolver registered in the context to resolve access to bean '{0}'"
+            }
+            Self::ExceptionDuringBeanResolution => {
+                "A problem occurred when trying to resolve bean '{0}': '{1}'"
+            }
+            Self::InvalidBeanReference => {
+                "@ or & can only be followed by an identifier or a quoted name"
+            }
+            Self::TypeNameExpectedForArrayConstruction => {
+                "Expected the type of the new array to be specified as a String but found '{0}'"
+            }
+            Self::IncorrectElementTypeForArray => {
+                "The array of type '{0}' cannot have an element of type '{1}' inserted"
+            }
+            Self::MultidimArrayInitializerNotSupported => {
+                "Using an initializer to build a multi-dimensional array is not currently supported"
+            }
             Self::MissingArrayDimension => "A required array dimension has not been specified",
-            Self::InitializerLengthIncorrect => "Array initializer size does not match array dimensions",
+            Self::InitializerLengthIncorrect => {
+                "Array initializer size does not match array dimensions"
+            }
             Self::UnexpectedEscapeChar => "Unexpected escape character",
-            Self::OperandNotIncrementable => "The expression component '{0}' does not support increment",
-            Self::OperandNotDecrementable => "The expression component '{0}' does not support decrement",
+            Self::OperandNotIncrementable => {
+                "The expression component '{0}' does not support increment"
+            }
+            Self::OperandNotDecrementable => {
+                "The expression component '{0}' does not support decrement"
+            }
             Self::NotAssignable => "The expression component '{0}' is not assignable",
             Self::MissingCharacter => "Missing expected character '{0}'",
             Self::LeftOperandProblem => "Problem parsing left operand",
-            Self::MissingSelectionExpression => "A required selection expression has not been specified",
-            Self::ExceptionRunningCompiledExpression => "An exception occurred whilst evaluating a compiled expression",
-            Self::FlawedPattern => "Failed to efficiently evaluate pattern '{0}': consider redesigning it",
-            Self::ExceptionCompilingExpression => "An exception occurred while compiling an expression",
-            Self::MaxArrayElementsThresholdExceeded => "Array declares too many elements, exceeding the threshold of '{0}'",
-            Self::MaxRepeatedTextSizeExceeded => "Repeated text is too long, exceeding the threshold of '{0}' characters",
-            Self::MaxRegexLengthExceeded => "Regular expression is too long, exceeding the threshold of '{0}' characters",
-            Self::MaxConcatenatedStringLengthExceeded => "Concatenated string is too long, exceeding the threshold of '{0}' characters",
-            Self::MaxExpressionLengthExceeded => "SpEL expression is too long, exceeding the threshold of '{0}' characters",
+            Self::MissingSelectionExpression => {
+                "A required selection expression has not been specified"
+            }
+            Self::ExceptionRunningCompiledExpression => {
+                "An exception occurred whilst evaluating a compiled expression"
+            }
+            Self::FlawedPattern => {
+                "Failed to efficiently evaluate pattern '{0}': consider redesigning it"
+            }
+            Self::ExceptionCompilingExpression => {
+                "An exception occurred while compiling an expression"
+            }
+            Self::MaxArrayElementsThresholdExceeded => {
+                "Array declares too many elements, exceeding the threshold of '{0}'"
+            }
+            Self::MaxRepeatedTextSizeExceeded => {
+                "Repeated text is too long, exceeding the threshold of '{0}' characters"
+            }
+            Self::MaxRegexLengthExceeded => {
+                "Regular expression is too long, exceeding the threshold of '{0}' characters"
+            }
+            Self::MaxConcatenatedStringLengthExceeded => {
+                "Concatenated string is too long, exceeding the threshold of '{0}' characters"
+            }
+            Self::MaxExpressionLengthExceeded => {
+                "SpEL expression is too long, exceeding the threshold of '{0}' characters"
+            }
             Self::VariableAssignmentNotSupported => "Assignment to variable '{0}' is not supported",
             Self::NegativeRepeatedTextCount => "Repeat count '{0}' must not be negative",
-            Self::UnsupportedCharacter => "Unsupported character '{0}' ({1}) encountered in expression",
-            Self::ExceptionDuringIndexRead => "A problem occurred while attempting to read index '{0}' in '{1}'",
-            Self::ExceptionDuringIndexWrite => "A problem occurred while attempting to write index '{0}' in '{1}'",
-            Self::MaxOperationsExceeded => "SpEL expression evaluation exceeded the threshold of '{0}' operations",
+            Self::UnsupportedCharacter => {
+                "Unsupported character '{0}' ({1}) encountered in expression"
+            }
+            Self::ExceptionDuringIndexRead => {
+                "A problem occurred while attempting to read index '{0}' in '{1}'"
+            }
+            Self::ExceptionDuringIndexWrite => {
+                "A problem occurred while attempting to write index '{0}' in '{1}'"
+            }
+            Self::MaxOperationsExceeded => {
+                "SpEL expression evaluation exceeded the threshold of '{0}' operations"
+            }
             Self::InternalError => "Internal error",
         }
     }
@@ -669,7 +777,10 @@ mod tests {
     #[test]
     fn format_type_conversion_error() {
         let s = SpelMessage::TypeConversionError.format_message(&["int", "String"]);
-        assert_eq!(s, "EL1001E: Type conversion problem, cannot convert from int to String");
+        assert_eq!(
+            s,
+            "EL1001E: Type conversion problem, cannot convert from int to String"
+        );
     }
 
     #[test]
@@ -791,7 +902,8 @@ mod tests {
 
     #[test]
     fn format_operator_not_supported() {
-        let s = SpelMessage::OperatorNotSupportedBetweenTypes.format_message(&["+", "String", "Boolean"]);
+        let s = SpelMessage::OperatorNotSupportedBetweenTypes
+            .format_message(&["+", "String", "Boolean"]);
         assert!(s.starts_with("EL1030E:"));
         assert!(s.contains("+"));
     }
@@ -955,7 +1067,8 @@ mod tests {
 
     #[test]
     fn format_incorrect_number_of_arguments() {
-        let s = SpelMessage::IncorrectNumberOfArgumentsToFunction.format_message(&["foo", "2", "3"]);
+        let s =
+            SpelMessage::IncorrectNumberOfArgumentsToFunction.format_message(&["foo", "2", "3"]);
         assert!(s.starts_with("EL1014E:"));
     }
 

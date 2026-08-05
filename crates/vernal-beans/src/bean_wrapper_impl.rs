@@ -342,7 +342,12 @@ impl PropertyAccessor for BeanWrapperImpl {
 
     /// 获取所有已注册的属性名称。
     fn get_property_names(&self) -> Vec<String> {
-        self.property_metas.read().unwrap().keys().cloned().collect()
+        self.property_metas
+            .read()
+            .unwrap()
+            .keys()
+            .cloned()
+            .collect()
     }
 }
 
@@ -480,7 +485,9 @@ mod tests {
         let v1 = wrapper.get_property_value("count").unwrap();
         assert_eq!(*v1.downcast_ref::<i32>().unwrap(), 1);
 
-        wrapper.set_property_value("count", Arc::new(42i32)).unwrap();
+        wrapper
+            .set_property_value("count", Arc::new(42i32))
+            .unwrap();
         let v2 = wrapper.get_property_value("count").unwrap();
         assert_eq!(*v2.downcast_ref::<i32>().unwrap(), 42);
     }
@@ -547,7 +554,10 @@ mod tests {
         );
 
         let wrapper = BeanWrapperImpl::new(Arc::new("test".to_string()));
-        wrapper.register_property("address", TypeId::of::<HashMap<String, Arc<dyn Any + Send + Sync>>>());
+        wrapper.register_property(
+            "address",
+            TypeId::of::<HashMap<String, Arc<dyn Any + Send + Sync>>>(),
+        );
         wrapper
             .set_property_value("address", Arc::new(address))
             .unwrap();
@@ -597,8 +607,14 @@ mod tests {
         wrapper.register_property("age", TypeId::of::<i32>());
 
         let mut values = HashMap::new();
-        values.insert("name".to_string(), Arc::new("Bob".to_string()) as Arc<dyn Any + Send + Sync>);
-        values.insert("age".to_string(), Arc::new(30i32) as Arc<dyn Any + Send + Sync>);
+        values.insert(
+            "name".to_string(),
+            Arc::new("Bob".to_string()) as Arc<dyn Any + Send + Sync>,
+        );
+        values.insert(
+            "age".to_string(),
+            Arc::new(30i32) as Arc<dyn Any + Send + Sync>,
+        );
 
         wrapper.set_property_values(&values).unwrap();
 
@@ -652,7 +668,10 @@ mod tests {
     #[test]
     fn test_property_error_display_null_nested_object() {
         let err = PropertyError::NullNestedObject("address.city".to_string());
-        assert_eq!(format!("{}", err), "嵌套属性路径 'address.city' 中的中间对象为空");
+        assert_eq!(
+            format!("{}", err),
+            "嵌套属性路径 'address.city' 中的中间对象为空"
+        );
     }
 
     #[test]
@@ -680,9 +699,7 @@ mod tests {
             "data",
             TypeId::of::<HashMap<String, Arc<dyn Any + Send + Sync>>>(),
         );
-        wrapper
-            .set_property_value("data", Arc::new(inner))
-            .unwrap();
+        wrapper.set_property_value("data", Arc::new(inner)).unwrap();
 
         let type_id = wrapper.get_property_type("data.value");
         assert_eq!(type_id, Some(TypeId::of::<i32>()));
@@ -778,9 +795,7 @@ mod tests {
             "city",
             TypeId::of::<HashMap<String, Arc<dyn Any + Send + Sync>>>(),
         );
-        wrapper
-            .set_property_value("city", Arc::new(city))
-            .unwrap();
+        wrapper.set_property_value("city", Arc::new(city)).unwrap();
 
         let name = wrapper.get_property_value("city.name").unwrap();
         assert_eq!(*name.downcast_ref::<String>().unwrap(), "Beijing");
@@ -829,7 +844,9 @@ mod tests {
     fn test_nested_property_not_hashmap() {
         let wrapper = BeanWrapperImpl::new(Arc::new("test".to_string()));
         wrapper.register_property("data", TypeId::of::<String>());
-        wrapper.set_property_value("data", Arc::new("not_a_map".to_string())).unwrap();
+        wrapper
+            .set_property_value("data", Arc::new("not_a_map".to_string()))
+            .unwrap();
         let result = wrapper.get_property_value("data.child");
         assert!(result.is_err());
     }
@@ -855,7 +872,9 @@ mod tests {
     fn test_get_property_type_nested_not_hashmap() {
         let wrapper = BeanWrapperImpl::new(Arc::new("test".to_string()));
         wrapper.register_property("data", TypeId::of::<String>());
-        wrapper.set_property_value("data", Arc::new("not_a_map".to_string())).unwrap();
+        wrapper
+            .set_property_value("data", Arc::new("not_a_map".to_string()))
+            .unwrap();
         assert_eq!(wrapper.get_property_type("data.child"), None);
     }
 
@@ -891,8 +910,14 @@ mod tests {
         wrapper.register_property("name", TypeId::of::<String>());
         // "age" is not registered, so setting it should fail
         let mut values = HashMap::new();
-        values.insert("name".to_string(), Arc::new("Bob".to_string()) as Arc<dyn Any + Send + Sync>);
-        values.insert("age".to_string(), Arc::new(30i32) as Arc<dyn Any + Send + Sync>);
+        values.insert(
+            "name".to_string(),
+            Arc::new("Bob".to_string()) as Arc<dyn Any + Send + Sync>,
+        );
+        values.insert(
+            "age".to_string(),
+            Arc::new(30i32) as Arc<dyn Any + Send + Sync>,
+        );
         let result = wrapper.set_property_values(&values);
         assert!(result.is_err());
     }

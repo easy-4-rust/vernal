@@ -55,7 +55,11 @@ impl PropertyEditor for URLEditor {
             self.value = Some(trimmed.to_string());
             Ok(())
         } else {
-            Err(format!("Invalid URL: '{}'. Must start with http://, https://, ftp://, or file://", trimmed).into())
+            Err(format!(
+                "Invalid URL: '{}'. Must start with http://, https://, ftp://, or file://",
+                trimmed
+            )
+            .into())
         }
     }
 
@@ -92,7 +96,9 @@ mod tests {
     #[test]
     fn valid_https_url() {
         let mut editor = URLEditor::new();
-        editor.set_as_text("https://example.com/path?query=1").unwrap();
+        editor
+            .set_as_text("https://example.com/path?query=1")
+            .unwrap();
         assert!(editor.get_as_text().is_some());
     }
 
@@ -143,7 +149,10 @@ mod tests {
         let mut editor = URLEditor::new();
         let val: Arc<dyn std::any::Any + Send + Sync> = Arc::new("https://example.com".to_string());
         editor.set_value(val);
-        assert_eq!(editor.get_as_text(), Some("https://example.com".to_string()));
+        assert_eq!(
+            editor.get_as_text(),
+            Some("https://example.com".to_string())
+        );
     }
 
     #[test]
@@ -179,21 +188,30 @@ mod tests {
     fn file_url() {
         let mut editor = URLEditor::new();
         editor.set_as_text("file:///home/user/data.txt").unwrap();
-        assert_eq!(editor.get_as_text(), Some("file:///home/user/data.txt".to_string()));
+        assert_eq!(
+            editor.get_as_text(),
+            Some("file:///home/user/data.txt".to_string())
+        );
     }
 
     #[test]
     fn https_with_port() {
         let mut editor = URLEditor::new();
         editor.set_as_text("https://example.com:8080/path").unwrap();
-        assert_eq!(editor.get_as_text(), Some("https://example.com:8080/path".to_string()));
+        assert_eq!(
+            editor.get_as_text(),
+            Some("https://example.com:8080/path".to_string())
+        );
     }
 
     #[test]
     fn whitespace_trimmed() {
         let mut editor = URLEditor::new();
         editor.set_as_text("  https://example.com  ").unwrap();
-        assert_eq!(editor.get_as_text(), Some("https://example.com".to_string()));
+        assert_eq!(
+            editor.get_as_text(),
+            Some("https://example.com".to_string())
+        );
     }
 
     #[test]

@@ -68,7 +68,10 @@ mod tests {
     use std::collections::HashMap;
 
     fn make_resolver(pairs: &[(&str, &str)]) -> HashMap<String, String> {
-        pairs.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect()
+        pairs
+            .iter()
+            .map(|(k, v)| (k.to_string(), v.to_string()))
+            .collect()
     }
 
     #[test]
@@ -76,7 +79,9 @@ mod tests {
         let resolver = make_resolver(&[("name", "world")]);
         let parser = PlaceholderParser::with_default();
         assert_eq!(
-            parser.replace_placeholders("Hello ${name}!", resolver).unwrap(),
+            parser
+                .replace_placeholders("Hello ${name}!", resolver)
+                .unwrap(),
             "Hello world!"
         );
     }
@@ -86,7 +91,9 @@ mod tests {
         let resolver = HashMap::<String, String>::new();
         let parser = PlaceholderParser::with_default();
         assert_eq!(
-            parser.replace_placeholders("${missing:fallback}", resolver).unwrap(),
+            parser
+                .replace_placeholders("${missing:fallback}", resolver)
+                .unwrap(),
             "fallback"
         );
     }
@@ -96,7 +103,9 @@ mod tests {
         let resolver = make_resolver(&[("a", "1"), ("b", "2")]);
         let parser = PlaceholderParser::with_default();
         assert_eq!(
-            parser.replace_placeholders("${a} + ${b} = 3", resolver).unwrap(),
+            parser
+                .replace_placeholders("${a} + ${b} = 3", resolver)
+                .unwrap(),
             "1 + 2 = 3"
         );
     }
@@ -126,7 +135,9 @@ mod tests {
         let resolver = make_resolver(&[("name", "test")]);
         let parser = PlaceholderParser::new("<%", "%>", Some(":"));
         assert_eq!(
-            parser.replace_placeholders("Hello <%name%>!", resolver).unwrap(),
+            parser
+                .replace_placeholders("Hello <%name%>!", resolver)
+                .unwrap(),
             "Hello test!"
         );
     }

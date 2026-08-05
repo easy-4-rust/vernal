@@ -47,10 +47,7 @@ impl<A: aspect_core::Aspect + 'static> Interceptor for AspectRsAdapter<A> {
         let join_point = aspect_core::JoinPoint {
             function_name: "",
             module_path: "",
-            location: aspect_core::Location {
-                file: "",
-                line: 0,
-            },
+            location: aspect_core::Location { file: "", line: 0 },
         };
 
         // 调用 aspect-rs 的 before
@@ -110,10 +107,7 @@ impl<A: aspect_core::Aspect + 'static> Interceptor for AroundAdapter<A> {
         let join_point = aspect_core::JoinPoint {
             function_name: "",
             module_path: "",
-            location: aspect_core::Location {
-                file: "",
-                line: 0,
-            },
+            location: aspect_core::Location { file: "", line: 0 },
         };
 
         // 调用 aspect-rs 的 before
@@ -157,7 +151,8 @@ mod tests {
 
     impl Aspect for TestSyncAspect {
         fn before(&self, _ctx: &aspect_core::JoinPoint) {
-            self.before_called.store(true, std::sync::atomic::Ordering::SeqCst);
+            self.before_called
+                .store(true, std::sync::atomic::Ordering::SeqCst);
         }
     }
 
@@ -165,14 +160,19 @@ mod tests {
     fn aspect_rs_adapter_creation() {
         let aspect = TestSyncAspect::new();
         let adapter = AspectRsAdapter::new(aspect);
-        assert!(!adapter.aspect.before_called.load(std::sync::atomic::Ordering::SeqCst));
+        assert!(
+            !adapter
+                .aspect
+                .before_called
+                .load(std::sync::atomic::Ordering::SeqCst)
+        );
     }
 }
 
 #[cfg(test)]
 mod additional_tests {
     use super::*;
-    use crate::{Operation, InvocationValue};
+    use crate::{InvocationValue, Operation};
 
     struct TestSyncAspect {
         before_called: Arc<std::sync::atomic::AtomicBool>,
@@ -188,7 +188,8 @@ mod additional_tests {
 
     impl aspect_core::Aspect for TestSyncAspect {
         fn before(&self, _ctx: &aspect_core::JoinPoint) {
-            self.before_called.store(true, std::sync::atomic::Ordering::SeqCst);
+            self.before_called
+                .store(true, std::sync::atomic::Ordering::SeqCst);
         }
     }
 
@@ -196,7 +197,12 @@ mod additional_tests {
     fn aspect_rs_adapter_new() {
         let aspect = TestSyncAspect::new();
         let adapter = AspectRsAdapter::new(aspect);
-        assert!(!adapter.aspect.before_called.load(std::sync::atomic::Ordering::SeqCst));
+        assert!(
+            !adapter
+                .aspect
+                .before_called
+                .load(std::sync::atomic::Ordering::SeqCst)
+        );
     }
 
     #[tokio::test]
@@ -204,9 +210,12 @@ mod additional_tests {
         let aspect = TestSyncAspect::new();
         let adapter = AspectRsAdapter::new(aspect);
         let inv = Arc::new(Invocation::new(Operation::new("Service", "method")));
-        let next = Next::new(&[], crate::target_ref::TargetRef::Static(&|_| {
-            Box::pin(async { Ok(Box::new(42i32) as InvocationValue) })
-        }));
+        let next = Next::new(
+            &[],
+            crate::target_ref::TargetRef::Static(&|_| {
+                Box::pin(async { Ok(Box::new(42i32) as InvocationValue) })
+            }),
+        );
         let result = adapter.intercept(inv, next).await;
         assert!(result.is_ok());
     }
@@ -215,7 +224,12 @@ mod additional_tests {
     fn around_adapter_new() {
         let aspect = TestSyncAspect::new();
         let adapter = AroundAdapter::new(aspect);
-        assert!(!adapter.aspect.before_called.load(std::sync::atomic::Ordering::SeqCst));
+        assert!(
+            !adapter
+                .aspect
+                .before_called
+                .load(std::sync::atomic::Ordering::SeqCst)
+        );
     }
 
     #[tokio::test]
@@ -223,9 +237,12 @@ mod additional_tests {
         let aspect = TestSyncAspect::new();
         let adapter = AroundAdapter::new(aspect);
         let inv = Arc::new(Invocation::new(Operation::new("Service", "method")));
-        let next = Next::new(&[], crate::target_ref::TargetRef::Static(&|_| {
-            Box::pin(async { Ok(Box::new(42i32) as InvocationValue) })
-        }));
+        let next = Next::new(
+            &[],
+            crate::target_ref::TargetRef::Static(&|_| {
+                Box::pin(async { Ok(Box::new(42i32) as InvocationValue) })
+            }),
+        );
         let result = adapter.intercept(inv, next).await;
         assert!(result.is_ok());
     }

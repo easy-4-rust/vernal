@@ -154,8 +154,7 @@ mod tests {
     #[test]
     fn test_with_role() {
         let loc = Location::from_resource("infra.xml");
-        let entry = BeanEntry::new("internal", "Internal", loc)
-            .with_role(ROLE_INFRASTRUCTURE);
+        let entry = BeanEntry::new("internal", "Internal", loc).with_role(ROLE_INFRASTRUCTURE);
         assert_eq!(entry.role(), ROLE_INFRASTRUCTURE);
         assert!(entry.is_infrastructure_bean());
         assert!(!entry.is_application_bean());

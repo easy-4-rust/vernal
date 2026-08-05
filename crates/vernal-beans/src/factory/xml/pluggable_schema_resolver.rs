@@ -9,13 +9,17 @@ pub struct PluggableSchemaResolver {
 }
 impl PluggableSchemaResolver {
     /// 创建一个新的实例。
-    pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
     /// 转换为text。
     pub fn from_text(mappings_text: &str) -> Self {
         let mut schema_mappings = std::collections::HashMap::new();
         for line in mappings_text.lines() {
             let line = line.trim();
-            if line.is_empty() || line.starts_with('#') { continue; }
+            if line.is_empty() || line.starts_with('#') {
+                continue;
+            }
             if let Some((k, v)) = line.split_once('=') {
                 schema_mappings.insert(k.trim().to_string(), v.trim().to_string());
             }
@@ -29,7 +33,8 @@ impl EntityResolver for PluggableSchemaResolver {
         _public_id: Option<&str>,
         system_id: &str,
     ) -> Result<ResolvedEntity, Box<dyn std::error::Error + Send + Sync>> {
-        self.schema_mappings.get(system_id)
+        self.schema_mappings
+            .get(system_id)
             .map(|path| ResolvedEntity {
                 public_id: None,
                 system_id: system_id.to_string(),

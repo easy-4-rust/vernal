@@ -1,7 +1,6 @@
 //! BeanMetadataAttributeAccessor — 对应 Spring `org.springframework.beans.BeanMetadataAttributeAccessor`。
 //!
 /// 扩展了 `AttributeAccessor`，添加了对元数据属性的支持。
-
 use std::any::Any;
 use std::collections::HashMap;
 use std::fmt;
@@ -113,7 +112,9 @@ impl Default for BeanMetadataAttributeAccessor {
 
 impl BeanMetadataElement for BeanMetadataAttributeAccessor {
     fn source(&self) -> Option<&(dyn Any + 'static)> {
-        self.source.as_ref().map(|s| s.as_ref() as &(dyn Any + 'static))
+        self.source
+            .as_ref()
+            .map(|s| s.as_ref() as &(dyn Any + 'static))
     }
 }
 
@@ -144,7 +145,11 @@ mod tests {
         accessor.set_attribute("key", "value");
         assert!(accessor.has_attribute("key"));
         assert_eq!(
-            accessor.get_attribute("key").unwrap().downcast_ref::<&str>().unwrap(),
+            accessor
+                .get_attribute("key")
+                .unwrap()
+                .downcast_ref::<&str>()
+                .unwrap(),
             &"value"
         );
     }

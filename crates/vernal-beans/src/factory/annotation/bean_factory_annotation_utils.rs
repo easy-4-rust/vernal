@@ -74,7 +74,9 @@ impl BeanFactoryAnnotationUtils {
 }
 
 impl Default for BeanFactoryAnnotationUtils {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[cfg(test)]

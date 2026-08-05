@@ -48,10 +48,7 @@ impl DataBufferOutputStream {
 impl Write for DataBufferOutputStream {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         if self.closed {
-            return Err(io::Error::new(
-                io::ErrorKind::BrokenPipe,
-                "输出流已关闭",
-            ));
+            return Err(io::Error::new(io::ErrorKind::BrokenPipe, "输出流已关闭"));
         }
         let written = self.buffer.write(buf);
         if written == 0 && !buf.is_empty() {

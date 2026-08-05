@@ -163,13 +163,19 @@ mod tests {
     #[test]
     fn test_component_definition_created() {
         let def = TestComponent::definition();
-        assert_eq!(def.key().type_name(), "vernal_beans::component_contract::tests::TestComponent");
+        assert_eq!(
+            def.key().type_name(),
+            "vernal_beans::component_contract::tests::TestComponent"
+        );
     }
 
     #[test]
     fn test_ordered_component_definition_created() {
         let def = OrderedComponent::definition();
-        assert_eq!(def.key().type_name(), "vernal_beans::component_contract::tests::OrderedComponent");
+        assert_eq!(
+            def.key().type_name(),
+            "vernal_beans::component_contract::tests::OrderedComponent"
+        );
     }
 
     #[test]

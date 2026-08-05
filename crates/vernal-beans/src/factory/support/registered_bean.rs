@@ -127,8 +127,7 @@ mod tests {
 
     #[test]
     fn qualified_description_with_type() {
-        let bean = RegisteredBean::new("svc")
-            .with_type_name("com.example.MyService");
+        let bean = RegisteredBean::new("svc").with_type_name("com.example.MyService");
         assert_eq!(bean.qualified_description(), "svc [com.example.MyService]");
     }
 

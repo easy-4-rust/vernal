@@ -54,11 +54,11 @@ mod tests {
     #[test]
     fn lists_missing_properties() {
         // A 类（合同对齐）：对标 Spring 缺失属性消息
-        let err = MissingRequiredPropertiesException::new(vec![
-            "a".to_string(),
-            "b".to_string(),
-        ]);
-        assert_eq!(err.missing_properties(), &["a".to_string(), "b".to_string()]);
+        let err = MissingRequiredPropertiesException::new(vec!["a".to_string(), "b".to_string()]);
+        assert_eq!(
+            err.missing_properties(),
+            &["a".to_string(), "b".to_string()]
+        );
         assert!(err.to_string().contains('a'));
         assert!(err.to_string().contains('b'));
     }

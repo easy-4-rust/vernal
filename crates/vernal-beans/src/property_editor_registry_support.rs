@@ -1,7 +1,6 @@
 //! PropertyEditorRegistrySupport — 对应 Spring `org.springframework.beans.PropertyEditorRegistrySupport`。
 //!
 /// PropertyEditorRegistry 的基类实现。
-
 use std::any::TypeId;
 use std::collections::HashMap;
 
@@ -30,7 +29,11 @@ impl PropertyEditorRegistrySupport {
     }
 
     /// 注册默认编辑器。
-    pub fn register_default_editor(&mut self, required_type: TypeId, editor: Box<dyn PropertyEditor>) {
+    pub fn register_default_editor(
+        &mut self,
+        required_type: TypeId,
+        editor: Box<dyn PropertyEditor>,
+    ) {
         self.default_editors.insert(required_type, editor);
     }
 
@@ -75,13 +78,26 @@ impl PropertyEditorRegistry for PropertyEditorRegistrySupport {
         self.custom_editors.insert(required_type, editor);
     }
 
-    fn register_custom_editor_for_path(&mut self, required_type: TypeId, property_path: &str, editor: Box<dyn PropertyEditor>) {
-        self.custom_editors_for_path.insert((required_type, property_path.to_string()), editor);
+    fn register_custom_editor_for_path(
+        &mut self,
+        required_type: TypeId,
+        property_path: &str,
+        editor: Box<dyn PropertyEditor>,
+    ) {
+        self.custom_editors_for_path
+            .insert((required_type, property_path.to_string()), editor);
     }
 
-    fn find_custom_editor<'a>(&'a self, required_type: TypeId, property_path: Option<&str>) -> Option<&'a dyn PropertyEditor> {
+    fn find_custom_editor<'a>(
+        &'a self,
+        required_type: TypeId,
+        property_path: Option<&str>,
+    ) -> Option<&'a dyn PropertyEditor> {
         if let Some(path) = property_path {
-            if let Some(editor) = self.custom_editors_for_path.get(&(required_type, path.to_string())) {
+            if let Some(editor) = self
+                .custom_editors_for_path
+                .get(&(required_type, path.to_string()))
+            {
                 return Some(editor.as_ref());
             }
         }
@@ -95,9 +111,16 @@ impl PropertyEditorRegistry for PropertyEditorRegistrySupport {
         }
     }
 
-    fn find_custom_editor_mut<'a>(&'a mut self, required_type: TypeId, property_path: Option<&str>) -> Option<&'a mut (dyn PropertyEditor + 'a)> {
+    fn find_custom_editor_mut<'a>(
+        &'a mut self,
+        required_type: TypeId,
+        property_path: Option<&str>,
+    ) -> Option<&'a mut (dyn PropertyEditor + 'a)> {
         if let Some(path) = property_path {
-            if let Some(editor) = self.custom_editors_for_path.get_mut(&(required_type, path.to_string())) {
+            if let Some(editor) = self
+                .custom_editors_for_path
+                .get_mut(&(required_type, path.to_string()))
+            {
                 return Some(&mut **editor);
             }
         }
@@ -113,7 +136,8 @@ impl PropertyEditorRegistry for PropertyEditorRegistrySupport {
     }
 
     fn has_custom_editor(&self, required_type: TypeId, property_path: Option<&str>) -> bool {
-        self.find_custom_editor(required_type, property_path).is_some()
+        self.find_custom_editor(required_type, property_path)
+            .is_some()
     }
 }
 
@@ -135,19 +159,30 @@ mod tests {
     }
 
     impl PropertyEditor for TestEditor {
-        fn target_type(&self) -> TypeId { TypeId::of::<String>() }
-        fn set_as_text(&mut self, text: &str) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        fn target_type(&self) -> TypeId {
+            TypeId::of::<String>()
+        }
+        fn set_as_text(
+            &mut self,
+            text: &str,
+        ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             self.value = Some(text.to_string());
             Ok(())
         }
-        fn get_as_text(&self) -> Option<String> { self.value.clone() }
+        fn get_as_text(&self) -> Option<String> {
+            self.value.clone()
+        }
         fn set_value(&mut self, value: Arc<dyn Any + Send + Sync>) {
             if let Some(s) = value.downcast_ref::<String>() {
                 self.value = Some(s.clone());
             }
         }
-        fn get_value(&self) -> Option<&dyn Any> { self.value.as_ref().map(|v| v as &dyn Any) }
-        fn get_value_type(&self) -> TypeId { TypeId::of::<String>() }
+        fn get_value(&self) -> Option<&dyn Any> {
+            self.value.as_ref().map(|v| v as &dyn Any)
+        }
+        fn get_value_type(&self) -> TypeId {
+            TypeId::of::<String>()
+        }
     }
 
     #[test]
@@ -604,7 +639,11 @@ mod tests {
         let mut registry = PropertyEditorRegistrySupport::new();
         registry.register_default_editor(TypeId::of::<String>(), Box::new(TestEditor::new()));
         registry.register_custom_editor(TypeId::of::<String>(), Box::new(TestEditor::new()));
-        registry.register_custom_editor_for_path(TypeId::of::<String>(), "special", Box::new(TestEditor::new()));
+        registry.register_custom_editor_for_path(
+            TypeId::of::<String>(),
+            "special",
+            Box::new(TestEditor::new()),
+        );
         // Path editor should be found first
         let editor = registry.find_custom_editor(TypeId::of::<String>(), Some("special"));
         assert!(editor.is_some());
@@ -615,7 +654,11 @@ mod tests {
         let mut registry = PropertyEditorRegistrySupport::new();
         registry.register_default_editor(TypeId::of::<String>(), Box::new(TestEditor::new()));
         registry.register_custom_editor(TypeId::of::<String>(), Box::new(TestEditor::new()));
-        registry.register_custom_editor_for_path(TypeId::of::<String>(), "special", Box::new(TestEditor::new()));
+        registry.register_custom_editor_for_path(
+            TypeId::of::<String>(),
+            "special",
+            Box::new(TestEditor::new()),
+        );
         let editor = registry.find_custom_editor_mut(TypeId::of::<String>(), Some("special"));
         assert!(editor.is_some());
     }

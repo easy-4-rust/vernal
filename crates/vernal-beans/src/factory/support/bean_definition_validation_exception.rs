@@ -24,19 +24,29 @@ pub struct BeanDefinitionValidationException {
 impl BeanDefinitionValidationException {
     /// 创建新的异常。
     pub fn new(message: impl Into<String>) -> Self {
-        Self { bean_name: String::new(), message: message.into() }
+        Self {
+            bean_name: String::new(),
+            message: message.into(),
+        }
     }
 
     /// 创建带 Bean 名称的异常。
     pub fn with_bean_name(bean_name: impl Into<String>, message: impl Into<String>) -> Self {
-        Self { bean_name: bean_name.into(), message: message.into() }
+        Self {
+            bean_name: bean_name.into(),
+            message: message.into(),
+        }
     }
 
     /// 获取错误消息。
-    pub fn message(&self) -> &str { &self.message }
+    pub fn message(&self) -> &str {
+        &self.message
+    }
 
     /// 获取 Bean 名称。
-    pub fn bean_name(&self) -> &str { &self.bean_name }
+    pub fn bean_name(&self) -> &str {
+        &self.bean_name
+    }
 }
 
 impl fmt::Display for BeanDefinitionValidationException {
@@ -44,7 +54,11 @@ impl fmt::Display for BeanDefinitionValidationException {
         if self.bean_name.is_empty() {
             write!(f, "{}", self.message)
         } else {
-            write!(f, "Bean '{}' validation failed: {}", self.bean_name, self.message)
+            write!(
+                f,
+                "Bean '{}' validation failed: {}",
+                self.bean_name, self.message
+            )
         }
     }
 }
@@ -71,7 +85,10 @@ mod tests {
     #[test]
     fn display_with_bean_name() {
         let e = BeanDefinitionValidationException::with_bean_name("myBean", "bad scope");
-        assert_eq!(format!("{}", e), "Bean 'myBean' validation failed: bad scope");
+        assert_eq!(
+            format!("{}", e),
+            "Bean 'myBean' validation failed: bad scope"
+        );
     }
 
     #[test]

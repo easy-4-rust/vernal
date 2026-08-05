@@ -39,10 +39,7 @@ impl TypedStringValue {
     }
 
     /// 创建带目标类型的字符串值。
-    pub fn with_target_type(
-        value: impl Into<String>,
-        target_type_name: impl Into<String>,
-    ) -> Self {
+    pub fn with_target_type(value: impl Into<String>, target_type_name: impl Into<String>) -> Self {
         Self {
             value: value.into(),
             target_type_name: Some(target_type_name.into()),

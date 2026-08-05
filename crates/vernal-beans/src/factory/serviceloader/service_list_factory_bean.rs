@@ -13,7 +13,6 @@
 //! - 插件系统中的多实现加载
 //! - 事件监听器的批量注册
 
-
 /// ServiceListFactoryBean — Spring 风格的服务列表工厂 Bean。
 ///
 /// 对应 Java 类：`org.springframework.beans.factory.serviceloader.ServiceListFactoryBean`。
@@ -154,11 +153,7 @@ mod tests {
     #[test]
     fn register_implementations_batch() {
         let mut factory = ServiceListFactoryBean::new("Logger");
-        factory.register_implementations(vec![
-            "A".to_string(),
-            "B".to_string(),
-            "C".to_string(),
-        ]);
+        factory.register_implementations(vec!["A".to_string(), "B".to_string(), "C".to_string()]);
         assert_eq!(factory.implementation_count(), 3);
     }
 

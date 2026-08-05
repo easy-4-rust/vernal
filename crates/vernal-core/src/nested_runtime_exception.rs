@@ -69,13 +69,19 @@ impl NestedRuntimeException {
 impl fmt::Display for NestedRuntimeException {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let cause_text = self.cause.as_deref().map(ToString::to_string);
-        write!(f, "{}", NestedExceptionUtils::build_message(&self.message, cause_text.as_deref()))
+        write!(
+            f,
+            "{}",
+            NestedExceptionUtils::build_message(&self.message, cause_text.as_deref())
+        )
     }
 }
 
 impl std::error::Error for NestedRuntimeException {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        self.cause.as_deref().map(|c| c as &(dyn std::error::Error + 'static))
+        self.cause
+            .as_deref()
+            .map(|c| c as &(dyn std::error::Error + 'static))
     }
 }
 

@@ -49,7 +49,8 @@ impl ServiceLocatorFactoryBean {
         method_name: impl Into<String>,
         bean_name: impl Into<String>,
     ) {
-        self.service_mapping.insert(method_name.into(), bean_name.into());
+        self.service_mapping
+            .insert(method_name.into(), bean_name.into());
     }
 
     /// 获取服务映射。
@@ -70,7 +71,10 @@ mod tests {
     #[test]
     fn test_service_locator_factory_bean_new() {
         let factory = ServiceLocatorFactoryBean::new("com.example.ServiceLocator");
-        assert_eq!(factory.service_locator_interface(), "com.example.ServiceLocator");
+        assert_eq!(
+            factory.service_locator_interface(),
+            "com.example.ServiceLocator"
+        );
         assert!(factory.service_mapping().is_empty());
     }
 
@@ -81,7 +85,10 @@ mod tests {
         factory.add_service_mapping("getOrderService", "orderService");
 
         assert_eq!(factory.get_bean_name("getUserService"), Some("userService"));
-        assert_eq!(factory.get_bean_name("getOrderService"), Some("orderService"));
+        assert_eq!(
+            factory.get_bean_name("getOrderService"),
+            Some("orderService")
+        );
         assert_eq!(factory.get_bean_name("getUnknown"), None);
     }
 

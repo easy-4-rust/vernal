@@ -2,7 +2,9 @@
 
 use std::{any::Any, fmt, sync::Arc};
 
-use crate::{ComponentKey, Qualifier, TraitKey, factory::parsing::component_definition::ErasedComponent};
+use crate::{
+    ComponentKey, Qualifier, TraitKey, factory::parsing::component_definition::ErasedComponent,
+};
 
 pub(crate) type ErasedTraitComponent = Arc<dyn Any + Send + Sync>;
 type TraitUpcast =

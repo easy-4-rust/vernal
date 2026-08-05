@@ -61,20 +61,23 @@ impl EntityResolver for DelegatingEntityResolver {
             Ok(ResolvedEntity {
                 public_id: public_id.map(String::from),
                 system_id: system_id.to_string(),
-                content: format!("<!-- DTD resolved by {} -->", self.dtd_resolver_name).into_bytes(),
+                content: format!("<!-- DTD resolved by {} -->", self.dtd_resolver_name)
+                    .into_bytes(),
             })
         } else if system_id.ends_with(".xsd") || system_id.contains("xsd") {
             // 委托给 XSD 解析器
             Ok(ResolvedEntity {
                 public_id: public_id.map(String::from),
                 system_id: system_id.to_string(),
-                content: format!("<!-- XSD resolved by {} -->", self.xsd_resolver_name).into_bytes(),
+                content: format!("<!-- XSD resolved by {} -->", self.xsd_resolver_name)
+                    .into_bytes(),
             })
         } else {
             Err(format!(
                 "DelegatingEntityResolver: cannot resolve entity with system_id '{}'",
                 system_id
-            ).into())
+            )
+            .into())
         }
     }
 }

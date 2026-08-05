@@ -72,8 +72,16 @@ fn projection_parse() {
 
 #[test]
 fn matches_simple() {
-    assert_eval("'abc' matches '[a-z]+'", ExpressionValue::Boolean(true), None);
-    assert_eval("'123' matches '[a-z]+'", ExpressionValue::Boolean(false), None);
+    assert_eval(
+        "'abc' matches '[a-z]+'",
+        ExpressionValue::Boolean(true),
+        None,
+    );
+    assert_eval(
+        "'123' matches '[a-z]+'",
+        ExpressionValue::Boolean(false),
+        None,
+    );
 }
 
 #[test]
@@ -126,7 +134,9 @@ fn between_parse_only() {
 #[test]
 fn instanceof_without_type_locator_fallback() {
     let parser = SpelExpressionParser::new();
-    let parsed = parser.parse_expression("'hello' instanceof T(String)").unwrap();
+    let parsed = parser
+        .parse_expression("'hello' instanceof T(String)")
+        .unwrap();
     let ctx = StandardEvaluationContext::new(TypedValue::null());
     // TypeLocator 未配置时回退到 ExpressionValue 变体匹配
     let result = parsed.get_value_with_context(&ctx).unwrap();
@@ -165,7 +175,11 @@ fn assign_parse_success() {
 
 #[test]
 fn ternary_basic() {
-    assert_eval("true ? 'yes' : 'no'", ExpressionValue::String("yes".to_string()), None);
+    assert_eval(
+        "true ? 'yes' : 'no'",
+        ExpressionValue::String("yes".to_string()),
+        None,
+    );
     assert_eval(
         "false ? 'yes' : 'no'",
         ExpressionValue::String("no".to_string()),
@@ -227,7 +241,11 @@ fn power_basic_float() {
 
 #[test]
 fn elvis_basic() {
-    assert_eval("'value' ?: 'default'", ExpressionValue::String("value".to_string()), None);
+    assert_eval(
+        "'value' ?: 'default'",
+        ExpressionValue::String("value".to_string()),
+        None,
+    );
 }
 
 // ══════════════════════════════════════════════════════════════════════════════

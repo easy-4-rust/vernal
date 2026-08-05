@@ -83,7 +83,10 @@ mod tests {
         args.add_option_arg("port", "8080");
         args.add_option_arg("port", "9090");
         assert!(args.contains_option("port"));
-        assert_eq!(args.option_values("port").unwrap(), &vec!["8080".to_string(), "9090".to_string()]);
+        assert_eq!(
+            args.option_values("port").unwrap(),
+            &vec!["8080".to_string(), "9090".to_string()]
+        );
     }
 
     #[test]

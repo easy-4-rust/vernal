@@ -6,8 +6,8 @@
 
 use std::sync::Arc;
 
-use crate::factory::config::bean_post_processor::BeanPostProcessor;
 use crate::bean_scope::BeanScope;
+use crate::factory::config::bean_post_processor::BeanPostProcessor;
 use crate::factory::hierarchical_bean_factory::HierarchicalBeanFactory;
 
 /// 标准 singleton 作用域名称：`"singleton"`。

@@ -69,9 +69,7 @@ mod tests {
 
         impl<'a> ConfigurableObjectWithLifetime for TestDomainObjectWithLifetime<'a> {}
 
-        let obj = TestDomainObjectWithLifetime {
-            name: "test",
-        };
+        let obj = TestDomainObjectWithLifetime { name: "test" };
         assert!(obj.get_config_info().is_none());
     }
 
@@ -120,8 +118,12 @@ mod tests {
     fn test_configurable_object_hash() {
         use std::collections::HashMap;
         let mut map = HashMap::new();
-        let obj1 = TestDomainObject { name: "foo".to_string() };
-        let obj2 = TestDomainObject { name: "bar".to_string() };
+        let obj1 = TestDomainObject {
+            name: "foo".to_string(),
+        };
+        let obj2 = TestDomainObject {
+            name: "bar".to_string(),
+        };
         map.insert(obj1, 1);
         map.insert(obj2, 2);
         assert_eq!(map.len(), 2);

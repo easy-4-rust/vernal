@@ -123,7 +123,10 @@ mod tests {
 
         let overrides = configurer.get_bean_property_overrides("dataSource");
         assert_eq!(overrides.len(), 2);
-        assert_eq!(overrides.get("url"), Some(&"jdbc:mysql://localhost/mydb".to_string()));
+        assert_eq!(
+            overrides.get("url"),
+            Some(&"jdbc:mysql://localhost/mydb".to_string())
+        );
         assert_eq!(overrides.get("username"), Some(&"root".to_string()));
     }
 }

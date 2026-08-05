@@ -74,7 +74,9 @@ impl TypeComparator for StandardTypeComparator {
         if Self::is_number(l) && Self::is_number(r) {
             let wide_f64_l = Self::to_f64(l).unwrap_or(0.0);
             let wide_f64_r = Self::to_f64(r).unwrap_or(0.0);
-            return Ok(wide_f64_l.partial_cmp(&wide_f64_r).unwrap_or(Ordering::Equal));
+            return Ok(wide_f64_l
+                .partial_cmp(&wide_f64_r)
+                .unwrap_or(Ordering::Equal));
         }
 
         // 字符串字典序
@@ -108,7 +110,10 @@ mod tests {
     }
 
     fn make_string(s: &str) -> TypedValue {
-        TypedValue::new(ExpressionValue::String(s.to_string()), TypeDescriptor::STRING)
+        TypedValue::new(
+            ExpressionValue::String(s.to_string()),
+            TypeDescriptor::STRING,
+        )
     }
 
     fn make_bool(b: bool) -> TypedValue {
@@ -118,15 +123,21 @@ mod tests {
     #[test]
     fn same_type_int() {
         assert_eq!(
-            StandardTypeComparator.compare(&make_int(3), &make_int(5)).unwrap(),
+            StandardTypeComparator
+                .compare(&make_int(3), &make_int(5))
+                .unwrap(),
             Ordering::Less
         );
         assert_eq!(
-            StandardTypeComparator.compare(&make_int(5), &make_int(5)).unwrap(),
+            StandardTypeComparator
+                .compare(&make_int(5), &make_int(5))
+                .unwrap(),
             Ordering::Equal
         );
         assert_eq!(
-            StandardTypeComparator.compare(&make_int(7), &make_int(3)).unwrap(),
+            StandardTypeComparator
+                .compare(&make_int(7), &make_int(3))
+                .unwrap(),
             Ordering::Greater
         );
     }
@@ -134,11 +145,15 @@ mod tests {
     #[test]
     fn mixed_int_float() {
         assert_eq!(
-            StandardTypeComparator.compare(&make_int(3), &make_float(5.0)).unwrap(),
+            StandardTypeComparator
+                .compare(&make_int(3), &make_float(5.0))
+                .unwrap(),
             Ordering::Less
         );
         assert_eq!(
-            StandardTypeComparator.compare(&make_float(5.0), &make_int(3)).unwrap(),
+            StandardTypeComparator
+                .compare(&make_float(5.0), &make_int(3))
+                .unwrap(),
             Ordering::Greater
         );
     }
@@ -146,11 +161,15 @@ mod tests {
     #[test]
     fn strings() {
         assert_eq!(
-            StandardTypeComparator.compare(&make_string("abc"), &make_string("def")).unwrap(),
+            StandardTypeComparator
+                .compare(&make_string("abc"), &make_string("def"))
+                .unwrap(),
             Ordering::Less
         );
         assert_eq!(
-            StandardTypeComparator.compare(&make_string("abc"), &make_string("abc")).unwrap(),
+            StandardTypeComparator
+                .compare(&make_string("abc"), &make_string("abc"))
+                .unwrap(),
             Ordering::Equal
         );
     }
@@ -158,7 +177,9 @@ mod tests {
     #[test]
     fn booleans() {
         assert_eq!(
-            StandardTypeComparator.compare(&make_bool(false), &make_bool(true)).unwrap(),
+            StandardTypeComparator
+                .compare(&make_bool(false), &make_bool(true))
+                .unwrap(),
             Ordering::Less
         );
     }

@@ -87,15 +87,18 @@ impl Error for PlaceholderResolutionException {
 }
 
 /// 从 [`super::property_placeholder_helper::PlaceholderError`] 转换。
-impl From<&super::property_placeholder_helper::PlaceholderError> for PlaceholderResolutionException {
+impl From<&super::property_placeholder_helper::PlaceholderError>
+    for PlaceholderResolutionException
+{
     fn from(err: &super::property_placeholder_helper::PlaceholderError) -> Self {
         match err {
-            super::property_placeholder_helper::PlaceholderError::UnresolvedPlaceholder { placeholder } => {
-                Self::new(placeholder.clone(), "unresolved placeholder")
-            }
-            super::property_placeholder_helper::PlaceholderError::InvalidSyntax { input, reason } => {
-                Self::new(input.clone(), format!("invalid syntax: {reason}"))
-            }
+            super::property_placeholder_helper::PlaceholderError::UnresolvedPlaceholder {
+                placeholder,
+            } => Self::new(placeholder.clone(), "unresolved placeholder"),
+            super::property_placeholder_helper::PlaceholderError::InvalidSyntax {
+                input,
+                reason,
+            } => Self::new(input.clone(), format!("invalid syntax: {reason}")),
         }
     }
 }
@@ -123,19 +126,17 @@ mod tests {
     #[test]
     fn with_source_has_cause() {
         let io_err = std::io::Error::other("disk read failed");
-        let err = PlaceholderResolutionException::with_source(
-            "${config}",
-            "io error",
-            Box::new(io_err),
-        );
+        let err =
+            PlaceholderResolutionException::with_source("${config}", "io error", Box::new(io_err));
         assert!(err.source().is_some());
     }
 
     #[test]
     fn from_placeholder_error_unresolved() {
-        let pe = super::super::property_placeholder_helper::PlaceholderError::UnresolvedPlaceholder {
-            placeholder: "${missing}".to_string(),
-        };
+        let pe =
+            super::super::property_placeholder_helper::PlaceholderError::UnresolvedPlaceholder {
+                placeholder: "${missing}".to_string(),
+            };
         let pre: PlaceholderResolutionException = (&pe).into();
         assert_eq!(pre.placeholder(), "${missing}");
         assert!(pre.message().contains("unresolved"));

@@ -44,7 +44,11 @@ impl BeanNameAwareProcessor {
 
     /// 检查指定 Bean 是否已被处理。
     pub fn is_processed(&self, bean_name: &str) -> bool {
-        self.processed_beans.lock().unwrap().iter().any(|n| n == bean_name)
+        self.processed_beans
+            .lock()
+            .unwrap()
+            .iter()
+            .any(|n| n == bean_name)
     }
 
     /// 清空已处理记录。
@@ -62,7 +66,10 @@ impl BeanPostProcessor for BeanNameAwareProcessor {
         // 在实际实现中，这里会检查 Bean 是否实现了 BeanNameAware
         // 如果是，则调用 set_bean_name(bean_name)
 
-        self.processed_beans.lock().unwrap().push(bean_name.to_string());
+        self.processed_beans
+            .lock()
+            .unwrap()
+            .push(bean_name.to_string());
 
         Ok(Some(bean))
     }

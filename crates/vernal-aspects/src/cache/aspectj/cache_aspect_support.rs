@@ -77,7 +77,10 @@ impl<S: CacheOperationSource> std::fmt::Debug for CacheAspectSupport<S> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("CacheAspectSupport")
             .field("cache_manager", &self.cache_manager.is_some())
-            .field("default_cache_manager_name", &self.default_cache_manager_name)
+            .field(
+                "default_cache_manager_name",
+                &self.default_cache_manager_name,
+            )
             .field("error_handler", &self.error_handler.is_some())
             .finish()
     }
@@ -214,8 +217,8 @@ impl<S: CacheOperationSource> CacheAspectSupport<S> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cache::aspectj::cache_operation_source::AnnotationCacheOperationSource;
     use crate::cache::aspectj::cache_operation::CacheOperation;
+    use crate::cache::aspectj::cache_operation_source::AnnotationCacheOperationSource;
 
     struct MockInvoker;
 
@@ -438,7 +441,10 @@ mod tests {
         assert!(matches!(hit1, CacheResult::Hit(_)));
         assert!(matches!(hit2, CacheResult::Hit(_)));
         assert!(matches!(CacheResult::Miss, CacheResult::Miss));
-        assert!(matches!(CacheResult::Error("err".to_string()), CacheResult::Error(_)));
+        assert!(matches!(
+            CacheResult::Error("err".to_string()),
+            CacheResult::Error(_)
+        ));
     }
 
     #[test]

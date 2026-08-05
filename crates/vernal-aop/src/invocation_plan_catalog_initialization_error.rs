@@ -25,7 +25,10 @@ mod tests {
     #[test]
     fn error_display() {
         let err = InvocationPlanCatalogInitializationError;
-        assert_eq!(format!("{}", err), "invocation plan catalog is already initialized");
+        assert_eq!(
+            format!("{}", err),
+            "invocation plan catalog is already initialized"
+        );
     }
 
     #[test]

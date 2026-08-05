@@ -229,7 +229,8 @@ mod additional_tests {
 
     #[test]
     fn from_boxed_error() {
-        let error: Box<dyn Error + Send + Sync> = Box::new(io::Error::new(io::ErrorKind::Other, "test"));
+        let error: Box<dyn Error + Send + Sync> =
+            Box::new(io::Error::new(io::ErrorKind::Other, "test"));
         let aspect_error: AspectError = error.into();
         assert!(matches!(aspect_error, AspectError::Custom(_)));
     }

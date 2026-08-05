@@ -2,8 +2,8 @@
 //!
 //! 对应 spring-aop `org.springframework.aop.framework.DefaultAopProxyFactory`。
 
-use super::aop_proxy::{AopProxy, AopProxyError, AopProxyFactory};
 use super::advised_support::AdvisedSupport;
+use super::aop_proxy::{AopProxy, AopProxyError, AopProxyFactory};
 
 /// 默认 AOP 代理工厂。
 ///
@@ -51,7 +51,10 @@ impl Default for DefaultAopProxyFactory {
 }
 
 impl AopProxyFactory for DefaultAopProxyFactory {
-    fn create_aop_proxy(&self, _target: Box<dyn std::any::Any>) -> Result<Box<dyn AopProxy>, AopProxyError> {
+    fn create_aop_proxy(
+        &self,
+        _target: Box<dyn std::any::Any>,
+    ) -> Result<Box<dyn AopProxy>, AopProxyError> {
         // 在 Rust 中，代理创建由过程宏完成
         // 这里返回错误，表示需要使用 #[aspect] 宏
         Err(AopProxyError::CreationFailed(

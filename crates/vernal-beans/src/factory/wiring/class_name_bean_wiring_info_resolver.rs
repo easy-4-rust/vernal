@@ -245,7 +245,9 @@ mod tests {
         let resolver = ClassNameBeanWiringInfoResolver::with_short_name();
         assert!(resolver.is_use_short_name());
 
-        let info = resolver.resolve_by_class_name("com.example.MyBean").unwrap();
+        let info = resolver
+            .resolve_by_class_name("com.example.MyBean")
+            .unwrap();
         assert_eq!(info.get_type_name(), "MyBean");
     }
 
@@ -255,7 +257,11 @@ mod tests {
         assert_eq!(resolver.class_name_prefix(), Some("com.example"));
 
         // 匹配前缀
-        assert!(resolver.resolve_by_class_name("com.example.MyBean").is_some());
+        assert!(
+            resolver
+                .resolve_by_class_name("com.example.MyBean")
+                .is_some()
+        );
         // 不匹配前缀
         assert!(resolver.resolve_by_class_name("org.other.Bean").is_none());
     }
@@ -271,10 +277,7 @@ mod tests {
     #[test]
     fn register_manual_mapping() {
         let resolver = ClassNameBeanWiringInfoResolver::new();
-        resolver.register_mapping(
-            "com.example.MyBean".to_string(),
-            "myBean".to_string(),
-        );
+        resolver.register_mapping("com.example.MyBean".to_string(), "myBean".to_string());
 
         assert_eq!(
             resolver.cached_bean_name("com.example.MyBean"),

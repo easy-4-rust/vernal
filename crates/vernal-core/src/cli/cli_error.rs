@@ -15,7 +15,9 @@ impl CliError {
     /// 创建新的 CLI 错误。
     #[must_use]
     pub fn new(message: impl Into<String>) -> Self {
-        Self { message: message.into() }
+        Self {
+            message: message.into(),
+        }
     }
 }
 

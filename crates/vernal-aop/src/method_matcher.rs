@@ -171,7 +171,8 @@ mod tests {
 
     #[test]
     fn static_method_matcher() {
-        let matcher = MethodMatcherFactory::from_fn(|op: &Operation| op.method().starts_with("get"));
+        let matcher =
+            MethodMatcherFactory::from_fn(|op: &Operation| op.method().starts_with("get"));
         let get_op = Operation::new("Service", "getUser");
         let set_op = Operation::new("Service", "setUser");
 
@@ -217,49 +218,45 @@ mod additional_tests {
 
     #[test]
     fn static_method_matcher_is_runtime() {
-        let matcher = MethodMatcherFactory::from_fn(|op: &Operation| op.method().starts_with("get"));
+        let matcher =
+            MethodMatcherFactory::from_fn(|op: &Operation| op.method().starts_with("get"));
         assert!(!matcher.is_runtime());
     }
 
     #[test]
     fn static_method_matcher_matches() {
-        let matcher = MethodMatcherFactory::from_fn(|op: &Operation| op.method().starts_with("get"));
+        let matcher =
+            MethodMatcherFactory::from_fn(|op: &Operation| op.method().starts_with("get"));
         let op = Operation::new("Service", "getUser");
         assert!(matcher.matches(&op));
     }
 
     #[test]
     fn static_method_matcher_no_match() {
-        let matcher = MethodMatcherFactory::from_fn(|op: &Operation| op.method().starts_with("get"));
+        let matcher =
+            MethodMatcherFactory::from_fn(|op: &Operation| op.method().starts_with("get"));
         let op = Operation::new("Service", "setUser");
         assert!(!matcher.matches(&op));
     }
 
     #[test]
     fn dynamic_method_matcher_is_runtime() {
-        let matcher = MethodMatcherFactory::dynamic(
-            |_op| true,
-            |_op, _args| true,
-        );
+        let matcher = MethodMatcherFactory::dynamic(|_op| true, |_op, _args| true);
         assert!(matcher.is_runtime());
     }
 
     #[test]
     fn dynamic_method_matcher_matches_static() {
-        let matcher = MethodMatcherFactory::dynamic(
-            |op| op.method().starts_with("get"),
-            |_op, _args| true,
-        );
+        let matcher =
+            MethodMatcherFactory::dynamic(|op| op.method().starts_with("get"), |_op, _args| true);
         let op = Operation::new("Service", "getUser");
         assert!(matcher.matches(&op));
     }
 
     #[test]
     fn dynamic_method_matcher_no_match_static() {
-        let matcher = MethodMatcherFactory::dynamic(
-            |op| op.method().starts_with("get"),
-            |_op, _args| true,
-        );
+        let matcher =
+            MethodMatcherFactory::dynamic(|op| op.method().starts_with("get"), |_op, _args| true);
         let op = Operation::new("Service", "setUser");
         assert!(!matcher.matches(&op));
     }

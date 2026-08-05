@@ -38,11 +38,20 @@ impl AsyncUncaughtExceptionHandler for DefaultAsyncUncaughtExceptionHandler {
         _args: &[Box<dyn Any + Send + Sync>],
     ) {
         if let Some(msg) = exception.downcast_ref::<&str>() {
-            eprintln!("[AsyncUncaughtExceptionHandler] Method '{}' threw exception: {}", method_name, msg);
+            eprintln!(
+                "[AsyncUncaughtExceptionHandler] Method '{}' threw exception: {}",
+                method_name, msg
+            );
         } else if let Some(msg) = exception.downcast_ref::<String>() {
-            eprintln!("[AsyncUncaughtExceptionHandler] Method '{}' threw exception: {}", method_name, msg);
+            eprintln!(
+                "[AsyncUncaughtExceptionHandler] Method '{}' threw exception: {}",
+                method_name, msg
+            );
         } else {
-            eprintln!("[AsyncUncaughtExceptionHandler] Method '{}' threw an unknown exception", method_name);
+            eprintln!(
+                "[AsyncUncaughtExceptionHandler] Method '{}' threw an unknown exception",
+                method_name
+            );
         }
     }
 }
@@ -73,10 +82,8 @@ mod tests {
     #[test]
     fn test_default_handler_with_args() {
         let handler = DefaultAsyncUncaughtExceptionHandler;
-        let args: Vec<Box<dyn std::any::Any + Send + Sync>> = vec![
-            Box::new(42),
-            Box::new("test".to_string()),
-        ];
+        let args: Vec<Box<dyn std::any::Any + Send + Sync>> =
+            vec![Box::new(42), Box::new("test".to_string())];
         handler.handle_uncaught_exception(&"error", "testMethod", &args);
     }
 

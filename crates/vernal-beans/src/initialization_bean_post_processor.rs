@@ -44,7 +44,11 @@ impl InitializationBeanPostProcessor {
 
     /// 检查指定 Bean 是否已被处理。
     pub fn is_processed(&self, bean_name: &str) -> bool {
-        self.processed_beans.lock().unwrap().iter().any(|n| n == bean_name)
+        self.processed_beans
+            .lock()
+            .unwrap()
+            .iter()
+            .any(|n| n == bean_name)
     }
 
     /// 清空已处理记录。
@@ -60,7 +64,10 @@ impl BeanPostProcessor for InitializationBeanPostProcessor {
         bean_name: &str,
     ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>> {
         // 记录已处理的 Bean
-        self.processed_beans.lock().unwrap().push(bean_name.to_string());
+        self.processed_beans
+            .lock()
+            .unwrap()
+            .push(bean_name.to_string());
 
         // 在实际实现中，这里会检查 Bean 是否实现了 InitializingBean
         // 并调用 afterPropertiesSet()

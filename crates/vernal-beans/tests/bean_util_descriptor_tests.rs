@@ -65,7 +65,7 @@ fn bean_util_copy_properties_failure() {
 
     #[derive(Deserialize, Debug)]
     #[allow(dead_code)]
-        struct Incompatible {
+    struct Incompatible {
         name: String,
         // 缺少 age 和 active 字段，serde 默认会失败
     }
@@ -211,7 +211,7 @@ fn bean_util_is_optional() {
         "test",
         TypeId::of::<String>(),
         "String",
-        true,  // optional
+        true, // optional
         false,
     );
     assert!(BeanUtil::is_optional(&prop));
@@ -313,9 +313,7 @@ impl BeanDescriptor for TestBeanDescriptor {
 
 #[test]
 fn bean_descriptor_name() {
-    let descriptor = TestBeanDescriptor {
-        props: vec![],
-    };
+    let descriptor = TestBeanDescriptor { props: vec![] };
     assert_eq!(descriptor.name(), "TestBean");
 }
 
@@ -343,9 +341,13 @@ fn bean_descriptor_find_property_found() {
 
 #[test]
 fn bean_descriptor_find_property_not_found() {
-    let props = vec![
-        PropertyDescriptor::new("name", TypeId::of::<String>(), "String", false, false),
-    ];
+    let props = vec![PropertyDescriptor::new(
+        "name",
+        TypeId::of::<String>(),
+        "String",
+        false,
+        false,
+    )];
     let descriptor = TestBeanDescriptor { props };
     let found = descriptor.find_property("missing");
     assert!(found.is_none());
@@ -355,13 +357,7 @@ fn bean_descriptor_find_property_not_found() {
 
 #[test]
 fn property_descriptor_new() {
-    let prop = PropertyDescriptor::new(
-        "test_prop",
-        TypeId::of::<String>(),
-        "String",
-        true,
-        false,
-    );
+    let prop = PropertyDescriptor::new("test_prop", TypeId::of::<String>(), "String", true, false);
     assert_eq!(prop.name, "test_prop");
     assert_eq!(prop.type_id, TypeId::of::<String>());
     assert_eq!(prop.type_name, "String");
@@ -371,13 +367,7 @@ fn property_descriptor_new() {
 
 #[test]
 fn property_descriptor_debug() {
-    let prop = PropertyDescriptor::new(
-        "debug_prop",
-        TypeId::of::<i32>(),
-        "i32",
-        false,
-        true,
-    );
+    let prop = PropertyDescriptor::new("debug_prop", TypeId::of::<i32>(), "i32", false, true);
     let debug = format!("{:?}", prop);
     assert!(debug.contains("debug_prop"));
     assert!(debug.contains("i32"));
@@ -385,13 +375,7 @@ fn property_descriptor_debug() {
 
 #[test]
 fn property_descriptor_clone() {
-    let prop = PropertyDescriptor::new(
-        "clone_prop",
-        TypeId::of::<bool>(),
-        "bool",
-        false,
-        false,
-    );
+    let prop = PropertyDescriptor::new("clone_prop", TypeId::of::<bool>(), "bool", false, false);
     let cloned = prop.clone();
     assert_eq!(prop.name, cloned.name);
     assert_eq!(prop.type_id, cloned.type_id);

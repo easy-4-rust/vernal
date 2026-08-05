@@ -205,12 +205,7 @@ mod tests {
 
     #[test]
     fn test_method_metadata() {
-        let meta = MethodMetadata::new(
-            "com.example.Foo",
-            "bar",
-            vec!["String", "int"],
-            "void",
-        );
+        let meta = MethodMetadata::new("com.example.Foo", "bar", vec!["String", "int"], "void");
         assert_eq!(meta.qualified_name(), "com.example.Foo#bar(String, int)");
         assert_eq!(meta.simple_signature(), "bar(String, int)");
     }
@@ -230,10 +225,7 @@ mod tests {
             propagation: Propagation::RequiresNew,
             ..Default::default()
         };
-        source.register_method(
-            "com.example.Foo#bar(String, int)".to_string(),
-            attr.clone(),
-        );
+        source.register_method("com.example.Foo#bar(String, int)".to_string(), attr.clone());
 
         let meta = MethodMetadata::new("com.example.Foo", "bar", vec!["String", "int"], "void");
         let found = source.get_transaction_attribute(&meta);
@@ -281,10 +273,7 @@ mod tests {
             read_only: false,
             ..Default::default()
         };
-        source.register_method(
-            "com.example.Foo#bar(String, int)".to_string(),
-            method_attr,
-        );
+        source.register_method("com.example.Foo#bar(String, int)".to_string(), method_attr);
 
         let meta = MethodMetadata::new("com.example.Foo", "bar", vec!["String", "int"], "void");
         let found = source.get_transaction_attribute(&meta);

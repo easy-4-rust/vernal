@@ -61,11 +61,7 @@ impl Problem {
     /// - `severity` — 严重级别
     /// - `message` — 问题描述
     /// - `location` — 问题发生的位置
-    pub fn new(
-        severity: ProblemSeverity,
-        message: impl Into<String>,
-        location: Location,
-    ) -> Self {
+    pub fn new(severity: ProblemSeverity, message: impl Into<String>, location: Location) -> Self {
         Self {
             severity,
             message: message.into(),
@@ -140,7 +136,7 @@ impl fmt::Display for ProblemSeverity {
             ProblemSeverity::Warning => write!(f, "WARNING"),
             ProblemSeverity::Error => write!(f, "ERROR"),
         }
-        }
+    }
 }
 
 #[cfg(test)]
@@ -182,8 +178,7 @@ mod tests {
     #[test]
     fn test_problem_with_resource_description() {
         let loc = Location::UNKNOWN;
-        let p = Problem::error("fail", loc)
-            .with_resource_description("BeanDefinition");
+        let p = Problem::error("fail", loc).with_resource_description("BeanDefinition");
         assert_eq!(p.resource_description(), Some("BeanDefinition"));
     }
 }

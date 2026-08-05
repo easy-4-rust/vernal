@@ -56,7 +56,9 @@ impl DefaultListableBeanFactory {
     ///
     /// 对应 Spring 的类型索引维护。
     pub fn register_type_mapping(&self, type_id: std::any::TypeId, bean_name: String) {
-        self.beans_of_type.lock().unwrap()
+        self.beans_of_type
+            .lock()
+            .unwrap()
             .entry(type_id)
             .or_default()
             .push(bean_name);
@@ -64,7 +66,9 @@ impl DefaultListableBeanFactory {
 
     /// 按类型查找 Bean 名称列表。
     pub fn get_bean_names_for_type(&self, type_id: std::any::TypeId) -> Vec<String> {
-        self.beans_of_type.lock().unwrap()
+        self.beans_of_type
+            .lock()
+            .unwrap()
             .get(&type_id)
             .cloned()
             .unwrap_or_default()
@@ -76,14 +80,22 @@ impl DefaultListableBeanFactory {
     }
 
     /// 注册依赖描述符。
-    pub fn register_dependency_descriptor(&self, bean_name: String, descriptor: DependencyDescriptor) {
-        self.dependency_descriptors.lock().unwrap()
+    pub fn register_dependency_descriptor(
+        &self,
+        bean_name: String,
+        descriptor: DependencyDescriptor,
+    ) {
+        self.dependency_descriptors
+            .lock()
+            .unwrap()
             .insert(bean_name, descriptor);
     }
 
     /// 获取依赖描述符。
     pub fn get_dependency_descriptor(&self, bean_name: &str) -> Option<DependencyDescriptor> {
-        self.dependency_descriptors.lock().unwrap()
+        self.dependency_descriptors
+            .lock()
+            .unwrap()
             .get(bean_name)
             .cloned()
     }
@@ -115,7 +127,9 @@ impl DefaultListableBeanFactory {
 }
 
 impl Default for DefaultListableBeanFactory {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 /// 简单的自动装配候选解析器。
@@ -123,7 +137,9 @@ pub struct SimpleAutowireCandidateResolver;
 
 impl SimpleAutowireCandidateResolver {
     /// 创建一个新的实例。
-    pub fn new() -> Self { Self }
+    pub fn new() -> Self {
+        Self
+    }
 }
 
 impl AutowireCandidateResolver for SimpleAutowireCandidateResolver {
@@ -238,9 +254,21 @@ mod tests {
         factory.register_type_mapping(TypeId::of::<String>(), "s2".to_string());
 
         assert_eq!(factory.type_mapping_count(), 2);
-        assert_eq!(factory.get_bean_names_for_type(TypeId::of::<String>()).len(), 2);
-        assert_eq!(factory.get_bean_names_for_type(TypeId::of::<i32>()).len(), 1);
-        assert!(factory.get_bean_names_for_type(TypeId::of::<f64>()).is_empty());
+        assert_eq!(
+            factory
+                .get_bean_names_for_type(TypeId::of::<String>())
+                .len(),
+            2
+        );
+        assert_eq!(
+            factory.get_bean_names_for_type(TypeId::of::<i32>()).len(),
+            1
+        );
+        assert!(
+            factory
+                .get_bean_names_for_type(TypeId::of::<f64>())
+                .is_empty()
+        );
     }
 
     #[test]

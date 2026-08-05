@@ -109,7 +109,10 @@ mod tests {
         let val: Arc<dyn Any + Send + Sync> = Arc::new("Asia/Shanghai".to_string());
         editor.set_value(val);
         let retrieved = editor.get_value().unwrap();
-        assert_eq!(*retrieved.downcast_ref::<String>().unwrap(), "Asia/Shanghai");
+        assert_eq!(
+            *retrieved.downcast_ref::<String>().unwrap(),
+            "Asia/Shanghai"
+        );
     }
 
     #[test]

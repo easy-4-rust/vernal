@@ -35,7 +35,6 @@ where
             _marker: std::marker::PhantomData,
         }
     }
-
 }
 
 fn compare_keys<R>(left: &R, right: &R) -> Ordering

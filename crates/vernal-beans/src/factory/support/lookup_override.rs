@@ -50,18 +50,28 @@ impl LookupOverride {
     }
 
     /// 获取被覆盖的方法名。
-    pub fn get_method_name(&self) -> &str { &self.method_name }
+    pub fn get_method_name(&self) -> &str {
+        &self.method_name
+    }
 
     /// 获取查找的 Bean 名称。
-    pub fn get_bean_name(&self) -> &str { &self.bean_name }
+    pub fn get_bean_name(&self) -> &str {
+        &self.bean_name
+    }
 
     /// 是否使用类型匹配。
-    pub fn is_type_based_lookup(&self) -> bool { self.use_type_based_lookup }
+    pub fn is_type_based_lookup(&self) -> bool {
+        self.use_type_based_lookup
+    }
 }
 
 impl MethodOverride for LookupOverride {
-    fn get_method_name(&self) -> &str { &self.method_name }
-    fn is_applicable(&self) -> bool { true }
+    fn get_method_name(&self) -> &str {
+        &self.method_name
+    }
+    fn is_applicable(&self) -> bool {
+        true
+    }
 }
 
 #[cfg(test)]

@@ -191,7 +191,10 @@ impl GroovyBeanDefinitionReader {
 
     /// 获取所有 Bean 名称。
     pub fn bean_names(&self) -> Vec<&str> {
-        self.bean_definitions.iter().map(|d| d.name.as_str()).collect()
+        self.bean_definitions
+            .iter()
+            .map(|d| d.name.as_str())
+            .collect()
     }
 
     /// 获取指定 Bean 的类型名。
@@ -256,8 +259,7 @@ mod tests {
 
     #[test]
     fn define_single_bean() {
-        let reader = GroovyBeanDefinitionReader::new()
-            .bean("myService", "com.example.MyService");
+        let reader = GroovyBeanDefinitionReader::new().bean("myService", "com.example.MyService");
 
         assert_eq!(reader.bean_count(), 1);
         assert!(reader.contains_bean("myService"));
@@ -308,8 +310,7 @@ mod tests {
 
     #[test]
     fn singleton_by_default() {
-        let reader = GroovyBeanDefinitionReader::new()
-            .bean("single", "Type");
+        let reader = GroovyBeanDefinitionReader::new().bean("single", "Type");
 
         assert!(reader.is_singleton("single"));
     }

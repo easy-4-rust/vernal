@@ -11,15 +11,15 @@
 //! - serviceloader: ServiceLoader 集成
 //! - groovy: Groovy DSL 集成
 
-pub mod support;
-pub mod config;
 pub mod annotation;
 pub mod aot;
-pub mod parsing;
-pub mod xml;
-pub mod wiring;
-pub mod serviceloader;
+pub mod config;
 pub mod groovy;
+pub mod parsing;
+pub mod serviceloader;
+pub mod support;
+pub mod wiring;
+pub mod xml;
 
 // ── factory 根模块对象（从根 src/ 移入） ─────────────────────────────
 

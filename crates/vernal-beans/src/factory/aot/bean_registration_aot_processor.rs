@@ -5,8 +5,8 @@
 //! 在 AOT 阶段处理 Bean 定义，生成优化代码。
 
 use std::any::TypeId;
-use std::sync::Mutex;
 use std::collections::HashMap;
+use std::sync::Mutex;
 
 /// AOT 贡献（trait）。
 pub trait AotContribution: Send + Sync {
@@ -63,7 +63,9 @@ impl BeanRegistrationAotProcessor {
 }
 
 impl Default for BeanRegistrationAotProcessor {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 /// AOT 处理错误。
@@ -75,10 +77,14 @@ pub struct AotProcessingError {
 impl AotProcessingError {
     /// 创建一个新的实例。
     pub fn new(message: impl Into<String>) -> Self {
-        Self { message: message.into() }
+        Self {
+            message: message.into(),
+        }
     }
     /// 获取消息。
-    pub fn message(&self) -> &str { &self.message }
+    pub fn message(&self) -> &str {
+        &self.message
+    }
 }
 
 impl std::fmt::Display for AotProcessingError {
@@ -108,7 +114,9 @@ mod tests {
     #[test]
     fn process_adds_entry() {
         let processor = BeanRegistrationAotProcessor::new();
-        processor.process(TypeId::of::<String>(), "String".to_string()).unwrap();
+        processor
+            .process(TypeId::of::<String>(), "String".to_string())
+            .unwrap();
         assert_eq!(processor.processed_count(), 1);
         assert!(processor.contains(TypeId::of::<String>()));
     }
@@ -116,10 +124,17 @@ mod tests {
     #[test]
     fn process_overwrites_existing() {
         let processor = BeanRegistrationAotProcessor::new();
-        processor.process(TypeId::of::<String>(), "first".to_string()).unwrap();
-        processor.process(TypeId::of::<String>(), "second".to_string()).unwrap();
+        processor
+            .process(TypeId::of::<String>(), "first".to_string())
+            .unwrap();
+        processor
+            .process(TypeId::of::<String>(), "second".to_string())
+            .unwrap();
         assert_eq!(processor.processed_count(), 1);
-        assert_eq!(processor.get_processed(TypeId::of::<String>()).unwrap(), "second");
+        assert_eq!(
+            processor.get_processed(TypeId::of::<String>()).unwrap(),
+            "second"
+        );
     }
 
     #[test]
@@ -137,8 +152,12 @@ mod tests {
     #[test]
     fn clear_removes_all() {
         let processor = BeanRegistrationAotProcessor::new();
-        processor.process(TypeId::of::<String>(), "String".to_string()).unwrap();
-        processor.process(TypeId::of::<i32>(), "i32".to_string()).unwrap();
+        processor
+            .process(TypeId::of::<String>(), "String".to_string())
+            .unwrap();
+        processor
+            .process(TypeId::of::<i32>(), "i32".to_string())
+            .unwrap();
         assert_eq!(processor.processed_count(), 2);
         processor.clear();
         assert_eq!(processor.processed_count(), 0);
@@ -147,9 +166,15 @@ mod tests {
     #[test]
     fn process_multiple_types() {
         let processor = BeanRegistrationAotProcessor::new();
-        processor.process(TypeId::of::<String>(), "String".to_string()).unwrap();
-        processor.process(TypeId::of::<i32>(), "i32".to_string()).unwrap();
-        processor.process(TypeId::of::<bool>(), "bool".to_string()).unwrap();
+        processor
+            .process(TypeId::of::<String>(), "String".to_string())
+            .unwrap();
+        processor
+            .process(TypeId::of::<i32>(), "i32".to_string())
+            .unwrap();
+        processor
+            .process(TypeId::of::<bool>(), "bool".to_string())
+            .unwrap();
         assert_eq!(processor.processed_count(), 3);
         assert!(processor.contains(TypeId::of::<String>()));
         assert!(processor.contains(TypeId::of::<i32>()));

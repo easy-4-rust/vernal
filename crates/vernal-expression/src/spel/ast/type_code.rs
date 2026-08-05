@@ -60,7 +60,10 @@ impl TypeCode {
     /// 是否为整数类型。
     #[must_use]
     pub const fn is_integer(&self) -> bool {
-        matches!(self, Self::Byte | Self::Short | Self::Int | Self::Long | Self::BigInteger)
+        matches!(
+            self,
+            Self::Byte | Self::Short | Self::Int | Self::Long | Self::BigInteger
+        )
     }
 
     /// 是否为数字类型。

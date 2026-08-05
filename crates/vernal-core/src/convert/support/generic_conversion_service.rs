@@ -84,7 +84,8 @@ impl ConverterRegistry for GenericConversionService {
         target_type: TypeId,
         converter: crate::convert::converter::ErasedConverter,
     ) {
-        self.registry.add_converter(source_type, target_type, converter);
+        self.registry
+            .add_converter(source_type, target_type, converter);
     }
 
     fn remove_convertible(&self, source_type: TypeId, target_type: TypeId) {
@@ -112,17 +113,22 @@ mod tests {
     fn empty_registry_reports_not_registered() {
         // B 类（边界行为）：未注册类型对不可转换
         let service = GenericConversionService::new();
-        assert!(!service.registry().can_convert(
-            TypeId::of::<String>(),
-            TypeId::of::<bool>(),
-        ));
+        assert!(
+            !service
+                .registry()
+                .can_convert(TypeId::of::<String>(), TypeId::of::<bool>(),)
+        );
     }
 
     #[test]
     fn default_trait_creates_empty_service() {
         // D 类（重构安全）：Default 构造与 new 等价
         let service = GenericConversionService::default();
-        assert!(!service.registry().can_convert(TypeId::of::<String>(), TypeId::of::<bool>()));
+        assert!(
+            !service
+                .registry()
+                .can_convert(TypeId::of::<String>(), TypeId::of::<bool>())
+        );
     }
 
     #[test]

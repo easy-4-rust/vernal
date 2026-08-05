@@ -52,8 +52,10 @@ impl ConstructorResolver {
         args: &[Arc<dyn Any + Send + Sync>],
         factory: &dyn Fn(
             &[Arc<dyn Any + Send + Sync>],
-        )
-            -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>>,
+        ) -> Result<
+            Arc<dyn Any + Send + Sync>,
+            Box<dyn std::error::Error + Send + Sync>,
+        >,
     ) -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> {
         // 1. 如果有显式参数，直接传递给工厂
         if !args.is_empty() {
@@ -63,9 +65,7 @@ impl ConstructorResolver {
         }
 
         // 2. 尝试无参构造
-        factory(&[]).map_err(|e| {
-            format!("Bean '{}' 无参构造失败: {}", bean_name, e).into()
-        })
+        factory(&[]).map_err(|e| format!("Bean '{}' 无参构造失败: {}", bean_name, e).into())
     }
 
     /// 解析构造器参数。
@@ -128,7 +128,10 @@ mod tests {
         let resolver = ConstructorResolver::new();
         let args: Vec<Arc<dyn Any + Send + Sync>> = vec![Arc::new(42_i32)];
 
-        let factory = |args: &[Arc<dyn Any + Send + Sync>]| -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> {
+        let factory = |args: &[Arc<dyn Any + Send + Sync>]| -> Result<
+            Arc<dyn Any + Send + Sync>,
+            Box<dyn std::error::Error + Send + Sync>,
+        > {
             if let Some(arg) = args.first() {
                 if let Some(val) = arg.downcast_ref::<i32>() {
                     return Ok(Arc::new(format!("created_with_{}", val)));
@@ -148,7 +151,10 @@ mod tests {
     fn autowire_no_args() {
         let resolver = ConstructorResolver::new();
 
-        let factory = |args: &[Arc<dyn Any + Send + Sync>]| -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> {
+        let factory = |args: &[Arc<dyn Any + Send + Sync>]| -> Result<
+            Arc<dyn Any + Send + Sync>,
+            Box<dyn std::error::Error + Send + Sync>,
+        > {
             assert!(args.is_empty());
             Ok(Arc::new("no_args".to_string()))
         };
@@ -156,10 +162,7 @@ mod tests {
         let result = resolver
             .autowire_constructor("test", TypeId::of::<()>(), &[], &factory)
             .unwrap();
-        assert_eq!(
-            *result.downcast_ref::<String>().unwrap(),
-            "no_args"
-        );
+        assert_eq!(*result.downcast_ref::<String>().unwrap(), "no_args");
     }
 
     #[test]
@@ -173,33 +176,26 @@ mod tests {
         );
 
         let definition_args: Vec<Arc<dyn Any + Send + Sync>> = vec![
-            Arc::new(42_i32),   // i32 — should be replaced by available
+            Arc::new(42_i32),             // i32 — should be replaced by available
             Arc::new("text".to_string()), // String — not in available, kept as-is
         ];
 
         let resolved = resolver.resolve_constructor_arguments(&definition_args, &available);
         assert_eq!(resolved.len(), 2);
         assert_eq!(*resolved[0].downcast_ref::<i32>().unwrap(), 100);
-        assert_eq!(
-            *resolved[1].downcast_ref::<String>().unwrap(),
-            "text"
-        );
+        assert_eq!(*resolved[1].downcast_ref::<String>().unwrap(), "text");
     }
 
     #[test]
     fn autowire_constructor_error_propagation() {
         let resolver = ConstructorResolver::new();
 
-        let factory = |_args: &[Arc<dyn Any + Send + Sync>]| -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> {
-            Err("construction failed".into())
-        };
+        let factory = |_args: &[Arc<dyn Any + Send + Sync>]| -> Result<
+            Arc<dyn Any + Send + Sync>,
+            Box<dyn std::error::Error + Send + Sync>,
+        > { Err("construction failed".into()) };
 
-        let result = resolver.autowire_constructor(
-            "test_bean",
-            TypeId::of::<()>(),
-            &[],
-            &factory,
-        );
+        let result = resolver.autowire_constructor("test_bean", TypeId::of::<()>(), &[], &factory);
         assert!(result.is_err());
         let err_msg = result.unwrap_err().to_string();
         assert!(err_msg.contains("test_bean"));
@@ -210,16 +206,13 @@ mod tests {
         let resolver = ConstructorResolver::new();
         let args: Vec<Arc<dyn Any + Send + Sync>> = vec![Arc::new(42i32)];
 
-        let factory = |_args: &[Arc<dyn Any + Send + Sync>]| -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> {
-            Err("explicit arg construction failed".into())
-        };
+        let factory = |_args: &[Arc<dyn Any + Send + Sync>]| -> Result<
+            Arc<dyn Any + Send + Sync>,
+            Box<dyn std::error::Error + Send + Sync>,
+        > { Err("explicit arg construction failed".into()) };
 
-        let result = resolver.autowire_constructor(
-            "test_bean",
-            TypeId::of::<()>(),
-            &args,
-            &factory,
-        );
+        let result =
+            resolver.autowire_constructor("test_bean", TypeId::of::<()>(), &args, &factory);
         assert!(result.is_err());
         let err_msg = result.unwrap_err().to_string();
         assert!(err_msg.contains("test_bean"));
@@ -262,9 +255,10 @@ mod tests {
     #[test]
     fn default_trait() {
         let resolver = ConstructorResolver::default();
-        let factory = |_: &[Arc<dyn Any + Send + Sync>]| -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> {
-            Ok(Arc::new("default".to_string()))
-        };
+        let factory = |_: &[Arc<dyn Any + Send + Sync>]| -> Result<
+            Arc<dyn Any + Send + Sync>,
+            Box<dyn std::error::Error + Send + Sync>,
+        > { Ok(Arc::new("default".to_string())) };
         let result = resolver.autowire_constructor("test", TypeId::of::<()>(), &[], &factory);
         assert!(result.is_ok());
     }

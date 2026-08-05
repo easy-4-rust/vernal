@@ -12,7 +12,6 @@
 //! - `ServiceListFactoryBean` — 返回所有实现的列表
 //! - `ServiceLoaderFactoryBean` — 返回 ServiceLoader 实例本身
 
-
 /// ServiceLoaderFactoryBean — Spring 风格的 ServiceLoader 工厂 Bean。
 ///
 /// 对应 Java 类：`org.springframework.beans.factory.serviceloader.ServiceLoaderFactoryBean`。

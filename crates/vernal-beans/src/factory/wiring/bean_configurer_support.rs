@@ -49,7 +49,10 @@ impl BeanConfigurerSupport {
 
     /// 设置配置属性。
     pub fn set_config_property(&self, key: impl Into<String>, value: impl Into<String>) {
-        self.config_properties.lock().unwrap().insert(key.into(), value.into());
+        self.config_properties
+            .lock()
+            .unwrap()
+            .insert(key.into(), value.into());
     }
 
     /// 获取配置属性。
@@ -61,7 +64,8 @@ impl BeanConfigurerSupport {
     ///
     /// 对应 Spring 的 `afterPropertiesSet()` 回调。
     pub fn configure(&self) {
-        self.configured.store(true, std::sync::atomic::Ordering::Relaxed);
+        self.configured
+            .store(true, std::sync::atomic::Ordering::Relaxed);
     }
 
     /// 检查是否已配置。
@@ -76,7 +80,8 @@ impl BeanConfigurerSupport {
 
     /// 重置配置状态。
     pub fn reset(&self) {
-        self.configured.store(false, std::sync::atomic::Ordering::Relaxed);
+        self.configured
+            .store(false, std::sync::atomic::Ordering::Relaxed);
         self.config_properties.lock().unwrap().clear();
     }
 }
@@ -98,7 +103,10 @@ mod tests {
         support.set_config_property("host", "localhost");
         support.set_config_property("port", "8080");
         assert_eq!(support.property_count(), 2);
-        assert_eq!(support.config_property("host"), Some("localhost".to_string()));
+        assert_eq!(
+            support.config_property("host"),
+            Some("localhost".to_string())
+        );
     }
 
     #[test]

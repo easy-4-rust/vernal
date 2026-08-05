@@ -2,7 +2,6 @@
 //!
 //! 对应 Spring beans.factory.wiring 包。
 
-
 /// AnnotationBeanWiringInfoResolver — Spring factory.wiring 组件。
 #[derive(Debug, Clone, Default)]
 pub struct AnnotationBeanWiringInfoResolver {
@@ -11,5 +10,7 @@ pub struct AnnotationBeanWiringInfoResolver {
 
 impl AnnotationBeanWiringInfoResolver {
     /// 创建一个新的实例。
-    pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
 }

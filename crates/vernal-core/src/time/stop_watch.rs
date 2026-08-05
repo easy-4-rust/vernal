@@ -556,7 +556,11 @@ fn format_percent(ratio: f64) -> String {
 // ─── 单元测试 ────────────────────────────────────────────────────────
 
 #[cfg(test)]
-#[allow(clippy::cast_precision_loss, clippy::float_cmp, clippy::approx_constant)]
+#[allow(
+    clippy::cast_precision_loss,
+    clippy::float_cmp,
+    clippy::approx_constant
+)]
 mod tests {
     use super::*;
     use std::thread;

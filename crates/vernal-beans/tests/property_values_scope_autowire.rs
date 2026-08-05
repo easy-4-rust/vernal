@@ -6,13 +6,15 @@ use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
 fn lock_field_md() -> std::sync::MutexGuard<'static, ()> {
     static LOCK: std::sync::OnceLock<std::sync::Mutex<()>> = std::sync::OnceLock::new();
-    LOCK.get_or_init(|| std::sync::Mutex::new(())).lock().unwrap()
+    LOCK.get_or_init(|| std::sync::Mutex::new(()))
+        .lock()
+        .unwrap()
 }
 
+use vernal_beans::AutowireCapableBeanFactory;
 use vernal_beans::ComponentDefinition;
 use vernal_beans::RegistryBuilder;
 use vernal_beans::Resolver;
-use vernal_beans::AutowireCapableBeanFactory;
 use vernal_beans::bean_scope::BeanScope;
 use vernal_beans::field_metadata::{FieldDescriptor, TypeMetadata};
 use vernal_beans::mutable_property_values::MutablePropertyValues;
@@ -382,7 +384,10 @@ fn field_metadata_clear() {
     });
 
     let count = field_metadata::get_all_metadata().len();
-    assert!(count >= 1, "Should have at least 1 metadata after registration");
+    assert!(
+        count >= 1,
+        "Should have at least 1 metadata after registration"
+    );
 
     field_metadata::clear_metadata();
     assert!(field_metadata::get_all_metadata().is_empty());

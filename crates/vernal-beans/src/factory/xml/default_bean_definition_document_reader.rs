@@ -114,7 +114,9 @@ mod tests {
             system_id: None,
         };
         let delegate = StubDelegate;
-        let result = reader.register_bean_definitions(&document, &delegate).unwrap();
+        let result = reader
+            .register_bean_definitions(&document, &delegate)
+            .unwrap();
         assert_eq!(result, 0);
     }
 
@@ -127,7 +129,9 @@ mod tests {
             system_id: Some("test.xml".to_string()),
         };
         let delegate = StubDelegate;
-        let result = reader.register_bean_definitions(&document, &delegate).unwrap();
+        let result = reader
+            .register_bean_definitions(&document, &delegate)
+            .unwrap();
         assert_eq!(result, 0);
     }
 
@@ -139,8 +143,12 @@ mod tests {
             system_id: None,
         };
         let delegate = StubDelegate;
-        let r1 = reader.register_bean_definitions(&document, &delegate).unwrap();
-        let r2 = reader.register_bean_definitions(&document, &delegate).unwrap();
+        let r1 = reader
+            .register_bean_definitions(&document, &delegate)
+            .unwrap();
+        let r2 = reader
+            .register_bean_definitions(&document, &delegate)
+            .unwrap();
         assert_eq!(r1, r2);
     }
 }

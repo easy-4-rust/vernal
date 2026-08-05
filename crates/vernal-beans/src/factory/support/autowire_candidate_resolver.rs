@@ -39,11 +39,15 @@ pub struct SimpleAutowireCandidateResolver;
 
 impl SimpleAutowireCandidateResolver {
     /// 创建一个新的实例。
-    pub fn new() -> Self { Self }
+    pub fn new() -> Self {
+        Self
+    }
 }
 
 impl Default for SimpleAutowireCandidateResolver {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl AutowireCandidateResolver for SimpleAutowireCandidateResolver {
@@ -84,7 +88,9 @@ impl TypeBasedAutowireCandidateResolver {
 }
 
 impl Default for TypeBasedAutowireCandidateResolver {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl AutowireCandidateResolver for TypeBasedAutowireCandidateResolver {

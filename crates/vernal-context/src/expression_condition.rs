@@ -9,7 +9,7 @@
 
 use vernal_core::BoxError;
 use vernal_expression::{
-    ExpressionParser, EvaluationContext, ExpressionValue, TypeDescriptor, TypedValue,
+    EvaluationContext, ExpressionParser, ExpressionValue, TypeDescriptor, TypedValue,
 };
 
 use crate::{ApplicationEnvironment, component_condition::ComponentCondition};
@@ -139,14 +139,12 @@ impl ComponentCondition for ExpressionCondition {
                 ))
             })?;
 
-        let result = expr
-            .get_value_with_context(&ctx)
-            .map_err(|e| -> BoxError {
-                Box::new(std::io::Error::new(
-                    std::io::ErrorKind::InvalidData,
-                    format!("SpEL 求值失败: {e}"),
-                ))
-            })?;
+        let result = expr.get_value_with_context(&ctx).map_err(|e| -> BoxError {
+            Box::new(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                format!("SpEL 求值失败: {e}"),
+            ))
+        })?;
 
         match result.value() {
             vernal_expression::ExpressionValue::Boolean(b) => Ok(*b),

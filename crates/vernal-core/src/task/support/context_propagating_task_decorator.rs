@@ -51,8 +51,7 @@ mod tests {
     #[test]
     fn context_survives_task_execution() {
         // A 类（合同对齐）：对标 Spring 上下文传播
-        let context: Arc<dyn std::any::Any + Send + Sync> =
-            Arc::new("trace-id-123".to_string());
+        let context: Arc<dyn std::any::Any + Send + Sync> = Arc::new("trace-id-123".to_string());
         let decorator = ContextPropagatingTaskDecorator::new(context);
         let ran = Arc::new(AtomicBool::new(false));
         let flag = ran.clone();

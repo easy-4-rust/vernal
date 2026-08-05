@@ -2,8 +2,8 @@
 //!
 //! 对标 Spring `org.springframework.core.metrics.DefaultApplicationStartup`。
 
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Mutex;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use super::application_startup::ApplicationStartup;
 use super::startup_step::{SimpleStartupStep, StartupStep};

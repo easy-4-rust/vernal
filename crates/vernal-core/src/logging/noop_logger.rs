@@ -3,8 +3,8 @@
 //! 对标 Spring `NoOpLog`（commons-logging `Log` 适配层）。
 //! 所有日志调用直接丢弃，用于测试和静默场景。
 
-use super::logger::Logger;
 use super::log_level::LogLevel;
+use super::logger::Logger;
 
 /// 空操作日志记录器。
 ///

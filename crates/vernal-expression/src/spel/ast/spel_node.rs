@@ -19,10 +19,8 @@ pub trait SpelNode: Send + Sync {
     ///
     /// 大多数节点实现此方法。需要操作上下文栈的节点
     /// （Selection/Projection/Indexer）应同时重写 `get_value_state`。
-    fn get_value(
-        &self,
-        context: &dyn EvaluationContext,
-    ) -> Result<TypedValue, EvaluationException>;
+    fn get_value(&self, context: &dyn EvaluationContext)
+    -> Result<TypedValue, EvaluationException>;
 
     /// 在 ExpressionState 中求值（对标 Java `SpelNode.getValue(ExpressionState)`）。
     ///

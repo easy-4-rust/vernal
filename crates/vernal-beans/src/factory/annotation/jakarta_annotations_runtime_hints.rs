@@ -20,16 +20,26 @@ pub struct JakartaAnnotationsRuntimeHints {
 
 impl JakartaAnnotationsRuntimeHints {
     /// 创建新的运行时提示。
-    pub fn new() -> Self { Self { registered: AtomicU32::new(0) } }
+    pub fn new() -> Self {
+        Self {
+            registered: AtomicU32::new(0),
+        }
+    }
 
     /// 注册一个提示（原子递增计数）。
-    pub fn register(&self) { self.registered.fetch_add(1, Ordering::SeqCst); }
+    pub fn register(&self) {
+        self.registered.fetch_add(1, Ordering::SeqCst);
+    }
 
     /// 已注册的提示数量。
-    pub fn registered_count(&self) -> u32 { self.registered.load(Ordering::SeqCst) }
+    pub fn registered_count(&self) -> u32 {
+        self.registered.load(Ordering::SeqCst)
+    }
 
     /// 重置计数器。
-    pub fn reset(&self) { self.registered.store(0, Ordering::SeqCst); }
+    pub fn reset(&self) {
+        self.registered.store(0, Ordering::SeqCst);
+    }
 
     /// 批量注册指定数量的提示。
     pub fn register_n(&self, count: u32) {
@@ -37,7 +47,11 @@ impl JakartaAnnotationsRuntimeHints {
     }
 }
 
-impl Default for JakartaAnnotationsRuntimeHints { fn default() -> Self { Self::new() } }
+impl Default for JakartaAnnotationsRuntimeHints {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 #[cfg(test)]
 mod tests {

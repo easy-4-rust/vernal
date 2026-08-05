@@ -29,17 +29,35 @@ pub struct PropertyDescriptor {
 
 impl PropertyDescriptor {
     /// 创建一个新的实例。
-    pub fn new(name: impl Into<String>, property_type: TypeId, readable: bool, writable: bool) -> Self {
-        Self { name: name.into(), property_type, readable, writable }
+    pub fn new(
+        name: impl Into<String>,
+        property_type: TypeId,
+        readable: bool,
+        writable: bool,
+    ) -> Self {
+        Self {
+            name: name.into(),
+            property_type,
+            readable,
+            writable,
+        }
     }
     /// 获取名称。
-    pub fn name(&self) -> &str { &self.name }
+    pub fn name(&self) -> &str {
+        &self.name
+    }
     /// 获取属性类型。
-    pub fn property_type(&self) -> TypeId { self.property_type }
+    pub fn property_type(&self) -> TypeId {
+        self.property_type
+    }
     /// 判断是否可读。
-    pub fn is_readable(&self) -> bool { self.readable }
+    pub fn is_readable(&self) -> bool {
+        self.readable
+    }
     /// 判断是否可写。
-    pub fn is_writable(&self) -> bool { self.writable }
+    pub fn is_writable(&self) -> bool {
+        self.writable
+    }
 }
 
 /// 方法描述符。
@@ -52,12 +70,19 @@ pub struct MethodDescriptor {
 impl MethodDescriptor {
     /// 创建一个新的实例。
     pub fn new(name: impl Into<String>, parameter_count: usize) -> Self {
-        Self { name: name.into(), parameter_count }
+        Self {
+            name: name.into(),
+            parameter_count,
+        }
     }
     /// 获取名称。
-    pub fn name(&self) -> &str { &self.name }
+    pub fn name(&self) -> &str {
+        &self.name
+    }
     /// 获取参数数量。
-    pub fn parameter_count(&self) -> usize { self.parameter_count }
+    pub fn parameter_count(&self) -> usize {
+        self.parameter_count
+    }
 }
 
 impl ExtendedBeanInfo {
@@ -101,9 +126,13 @@ impl ExtendedBeanInfo {
     }
 
     /// 获取属性数量。
-    pub fn property_count(&self) -> usize { self.properties.len() }
+    pub fn property_count(&self) -> usize {
+        self.properties.len()
+    }
     /// 获取方法数量。
-    pub fn method_count(&self) -> usize { self.methods.len() }
+    pub fn method_count(&self) -> usize {
+        self.methods.len()
+    }
 }
 
 #[cfg(test)]
@@ -113,7 +142,12 @@ mod tests {
     #[test]
     fn test_extended_bean_info() {
         let mut info = ExtendedBeanInfo::new("MyBean");
-        info.add_property(PropertyDescriptor::new("name", TypeId::of::<String>(), true, true));
+        info.add_property(PropertyDescriptor::new(
+            "name",
+            TypeId::of::<String>(),
+            true,
+            true,
+        ));
         info.add_method(MethodDescriptor::new("getName", 0));
 
         assert_eq!(info.property_count(), 1);
@@ -181,9 +215,24 @@ mod tests {
     #[test]
     fn test_multiple_properties_and_methods() {
         let mut info = ExtendedBeanInfo::new("Service");
-        info.add_property(PropertyDescriptor::new("name", TypeId::of::<String>(), true, true));
-        info.add_property(PropertyDescriptor::new("age", TypeId::of::<i32>(), true, true));
-        info.add_property(PropertyDescriptor::new("email", TypeId::of::<String>(), true, true));
+        info.add_property(PropertyDescriptor::new(
+            "name",
+            TypeId::of::<String>(),
+            true,
+            true,
+        ));
+        info.add_property(PropertyDescriptor::new(
+            "age",
+            TypeId::of::<i32>(),
+            true,
+            true,
+        ));
+        info.add_property(PropertyDescriptor::new(
+            "email",
+            TypeId::of::<String>(),
+            true,
+            true,
+        ));
         info.add_method(MethodDescriptor::new("getName", 0));
         info.add_method(MethodDescriptor::new("setName", 1));
         info.add_method(MethodDescriptor::new("getEmail", 0));
@@ -204,8 +253,18 @@ mod tests {
     #[test]
     fn test_add_property_overwrites() {
         let mut info = ExtendedBeanInfo::new("Test");
-        info.add_property(PropertyDescriptor::new("name", TypeId::of::<String>(), true, true));
-        info.add_property(PropertyDescriptor::new("name", TypeId::of::<i32>(), true, false));
+        info.add_property(PropertyDescriptor::new(
+            "name",
+            TypeId::of::<String>(),
+            true,
+            true,
+        ));
+        info.add_property(PropertyDescriptor::new(
+            "name",
+            TypeId::of::<i32>(),
+            true,
+            false,
+        ));
         assert_eq!(info.property_count(), 1);
         let pd = info.get_property("name").unwrap();
         assert_eq!(pd.property_type(), TypeId::of::<i32>());

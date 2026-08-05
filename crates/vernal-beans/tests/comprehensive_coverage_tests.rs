@@ -16,19 +16,9 @@ use std::sync::Arc;
 
 use tokio_util::sync::CancellationToken;
 use vernal_beans::{
-    BeanExpressionResolver,
-    BeanFactory,
-    Component,
-    ComponentDefinition,
-    ComponentKey,
-    Container,
-    HierarchicalBeanFactory,
-    ListableBeanFactory,
-    PropertyEditorRegistry,
-    Qualifier,
-    RegistryBuilder,
-    ResolveError,
-    ScopeState,
+    BeanExpressionResolver, BeanFactory, Component, ComponentDefinition, ComponentKey, Container,
+    HierarchicalBeanFactory, ListableBeanFactory, PropertyEditorRegistry, Qualifier,
+    RegistryBuilder, ResolveError, ScopeState,
 };
 
 use vernal_beans::factory::config::autowire_capable_bean_factory::AutowireCapableBeanFactory;
@@ -45,8 +35,10 @@ use vernal_beans::factory::support::dependency_descriptor::DependencyDescriptor;
 /// Helper to create a basic container with String and i32 singletons.
 fn make_container() -> Container {
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()))
-        .unwrap();
+    b.register(ComponentDefinition::singleton::<String, _>(|_| {
+        "hello".to_string()
+    }))
+    .unwrap();
     b.register(ComponentDefinition::singleton::<i32, _>(|_| 42i32))
         .unwrap();
     Container::new(b.build().unwrap())
@@ -55,8 +47,10 @@ fn make_container() -> Container {
 /// Helper to create a container with transient definitions.
 fn make_transient_container() -> Container {
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::transient::<String, _>(|_| "transient".to_string()))
-        .unwrap();
+    b.register(ComponentDefinition::transient::<String, _>(|_| {
+        "transient".to_string()
+    }))
+    .unwrap();
     Container::new(b.build().unwrap())
 }
 
@@ -68,8 +62,10 @@ fn make_qualified_container() -> Container {
         ComponentDefinition::singleton::<String, _>(|_| "primary".to_string()).qualified(q.clone()),
     )
     .unwrap();
-    b.register(ComponentDefinition::singleton::<String, _>(|_| "default".to_string()))
-        .unwrap();
+    b.register(ComponentDefinition::singleton::<String, _>(|_| {
+        "default".to_string()
+    }))
+    .unwrap();
     Container::new(b.build().unwrap())
 }
 
@@ -123,7 +119,8 @@ fn container_contains_local_bean_in_registry() {
 fn container_contains_local_bean_dynamic_definition() {
     let mut c = make_container();
     let def = Box::new(vernal_beans::RootBeanDefinition::new());
-    c.register_bean_definition("dynamicBean".to_string(), def).unwrap();
+    c.register_bean_definition("dynamicBean".to_string(), def)
+        .unwrap();
     assert!(c.contains_local_bean("dynamicBean"));
 }
 
@@ -131,7 +128,8 @@ fn container_contains_local_bean_dynamic_definition() {
 fn container_contains_local_bean_deleted_dynamic() {
     let mut c = make_container();
     let def = Box::new(vernal_beans::RootBeanDefinition::new());
-    c.register_bean_definition("tempBean".to_string(), def).unwrap();
+    c.register_bean_definition("tempBean".to_string(), def)
+        .unwrap();
     c.remove_bean_definition("tempBean").unwrap();
     assert!(!c.contains_local_bean("tempBean"));
 }
@@ -296,7 +294,9 @@ fn container_resolve_qualified_trait_not_found() {
 #[test]
 fn container_object_provider_get_empty() {
     let c = Container::new(RegistryBuilder::new().build().unwrap());
-    let provider = c.get_bean_provider_by_type_id(TypeId::of::<String>()).unwrap();
+    let provider = c
+        .get_bean_provider_by_type_id(TypeId::of::<String>())
+        .unwrap();
     let result = provider.get();
     assert!(result.is_err());
 }
@@ -304,7 +304,9 @@ fn container_object_provider_get_empty() {
 #[test]
 fn container_object_provider_if_available_empty() {
     let c = Container::new(RegistryBuilder::new().build().unwrap());
-    let provider = c.get_bean_provider_by_type_id(TypeId::of::<String>()).unwrap();
+    let provider = c
+        .get_bean_provider_by_type_id(TypeId::of::<String>())
+        .unwrap();
     let result = provider.if_available();
     assert!(result.is_none());
 }
@@ -312,7 +314,9 @@ fn container_object_provider_if_available_empty() {
 #[test]
 fn container_object_provider_stream_empty() {
     let c = Container::new(RegistryBuilder::new().build().unwrap());
-    let provider = c.get_bean_provider_by_type_id(TypeId::of::<String>()).unwrap();
+    let provider = c
+        .get_bean_provider_by_type_id(TypeId::of::<String>())
+        .unwrap();
     let items = provider.stream();
     assert!(items.is_empty());
 }
@@ -320,7 +324,9 @@ fn container_object_provider_stream_empty() {
 #[test]
 fn container_object_provider_ordered_stream_empty() {
     let c = Container::new(RegistryBuilder::new().build().unwrap());
-    let provider = c.get_bean_provider_by_type_id(TypeId::of::<String>()).unwrap();
+    let provider = c
+        .get_bean_provider_by_type_id(TypeId::of::<String>())
+        .unwrap();
     let items = provider.ordered_stream();
     assert!(items.is_empty());
 }
@@ -329,7 +335,9 @@ fn container_object_provider_ordered_stream_empty() {
 fn container_object_provider_get_returns_singleton() {
     let c = make_container();
     let _: Arc<String> = c.resolve().unwrap();
-    let provider = c.get_bean_provider_by_type_id(TypeId::of::<String>()).unwrap();
+    let provider = c
+        .get_bean_provider_by_type_id(TypeId::of::<String>())
+        .unwrap();
     let result = provider.get();
     assert!(result.is_ok());
 }
@@ -338,7 +346,9 @@ fn container_object_provider_get_returns_singleton() {
 fn container_object_provider_if_available_returns_some() {
     let c = make_container();
     let _: Arc<String> = c.resolve().unwrap();
-    let provider = c.get_bean_provider_by_type_id(TypeId::of::<String>()).unwrap();
+    let provider = c
+        .get_bean_provider_by_type_id(TypeId::of::<String>())
+        .unwrap();
     let result = provider.if_available();
     assert!(result.is_some());
 }
@@ -347,7 +357,9 @@ fn container_object_provider_if_available_returns_some() {
 fn container_object_provider_stream_returns_items() {
     let c = make_container();
     let _: Arc<String> = c.resolve().unwrap();
-    let provider = c.get_bean_provider_by_type_id(TypeId::of::<String>()).unwrap();
+    let provider = c
+        .get_bean_provider_by_type_id(TypeId::of::<String>())
+        .unwrap();
     let items = provider.stream();
     assert!(!items.is_empty());
 }
@@ -421,8 +433,10 @@ fn container_resolve_named_bean_not_found() {
 #[test]
 fn container_resolve_named_bean_ambiguous() {
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()))
-        .unwrap();
+    b.register(ComponentDefinition::singleton::<String, _>(|_| {
+        "a".to_string()
+    }))
+    .unwrap();
     b.register(
         ComponentDefinition::singleton::<String, _>(|_| "b".to_string())
             .qualified(Qualifier::new("q").unwrap()),
@@ -438,11 +452,7 @@ fn container_resolve_named_bean_ambiguous() {
 #[test]
 fn container_resolve_dependency_found() {
     let c = make_container();
-    let descriptor = DependencyDescriptor::new(
-        TypeId::of::<String>(),
-        "String".to_string(),
-        true,
-    );
+    let descriptor = DependencyDescriptor::new(TypeId::of::<String>(), "String".to_string(), true);
     let result = c.resolve_dependency(&descriptor, None);
     let _ = result;
 }
@@ -450,11 +460,7 @@ fn container_resolve_dependency_found() {
 #[test]
 fn container_resolve_dependency_not_found_required() {
     let c = Container::new(RegistryBuilder::new().build().unwrap());
-    let descriptor = DependencyDescriptor::new(
-        TypeId::of::<String>(),
-        "String".to_string(),
-        true,
-    );
+    let descriptor = DependencyDescriptor::new(TypeId::of::<String>(), "String".to_string(), true);
     let result = c.resolve_dependency(&descriptor, None);
     assert!(result.is_err());
 }
@@ -462,11 +468,7 @@ fn container_resolve_dependency_not_found_required() {
 #[test]
 fn container_resolve_dependency_not_found_optional() {
     let c = Container::new(RegistryBuilder::new().build().unwrap());
-    let descriptor = DependencyDescriptor::new(
-        TypeId::of::<String>(),
-        "String".to_string(),
-        false,
-    );
+    let descriptor = DependencyDescriptor::new(TypeId::of::<String>(), "String".to_string(), false);
     let result = c.resolve_dependency(&descriptor, None).unwrap();
     assert!(result.is_none());
 }
@@ -478,7 +480,9 @@ fn container_register_and_get_bean_definition() {
     let mut c = make_container();
     let def = Box::new(vernal_beans::RootBeanDefinition::new());
     BeanDefinitionRegistry::register_bean_definition(&mut c, "myBean".to_string(), def).unwrap();
-    assert!(BeanDefinitionRegistry::contains_bean_definition(&c, "myBean"));
+    assert!(BeanDefinitionRegistry::contains_bean_definition(
+        &c, "myBean"
+    ));
     let bd = BeanDefinitionRegistry::get_bean_definition(&c, "myBean");
     assert!(bd.is_some());
 }
@@ -489,7 +493,8 @@ fn container_register_duplicate_bean_definition_fails() {
     let def1 = Box::new(vernal_beans::RootBeanDefinition::new());
     let def2 = Box::new(vernal_beans::RootBeanDefinition::new());
     BeanDefinitionRegistry::register_bean_definition(&mut c, "myBean".to_string(), def1).unwrap();
-    let result = BeanDefinitionRegistry::register_bean_definition(&mut c, "myBean".to_string(), def2);
+    let result =
+        BeanDefinitionRegistry::register_bean_definition(&mut c, "myBean".to_string(), def2);
     assert!(result.is_err());
 }
 
@@ -500,7 +505,9 @@ fn container_remove_dynamic_bean_definition() {
     BeanDefinitionRegistry::register_bean_definition(&mut c, "myBean".to_string(), def).unwrap();
     let removed = BeanDefinitionRegistry::remove_bean_definition(&mut c, "myBean");
     assert!(removed.is_ok());
-    assert!(!BeanDefinitionRegistry::contains_bean_definition(&c, "myBean"));
+    assert!(!BeanDefinitionRegistry::contains_bean_definition(
+        &c, "myBean"
+    ));
 }
 
 #[test]
@@ -508,7 +515,10 @@ fn container_remove_registry_bean_definition() {
     let mut c = make_container();
     let removed = BeanDefinitionRegistry::remove_bean_definition(&mut c, "alloc::string::String");
     assert!(removed.is_ok());
-    assert!(!BeanDefinitionRegistry::contains_bean_definition(&c, "alloc::string::String"));
+    assert!(!BeanDefinitionRegistry::contains_bean_definition(
+        &c,
+        "alloc::string::String"
+    ));
 }
 
 #[test]
@@ -546,7 +556,10 @@ fn container_bean_definition_count() {
     let initial = BeanDefinitionRegistry::bean_definition_count(&c);
     let def = Box::new(vernal_beans::RootBeanDefinition::new());
     BeanDefinitionRegistry::register_bean_definition(&mut c, "newBean".to_string(), def).unwrap();
-    assert_eq!(BeanDefinitionRegistry::bean_definition_count(&c), initial + 1);
+    assert_eq!(
+        BeanDefinitionRegistry::bean_definition_count(&c),
+        initial + 1
+    );
 }
 
 #[test]
@@ -623,7 +636,9 @@ fn container_listable_bean_names_for_type_id() {
 #[test]
 fn container_listable_beans_of_type_id() {
     let c = make_container();
-    let beans = c.beans_of_type_id(TypeId::of::<String>(), true, true).unwrap();
+    let beans = c
+        .beans_of_type_id(TypeId::of::<String>(), true, true)
+        .unwrap();
     assert_eq!(beans.len(), 1);
 }
 
@@ -742,9 +757,8 @@ fn container_destroy_singletons() {
 #[test]
 fn container_embedded_value_resolvers() {
     let mut c = make_container();
-    let resolver: Arc<dyn Fn(&str) -> String + Send + Sync> = Arc::new(|v: &str| {
-        v.replace("${key}", "value")
-    });
+    let resolver: Arc<dyn Fn(&str) -> String + Send + Sync> =
+        Arc::new(|v: &str| v.replace("${key}", "value"));
     c.add_embedded_value_resolver(resolver);
     let result = c.resolve_embedded_value("${key}");
     assert_eq!(result, "value");
@@ -914,8 +928,10 @@ fn container_bean_factory_is_singleton_not_found() {
 #[test]
 fn container_bean_factory_is_prototype() {
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::transient::<String, _>(|_| "t".to_string()))
-        .unwrap();
+    b.register(ComponentDefinition::transient::<String, _>(|_| {
+        "t".to_string()
+    }))
+    .unwrap();
     let c = Container::new(b.build().unwrap());
     assert!(c.is_prototype(&ComponentKey::of::<String>()).unwrap());
 }
@@ -966,8 +982,10 @@ fn container_bean_factory_get_bean_by_type_id_not_found() {
 #[test]
 fn container_bean_factory_get_bean_by_type_id_ambiguous() {
     let mut b = RegistryBuilder::new();
-    b.register(ComponentDefinition::singleton::<String, _>(|_| "a".to_string()))
-        .unwrap();
+    b.register(ComponentDefinition::singleton::<String, _>(|_| {
+        "a".to_string()
+    }))
+    .unwrap();
     b.register(
         ComponentDefinition::singleton::<String, _>(|_| "b".to_string())
             .qualified(Qualifier::new("q").unwrap()),
@@ -1196,9 +1214,11 @@ fn registry_builder_register_duplicate_fails() {
     builder
         .register(ComponentDefinition::shared_value(42i32))
         .unwrap();
-    assert!(builder
-        .register(ComponentDefinition::shared_value(100i32))
-        .is_err());
+    assert!(
+        builder
+            .register(ComponentDefinition::shared_value(100i32))
+            .is_err()
+    );
 }
 
 #[test]
@@ -1346,15 +1366,18 @@ fn registry_builder_bean_definition_registry_trait() {
 
 #[test]
 fn standard_bean_expression_resolver_new_and_default() {
-    let resolver = vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver::new();
+    let resolver =
+        vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver::new();
     assert_eq!(resolver.bean_count(), 0);
-    let resolver2 = vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver::default();
+    let resolver2 =
+        vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver::default();
     assert_eq!(resolver2.bean_count(), 0);
 }
 
 #[test]
 fn standard_bean_expression_resolver_register_and_find() {
-    let resolver = vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver::new();
+    let resolver =
+        vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver::new();
     resolver.register_bean("myBean".to_string(), Arc::new("value".to_string()));
     assert_eq!(resolver.bean_count(), 1);
     let result = <vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver as BeanExpressionResolver>::evaluate(
@@ -1362,15 +1385,13 @@ fn standard_bean_expression_resolver_register_and_find() {
     )
     .unwrap();
     assert!(result.is_some());
-    assert_eq!(
-        *result.unwrap().downcast_ref::<String>().unwrap(),
-        "value"
-    );
+    assert_eq!(*result.unwrap().downcast_ref::<String>().unwrap(), "value");
 }
 
 #[test]
 fn standard_bean_expression_resolver_clear_context() {
-    let resolver = vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver::new();
+    let resolver =
+        vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver::new();
     resolver.register_bean("bean1".to_string(), Arc::new("v1".to_string()));
     assert_eq!(resolver.bean_count(), 1);
     resolver.clear_context();
@@ -1384,7 +1405,8 @@ fn standard_bean_expression_resolver_clear_context() {
 
 #[test]
 fn standard_bean_expression_resolver_simple_identifier_not_found() {
-    let resolver = vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver::new();
+    let resolver =
+        vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver::new();
     let result = <vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver as BeanExpressionResolver>::evaluate(
         &resolver, "nonExistentBean", None,
     )
@@ -1394,7 +1416,8 @@ fn standard_bean_expression_resolver_simple_identifier_not_found() {
 
 #[test]
 fn standard_bean_expression_resolver_empty_expression() {
-    let resolver = vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver::new();
+    let resolver =
+        vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver::new();
     let result = <vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver as BeanExpressionResolver>::evaluate(
         &resolver, "", None,
     )
@@ -1404,7 +1427,8 @@ fn standard_bean_expression_resolver_empty_expression() {
 
 #[test]
 fn standard_bean_expression_resolver_whitespace_trimmed() {
-    let resolver = vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver::new();
+    let resolver =
+        vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver::new();
     resolver.register_bean("myBean".to_string(), Arc::new("found".to_string()));
     let result = <vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver as BeanExpressionResolver>::evaluate(
         &resolver, "  myBean  ", None,
@@ -1415,7 +1439,8 @@ fn standard_bean_expression_resolver_whitespace_trimmed() {
 
 #[test]
 fn standard_bean_expression_resolver_spel_arithmetic() {
-    let resolver = vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver::new();
+    let resolver =
+        vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver::new();
     let result = <vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver as BeanExpressionResolver>::evaluate(
         &resolver, "1 + 1", None,
     )
@@ -1429,7 +1454,8 @@ fn standard_bean_expression_resolver_spel_arithmetic() {
 
 #[test]
 fn standard_bean_expression_resolver_spel_string_literal() {
-    let resolver = vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver::new();
+    let resolver =
+        vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver::new();
     let result = <vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver as BeanExpressionResolver>::evaluate(
         &resolver, "'hello world'", None,
     )
@@ -1443,7 +1469,8 @@ fn standard_bean_expression_resolver_spel_string_literal() {
 
 #[test]
 fn standard_bean_expression_resolver_spel_comparison() {
-    let resolver = vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver::new();
+    let resolver =
+        vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver::new();
     let result = <vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver as BeanExpressionResolver>::evaluate(
         &resolver, "3 > 2", None,
     )
@@ -1457,7 +1484,8 @@ fn standard_bean_expression_resolver_spel_comparison() {
 
 #[test]
 fn standard_bean_expression_resolver_spel_complex() {
-    let resolver = vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver::new();
+    let resolver =
+        vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver::new();
     let result = <vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver as BeanExpressionResolver>::evaluate(
         &resolver, "(2 + 3) * 4", None,
     )
@@ -1471,7 +1499,8 @@ fn standard_bean_expression_resolver_spel_complex() {
 
 #[test]
 fn standard_bean_expression_resolver_invalid_spel() {
-    let resolver = vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver::new();
+    let resolver =
+        vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver::new();
     let result = <vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver as BeanExpressionResolver>::evaluate(
         &resolver, "@#$invalid", None,
     )
@@ -1481,7 +1510,8 @@ fn standard_bean_expression_resolver_invalid_spel() {
 
 #[test]
 fn standard_bean_expression_resolver_with_bean_name() {
-    let resolver = vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver::new();
+    let resolver =
+        vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver::new();
     resolver.register_bean("contextBean".to_string(), Arc::new(42i32));
     let result = <vernal_beans::standard_bean_expression_resolver::StandardBeanExpressionResolver as BeanExpressionResolver>::evaluate(
         &resolver, "contextBean", Some("requestBean"),
@@ -1908,8 +1938,14 @@ fn property_editor_cache_find_editor_prefers_custom() {
     }
 
     let cache = vernal_beans::PropertyEditorCache::new();
-    cache.register_default_editor(TypeId::of::<i32>(), Arc::new(StubEditor("default".to_string())));
-    cache.register_custom_editor(TypeId::of::<i32>(), Arc::new(StubEditor("custom".to_string())));
+    cache.register_default_editor(
+        TypeId::of::<i32>(),
+        Arc::new(StubEditor("default".to_string())),
+    );
+    cache.register_custom_editor(
+        TypeId::of::<i32>(),
+        Arc::new(StubEditor("custom".to_string())),
+    );
     let found = cache.find_editor(TypeId::of::<i32>()).unwrap();
     assert_eq!(found.get_as_text(), Some("custom".to_string()));
 }
@@ -2120,8 +2156,10 @@ fn bean_definition_utils_generate_bean_name_none_class_name() {
 #[test]
 fn bean_definition_utils_generate_bean_name_special_characters() {
     let builder = RegistryBuilder::new();
-    let name =
-        vernal_beans::bean_definition_utils::generate_bean_name(Some("com.example.MyService"), &builder);
+    let name = vernal_beans::bean_definition_utils::generate_bean_name(
+        Some("com.example.MyService"),
+        &builder,
+    );
     assert_eq!(name, "com.example.MyService");
 }
 
@@ -2145,7 +2183,10 @@ fn component_contract_default_init_order() {
         }
     }
     // Default init_order should be INIT_SORT_DEFAULT
-    assert_eq!(<TestComponent as Component>::init_order(), vernal_core::ordered::INIT_SORT_DEFAULT);
+    assert_eq!(
+        <TestComponent as Component>::init_order(),
+        vernal_core::ordered::INIT_SORT_DEFAULT
+    );
 }
 
 #[test]

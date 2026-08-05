@@ -4,11 +4,11 @@
 
 use std::sync::Arc;
 
+use super::advised_support::AdvisedSupport;
+use super::aop_proxy::AopProxy;
 use crate::Advisor;
 use crate::Interceptor;
 use crate::target_source::TargetSource;
-use super::advised_support::AdvisedSupport;
-use super::aop_proxy::AopProxy;
 
 /// 代理创建器支持类。
 ///
@@ -93,7 +93,9 @@ impl ProxyCreatorSupport {
     /// 创建代理。
     ///
     /// 子类应覆盖此方法以提供实际的代理创建逻辑。
-    pub fn create_proxy(&mut self) -> Result<&dyn AopProxy, Box<dyn std::error::Error + Send + Sync>> {
+    pub fn create_proxy(
+        &mut self,
+    ) -> Result<&dyn AopProxy, Box<dyn std::error::Error + Send + Sync>> {
         if self.proxy.is_none() {
             // 子类应覆盖此方法
             return Err("create_proxy() not implemented - subclass must override".into());
@@ -177,7 +179,11 @@ mod additional_tests {
 
     struct TestInterceptor;
     impl crate::Interceptor for TestInterceptor {
-        fn intercept<'a>(&'a self, invocation: Arc<crate::Invocation>, next: crate::Next<'a>) -> crate::InvocationFuture<'a> {
+        fn intercept<'a>(
+            &'a self,
+            invocation: Arc<crate::Invocation>,
+            next: crate::Next<'a>,
+        ) -> crate::InvocationFuture<'a> {
             next.run(invocation)
         }
     }
@@ -187,7 +193,9 @@ mod additional_tests {
         fn target_class(&self) -> Option<&str> {
             Some("TestTarget")
         }
-        fn get_target(&self) -> Result<Box<dyn std::any::Any>, crate::target_source_error::TargetSourceError> {
+        fn get_target(
+            &self,
+        ) -> Result<Box<dyn std::any::Any>, crate::target_source_error::TargetSourceError> {
             Ok(Box::new(42i32))
         }
     }
@@ -266,7 +274,11 @@ mod proxy_creator_tests {
 
     struct TestInterceptor;
     impl crate::Interceptor for TestInterceptor {
-        fn intercept<'a>(&'a self, invocation: Arc<crate::Invocation>, next: crate::Next<'a>) -> crate::InvocationFuture<'a> {
+        fn intercept<'a>(
+            &'a self,
+            invocation: Arc<crate::Invocation>,
+            next: crate::Next<'a>,
+        ) -> crate::InvocationFuture<'a> {
             next.run(invocation)
         }
     }
@@ -311,7 +323,11 @@ mod proxy_creator_final_tests {
 
     struct TestInterceptor;
     impl crate::Interceptor for TestInterceptor {
-        fn intercept<'a>(&'a self, invocation: Arc<crate::Invocation>, next: crate::Next<'a>) -> crate::InvocationFuture<'a> {
+        fn intercept<'a>(
+            &'a self,
+            invocation: Arc<crate::Invocation>,
+            next: crate::Next<'a>,
+        ) -> crate::InvocationFuture<'a> {
             next.run(invocation)
         }
     }
@@ -321,7 +337,9 @@ mod proxy_creator_final_tests {
         fn target_class(&self) -> Option<&str> {
             Some("TestTarget")
         }
-        fn get_target(&self) -> Result<Box<dyn std::any::Any>, crate::target_source_error::TargetSourceError> {
+        fn get_target(
+            &self,
+        ) -> Result<Box<dyn std::any::Any>, crate::target_source_error::TargetSourceError> {
             Ok(Box::new(42i32))
         }
     }
@@ -401,7 +419,11 @@ mod proxy_creator_coverage_tests {
 
     struct TestInterceptor;
     impl crate::Interceptor for TestInterceptor {
-        fn intercept<'a>(&'a self, invocation: Arc<crate::Invocation>, next: crate::Next<'a>) -> crate::InvocationFuture<'a> {
+        fn intercept<'a>(
+            &'a self,
+            invocation: Arc<crate::Invocation>,
+            next: crate::Next<'a>,
+        ) -> crate::InvocationFuture<'a> {
             next.run(invocation)
         }
     }
@@ -411,7 +433,9 @@ mod proxy_creator_coverage_tests {
         fn target_class(&self) -> Option<&str> {
             Some("TestTarget")
         }
-        fn get_target(&self) -> Result<Box<dyn std::any::Any>, crate::target_source_error::TargetSourceError> {
+        fn get_target(
+            &self,
+        ) -> Result<Box<dyn std::any::Any>, crate::target_source_error::TargetSourceError> {
             Ok(Box::new(42i32))
         }
     }
@@ -518,7 +542,11 @@ mod proxy_creator_final_coverage_tests {
 
     struct TestInterceptor;
     impl crate::Interceptor for TestInterceptor {
-        fn intercept<'a>(&'a self, invocation: Arc<crate::Invocation>, next: crate::Next<'a>) -> crate::InvocationFuture<'a> {
+        fn intercept<'a>(
+            &'a self,
+            invocation: Arc<crate::Invocation>,
+            next: crate::Next<'a>,
+        ) -> crate::InvocationFuture<'a> {
             next.run(invocation)
         }
     }
@@ -528,7 +556,9 @@ mod proxy_creator_final_coverage_tests {
         fn target_class(&self) -> Option<&str> {
             Some("TestTarget")
         }
-        fn get_target(&self) -> Result<Box<dyn std::any::Any>, crate::target_source_error::TargetSourceError> {
+        fn get_target(
+            &self,
+        ) -> Result<Box<dyn std::any::Any>, crate::target_source_error::TargetSourceError> {
             Ok(Box::new(42i32))
         }
     }
@@ -635,7 +665,11 @@ mod proxy_creator_final_coverage {
 
     struct TestInterceptor;
     impl crate::Interceptor for TestInterceptor {
-        fn intercept<'a>(&'a self, invocation: Arc<crate::Invocation>, next: crate::Next<'a>) -> crate::InvocationFuture<'a> {
+        fn intercept<'a>(
+            &'a self,
+            invocation: Arc<crate::Invocation>,
+            next: crate::Next<'a>,
+        ) -> crate::InvocationFuture<'a> {
             next.run(invocation)
         }
     }
@@ -645,7 +679,9 @@ mod proxy_creator_final_coverage {
         fn target_class(&self) -> Option<&str> {
             Some("TestTarget")
         }
-        fn get_target(&self) -> Result<Box<dyn std::any::Any>, crate::target_source_error::TargetSourceError> {
+        fn get_target(
+            &self,
+        ) -> Result<Box<dyn std::any::Any>, crate::target_source_error::TargetSourceError> {
             Ok(Box::new(42i32))
         }
     }
@@ -744,7 +780,6 @@ mod proxy_creator_final_coverage {
         assert!(result.is_err());
     }
 }
-
 
 #[cfg(test)]
 mod proxy_creator_last_coverage {
@@ -753,7 +788,11 @@ mod proxy_creator_last_coverage {
 
     struct TestInterceptor;
     impl crate::Interceptor for TestInterceptor {
-        fn intercept<'a>(&'a self, invocation: Arc<crate::Invocation>, next: crate::Next<'a>) -> crate::InvocationFuture<'a> {
+        fn intercept<'a>(
+            &'a self,
+            invocation: Arc<crate::Invocation>,
+            next: crate::Next<'a>,
+        ) -> crate::InvocationFuture<'a> {
             next.run(invocation)
         }
     }
@@ -763,7 +802,9 @@ mod proxy_creator_last_coverage {
         fn target_class(&self) -> Option<&str> {
             Some("TestTarget")
         }
-        fn get_target(&self) -> Result<Box<dyn std::any::Any>, crate::target_source_error::TargetSourceError> {
+        fn get_target(
+            &self,
+        ) -> Result<Box<dyn std::any::Any>, crate::target_source_error::TargetSourceError> {
             Ok(Box::new(42i32))
         }
     }
@@ -862,4 +903,3 @@ mod proxy_creator_last_coverage {
         assert!(result.is_err());
     }
 }
-

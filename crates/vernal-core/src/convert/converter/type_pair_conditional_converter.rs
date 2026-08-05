@@ -39,8 +39,7 @@ impl TypePairConditionalConverter {
 
 impl ConditionalConverter for TypePairConditionalConverter {
     fn matches(&self, pair: &ConvertiblePair) -> bool {
-        self.source_type_id == pair.source_type_id()
-            && self.target_type_id == pair.target_type_id()
+        self.source_type_id == pair.source_type_id() && self.target_type_id == pair.target_type_id()
     }
 }
 

@@ -138,7 +138,10 @@ mod tests {
         let yaml = "server:\n  host: localhost\n  port: 8080";
         let properties = processor.parse_yaml_to_properties(yaml);
 
-        assert_eq!(properties.get("server.host"), Some(&"localhost".to_string()));
+        assert_eq!(
+            properties.get("server.host"),
+            Some(&"localhost".to_string())
+        );
         assert_eq!(properties.get("server.port"), Some(&"8080".to_string()));
     }
 
@@ -222,7 +225,10 @@ mod tests {
         let yaml = "url: http://example.com";
         let properties = processor.parse_yaml_to_properties(yaml);
         // The value after first colon is " http://example.com"
-        assert_eq!(properties.get("url"), Some(&"http://example.com".to_string()));
+        assert_eq!(
+            properties.get("url"),
+            Some(&"http://example.com".to_string())
+        );
     }
 
     #[test]

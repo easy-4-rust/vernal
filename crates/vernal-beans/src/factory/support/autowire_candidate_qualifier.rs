@@ -27,7 +27,9 @@ impl AutowireCandidateQualifier {
     }
 
     /// 获取限定符注解类型名。
-    pub fn qualifier_type(&self) -> &str { &self.qualifier_type }
+    pub fn qualifier_type(&self) -> &str {
+        &self.qualifier_type
+    }
 
     /// 设置属性。
     pub fn set_attribute(&self, name: String, value: String) {

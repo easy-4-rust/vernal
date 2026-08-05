@@ -22,7 +22,11 @@ pub struct Resource {
 impl Resource {
     /// 创建一个新的实例。
     pub fn new(name: String, location: String) -> Self {
-        Self { name, location, exists: true }
+        Self {
+            name,
+            location,
+            exists: true,
+        }
     }
 
     /// 执行description操作。
@@ -221,7 +225,10 @@ mod tests {
         assert!(reader.get_class_loader_type_id().is_none());
         reader.set_class_loader_type_id(TypeId::of::<String>());
         assert!(reader.get_class_loader_type_id().is_some());
-        assert_eq!(reader.get_class_loader_type_id().unwrap(), TypeId::of::<String>());
+        assert_eq!(
+            reader.get_class_loader_type_id().unwrap(),
+            TypeId::of::<String>()
+        );
     }
 
     #[test]
@@ -244,9 +251,7 @@ mod tests {
     #[test]
     fn load_bean_definitions_batch_single() {
         let reader = AbstractBeanDefinitionReaderImpl::new("loader".to_string());
-        let resources = vec![
-            Resource::new("a.xml".to_string(), "/a.xml".to_string()),
-        ];
+        let resources = vec![Resource::new("a.xml".to_string(), "/a.xml".to_string())];
         let result = reader.load_bean_definitions_batch(&resources).unwrap();
         assert_eq!(result, 0);
     }
@@ -315,9 +320,7 @@ mod tests {
     #[test]
     fn trait_load_bean_definitions_batch() {
         let reader = AbstractBeanDefinitionReaderImpl::new("loader".to_string());
-        let resources = vec![
-            Resource::new("a.xml".to_string(), "/a.xml".to_string()),
-        ];
+        let resources = vec![Resource::new("a.xml".to_string(), "/a.xml".to_string())];
         let trait_ref: &dyn BeanDefinitionReader = &reader;
         let result = trait_ref.load_bean_definitions_batch(&resources).unwrap();
         assert_eq!(result, 0);

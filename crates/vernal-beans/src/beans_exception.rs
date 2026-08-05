@@ -31,7 +31,10 @@ impl BeansException {
     /// 创建一个新的 BeansException，包含指定的错误消息和根原因。
     ///
     /// 对应 Java 构造器：`BeansException(String msg, Throwable cause)`
-    pub fn with_cause(message: impl Into<String>, cause: impl std::error::Error + Send + Sync + 'static) -> Self {
+    pub fn with_cause(
+        message: impl Into<String>,
+        cause: impl std::error::Error + Send + Sync + 'static,
+    ) -> Self {
         Self {
             message: message.into(),
             source: Some(Box::new(cause)),
@@ -57,7 +60,9 @@ impl fmt::Display for BeansException {
 
 impl std::error::Error for BeansException {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        self.source.as_ref().map(|e| e.as_ref() as &(dyn std::error::Error + 'static))
+        self.source
+            .as_ref()
+            .map(|e| e.as_ref() as &(dyn std::error::Error + 'static))
     }
 }
 

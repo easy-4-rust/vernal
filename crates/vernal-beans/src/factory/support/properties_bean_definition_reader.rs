@@ -79,7 +79,9 @@ impl PropertiesBeanDefinitionReader {
                 "(lazy-init)" => entry.lazy_init = Some(value == "true"),
                 "(constructor-arg)" => entry.constructor_args.push(value.clone()),
                 _ => {
-                    entry.properties.insert(prop_name.to_string(), value.clone());
+                    entry
+                        .properties
+                        .insert(prop_name.to_string(), value.clone());
                 }
             }
         }
@@ -114,7 +116,10 @@ mod tests {
     fn register_simple_bean_definition() {
         let reader = PropertiesBeanDefinitionReader::new();
         let mut props = HashMap::new();
-        props.insert("myBean.(class)".to_string(), "com.example.MyService".to_string());
+        props.insert(
+            "myBean.(class)".to_string(),
+            "com.example.MyService".to_string(),
+        );
         props.insert("myBean.name".to_string(), "test".to_string());
 
         let count = reader.register_bean_definitions(&props).unwrap();

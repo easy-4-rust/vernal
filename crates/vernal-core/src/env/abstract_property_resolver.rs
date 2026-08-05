@@ -2,10 +2,10 @@
 //!
 //! 对标 Spring `org.springframework.core.env.AbstractPropertyResolver`。
 
+use super::PropertyResolver;
 use super::configurable_property_resolver::ConfigurablePropertyResolver;
 use super::missing_required_properties_exception::MissingRequiredPropertiesException;
 use super::property_resolver::LookupAdapter;
-use super::PropertyResolver;
 use crate::util::PropertyPlaceholderHelper;
 
 /// 属性源解析器抽象。
@@ -177,7 +177,8 @@ mod tests {
             self.inner.set_value_separator(separator);
         }
         fn set_ignore_unresolvable_nested_placeholders(&mut self, ignore: bool) {
-            self.inner.set_ignore_unresolvable_nested_placeholders(ignore);
+            self.inner
+                .set_ignore_unresolvable_nested_placeholders(ignore);
         }
         fn set_required_properties(&mut self, required: Vec<String>) {
             self.inner.set_required_properties(required);

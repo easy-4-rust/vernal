@@ -19,9 +19,9 @@ use vernal_core::{BoxError, SharedError};
 
 use crate::{
     ComponentKey, ResolveError, ScopeError, ScopeKey, ScopeState,
-    factory::parsing::component_definition::ErasedComponent, scope_close_failure::ScopeCloseFailure,
-    scope_future::ScopeCloseHook, scope_operation_guard::ScopeOperationGuard,
-    scope_runtime_state::ScopeRuntimeState,
+    factory::parsing::component_definition::ErasedComponent,
+    scope_close_failure::ScopeCloseFailure, scope_future::ScopeCloseHook,
+    scope_operation_guard::ScopeOperationGuard, scope_runtime_state::ScopeRuntimeState,
 };
 
 type ScopedCell = OnceLock<Result<ErasedComponent, ResolveError>>;
@@ -484,11 +484,7 @@ mod tests {
     async fn belongs_to_returns_false_for_different_owner() {
         let owner1 = Arc::new(());
         let owner2 = Arc::new(());
-        let scope = ScopeContext::root(
-            owner1,
-            ScopeKey::of::<String>(),
-            CancellationToken::new(),
-        );
+        let scope = ScopeContext::root(owner1, ScopeKey::of::<String>(), CancellationToken::new());
         assert!(!scope.belongs_to(&owner2));
     }
 
@@ -503,11 +499,7 @@ mod tests {
     #[tokio::test]
     async fn find_returns_none_when_key_not_in_chain() {
         let owner = Arc::new(());
-        let scope = ScopeContext::root(
-            owner,
-            ScopeKey::of::<String>(),
-            CancellationToken::new(),
-        );
+        let scope = ScopeContext::root(owner, ScopeKey::of::<String>(), CancellationToken::new());
         assert!(scope.find(ScopeKey::of::<i32>()).is_none());
     }
 
@@ -515,11 +507,7 @@ mod tests {
     async fn find_traverses_parent_chain() {
         let owner = Arc::new(());
         let parent_key = ScopeKey::of::<String>();
-        let parent = ScopeContext::root(
-            owner,
-            parent_key,
-            CancellationToken::new(),
-        );
+        let parent = ScopeContext::root(owner, parent_key, CancellationToken::new());
         let child = parent.child::<i32>();
 
         // Child should find parent's key
@@ -533,7 +521,9 @@ mod tests {
         let owner = Arc::new(());
         let scope = ScopeContext::root(owner, ScopeKey::of::<()>(), CancellationToken::new());
 
-        let value = scope.get_or_insert_with::<String, _>(|| "hello".to_string()).unwrap();
+        let value = scope
+            .get_or_insert_with::<String, _>(|| "hello".to_string())
+            .unwrap();
         assert_eq!(*value, "hello");
     }
 
@@ -542,8 +532,12 @@ mod tests {
         let owner = Arc::new(());
         let scope = ScopeContext::root(owner, ScopeKey::of::<()>(), CancellationToken::new());
 
-        let value1 = scope.get_or_insert_with::<String, _>(|| "first".to_string()).unwrap();
-        let value2 = scope.get_or_insert_with::<String, _>(|| "second".to_string()).unwrap();
+        let value1 = scope
+            .get_or_insert_with::<String, _>(|| "first".to_string())
+            .unwrap();
+        let value2 = scope
+            .get_or_insert_with::<String, _>(|| "second".to_string())
+            .unwrap();
         assert!(Arc::ptr_eq(&value1, &value2));
     }
 
@@ -648,7 +642,9 @@ mod tests {
             })
             .unwrap();
 
-        let result = scope.close_with_timeout(std::time::Duration::from_millis(1)).await;
+        let result = scope
+            .close_with_timeout(std::time::Duration::from_millis(1))
+            .await;
         // Should timeout
         assert!(result.is_err());
     }
@@ -668,7 +664,9 @@ mod tests {
     async fn get_or_insert_with_different_types() {
         let owner = Arc::new(());
         let scope = ScopeContext::root(owner, ScopeKey::of::<()>(), CancellationToken::new());
-        let s = scope.get_or_insert_with::<String, _>(|| "hello".to_string()).unwrap();
+        let s = scope
+            .get_or_insert_with::<String, _>(|| "hello".to_string())
+            .unwrap();
         let n = scope.get_or_insert_with::<i32, _>(|| 42).unwrap();
         assert_eq!(*s, "hello");
         assert_eq!(*n, 42);
@@ -679,7 +677,9 @@ mod tests {
         let owner = Arc::new(());
         let parent = ScopeContext::root(owner, ScopeKey::of::<()>(), CancellationToken::new());
         let child = parent.child::<i32>();
-        let val = child.get_or_insert_with::<String, _>(|| "child_value".to_string()).unwrap();
+        let val = child
+            .get_or_insert_with::<String, _>(|| "child_value".to_string())
+            .unwrap();
         assert_eq!(*val, "child_value");
     }
 
@@ -761,9 +761,13 @@ mod tests {
         let owner = Arc::new(());
         let scope = ScopeContext::root(owner, ScopeKey::of::<()>(), CancellationToken::new());
         let key = ComponentKey::of::<String>();
-        let result1 = scope.resolve_component(&key, || Ok(Arc::new("hello".to_string()) as Arc<dyn Any + Send + Sync>));
+        let result1 = scope.resolve_component(&key, || {
+            Ok(Arc::new("hello".to_string()) as Arc<dyn Any + Send + Sync>)
+        });
         assert!(result1.is_ok());
-        let result2 = scope.resolve_component(&key, || Ok(Arc::new("world".to_string()) as Arc<dyn Any + Send + Sync>));
+        let result2 = scope.resolve_component(&key, || {
+            Ok(Arc::new("world".to_string()) as Arc<dyn Any + Send + Sync>)
+        });
         assert!(result2.is_ok());
         // Both should return the same (first) value
         let v1 = result1.unwrap().downcast_ref::<String>().unwrap().clone();
@@ -785,7 +789,9 @@ mod tests {
         });
         assert!(result1.is_err());
         // Second call should also return error (cached)
-        let result2 = scope.resolve_component(&key, || Ok(Arc::new("now_ok".to_string()) as Arc<dyn Any + Send + Sync>));
+        let result2 = scope.resolve_component(&key, || {
+            Ok(Arc::new("now_ok".to_string()) as Arc<dyn Any + Send + Sync>)
+        });
         assert!(result2.is_err());
     }
 
@@ -795,7 +801,9 @@ mod tests {
         let scope = ScopeContext::root(owner, ScopeKey::of::<()>(), CancellationToken::new());
         scope.close().await.unwrap();
         let key = ComponentKey::of::<String>();
-        let result = scope.resolve_component(&key, || Ok(Arc::new("val".to_string()) as Arc<dyn Any + Send + Sync>));
+        let result = scope.resolve_component(&key, || {
+            Ok(Arc::new("val".to_string()) as Arc<dyn Any + Send + Sync>)
+        });
         assert!(result.is_err());
     }
 
@@ -806,7 +814,9 @@ mod tests {
         let scope = ScopeContext::root(owner, ScopeKey::of::<()>(), token.clone());
         token.cancel();
         let key = ComponentKey::of::<String>();
-        let result = scope.resolve_component(&key, || Ok(Arc::new("val".to_string()) as Arc<dyn Any + Send + Sync>));
+        let result = scope.resolve_component(&key, || {
+            Ok(Arc::new("val".to_string()) as Arc<dyn Any + Send + Sync>)
+        });
         assert!(result.is_err());
     }
 
@@ -827,7 +837,10 @@ mod tests {
 
         scope
             .on_close(|| async {
-                Err(std::io::Error::new(std::io::ErrorKind::Other, "hook failed"))
+                Err(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    "hook failed",
+                ))
             })
             .unwrap();
 
@@ -875,7 +888,9 @@ mod tests {
     async fn multiple_native_objects_independent() {
         let owner = Arc::new(());
         let scope = ScopeContext::root(owner, ScopeKey::of::<()>(), CancellationToken::new());
-        let s = scope.get_or_insert_with::<String, _>(|| "str".to_string()).unwrap();
+        let s = scope
+            .get_or_insert_with::<String, _>(|| "str".to_string())
+            .unwrap();
         let n = scope.get_or_insert_with::<i32, _>(|| 42).unwrap();
         assert_eq!(*s, "str");
         assert_eq!(*n, 42);
@@ -886,8 +901,12 @@ mod tests {
         let owner = Arc::new(());
         let parent = ScopeContext::root(owner, ScopeKey::of::<()>(), CancellationToken::new());
         let child = parent.child::<i32>();
-        let p_val = parent.get_or_insert_with::<String, _>(|| "parent".to_string()).unwrap();
-        let c_val = child.get_or_insert_with::<String, _>(|| "child".to_string()).unwrap();
+        let p_val = parent
+            .get_or_insert_with::<String, _>(|| "parent".to_string())
+            .unwrap();
+        let c_val = child
+            .get_or_insert_with::<String, _>(|| "child".to_string())
+            .unwrap();
         assert_eq!(*p_val, "parent");
         assert_eq!(*c_val, "child");
         // They should be different instances
@@ -930,8 +949,11 @@ mod tests {
         let scope = ScopeContext::root(owner, ScopeKey::of::<()>(), CancellationToken::new());
         let key1 = ComponentKey::of::<String>();
         let key2 = ComponentKey::of::<i32>();
-        let r1 = scope.resolve_component(&key1, || Ok(Arc::new("hello".to_string()) as Arc<dyn Any + Send + Sync>));
-        let r2 = scope.resolve_component(&key2, || Ok(Arc::new(42i32) as Arc<dyn Any + Send + Sync>));
+        let r1 = scope.resolve_component(&key1, || {
+            Ok(Arc::new("hello".to_string()) as Arc<dyn Any + Send + Sync>)
+        });
+        let r2 =
+            scope.resolve_component(&key2, || Ok(Arc::new(42i32) as Arc<dyn Any + Send + Sync>));
         assert!(r1.is_ok());
         assert!(r2.is_ok());
         let v1 = r1.unwrap().downcast_ref::<String>().unwrap().clone();
@@ -961,7 +983,9 @@ mod tests {
         let scope = ScopeContext::root(owner, ScopeKey::of::<()>(), CancellationToken::new());
         // begin_operation increments, finish_operation (via drop of guard) decrements
         let key = ComponentKey::of::<String>();
-        let result = scope.resolve_component(&key, || Ok(Arc::new("val".to_string()) as Arc<dyn Any + Send + Sync>));
+        let result = scope.resolve_component(&key, || {
+            Ok(Arc::new("val".to_string()) as Arc<dyn Any + Send + Sync>)
+        });
         assert!(result.is_ok());
         // After resolve_component returns, the operation guard is dropped
         // and active_operations should be 0
@@ -973,7 +997,9 @@ mod tests {
         let owner = Arc::new(());
         let scope = ScopeContext::root(owner, ScopeKey::of::<()>(), CancellationToken::new());
         // Different types get different cells
-        let v1 = scope.get_or_insert_with::<String, _>(|| "hello".to_string()).unwrap();
+        let v1 = scope
+            .get_or_insert_with::<String, _>(|| "hello".to_string())
+            .unwrap();
         let v2 = scope.get_or_insert_with::<i32, _>(|| 42).unwrap();
         let v3 = scope.get_or_insert_with::<bool, _>(|| true).unwrap();
         assert_eq!(*v1, "hello");
@@ -987,9 +1013,13 @@ mod tests {
         let scope = ScopeContext::root(owner, ScopeKey::of::<()>(), CancellationToken::new());
         let key = ComponentKey::of::<String>();
         // First call creates the cell
-        let r1 = scope.resolve_component(&key, || Ok(Arc::new("first".to_string()) as Arc<dyn Any + Send + Sync>));
+        let r1 = scope.resolve_component(&key, || {
+            Ok(Arc::new("first".to_string()) as Arc<dyn Any + Send + Sync>)
+        });
         // Second call reuses the cell (same key)
-        let r2 = scope.resolve_component(&key, || Ok(Arc::new("second".to_string()) as Arc<dyn Any + Send + Sync>));
+        let r2 = scope.resolve_component(&key, || {
+            Ok(Arc::new("second".to_string()) as Arc<dyn Any + Send + Sync>)
+        });
         assert!(r1.is_ok());
         assert!(r2.is_ok());
         // Both return the first value (cached)
@@ -1005,18 +1035,22 @@ mod tests {
         let execution_order = Arc::new(AtomicU32::new(0));
 
         let o1 = execution_order.clone();
-        scope.on_close(move || async move {
-            // First registered hook
-            o1.store(1, Ordering::SeqCst);
-            Ok::<(), std::io::Error>(())
-        }).unwrap();
+        scope
+            .on_close(move || async move {
+                // First registered hook
+                o1.store(1, Ordering::SeqCst);
+                Ok::<(), std::io::Error>(())
+            })
+            .unwrap();
 
         let o2 = execution_order.clone();
-        scope.on_close(move || async move {
-            // Second registered hook - executed first (reverse order)
-            o2.store(2, Ordering::SeqCst);
-            Ok::<(), std::io::Error>(())
-        }).unwrap();
+        scope
+            .on_close(move || async move {
+                // Second registered hook - executed first (reverse order)
+                o2.store(2, Ordering::SeqCst);
+                Ok::<(), std::io::Error>(())
+            })
+            .unwrap();
 
         scope.close().await.unwrap();
         // Hooks execute in reverse registration order.
@@ -1090,7 +1124,9 @@ mod tests {
     async fn get_or_insert_with_returns_different_types() {
         let owner = Arc::new(());
         let scope = ScopeContext::root(owner, ScopeKey::of::<()>(), CancellationToken::new());
-        let s = scope.get_or_insert_with::<String, _>(|| "str".to_string()).unwrap();
+        let s = scope
+            .get_or_insert_with::<String, _>(|| "str".to_string())
+            .unwrap();
         let n = scope.get_or_insert_with::<i32, _>(|| 42).unwrap();
         let b = scope.get_or_insert_with::<bool, _>(|| true).unwrap();
         assert_eq!(*s, "str");
@@ -1111,9 +1147,9 @@ mod tests {
 
         let owner = Arc::new(());
         let scope = ScopeContext::root(owner, ScopeKey::of::<()>(), CancellationToken::new());
-        scope.on_close(|| async {
-            Err(CustomError("custom".to_string()))
-        }).unwrap();
+        scope
+            .on_close(|| async { Err(CustomError("custom".to_string())) })
+            .unwrap();
         let result = scope.close().await;
         assert!(result.is_err());
     }
@@ -1143,10 +1179,12 @@ mod tests {
     async fn close_with_timeout_fails_on_timeout_v2() {
         let owner = Arc::new(());
         let scope = ScopeContext::root(owner, ScopeKey::of::<()>(), CancellationToken::new());
-        scope.on_close(|| async {
-            tokio::time::sleep(Duration::from_secs(60)).await;
-            Ok::<(), std::io::Error>(())
-        }).unwrap();
+        scope
+            .on_close(|| async {
+                tokio::time::sleep(Duration::from_secs(60)).await;
+                Ok::<(), std::io::Error>(())
+            })
+            .unwrap();
         let result = scope.close_with_timeout(Duration::from_millis(1)).await;
         assert!(result.is_err());
     }
@@ -1158,10 +1196,12 @@ mod tests {
         let scope = ScopeContext::root(owner, ScopeKey::of::<()>(), CancellationToken::new());
         let counter = Arc::new(AtomicU32::new(0));
         let c = counter.clone();
-        scope.on_close(move || async move {
-            c.fetch_add(1, Ordering::SeqCst);
-            Ok::<(), std::io::Error>(())
-        }).unwrap();
+        scope
+            .on_close(move || async move {
+                c.fetch_add(1, Ordering::SeqCst);
+                Ok::<(), std::io::Error>(())
+            })
+            .unwrap();
         scope.close().await.unwrap();
         assert_eq!(counter.load(Ordering::SeqCst), 1);
     }
@@ -1207,7 +1247,9 @@ mod tests {
     async fn multiple_native_objects_independent_v2() {
         let owner = Arc::new(());
         let scope = ScopeContext::root(owner, ScopeKey::of::<()>(), CancellationToken::new());
-        let s = scope.get_or_insert_with::<String, _>(|| "str".to_string()).unwrap();
+        let s = scope
+            .get_or_insert_with::<String, _>(|| "str".to_string())
+            .unwrap();
         let n = scope.get_or_insert_with::<i32, _>(|| 42).unwrap();
         assert_eq!(*s, "str");
         assert_eq!(*n, 42);
@@ -1218,8 +1260,12 @@ mod tests {
         let owner = Arc::new(());
         let parent = ScopeContext::root(owner, ScopeKey::of::<()>(), CancellationToken::new());
         let child = parent.child::<i32>();
-        let p_val = parent.get_or_insert_with::<String, _>(|| "parent".to_string()).unwrap();
-        let c_val = child.get_or_insert_with::<String, _>(|| "child".to_string()).unwrap();
+        let p_val = parent
+            .get_or_insert_with::<String, _>(|| "parent".to_string())
+            .unwrap();
+        let c_val = child
+            .get_or_insert_with::<String, _>(|| "child".to_string())
+            .unwrap();
         assert_eq!(*p_val, "parent");
         assert_eq!(*c_val, "child");
         assert!(!Arc::ptr_eq(&p_val, &c_val));
@@ -1261,8 +1307,11 @@ mod tests {
         let scope = ScopeContext::root(owner, ScopeKey::of::<()>(), CancellationToken::new());
         let key1 = ComponentKey::of::<String>();
         let key2 = ComponentKey::of::<i32>();
-        let r1 = scope.resolve_component(&key1, || Ok(Arc::new("hello".to_string()) as Arc<dyn Any + Send + Sync>));
-        let r2 = scope.resolve_component(&key2, || Ok(Arc::new(42i32) as Arc<dyn Any + Send + Sync>));
+        let r1 = scope.resolve_component(&key1, || {
+            Ok(Arc::new("hello".to_string()) as Arc<dyn Any + Send + Sync>)
+        });
+        let r2 =
+            scope.resolve_component(&key2, || Ok(Arc::new(42i32) as Arc<dyn Any + Send + Sync>));
         assert!(r1.is_ok());
         assert!(r2.is_ok());
         let v1 = r1.unwrap().downcast_ref::<String>().unwrap().clone();
@@ -1275,9 +1324,11 @@ mod tests {
     async fn public_close_error_hook_failure_v2() {
         let owner = Arc::new(());
         let scope = ScopeContext::root(owner, ScopeKey::of::<()>(), CancellationToken::new());
-        scope.on_close(|| async {
-            Err(std::io::Error::new(std::io::ErrorKind::Other, "hook error"))
-        }).unwrap();
+        scope
+            .on_close(|| async {
+                Err(std::io::Error::new(std::io::ErrorKind::Other, "hook error"))
+            })
+            .unwrap();
         let result = scope.close().await;
         assert!(result.is_err());
     }
@@ -1287,7 +1338,9 @@ mod tests {
         let owner = Arc::new(());
         let scope = ScopeContext::root(owner, ScopeKey::of::<()>(), CancellationToken::new());
         let key = ComponentKey::of::<String>();
-        let result = scope.resolve_component(&key, || Ok(Arc::new("val".to_string()) as Arc<dyn Any + Send + Sync>));
+        let result = scope.resolve_component(&key, || {
+            Ok(Arc::new("val".to_string()) as Arc<dyn Any + Send + Sync>)
+        });
         assert!(result.is_ok());
         assert_eq!(scope.runtime.lock().unwrap().active_operations, 0);
     }
@@ -1296,7 +1349,9 @@ mod tests {
     async fn native_cell_creates_separate_entries_v2() {
         let owner = Arc::new(());
         let scope = ScopeContext::root(owner, ScopeKey::of::<()>(), CancellationToken::new());
-        let v1 = scope.get_or_insert_with::<String, _>(|| "hello".to_string()).unwrap();
+        let v1 = scope
+            .get_or_insert_with::<String, _>(|| "hello".to_string())
+            .unwrap();
         let v2 = scope.get_or_insert_with::<i32, _>(|| 42).unwrap();
         let v3 = scope.get_or_insert_with::<bool, _>(|| true).unwrap();
         assert_eq!(*v1, "hello");
@@ -1309,8 +1364,12 @@ mod tests {
         let owner = Arc::new(());
         let scope = ScopeContext::root(owner, ScopeKey::of::<()>(), CancellationToken::new());
         let key = ComponentKey::of::<String>();
-        let r1 = scope.resolve_component(&key, || Ok(Arc::new("first".to_string()) as Arc<dyn Any + Send + Sync>));
-        let r2 = scope.resolve_component(&key, || Ok(Arc::new("second".to_string()) as Arc<dyn Any + Send + Sync>));
+        let r1 = scope.resolve_component(&key, || {
+            Ok(Arc::new("first".to_string()) as Arc<dyn Any + Send + Sync>)
+        });
+        let r2 = scope.resolve_component(&key, || {
+            Ok(Arc::new("second".to_string()) as Arc<dyn Any + Send + Sync>)
+        });
         assert!(r1.is_ok());
         assert!(r2.is_ok());
         assert_eq!(*r1.unwrap().downcast_ref::<String>().unwrap(), "first");
@@ -1325,16 +1384,20 @@ mod tests {
         let execution_order = Arc::new(AtomicU32::new(0));
 
         let o1 = execution_order.clone();
-        scope.on_close(move || async move {
-            o1.store(1, Ordering::SeqCst);
-            Ok::<(), std::io::Error>(())
-        }).unwrap();
+        scope
+            .on_close(move || async move {
+                o1.store(1, Ordering::SeqCst);
+                Ok::<(), std::io::Error>(())
+            })
+            .unwrap();
 
         let o2 = execution_order.clone();
-        scope.on_close(move || async move {
-            o2.store(2, Ordering::SeqCst);
-            Ok::<(), std::io::Error>(())
-        }).unwrap();
+        scope
+            .on_close(move || async move {
+                o2.store(2, Ordering::SeqCst);
+                Ok::<(), std::io::Error>(())
+            })
+            .unwrap();
 
         scope.close().await.unwrap();
         assert_eq!(execution_order.load(Ordering::SeqCst), 1);
@@ -1468,10 +1531,12 @@ mod tests {
 
         for _ in 0..10 {
             let c = counter.clone();
-            scope.on_close(move || async move {
-                c.fetch_add(1, Ordering::SeqCst);
-                Ok::<(), std::io::Error>(())
-            }).unwrap();
+            scope
+                .on_close(move || async move {
+                    c.fetch_add(1, Ordering::SeqCst);
+                    Ok::<(), std::io::Error>(())
+                })
+                .unwrap();
         }
 
         scope.close().await.unwrap();
@@ -1490,7 +1555,9 @@ mod tests {
     async fn native_object_isolation_between_types() {
         let owner = Arc::new(());
         let scope = ScopeContext::root(owner, ScopeKey::of::<()>(), CancellationToken::new());
-        let s = scope.get_or_insert_with::<String, _>(|| "string".to_string()).unwrap();
+        let s = scope
+            .get_or_insert_with::<String, _>(|| "string".to_string())
+            .unwrap();
         let i = scope.get_or_insert_with::<i32, _>(|| 42).unwrap();
         let b = scope.get_or_insert_with::<bool, _>(|| true).unwrap();
         assert_eq!(*s, "string");
@@ -1509,9 +1576,8 @@ mod tests {
         let r1 = scope.resolve_component(&key1, || {
             Ok(Arc::new("hello".to_string()) as Arc<dyn Any + Send + Sync>)
         });
-        let r2 = scope.resolve_component(&key2, || {
-            Ok(Arc::new(42i32) as Arc<dyn Any + Send + Sync>)
-        });
+        let r2 =
+            scope.resolve_component(&key2, || Ok(Arc::new(42i32) as Arc<dyn Any + Send + Sync>));
 
         assert!(r1.is_ok());
         assert!(r2.is_ok());
@@ -1585,9 +1651,14 @@ mod tests {
     async fn public_close_error_hook_variant() {
         let owner = Arc::new(());
         let scope = ScopeContext::root(owner, ScopeKey::of::<()>(), CancellationToken::new());
-        scope.on_close(|| async {
-            Err(std::io::Error::new(std::io::ErrorKind::Other, "hook failed"))
-        }).unwrap();
+        scope
+            .on_close(|| async {
+                Err(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    "hook failed",
+                ))
+            })
+            .unwrap();
         let result = scope.close().await;
         assert!(result.is_err());
     }
@@ -1607,13 +1678,17 @@ mod tests {
         let owner = Arc::new(());
         let scope = ScopeContext::root(owner, ScopeKey::of::<()>(), CancellationToken::new());
         // First hook succeeds
-        scope.on_close(|| async { Ok::<(), std::io::Error>(()) }).unwrap();
+        scope
+            .on_close(|| async { Ok::<(), std::io::Error>(()) })
+            .unwrap();
         // Second hook fails
-        scope.on_close(|| async {
-            Err(std::io::Error::new(std::io::ErrorKind::Other, "fail"))
-        }).unwrap();
+        scope
+            .on_close(|| async { Err(std::io::Error::new(std::io::ErrorKind::Other, "fail")) })
+            .unwrap();
         // Third hook succeeds
-        scope.on_close(|| async { Ok::<(), std::io::Error>(()) }).unwrap();
+        scope
+            .on_close(|| async { Ok::<(), std::io::Error>(()) })
+            .unwrap();
         let result = scope.close().await;
         // Should report the first error encountered
         assert!(result.is_err());
@@ -1688,7 +1763,9 @@ mod tests {
     async fn native_cell_different_types_independent() {
         let owner = Arc::new(());
         let scope = ScopeContext::root(owner, ScopeKey::of::<()>(), CancellationToken::new());
-        let s = scope.get_or_insert_with::<String, _>(|| "str".to_string()).unwrap();
+        let s = scope
+            .get_or_insert_with::<String, _>(|| "str".to_string())
+            .unwrap();
         let i = scope.get_or_insert_with::<i32, _>(|| 42).unwrap();
         let b = scope.get_or_insert_with::<bool, _>(|| true).unwrap();
         assert_eq!(*s, "str");
@@ -1699,7 +1776,11 @@ mod tests {
     #[tokio::test]
     async fn close_result_shared_among_concurrent_waiters() {
         let owner = Arc::new(());
-        let scope = Arc::new(ScopeContext::root(owner, ScopeKey::of::<()>(), CancellationToken::new()));
+        let scope = Arc::new(ScopeContext::root(
+            owner,
+            ScopeKey::of::<()>(),
+            CancellationToken::new(),
+        ));
         let mut handles = vec![];
         for _ in 0..5 {
             let s = scope.clone();

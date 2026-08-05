@@ -191,7 +191,9 @@ impl fmt::Display for MethodInvocationException {
 
 impl std::error::Error for MethodInvocationException {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        self.cause.as_ref().map(|e| e.as_ref() as &(dyn std::error::Error + 'static))
+        self.cause
+            .as_ref()
+            .map(|e| e.as_ref() as &(dyn std::error::Error + 'static))
     }
 }
 
@@ -220,11 +222,8 @@ mod tests {
     #[test]
     fn with_method_and_cause_full_context() {
         let io_err = std::io::Error::new(std::io::ErrorKind::Other, "bad");
-        let e = MethodInvocationException::with_method_and_cause(
-            "setter failed",
-            "setName",
-            io_err,
-        );
+        let e =
+            MethodInvocationException::with_method_and_cause("setter failed", "setName", io_err);
         assert_eq!(e.method_name(), Some("setName"));
         assert!(e.cause().is_some());
     }

@@ -170,9 +170,13 @@ mod tests {
     #[test]
     fn test_is_simple_property() {
         assert!(BeanUtils::is_simple_property(std::any::TypeId::of::<i32>()));
-        assert!(BeanUtils::is_simple_property(std::any::TypeId::of::<String>()));
+        assert!(BeanUtils::is_simple_property(
+            std::any::TypeId::of::<String>()
+        ));
         assert!(BeanUtils::is_simple_property(std::any::TypeId::of::<bool>()));
-        assert!(!BeanUtils::is_simple_property(std::any::TypeId::of::<Vec<String>>()));
+        assert!(!BeanUtils::is_simple_property(std::any::TypeId::of::<
+            Vec<String>,
+        >()));
     }
 
     #[test]
@@ -190,7 +194,10 @@ mod tests {
     #[test]
     fn test_copy_properties_map() {
         let mut source = HashMap::new();
-        source.insert("key".to_string(), Box::new("value".to_string()) as Box<dyn Any + Send + Sync>);
+        source.insert(
+            "key".to_string(),
+            Box::new("value".to_string()) as Box<dyn Any + Send + Sync>,
+        );
 
         let mut target = HashMap::new();
         BeanUtils::copy_properties_map(&source, &mut target);

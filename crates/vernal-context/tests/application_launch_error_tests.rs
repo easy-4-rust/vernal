@@ -2,10 +2,10 @@
 
 use std::error::Error;
 
+use vernal_beans::DefinitionError;
 use vernal_context::{
     ApplicationBuildError, ApplicationLaunchError, ConditionError, ContextError, ContextState,
 };
-use vernal_beans::DefinitionError;
 
 // ════════════════════════════════════════════════════════════════════
 // 测试: ApplicationLaunchError::Build
@@ -90,9 +90,7 @@ fn test_launch_error_build_is_std_error() {
 #[test]
 fn test_launch_error_build_with_condition_error() {
     let err = ApplicationLaunchError::build(ApplicationBuildError::Condition {
-        source: ConditionError::DuplicateModule {
-            name: "test",
-        },
+        source: ConditionError::DuplicateModule { name: "test" },
     });
     let display = format!("{err}");
     assert!(!display.is_empty());

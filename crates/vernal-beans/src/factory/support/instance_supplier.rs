@@ -51,7 +51,11 @@ pub trait InstanceSupplier: Send + Sync {
 ///
 /// 最简单的 `InstanceSupplier` 实现，包装一个工厂闭包。
 pub struct ClosureInstanceSupplier {
-    factory: Box<dyn Fn(&str) -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> + Send + Sync>,
+    factory: Box<
+        dyn Fn(&str) -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>>
+            + Send
+            + Sync,
+    >,
     exposed_type: Option<String>,
 }
 
@@ -61,7 +65,13 @@ impl ClosureInstanceSupplier {
     /// # 参数
     /// - `factory` — 工厂闭包，接收 Bean 名称，返回实例
     pub fn new(
-        factory: impl Fn(&str) -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> + Send + Sync + 'static,
+        factory: impl Fn(
+            &str,
+        )
+            -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>>
+        + Send
+        + Sync
+        + 'static,
     ) -> Self {
         Self {
             factory: Box::new(factory),
@@ -109,9 +119,8 @@ mod tests {
 
     #[test]
     fn closure_supplier_error_propagation() {
-        let supplier = ClosureInstanceSupplier::new(|name| {
-            Err(format!("Bean '{}' not found", name).into())
-        });
+        let supplier =
+            ClosureInstanceSupplier::new(|name| Err(format!("Bean '{}' not found", name).into()));
         let result = supplier.get("missingBean");
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("missingBean"));

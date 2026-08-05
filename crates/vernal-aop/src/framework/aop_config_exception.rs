@@ -65,7 +65,10 @@ mod tests {
     #[test]
     fn aop_config_exception_display() {
         let err = AopConfigException::new("invalid configuration");
-        assert_eq!(format!("{}", err), "AopConfigException: invalid configuration");
+        assert_eq!(
+            format!("{}", err),
+            "AopConfigException: invalid configuration"
+        );
     }
 
     #[test]

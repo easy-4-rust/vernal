@@ -44,7 +44,9 @@ impl<S: TransactionAttributeSource + 'static> AspectJJtaTransactionManagementCon
         let mut guard = self.jta_aspect.write().unwrap();
         if guard.is_none() {
             // 使用与基础配置相同的属性源
-            let source = self.base.get_aspect()
+            let source = self
+                .base
+                .get_aspect()
                 .map(|a| a.get_attribute_source().clone())
                 .unwrap_or_else(|| panic!("Base aspect not registered"));
             *guard = Some(Arc::new(JtaAnnotationTransactionAspect::new(source)));
@@ -69,7 +71,9 @@ mod tests {
         fn get_transaction_attribute(&self, _: &MethodMetadata) -> Option<TransactionAttribute> {
             Some(TransactionAttribute::default())
         }
-        fn is_candidate_class(&self, _: &str) -> bool { true }
+        fn is_candidate_class(&self, _: &str) -> bool {
+            true
+        }
     }
 
     #[test]

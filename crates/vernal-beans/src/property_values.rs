@@ -2,7 +2,6 @@
 //!
 //! 属性值集合接口。
 
-
 use crate::property_value::PropertyValue;
 
 /// 属性值集合接口。
@@ -39,9 +38,7 @@ pub struct MutablePropertyValuesImpl {
 impl MutablePropertyValuesImpl {
     /// 创建一个新的 MutablePropertyValuesImpl。
     pub fn new() -> Self {
-        Self {
-            values: Vec::new(),
-        }
+        Self { values: Vec::new() }
     }
 
     /// 添加属性值。
@@ -122,8 +119,15 @@ mod tests {
         let mut pvs = MutablePropertyValuesImpl::new();
         assert!(pvs.is_empty());
 
-        pvs.add(PropertyValue::new("name", std::sync::Arc::new(String::from("Alice")) as std::sync::Arc<dyn std::any::Any + Send + Sync>));
-        pvs.add(PropertyValue::new("age", std::sync::Arc::new(30i32) as std::sync::Arc<dyn std::any::Any + Send + Sync>));
+        pvs.add(PropertyValue::new(
+            "name",
+            std::sync::Arc::new(String::from("Alice"))
+                as std::sync::Arc<dyn std::any::Any + Send + Sync>,
+        ));
+        pvs.add(PropertyValue::new(
+            "age",
+            std::sync::Arc::new(30i32) as std::sync::Arc<dyn std::any::Any + Send + Sync>,
+        ));
         assert_eq!(pvs.len(), 2);
         assert!(!pvs.is_empty());
         assert!(pvs.contains("name"));
@@ -134,7 +138,11 @@ mod tests {
     #[test]
     fn test_get_property_value() {
         let mut pvs = MutablePropertyValuesImpl::new();
-        pvs.add(PropertyValue::new("name", std::sync::Arc::new(String::from("Alice")) as std::sync::Arc<dyn std::any::Any + Send + Sync>));
+        pvs.add(PropertyValue::new(
+            "name",
+            std::sync::Arc::new(String::from("Alice"))
+                as std::sync::Arc<dyn std::any::Any + Send + Sync>,
+        ));
         let pv = pvs.get_property_value("name").unwrap();
         assert_eq!(pv.name(), "name");
     }
@@ -142,7 +150,11 @@ mod tests {
     #[test]
     fn test_remove() {
         let mut pvs = MutablePropertyValuesImpl::new();
-        pvs.add(PropertyValue::new("name", std::sync::Arc::new(String::from("Alice")) as std::sync::Arc<dyn std::any::Any + Send + Sync>));
+        pvs.add(PropertyValue::new(
+            "name",
+            std::sync::Arc::new(String::from("Alice"))
+                as std::sync::Arc<dyn std::any::Any + Send + Sync>,
+        ));
         assert_eq!(pvs.len(), 1);
         pvs.remove("name");
         assert_eq!(pvs.len(), 0);
@@ -151,8 +163,14 @@ mod tests {
     #[test]
     fn test_clear() {
         let mut pvs = MutablePropertyValuesImpl::new();
-        pvs.add(PropertyValue::new("a", std::sync::Arc::new(1i32) as std::sync::Arc<dyn std::any::Any + Send + Sync>));
-        pvs.add(PropertyValue::new("b", std::sync::Arc::new(2i32) as std::sync::Arc<dyn std::any::Any + Send + Sync>));
+        pvs.add(PropertyValue::new(
+            "a",
+            std::sync::Arc::new(1i32) as std::sync::Arc<dyn std::any::Any + Send + Sync>,
+        ));
+        pvs.add(PropertyValue::new(
+            "b",
+            std::sync::Arc::new(2i32) as std::sync::Arc<dyn std::any::Any + Send + Sync>,
+        ));
         pvs.clear();
         assert!(pvs.is_empty());
     }

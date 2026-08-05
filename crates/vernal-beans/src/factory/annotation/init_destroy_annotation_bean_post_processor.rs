@@ -8,8 +8,8 @@
 //! 并在 Bean 销毁前扫描 `@PreDestroy` 标注的方法，实现声明式生命周期管理。
 
 use std::any::Any;
-use std::sync::{Arc, Mutex};
 use std::collections::HashSet;
+use std::sync::{Arc, Mutex};
 
 use crate::factory::config::bean_post_processor::BeanPostProcessor;
 
@@ -82,12 +82,19 @@ impl InitDestroyAnnotationBeanPostProcessor {
 
     /// 获取所有销毁方法名。
     pub fn destroy_methods(&self) -> Vec<String> {
-        self.destroy_methods.lock().unwrap().iter().cloned().collect()
+        self.destroy_methods
+            .lock()
+            .unwrap()
+            .iter()
+            .cloned()
+            .collect()
     }
 }
 
 impl Default for InitDestroyAnnotationBeanPostProcessor {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl BeanPostProcessor for InitDestroyAnnotationBeanPostProcessor {

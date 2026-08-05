@@ -103,8 +103,8 @@ impl<T: ConfigurableObject> Default for AbstractDependencyInjectionAspect<T> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::configurable_object::ConfigurableObject;
+    use super::*;
 
     #[allow(dead_code)] // 测试脚手架：字段仅用于构造，不参与断言
     struct TestDomainObject {

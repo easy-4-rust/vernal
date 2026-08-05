@@ -22,7 +22,11 @@ pub struct MethodMetadata {
 
 impl MethodMetadata {
     /// 创建新的方法元数据。
-    pub fn new(type_name: &'static str, method_name: &'static str, return_type: &'static str) -> Self {
+    pub fn new(
+        type_name: &'static str,
+        method_name: &'static str,
+        return_type: &'static str,
+    ) -> Self {
         Self {
             type_name,
             method_name,
@@ -85,7 +89,10 @@ impl AbstractAsyncExecutionAspect {
     /// 根据方法确定异步执行器。
     ///
     /// 对标 Spring 的 `determineAsyncExecutor(Method method)` 方法。
-    pub fn determine_async_executor(&self, _method: &MethodMetadata) -> Option<Arc<dyn AsyncTaskExecutor>> {
+    pub fn determine_async_executor(
+        &self,
+        _method: &MethodMetadata,
+    ) -> Option<Arc<dyn AsyncTaskExecutor>> {
         self.executor.clone()
     }
 
@@ -98,11 +105,7 @@ impl AbstractAsyncExecutionAspect {
     /// 1. 确定执行器
     /// 2. 如果没有执行器，同步执行
     /// 3. 如果有执行器，异步执行
-    pub fn execute_async<F>(
-        &self,
-        method: &MethodMetadata,
-        callback: F,
-    ) -> AsyncExecutionResult
+    pub fn execute_async<F>(&self, method: &MethodMetadata, callback: F) -> AsyncExecutionResult
     where
         F: Future<Output = AsyncTaskResult> + Send + 'static,
     {
@@ -160,7 +163,8 @@ mod tests {
     #[test]
     fn test_determine_async_executor_with_executor() {
         let mut aspect = AbstractAsyncExecutionAspect::new();
-        let executor = Arc::new(super::super::async_task_executor::DefaultAsyncTaskExecutor::new("test"));
+        let executor =
+            Arc::new(super::super::async_task_executor::DefaultAsyncTaskExecutor::new("test"));
         aspect.set_executor(executor.clone());
         let method = MethodMetadata::new("Foo", "bar", "void");
         let found = aspect.determine_async_executor(&method);
@@ -200,7 +204,8 @@ mod tests {
     #[test]
     fn test_set_executor() {
         let mut aspect = AbstractAsyncExecutionAspect::new();
-        let executor = Arc::new(super::super::async_task_executor::DefaultAsyncTaskExecutor::new("test"));
+        let executor =
+            Arc::new(super::super::async_task_executor::DefaultAsyncTaskExecutor::new("test"));
         aspect.set_executor(executor);
         assert!(aspect.executor.is_some());
     }
@@ -208,7 +213,9 @@ mod tests {
     #[test]
     fn test_set_exception_handler() {
         let mut aspect = AbstractAsyncExecutionAspect::new();
-        let handler = Arc::new(super::super::async_uncaught_exception_handler::DefaultAsyncUncaughtExceptionHandler);
+        let handler = Arc::new(
+            super::super::async_uncaught_exception_handler::DefaultAsyncUncaughtExceptionHandler,
+        );
         aspect.set_exception_handler(handler);
         assert!(aspect.exception_handler.is_some());
     }
@@ -217,13 +224,17 @@ mod tests {
     fn test_set_default_executor_name() {
         let mut aspect = AbstractAsyncExecutionAspect::new();
         aspect.set_default_executor_name("my-executor".to_string());
-        assert_eq!(aspect.default_executor_name, Some("my-executor".to_string()));
+        assert_eq!(
+            aspect.default_executor_name,
+            Some("my-executor".to_string())
+        );
     }
 
     #[test]
     fn test_execute_async_with_executor() {
         let mut aspect = AbstractAsyncExecutionAspect::new();
-        let executor = Arc::new(super::super::async_task_executor::DefaultAsyncTaskExecutor::new("test"));
+        let executor =
+            Arc::new(super::super::async_task_executor::DefaultAsyncTaskExecutor::new("test"));
         aspect.set_executor(executor);
         let method = MethodMetadata::new("Foo", "bar", "void");
 
@@ -240,7 +251,9 @@ mod tests {
     #[test]
     fn test_handle_error_with_handler() {
         let mut aspect = AbstractAsyncExecutionAspect::new();
-        let handler = Arc::new(super::super::async_uncaught_exception_handler::DefaultAsyncUncaughtExceptionHandler);
+        let handler = Arc::new(
+            super::super::async_uncaught_exception_handler::DefaultAsyncUncaughtExceptionHandler,
+        );
         aspect.set_exception_handler(handler);
         let method = MethodMetadata::new("Foo", "bar", "void");
         // 不应 panic

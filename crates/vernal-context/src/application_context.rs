@@ -279,7 +279,8 @@ impl ApplicationContext {
 
     /// 设置部署应用程序名称。
     pub fn set_application_name(&self, name: impl Into<String>) {
-        *self.application_name
+        *self
+            .application_name
             .lock()
             .expect("application_name mutex poisoned") = name.into();
     }
@@ -298,7 +299,8 @@ impl ApplicationContext {
 
     /// 设置上下文显示名。
     pub fn set_display_name(&self, name: impl Into<String>) {
-        *self.display_name
+        *self
+            .display_name
             .lock()
             .expect("display_name mutex poisoned") = name.into();
     }
@@ -310,17 +312,12 @@ impl ApplicationContext {
     /// 到父 Context —— 这与 Spring `HierarchicalBeanFactory` 的合并语义不同。
     #[must_use]
     pub fn parent(&self) -> Option<Arc<ApplicationContext>> {
-        self.parent
-            .lock()
-            .expect("parent mutex poisoned")
-            .clone()
+        self.parent.lock().expect("parent mutex poisoned").clone()
     }
 
     /// 设置父 Context 引用。
     pub fn set_parent(&self, parent: Option<Arc<ApplicationContext>>) {
-        *self.parent
-            .lock()
-            .expect("parent mutex poisoned") = parent;
+        *self.parent.lock().expect("parent mutex poisoned") = parent;
     }
 
     /// 返回构造时刻的 epoch 毫秒时间戳（对标 Spring `ApplicationContext#getStartupDate`）。
@@ -374,10 +371,7 @@ impl ApplicationContext {
     /// 跨平台不可移植（Windows 注册 `ctrl_close` / `ctrl_break` 路径由 tokio
     /// signal 模块管理）。
     pub fn register_shutdown_hook(&self) {
-        if self
-            .shutdown_hook_registered
-            .swap(true, Ordering::AcqRel)
-        {
+        if self.shutdown_hook_registered.swap(true, Ordering::AcqRel) {
             return; // 已注册过
         }
         let context = Arc::new(self.clone_for_hook());

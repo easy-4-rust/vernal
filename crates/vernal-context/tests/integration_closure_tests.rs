@@ -6,13 +6,14 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use vernal_context::{
-    ApplicationRunner, Lifecycle, ScheduledTask, TaskSchedule,
-    VernalApplicationBuilder,
+use vernal_aop::{
+    Interceptor, Invocation, InvocationFuture, LocalInterceptor, LocalInvocationFuture, LocalNext,
+    Next, Operation, Pointcut,
 };
 use vernal_beans::{Component, ComponentDefinition};
-use vernal_aop::{Interceptor, LocalInterceptor, Invocation, InvocationFuture,
-    LocalInvocationFuture, Next, LocalNext, Operation, Pointcut};
+use vernal_context::{
+    ApplicationRunner, Lifecycle, ScheduledTask, TaskSchedule, VernalApplicationBuilder,
+};
 
 // ════════════════════════════════════════════════════════════════════
 // 测试用类型
@@ -83,7 +84,11 @@ impl Component for NopInterceptor {
     }
 }
 impl Interceptor for NopInterceptor {
-    fn intercept<'a>(&'a self, invocation: Arc<Invocation>, next: Next<'a>) -> InvocationFuture<'a> {
+    fn intercept<'a>(
+        &'a self,
+        invocation: Arc<Invocation>,
+        next: Next<'a>,
+    ) -> InvocationFuture<'a> {
         next.run(invocation)
     }
 }
@@ -95,14 +100,20 @@ impl Component for NopLocalInterceptor {
     }
 }
 impl LocalInterceptor for NopLocalInterceptor {
-    fn intercept_local<'a>(&'a self, invocation: Arc<Invocation>, next: LocalNext<'a>) -> LocalInvocationFuture<'a> {
+    fn intercept_local<'a>(
+        &'a self,
+        invocation: Arc<Invocation>,
+        next: LocalNext<'a>,
+    ) -> LocalInvocationFuture<'a> {
         Box::pin(async move { next.run(invocation).await })
     }
 }
 
 struct AlwaysPointcut;
 impl Pointcut for AlwaysPointcut {
-    fn matches(&self, _: &Operation) -> bool { true }
+    fn matches(&self, _: &Operation) -> bool {
+        true
+    }
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -117,7 +128,11 @@ async fn test_lifecycle_closure_via_build() {
     let _ = builder.register(TestLifecycle::definition());
     builder.lifecycle::<TestLifecycle>();
     let result = builder.build();
-    assert!(result.is_ok(), "build with lifecycle should succeed: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "build with lifecycle should succeed: {:?}",
+        result.err()
+    );
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -132,7 +147,11 @@ async fn test_event_listener_closure_via_build() {
     let _ = builder.register(TestEventListener::definition());
     builder.event_listener::<TestEvent, TestEventListener>();
     let result = builder.build();
-    assert!(result.is_ok(), "build with event_listener should succeed: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "build with event_listener should succeed: {:?}",
+        result.err()
+    );
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -147,7 +166,11 @@ async fn test_application_runner_closure_via_build() {
     let _ = builder.register(TestRunner::definition());
     builder.application_runner::<TestRunner>();
     let result = builder.build();
-    assert!(result.is_ok(), "build with application_runner should succeed: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "build with application_runner should succeed: {:?}",
+        result.err()
+    );
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -162,7 +185,11 @@ async fn test_scheduled_task_closure_via_build() {
     let _ = builder.register(TestTask::definition());
     builder.scheduled_task::<TestTask>();
     let result = builder.build();
-    assert!(result.is_ok(), "build with scheduled_task should succeed: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "build with scheduled_task should succeed: {:?}",
+        result.err()
+    );
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -177,7 +204,11 @@ async fn test_advisor_component_via_build() {
     let _ = builder.register(NopInterceptor::definition());
     builder.advisor_component::<NopInterceptor, AlwaysPointcut>(AlwaysPointcut, 0);
     let result = builder.build();
-    assert!(result.is_ok(), "build with advisor_component should succeed: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "build with advisor_component should succeed: {:?}",
+        result.err()
+    );
 }
 
 /// 验证 local_advisor_component() 通过 build() 执行
@@ -188,7 +219,11 @@ async fn test_local_advisor_component_via_build() {
     let _ = builder.register(NopLocalInterceptor::definition());
     builder.local_advisor_component::<NopLocalInterceptor, AlwaysPointcut>(AlwaysPointcut, 0);
     let result = builder.build();
-    assert!(result.is_ok(), "build with local_advisor_component should succeed: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "build with local_advisor_component should succeed: {:?}",
+        result.err()
+    );
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -225,5 +260,9 @@ async fn test_combined_registration_via_build() {
 
     // 构建上下文
     let result = builder.build();
-    assert!(result.is_ok(), "combined registration should succeed: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "combined registration should succeed: {:?}",
+        result.err()
+    );
 }

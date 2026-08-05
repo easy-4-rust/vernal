@@ -79,8 +79,8 @@ impl DataBufferUtils {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::io::buffer::default_data_buffer::DefaultDataBuffer;
     use crate::io::ByteArrayResource;
+    use crate::io::buffer::default_data_buffer::DefaultDataBuffer;
 
     #[test]
     fn reads_resource_into_buffer() {

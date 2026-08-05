@@ -55,12 +55,18 @@ impl JsonCodec {
     }
 
     /// 序列化为 serde_json Value。
-    pub fn to_value<T: Serialize>(&self, value: &T) -> Result<serde_json::Value, SerializationError> {
+    pub fn to_value<T: Serialize>(
+        &self,
+        value: &T,
+    ) -> Result<serde_json::Value, SerializationError> {
         serde_json::to_value(value).map_err(|e| SerializationError::Json(e.to_string()))
     }
 
     /// 从 serde_json Value 反序列化。
-    pub fn from_value<T: DeserializeOwned>(&self, value: serde_json::Value) -> Result<T, SerializationError> {
+    pub fn from_value<T: DeserializeOwned>(
+        &self,
+        value: serde_json::Value,
+    ) -> Result<T, SerializationError> {
         serde_json::from_value(value).map_err(|e| SerializationError::Json(e.to_string()))
     }
 }
@@ -85,7 +91,10 @@ mod tests {
     #[test]
     fn roundtrip_string() {
         let codec = JsonCodec::new();
-        let original = TestStruct { name: "test".to_string(), value: 42 };
+        let original = TestStruct {
+            name: "test".to_string(),
+            value: 42,
+        };
         let json = codec.to_string(&original).unwrap();
         let parsed: TestStruct = codec.from_str(&json).unwrap();
         assert_eq!(original, parsed);
@@ -94,9 +103,12 @@ mod tests {
     #[test]
     fn roundtrip_pretty() {
         let codec = JsonCodec::new();
-        let original = TestStruct { name: "demo".to_string(), value: 100 };
+        let original = TestStruct {
+            name: "demo".to_string(),
+            value: 100,
+        };
         let json = codec.to_string_pretty(&original).unwrap();
-        assert!(json.contains("\n"));  // pretty 输出含换行
+        assert!(json.contains("\n")); // pretty 输出含换行
         let parsed: TestStruct = codec.from_str(&json).unwrap();
         assert_eq!(original, parsed);
     }
@@ -131,7 +143,10 @@ mod tests {
     #[test]
     fn roundtrip_value() {
         let codec = JsonCodec::new();
-        let original = TestStruct { name: "value".to_string(), value: 7 };
+        let original = TestStruct {
+            name: "value".to_string(),
+            value: 7,
+        };
         let value = codec.to_value(&original).unwrap();
         let parsed: TestStruct = codec.from_value(value).unwrap();
         assert_eq!(original, parsed);
@@ -155,7 +170,10 @@ mod tests {
     #[test]
     fn empty_object_roundtrip() {
         let codec = JsonCodec::new();
-        let original = TestStruct { name: "".to_string(), value: 0 };
+        let original = TestStruct {
+            name: "".to_string(),
+            value: 0,
+        };
         let json = codec.to_string(&original).unwrap();
         let parsed: TestStruct = codec.from_str(&json).unwrap();
         assert_eq!(original, parsed);

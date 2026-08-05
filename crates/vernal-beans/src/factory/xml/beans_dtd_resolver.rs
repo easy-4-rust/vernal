@@ -31,7 +31,8 @@ impl BeansDtdResolver {
 
     /// 获取已解析的实体数量。
     pub fn resolved_count(&self) -> u32 {
-        self.resolved_count.load(std::sync::atomic::Ordering::Relaxed)
+        self.resolved_count
+            .load(std::sync::atomic::Ordering::Relaxed)
     }
 
     /// 获取内置 DTD 内容。
@@ -57,7 +58,8 @@ impl EntityResolver for BeansDtdResolver {
     ) -> Result<ResolvedEntity, Box<dyn std::error::Error + Send + Sync>> {
         // 检查是否是 Spring beans DTD
         if system_id.contains("spring-beans") || system_id.contains("springframework") {
-            self.resolved_count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            self.resolved_count
+                .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
             return Ok(ResolvedEntity {
                 public_id: public_id.map(String::from),
                 system_id: system_id.to_string(),
@@ -65,7 +67,11 @@ impl EntityResolver for BeansDtdResolver {
             });
         }
 
-        Err(format!("BeansDtdResolver: unrecognized DTD system_id '{}'", system_id).into())
+        Err(format!(
+            "BeansDtdResolver: unrecognized DTD system_id '{}'",
+            system_id
+        )
+        .into())
     }
 }
 
@@ -100,7 +106,8 @@ mod tests {
         let _ = resolver.resolve_entity(None, "spring-beans.dtd");
         assert_eq!(resolver.resolved_count(), 1);
 
-        let _ = resolver.resolve_entity(None, "http://www.springframework.org/dtd/spring-beans.dtd");
+        let _ =
+            resolver.resolve_entity(None, "http://www.springframework.org/dtd/spring-beans.dtd");
         assert_eq!(resolver.resolved_count(), 2);
     }
 }

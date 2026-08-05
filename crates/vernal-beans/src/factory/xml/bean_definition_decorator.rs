@@ -91,7 +91,10 @@ mod tests {
         let result = decorator.decorate("myBean", "scoped-proxy", &[]).unwrap();
         assert_eq!(result.bean_name, "myBean");
         assert_eq!(result.decorator_type, "scoped-proxy");
-        assert_eq!(result.additional_properties.get("scoped-proxy"), Some(&"true".to_string()));
+        assert_eq!(
+            result.additional_properties.get("scoped-proxy"),
+            Some(&"true".to_string())
+        );
     }
 
     #[test]
@@ -105,6 +108,9 @@ mod tests {
     fn proxy_target_class_defaults_to_true() {
         let decorator = ScopedProxyDecorator::new();
         let result = decorator.decorate("bean", "scoped-proxy", &[]).unwrap();
-        assert_eq!(result.additional_properties.get("proxy-target-class"), Some(&"true".to_string()));
+        assert_eq!(
+            result.additional_properties.get("proxy-target-class"),
+            Some(&"true".to_string())
+        );
     }
 }

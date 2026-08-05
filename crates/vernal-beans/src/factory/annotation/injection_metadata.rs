@@ -10,13 +10,23 @@ pub struct InjectionMetadata {
 
 impl InjectionMetadata {
     /// 创建一个新的实例。
-    pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
     /// 添加元素。
-    pub fn add_element(&mut self, element: Box<dyn Any + Send + Sync>) { self.elements.push(element); }
+    pub fn add_element(&mut self, element: Box<dyn Any + Send + Sync>) {
+        self.elements.push(element);
+    }
     /// 获取元素数量。
-    pub fn element_count(&self) -> usize { self.elements.len() }
+    pub fn element_count(&self) -> usize {
+        self.elements.len()
+    }
     /// 判断是否empty。
-    pub fn is_empty(&self) -> bool { self.elements.is_empty() }
+    pub fn is_empty(&self) -> bool {
+        self.elements.is_empty()
+    }
     /// 移除。
-    pub fn clear(&mut self) { self.elements.clear(); }
+    pub fn clear(&mut self) {
+        self.elements.clear();
+    }
 }

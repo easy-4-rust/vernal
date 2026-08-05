@@ -88,7 +88,8 @@ impl TransactionManager for NoOpTransactionManager {
 /// 事务挂起信息。
 ///
 /// 对标 Spring 的 `TransactionSynchronizationManager` 中的挂起事务信息。
-#[allow(dead_code)] // Java 镜像脚手架：挂起事务的数据模型，后续接入真实事务同步管理器时使用
+#[allow(dead_code)]
+// Java 镜像脚手架：挂起事务的数据模型，后续接入真实事务同步管理器时使用
 #[derive(Debug, Clone)]
 pub struct SuspendedTransactionInfo {
     /// 挂起的事务名称。
@@ -123,9 +124,8 @@ pub struct TransactionAspectSupport<S: TransactionAttributeSource> {
     /// 事务管理器缓存（方法 → 事务管理器）。
     ///
     /// 对标 Spring 的 `transactionManagerCache`。
-    transaction_manager_cache: std::sync::RwLock<
-        std::collections::HashMap<String, Arc<dyn TransactionManager>>,
-    >,
+    transaction_manager_cache:
+        std::sync::RwLock<std::collections::HashMap<String, Arc<dyn TransactionManager>>>,
 
     /// 是否存在当前事务（用于测试）。
     ///
@@ -149,7 +149,8 @@ impl<S: TransactionAttributeSource> TransactionAspectSupport<S> {
     /// 设置是否存在当前事务（用于测试）。
     #[cfg(test)]
     fn set_has_current_tx_for_testing(&self, value: bool) {
-        self.has_current_tx.store(value, std::sync::atomic::Ordering::SeqCst);
+        self.has_current_tx
+            .store(value, std::sync::atomic::Ordering::SeqCst);
     }
 
     /// 设置事务管理器。
@@ -248,9 +249,7 @@ impl<S: TransactionAttributeSource> TransactionAspectSupport<S> {
             }
 
             // 以非事务方式运行，存在则抛异常
-            Propagation::Never => {
-                self.handle_never(attribute, target_type_name, method, callback)
-            }
+            Propagation::Never => self.handle_never(attribute, target_type_name, method, callback),
 
             // 在嵌套事务中执行
             Propagation::Nested => {
@@ -316,11 +315,7 @@ impl<S: TransactionAttributeSource> TransactionAspectSupport<S> {
         let has_current_tx = self.has_current_transaction(target_type_name);
 
         if has_current_tx {
-            self.execute_with_existing_transaction(
-                _attribute,
-                method,
-                callback,
-            )
+            self.execute_with_existing_transaction(_attribute, method, callback)
         } else {
             TransactionResult::Err(TransactionError::new(
                 format!(
@@ -421,10 +416,7 @@ impl<S: TransactionAttributeSource> TransactionAspectSupport<S> {
     }
 
     /// 无事务执行。
-    fn execute_without_transaction<F>(
-        &self,
-        callback: F,
-    ) -> TransactionResult
+    fn execute_without_transaction<F>(&self, callback: F) -> TransactionResult
     where
         F: FnOnce() -> Result<Box<dyn Any + Send + Sync>, Box<dyn Any + Send + Sync>>,
     {
@@ -454,8 +446,7 @@ impl<S: TransactionAttributeSource> TransactionAspectSupport<S> {
             Err(err) => {
                 // 检查回滚规则
                 let should_rollback = _attribute.should_rollback(
-                    "unknown",
-                    true,  // 假设是 RuntimeException
+                    "unknown", true, // 假设是 RuntimeException
                     false,
                 );
 
@@ -532,7 +523,9 @@ impl<S: TransactionAttributeSource> TransactionAspectSupport<S> {
     fn has_current_transaction(&self, _target_type_name: &str) -> bool {
         // 实际实现需要检查事务同步管理器
         #[cfg(test)]
-        return self.has_current_tx.load(std::sync::atomic::Ordering::SeqCst);
+        return self
+            .has_current_tx
+            .load(std::sync::atomic::Ordering::SeqCst);
         #[cfg(not(test))]
         return false;
     }
@@ -540,10 +533,7 @@ impl<S: TransactionAttributeSource> TransactionAspectSupport<S> {
     /// 挂起当前事务。
     ///
     /// 对标 Spring 的 `TransactionSynchronizationManager.suspendSynchronization()`。
-    fn suspend_transaction(
-        &self,
-        _target_type_name: &str,
-    ) -> Option<SuspendedTransactionInfo> {
+    fn suspend_transaction(&self, _target_type_name: &str) -> Option<SuspendedTransactionInfo> {
         // 实际实现需要挂起事务同步
         None
     }
@@ -600,8 +590,6 @@ mod tests {
             false
         }
     }
-
-
 
     struct MockTransactionAttributeSourceWithNoRollback;
 
@@ -707,7 +695,10 @@ mod tests {
 
         match result {
             TransactionResult::Err(err) => {
-                assert!(err.exception_type.contains("IllegalTransactionStateException"));
+                assert!(
+                    err.exception_type
+                        .contains("IllegalTransactionStateException")
+                );
             }
             _ => panic!("Expected Err for mandatory without existing tx"),
         }
@@ -791,7 +782,10 @@ mod tests {
 
         match result {
             TransactionResult::Err(err) => {
-                assert!(err.exception_type.contains("IllegalTransactionStateException"));
+                assert!(
+                    err.exception_type
+                        .contains("IllegalTransactionStateException")
+                );
             }
             _ => panic!("Expected Err for never with existing tx"),
         }
@@ -848,7 +842,6 @@ mod tests {
         support.clear_transaction_manager_cache();
     }
 
-
     #[test]
     fn test_set_transaction_manager() {
         let source = Arc::new(MockTransactionAttributeSource::with_propagation(
@@ -858,7 +851,10 @@ mod tests {
         let tm = Arc::new(NoOpTransactionManager);
         support.set_transaction_manager(tm.clone());
         assert!(support.get_transaction_manager().is_some());
-        assert_eq!(support.get_transaction_manager().unwrap().get_name(), "NoOpTransactionManager");
+        assert_eq!(
+            support.get_transaction_manager().unwrap().get_name(),
+            "NoOpTransactionManager"
+        );
     }
 
     #[test]
@@ -973,7 +969,10 @@ mod tests {
 
         match result {
             TransactionResult::Err(err) => {
-                assert!(err.exception_type.contains("IllegalTransactionStateException"));
+                assert!(
+                    err.exception_type
+                        .contains("IllegalTransactionStateException")
+                );
             }
             _ => panic!("Expected Err result"),
         }
@@ -1142,7 +1141,12 @@ mod tests {
     #[test]
     fn test_transaction_result_debug() {
         let ok = TransactionResult::Ok(Box::new(42) as Box<dyn Any + Send + Sync>);
-        let err = TransactionResult::Err(TransactionError::new("error".to_string(), "unknown", false, false));
+        let err = TransactionResult::Err(TransactionError::new(
+            "error".to_string(),
+            "unknown",
+            false,
+            false,
+        ));
         assert!(format!("{:?}", ok).contains("Ok"));
         assert!(format!("{:?}", err).contains("Err"));
     }
@@ -1426,9 +1430,10 @@ mod tests {
         let method = MethodMetadata::new("com.example.Foo", "bar", vec![], "void");
         let attr = TransactionAttribute::default();
 
-        let result = support.create_and_execute_transaction(attr, "com.example.Foo", &method, || {
-            Err(Box::new("test error") as Box<dyn Any + Send + Sync>)
-        });
+        let result =
+            support.create_and_execute_transaction(attr, "com.example.Foo", &method, || {
+                Err(Box::new("test error") as Box<dyn Any + Send + Sync>)
+            });
 
         match result {
             TransactionResult::Err(err) => {
@@ -1624,7 +1629,10 @@ mod tests {
 
         match result {
             TransactionResult::Err(err) => {
-                assert!(err.exception_type.contains("IllegalTransactionStateException"));
+                assert!(
+                    err.exception_type
+                        .contains("IllegalTransactionStateException")
+                );
             }
             _ => panic!("Expected Err result"),
         }
@@ -1712,7 +1720,6 @@ mod tests {
             _ => panic!("Expected Err result"),
         }
     }
-
 
     #[test]
     fn test_get_transaction_attribute_source() {

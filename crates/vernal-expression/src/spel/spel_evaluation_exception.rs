@@ -94,7 +94,11 @@ mod tests {
 
     #[test]
     fn build_at() {
-        let ex = SpelEvaluationException::at(SpelMessage::PropertyOrFieldNotReadable, 12, &["foo", "Object"]);
+        let ex = SpelEvaluationException::at(
+            SpelMessage::PropertyOrFieldNotReadable,
+            12,
+            &["foo", "Object"],
+        );
         assert_eq!(ex.position(), Some(12));
         assert!(ex.simple_message().contains("'foo'"));
     }
@@ -107,7 +111,8 @@ mod tests {
 
     #[test]
     fn set_position() {
-        let mut ex = SpelEvaluationException::new(SpelMessage::NotComparable, &["Integer", "String"]);
+        let mut ex =
+            SpelEvaluationException::new(SpelMessage::NotComparable, &["Integer", "String"]);
         ex.set_position(7);
         assert_eq!(ex.position(), Some(7));
     }

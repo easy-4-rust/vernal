@@ -101,7 +101,9 @@ impl PropertyEditor for CustomMapEditor {
         if self.value.is_empty() {
             return Some("{}".to_string());
         }
-        let entries: Vec<String> = self.value.iter()
+        let entries: Vec<String> = self
+            .value
+            .iter()
             .map(|(k, v)| format!("{}={}", k, v))
             .collect();
         Some(entries.join(", "))

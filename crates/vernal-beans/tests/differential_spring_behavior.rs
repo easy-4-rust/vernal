@@ -8,17 +8,17 @@ use std::any::Any;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use vernal_beans::ComponentDefinition;
-use vernal_beans::ComponentKey;
-use vernal_beans::RegistryBuilder;
-use vernal_beans::Resolver;
-use vernal_beans::Scope;
 use vernal_beans::AutowireCapableBeanFactory;
 use vernal_beans::BeanFactory;
 use vernal_beans::BeanPostProcessor;
-use vernal_beans::bean_scope::BeanScope;
+use vernal_beans::ComponentDefinition;
+use vernal_beans::ComponentKey;
 use vernal_beans::GenericBeanDefinition;
+use vernal_beans::RegistryBuilder;
+use vernal_beans::Resolver;
 use vernal_beans::RootBeanDefinition;
+use vernal_beans::Scope;
+use vernal_beans::bean_scope::BeanScope;
 
 // ── 测试类型 ─────────────────────────────────────────────────────────────
 

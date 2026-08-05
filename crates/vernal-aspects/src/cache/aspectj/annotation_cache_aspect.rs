@@ -47,11 +47,7 @@ impl<S: CacheOperationSource> AnnotationCacheAspect<S> {
     /// 匹配 `@Cacheable` 类型中的公开方法。
     ///
     /// 对应 Spring 的 `executionOfAnyPublicMethodInAtCacheableType()` pointcut。
-    pub fn matches_cacheable_type(
-        &self,
-        type_has_cacheable: bool,
-        type_in_scope: bool,
-    ) -> bool {
+    pub fn matches_cacheable_type(&self, type_has_cacheable: bool, type_in_scope: bool) -> bool {
         type_has_cacheable && type_in_scope
     }
 
@@ -65,20 +61,12 @@ impl<S: CacheOperationSource> AnnotationCacheAspect<S> {
     }
 
     /// 匹配 `@CachePut` 类型中的公开方法。
-    pub fn matches_cache_put_type(
-        &self,
-        type_has_cache_put: bool,
-        type_in_scope: bool,
-    ) -> bool {
+    pub fn matches_cache_put_type(&self, type_has_cache_put: bool, type_in_scope: bool) -> bool {
         type_has_cache_put && type_in_scope
     }
 
     /// 匹配 `@Caching` 类型中的公开方法。
-    pub fn matches_caching_type(
-        &self,
-        type_has_caching: bool,
-        type_in_scope: bool,
-    ) -> bool {
+    pub fn matches_caching_type(&self, type_has_caching: bool, type_in_scope: bool) -> bool {
         type_has_caching && type_in_scope
     }
 
@@ -141,9 +129,13 @@ impl<S: CacheOperationSource> AnnotationCacheAspect<S> {
         callback: F,
     ) -> CacheResult
     where
-        F: FnOnce() -> Result<Box<dyn std::any::Any + Send + Sync>, Box<dyn std::any::Any + Send + Sync>>,
+        F: FnOnce() -> Result<
+            Box<dyn std::any::Any + Send + Sync>,
+            Box<dyn std::any::Any + Send + Sync>,
+        >,
     {
-        self.inner.execute(method, target_type_name, invoker, callback)
+        self.inner
+            .execute(method, target_type_name, invoker, callback)
     }
 }
 
@@ -155,7 +147,10 @@ mod tests {
 
     struct MockInvoker;
     impl CacheOperationInvoker for MockInvoker {
-        fn invoke(&self) -> Result<Box<dyn std::any::Any + Send + Sync>, Box<dyn std::any::Any + Send + Sync>> {
+        fn invoke(
+            &self,
+        ) -> Result<Box<dyn std::any::Any + Send + Sync>, Box<dyn std::any::Any + Send + Sync>>
+        {
             Ok(Box::new(42) as Box<dyn std::any::Any + Send + Sync>)
         }
     }
@@ -271,34 +266,54 @@ mod tests {
         let aspect = AnnotationCacheAspect::new(source);
 
         // this 不匹配
-        assert!(!aspect.cache_method_execution(true, false, false, false, false, false, false, false, false, false));
+        assert!(!aspect.cache_method_execution(
+            true, false, false, false, false, false, false, false, false, false
+        ));
 
         // cacheable 类型匹配
-        assert!(aspect.cache_method_execution(true, false, false, false, true, false, false, false, false, true));
+        assert!(aspect.cache_method_execution(
+            true, false, false, false, true, false, false, false, false, true
+        ));
 
         // cache_evict 类型匹配
-        assert!(aspect.cache_method_execution(false, true, false, false, true, false, false, false, false, true));
+        assert!(aspect.cache_method_execution(
+            false, true, false, false, true, false, false, false, false, true
+        ));
 
         // cache_put 类型匹配
-        assert!(aspect.cache_method_execution(false, false, true, false, true, false, false, false, false, true));
+        assert!(aspect.cache_method_execution(
+            false, false, true, false, true, false, false, false, false, true
+        ));
 
         // caching 类型匹配
-        assert!(aspect.cache_method_execution(false, false, false, true, true, false, false, false, false, true));
+        assert!(aspect.cache_method_execution(
+            false, false, false, true, true, false, false, false, false, true
+        ));
 
         // cacheable 方法匹配
-        assert!(aspect.cache_method_execution(false, false, false, false, false, true, false, false, false, true));
+        assert!(aspect.cache_method_execution(
+            false, false, false, false, false, true, false, false, false, true
+        ));
 
         // cache_evict 方法匹配
-        assert!(aspect.cache_method_execution(false, false, false, false, false, false, true, false, false, true));
+        assert!(aspect.cache_method_execution(
+            false, false, false, false, false, false, true, false, false, true
+        ));
 
         // cache_put 方法匹配
-        assert!(aspect.cache_method_execution(false, false, false, false, false, false, false, true, false, true));
+        assert!(aspect.cache_method_execution(
+            false, false, false, false, false, false, false, true, false, true
+        ));
 
         // caching 方法匹配
-        assert!(aspect.cache_method_execution(false, false, false, false, false, false, false, false, true, true));
+        assert!(aspect.cache_method_execution(
+            false, false, false, false, false, false, false, false, true, true
+        ));
 
         // 都不匹配
-        assert!(!aspect.cache_method_execution(false, false, false, false, false, false, false, false, false, true));
+        assert!(!aspect.cache_method_execution(
+            false, false, false, false, false, false, false, false, false, true
+        ));
     }
 
     #[test]

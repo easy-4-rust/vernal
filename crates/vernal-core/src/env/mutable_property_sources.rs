@@ -2,8 +2,8 @@
 //!
 //! 对标 Spring `org.springframework.core.env.MutablePropertySources`。
 
-use super::property_source::PropertySource;
 use super::PropertySources;
+use super::property_source::PropertySource;
 
 /// 可变属性源集合。
 ///
@@ -19,7 +19,9 @@ impl MutablePropertySources {
     /// 创建空的属性源集合。
     #[must_use]
     pub fn new() -> Self {
-        Self { sources: Vec::new() }
+        Self {
+            sources: Vec::new(),
+        }
     }
 
     /// 在最高优先级位置加入属性源。

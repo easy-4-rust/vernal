@@ -109,9 +109,7 @@ mod tests {
         impl ProtocolResolver for Custom {
             fn resolve(&self, location: &str) -> Option<Box<dyn Resource>> {
                 if location.starts_with("custom:") {
-                    Some(Box::new(crate::io::ByteArrayResource::new(
-                        b"x".to_vec(),
-                    )))
+                    Some(Box::new(crate::io::ByteArrayResource::new(b"x".to_vec())))
                 } else {
                     None
                 }

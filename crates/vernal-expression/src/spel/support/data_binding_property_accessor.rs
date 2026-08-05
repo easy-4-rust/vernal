@@ -83,12 +83,7 @@ impl PropertyAccessor for DataBindingPropertyAccessor {
     /// 检查是否可以读取目标对象的指定属性。
     ///
     /// 对标 Spring `DataBindingPropertyAccessor.canRead()`（继承自 `ReflectivePropertyAccessor`）。
-    fn can_read(
-        &self,
-        context: &dyn EvaluationContext,
-        target: &TypedValue,
-        name: &str,
-    ) -> bool {
+    fn can_read(&self, context: &dyn EvaluationContext, target: &TypedValue, name: &str) -> bool {
         let type_name = target.type_descriptor().name();
         if Self::is_technical_type(&type_name) {
             return false;
@@ -116,12 +111,7 @@ impl PropertyAccessor for DataBindingPropertyAccessor {
     }
 
     /// 检查是否可以写入目标对象的指定属性。
-    fn can_write(
-        &self,
-        context: &dyn EvaluationContext,
-        target: &TypedValue,
-        name: &str,
-    ) -> bool {
+    fn can_write(&self, context: &dyn EvaluationContext, target: &TypedValue, name: &str) -> bool {
         let type_name = target.type_descriptor().name();
         if Self::is_technical_type(&type_name) {
             return false;
@@ -236,11 +226,19 @@ mod tests {
     #[test]
     fn is_technical_type_check() {
         assert!(DataBindingPropertyAccessor::is_technical_type("Object"));
-        assert!(DataBindingPropertyAccessor::is_technical_type("java.lang.Object"));
+        assert!(DataBindingPropertyAccessor::is_technical_type(
+            "java.lang.Object"
+        ));
         assert!(DataBindingPropertyAccessor::is_technical_type("Class"));
-        assert!(DataBindingPropertyAccessor::is_technical_type("java.lang.Class"));
-        assert!(DataBindingPropertyAccessor::is_technical_type("ClassLoader"));
-        assert!(DataBindingPropertyAccessor::is_technical_type("java.lang.ClassLoader"));
+        assert!(DataBindingPropertyAccessor::is_technical_type(
+            "java.lang.Class"
+        ));
+        assert!(DataBindingPropertyAccessor::is_technical_type(
+            "ClassLoader"
+        ));
+        assert!(DataBindingPropertyAccessor::is_technical_type(
+            "java.lang.ClassLoader"
+        ));
         assert!(!DataBindingPropertyAccessor::is_technical_type("String"));
         assert!(!DataBindingPropertyAccessor::is_technical_type("Integer"));
     }

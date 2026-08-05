@@ -12,7 +12,9 @@ use std::sync::Arc;
 /// FactoryBean 的简单实现基类。
 pub trait AbstractFactoryBean: Send + Sync {
     /// 创建 Bean 实例。
-    fn create_instance(&self) -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>>;
+    fn create_instance(
+        &self,
+    ) -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>>;
 
     /// 返回此工厂创建的 Bean 类型。
     fn object_type_name(&self) -> &'static str;
@@ -33,7 +35,11 @@ pub struct SimpleFactoryBean<T: Any + Send + Sync> {
 impl<T: Any + Send + Sync> SimpleFactoryBean<T> {
     /// 创建一个新的实例。
     pub fn new(creator: impl Fn() -> T + Send + Sync + 'static, type_name: &'static str) -> Self {
-        Self { creator: Box::new(creator), type_name, singleton: true }
+        Self {
+            creator: Box::new(creator),
+            type_name,
+            singleton: true,
+        }
     }
 
     /// 执行with_singleton操作。
@@ -44,7 +50,9 @@ impl<T: Any + Send + Sync> SimpleFactoryBean<T> {
 }
 
 impl<T: Any + Send + Sync> AbstractFactoryBean for SimpleFactoryBean<T> {
-    fn create_instance(&self) -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> {
+    fn create_instance(
+        &self,
+    ) -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> {
         Ok(Arc::new((self.creator)()))
     }
 

@@ -19,8 +19,8 @@ pub trait TaskCallback<T>: Send + Sync {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::Arc;
+    use std::sync::atomic::{AtomicBool, Ordering};
 
     struct RecordingCallback {
         success: Arc<AtomicBool>,
@@ -39,7 +39,9 @@ mod tests {
     fn success_callback_receives_result() {
         // A 类（合同对齐）：对标 Spring onSuccess
         let success = Arc::new(AtomicBool::new(false));
-        let callback = RecordingCallback { success: success.clone() };
+        let callback = RecordingCallback {
+            success: success.clone(),
+        };
         callback.on_success(&"ok".to_string());
         assert!(success.load(Ordering::SeqCst));
     }

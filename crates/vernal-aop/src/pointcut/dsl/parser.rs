@@ -524,10 +524,9 @@ mod additional_tests {
 
     #[test]
     fn parse_complex_and_or() {
-        let pc = parse_pointcut_expr(
-            "execution(pub fn *(..)) && within(crate::api) || tag(secured)",
-        )
-        .unwrap();
+        let pc =
+            parse_pointcut_expr("execution(pub fn *(..)) && within(crate::api) || tag(secured)")
+                .unwrap();
         assert!(matches!(pc, PointcutExpr::Or(_, _)));
     }
 
@@ -616,19 +615,17 @@ mod coverage_tests {
 
     #[test]
     fn parse_complex_three_way_and() {
-        let pc = parse_pointcut_expr(
-            "execution(pub fn *(..)) && within(crate::api) && tag(secured)",
-        )
-        .unwrap();
+        let pc =
+            parse_pointcut_expr("execution(pub fn *(..)) && within(crate::api) && tag(secured)")
+                .unwrap();
         assert!(matches!(pc, PointcutExpr::And(_, _)));
     }
 
     #[test]
     fn parse_complex_three_way_or() {
-        let pc = parse_pointcut_expr(
-            "execution(pub fn *(..)) || within(crate::api) || tag(secured)",
-        )
-        .unwrap();
+        let pc =
+            parse_pointcut_expr("execution(pub fn *(..)) || within(crate::api) || tag(secured)")
+                .unwrap();
         assert!(matches!(pc, PointcutExpr::Or(_, _)));
     }
 
@@ -681,10 +678,9 @@ mod final_coverage_tests {
 
     #[test]
     fn parse_complex_mixed_operators() {
-        let pc = parse_pointcut_expr(
-            "(execution(pub fn *(..)) || tag(secured)) && within(crate::api)",
-        )
-        .unwrap();
+        let pc =
+            parse_pointcut_expr("(execution(pub fn *(..)) || tag(secured)) && within(crate::api)")
+                .unwrap();
         assert!(matches!(pc, PointcutExpr::And(_, _)));
     }
 
@@ -840,7 +836,8 @@ mod parser_comprehensive {
 
     #[test]
     fn parse_execution_with_complex_return_type() {
-        let pc = parse_pointcut_expr("execution(pub fn *(..) -> Result<Vec<String>, Error>)").unwrap();
+        let pc =
+            parse_pointcut_expr("execution(pub fn *(..) -> Result<Vec<String>, Error>)").unwrap();
         assert!(matches!(pc, PointcutExpr::Execution(_)));
     }
 

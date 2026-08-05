@@ -70,7 +70,10 @@ mod tests {
     fn set_as_text_stores_value() {
         let mut editor = InputSourceEditor::new();
         editor.set_as_text("http://example.com/data.xml").unwrap();
-        assert_eq!(editor.get_as_text(), Some("http://example.com/data.xml".to_string()));
+        assert_eq!(
+            editor.get_as_text(),
+            Some("http://example.com/data.xml".to_string())
+        );
     }
 
     #[test]

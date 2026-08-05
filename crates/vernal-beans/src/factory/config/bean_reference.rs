@@ -17,7 +17,9 @@ pub struct BeanReference {
 impl BeanReference {
     /// 创建一个新的实例。
     pub fn new(bean_name: impl Into<String>) -> Self {
-        Self { bean_name: bean_name.into() }
+        Self {
+            bean_name: bean_name.into(),
+        }
     }
 
     /// 获取Bean名称。

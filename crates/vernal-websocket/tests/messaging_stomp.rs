@@ -7,12 +7,12 @@ use vernal_messaging::{
     DefaultSimpUserRegistry, GenericMessage, InMemoryChannel, MessageChannel, SimpSubscription,
 };
 use vernal_websocket::MemoryWebSocketSession;
+use vernal_websocket::WebSocketMessage;
 use vernal_websocket::messaging::{
     SessionDisconnectEvent, SessionSubscribeEvent, StompErrorMessage, StompSessionState,
     StompSubProtocolErrorHandler, StompSubProtocolHandler, SubProtocolErrorHandler,
     SubProtocolEvent, SubProtocolHandler, WebSocketStompClient,
 };
-use vernal_websocket::WebSocketMessage;
 
 #[tokio::test]
 async fn stomp_sub_protocol_handler_decodes_connect_and_sends_to_inbound_channel() {

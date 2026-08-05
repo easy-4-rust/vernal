@@ -22,7 +22,9 @@ pub struct MethodOverrides {
 
 impl MethodOverrides {
     /// 创建空的方法覆盖集合。
-    pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
 
     /// 添加方法覆盖。
     ///
@@ -33,10 +35,14 @@ impl MethodOverrides {
     }
 
     /// 是否为空。
-    pub fn is_empty(&self) -> bool { self.overrides.is_empty() }
+    pub fn is_empty(&self) -> bool {
+        self.overrides.is_empty()
+    }
 
     /// 覆盖数量。
-    pub fn len(&self) -> usize { self.overrides.len() }
+    pub fn len(&self) -> usize {
+        self.overrides.len()
+    }
 
     /// 获取指定方法名的覆盖。
     pub fn get(&self, name: &str) -> Option<&(dyn MethodOverride + 'static)> {

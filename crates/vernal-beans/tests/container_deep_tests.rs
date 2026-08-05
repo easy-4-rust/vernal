@@ -4,9 +4,15 @@ use std::sync::Arc;
 
 fn make_container() -> vernal_beans::Container {
     let mut b = vernal_beans::RegistryBuilder::new();
-    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
-    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<i32, _>(|_| 42i32));
-    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<f64, _>(|_| 3.14f64));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(
+        |_| "hello".to_string(),
+    ));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<i32, _>(
+        |_| 42i32,
+    ));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<f64, _>(
+        |_| 3.14f64,
+    ));
     vernal_beans::Container::new(b.build().unwrap())
 }
 
@@ -44,7 +50,10 @@ fn container_resolve_in_scope() {
 fn container_resolve_qualified() {
     let mut b = vernal_beans::RegistryBuilder::new();
     let q = vernal_beans::Qualifier::new("primary").unwrap();
-    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "primary".to_string()).qualified(q.clone()));
+    let _ = b.register(
+        vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "primary".to_string())
+            .qualified(q.clone()),
+    );
     let c = vernal_beans::Container::new(b.build().unwrap());
     let val: Arc<String> = c.resolve_qualified(&q).unwrap();
     assert_eq!(*val, "primary");
@@ -143,14 +152,20 @@ fn bf_contains_bean() {
 fn bf_is_singleton() {
     use vernal_beans::BeanFactory;
     let c = make_container();
-    assert!(c.is_singleton(&vernal_beans::ComponentKey::of::<String>()).unwrap());
+    assert!(
+        c.is_singleton(&vernal_beans::ComponentKey::of::<String>())
+            .unwrap()
+    );
 }
 
 #[test]
 fn bf_is_prototype() {
     use vernal_beans::BeanFactory;
     let c = make_container();
-    assert!(!c.is_prototype(&vernal_beans::ComponentKey::of::<String>()).unwrap());
+    assert!(
+        !c.is_prototype(&vernal_beans::ComponentKey::of::<String>())
+            .unwrap()
+    );
 }
 
 #[test]
@@ -173,7 +188,10 @@ fn bf_get_aliases() {
 fn bf_is_type_match() {
     use vernal_beans::BeanFactory;
     let c = make_container();
-    assert!(c.is_type_match(&vernal_beans::ComponentKey::of::<String>(), std::any::TypeId::of::<String>()));
+    assert!(c.is_type_match(
+        &vernal_beans::ComponentKey::of::<String>(),
+        std::any::TypeId::of::<String>()
+    ));
 }
 
 #[test]
@@ -250,14 +268,20 @@ fn acbf_autowire_modes() {
 fn acbf_resolve_named_bean() {
     use vernal_beans::AutowireCapableBeanFactory;
     let c = make_container();
-    assert!(c.resolve_named_bean(std::any::TypeId::of::<String>()).is_ok());
+    assert!(
+        c.resolve_named_bean(std::any::TypeId::of::<String>())
+            .is_ok()
+    );
 }
 
 #[test]
 fn acbf_resolve_named_bean_not_found() {
     use vernal_beans::AutowireCapableBeanFactory;
     let c = vernal_beans::Container::new(vernal_beans::RegistryBuilder::new().build().unwrap());
-    assert!(c.resolve_named_bean(std::any::TypeId::of::<String>()).is_err());
+    assert!(
+        c.resolve_named_bean(std::any::TypeId::of::<String>())
+            .is_err()
+    );
 }
 
 #[test]
@@ -274,8 +298,8 @@ fn acbf_type_converter() {
 
 #[test]
 fn bdr_register_and_remove() {
-    use vernal_beans::BeanDefinitionRegistry;
     use vernal_beans::BeanDefinition;
+    use vernal_beans::BeanDefinitionRegistry;
     use vernal_beans::RootBeanDefinition;
     let mut c = vernal_beans::Container::new(vernal_beans::RegistryBuilder::new().build().unwrap());
     let def = Box::new(RootBeanDefinition::new()) as Box<dyn BeanDefinition>;
@@ -394,7 +418,11 @@ fn cbf_register_scope() {
     let mut c = make_container();
     struct TestScope;
     impl BeanScope for TestScope {
-        fn get(&self, _n: &str, _f: &dyn Fn() -> Box<dyn Any + Send + Sync>) -> Result<Box<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> {
+        fn get(
+            &self,
+            _n: &str,
+            _f: &dyn Fn() -> Box<dyn Any + Send + Sync>,
+        ) -> Result<Box<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> {
             Ok(Box::new("scope_val"))
         }
     }
@@ -510,7 +538,8 @@ fn container_warm_up() {
 fn container_post_processor() {
     use vernal_beans::BeanPostProcessor;
     let mut c = make_container();
-    struct PP; impl BeanPostProcessor for PP {}
+    struct PP;
+    impl BeanPostProcessor for PP {}
     c.add_bean_post_processor(Arc::new(PP));
     c.add_bean_post_processor(Arc::new(PP));
     assert_eq!(c.bean_post_processor_count(), 2);

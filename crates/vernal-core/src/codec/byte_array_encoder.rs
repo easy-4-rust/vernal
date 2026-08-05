@@ -36,6 +36,9 @@ mod tests {
 
     #[test]
     fn mime_types_list() {
-        assert_eq!(ByteArrayEncoder.supported_mime_types(), &["application/octet-stream"]);
+        assert_eq!(
+            ByteArrayEncoder.supported_mime_types(),
+            &["application/octet-stream"]
+        );
     }
 }

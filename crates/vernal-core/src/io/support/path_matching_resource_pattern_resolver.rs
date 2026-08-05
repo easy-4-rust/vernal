@@ -5,9 +5,9 @@
 use std::io;
 use std::path::{Path, PathBuf};
 
+use crate::io::Resource;
 use crate::io::default_resource_loader::DefaultResourceLoader;
 use crate::io::resource_loader::ResourceLoader;
-use crate::io::Resource;
 use crate::util::ant_path_matcher::AntPathMatcher;
 use crate::util::path_matcher::PathMatcher;
 
@@ -115,9 +115,7 @@ impl PathMatchingResourcePatternResolver {
 
     /// 提取模式的根目录与剩余子模式（对标 Spring `findPathMatchingResources` 的前置拆分）。
     fn extract_root_dir(pattern: &str) -> (String, String) {
-        let first_wildcard = pattern
-            .find(['*', '?'])
-            .unwrap_or(pattern.len());
+        let first_wildcard = pattern.find(['*', '?']).unwrap_or(pattern.len());
         let prefix = &pattern[..first_wildcard];
         let last_slash = prefix.rfind('/').map_or(0, |i| i + 1);
         (
@@ -231,17 +229,21 @@ mod tests {
         // B 类（边界行为）：候选不匹配时为空
         let mut resolver = PathMatchingResourcePatternResolver::new();
         resolver.set_candidates(vec!["config/a.properties".to_string()]);
-        assert!(resolver
-            .get_resources("classpath*:zzz/*.txt")
-            .unwrap()
-            .is_empty());
+        assert!(
+            resolver
+                .get_resources("classpath*:zzz/*.txt")
+                .unwrap()
+                .is_empty()
+        );
     }
 
     #[test]
     fn non_pattern_location_returns_single_resource() {
         // D 类（生命周期/重构安全）：对标 Spring 非模式单资源返回
         let resolver = PathMatchingResourcePatternResolver::new();
-        let resources = resolver.get_resources("file:/tmp/vernal-single.txt").unwrap();
+        let resources = resolver
+            .get_resources("file:/tmp/vernal-single.txt")
+            .unwrap();
         assert_eq!(resources.len(), 1);
         assert!(!resources[0].exists());
     }

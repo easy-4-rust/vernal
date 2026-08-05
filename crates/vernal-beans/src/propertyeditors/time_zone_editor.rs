@@ -33,12 +33,24 @@ impl TimeZoneEditor {
     /// 获取已知的有效时区列表。
     pub fn known_timezones() -> &'static [&'static str] {
         &[
-            "UTC", "GMT",
-            "America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles",
-            "Europe/London", "Europe/Paris", "Europe/Berlin", "Europe/Moscow",
-            "Asia/Tokyo", "Asia/Shanghai", "Asia/Kolkata", "Asia/Dubai",
-            "Australia/Sydney", "Australia/Melbourne",
-            "Pacific/Auckland", "Pacific/Honolulu",
+            "UTC",
+            "GMT",
+            "America/New_York",
+            "America/Chicago",
+            "America/Denver",
+            "America/Los_Angeles",
+            "Europe/London",
+            "Europe/Paris",
+            "Europe/Berlin",
+            "Europe/Moscow",
+            "Asia/Tokyo",
+            "Asia/Shanghai",
+            "Asia/Kolkata",
+            "Asia/Dubai",
+            "Australia/Sydney",
+            "Australia/Melbourne",
+            "Pacific/Auckland",
+            "Pacific/Honolulu",
         ]
     }
 }
@@ -60,7 +72,11 @@ impl PropertyEditor for TimeZoneEditor {
             self.value = Some(trimmed.to_string());
             Ok(())
         } else {
-            Err(format!("Invalid timezone format: '{}'. Expected IANA format like 'America/New_York'", trimmed).into())
+            Err(format!(
+                "Invalid timezone format: '{}'. Expected IANA format like 'America/New_York'",
+                trimmed
+            )
+            .into())
         }
     }
 
@@ -197,7 +213,12 @@ mod tests {
     #[test]
     fn various_valid_timezones() {
         let mut editor = TimeZoneEditor::new();
-        for tz in &["America/New_York", "Europe/Paris", "Asia/Tokyo", "Australia/Sydney"] {
+        for tz in &[
+            "America/New_York",
+            "Europe/Paris",
+            "Asia/Tokyo",
+            "Australia/Sydney",
+        ] {
             editor.set_as_text(tz).unwrap();
             assert_eq!(editor.get_as_text(), Some(tz.to_string()));
         }

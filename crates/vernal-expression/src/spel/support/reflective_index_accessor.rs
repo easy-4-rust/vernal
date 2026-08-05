@@ -86,7 +86,10 @@ mod tests {
     fn can_read_list() {
         let accessor = ReflectiveIndexAccessor;
         let target = TypedValue::new(
-            ExpressionValue::List(vec![TypedValue::new(ExpressionValue::Int(1), TypeDescriptor::INT)]),
+            ExpressionValue::List(vec![TypedValue::new(
+                ExpressionValue::Int(1),
+                TypeDescriptor::INT,
+            )]),
             TypeDescriptor::from_type_name("List"),
         );
         let index = TypedValue::new(ExpressionValue::Int(0), TypeDescriptor::INT);
@@ -123,7 +126,10 @@ mod tests {
             TypedValue::new(ExpressionValue::Int(20), TypeDescriptor::INT),
             TypedValue::new(ExpressionValue::Int(30), TypeDescriptor::INT),
         ];
-        let target = TypedValue::new(ExpressionValue::List(items), TypeDescriptor::from_type_name("List"));
+        let target = TypedValue::new(
+            ExpressionValue::List(items),
+            TypeDescriptor::from_type_name("List"),
+        );
 
         let index = TypedValue::new(ExpressionValue::Int(1), TypeDescriptor::INT);
         let result = accessor.read(&ctx(), &target, &index).unwrap();
@@ -133,8 +139,14 @@ mod tests {
     #[test]
     fn read_list_out_of_bounds() {
         let accessor = ReflectiveIndexAccessor;
-        let items = vec![TypedValue::new(ExpressionValue::Int(10), TypeDescriptor::INT)];
-        let target = TypedValue::new(ExpressionValue::List(items), TypeDescriptor::from_type_name("List"));
+        let items = vec![TypedValue::new(
+            ExpressionValue::Int(10),
+            TypeDescriptor::INT,
+        )];
+        let target = TypedValue::new(
+            ExpressionValue::List(items),
+            TypeDescriptor::from_type_name("List"),
+        );
 
         let index = TypedValue::new(ExpressionValue::Int(5), TypeDescriptor::INT);
         let result = accessor.read(&ctx(), &target, &index);
@@ -154,7 +166,10 @@ mod tests {
                 TypedValue::new(ExpressionValue::Int(2), TypeDescriptor::INT),
             ),
         ];
-        let target = TypedValue::new(ExpressionValue::Map(entries), TypeDescriptor::from_type_name("Map"));
+        let target = TypedValue::new(
+            ExpressionValue::Map(entries),
+            TypeDescriptor::from_type_name("Map"),
+        );
 
         let index = TypedValue::new(ExpressionValue::String("b".into()), TypeDescriptor::STRING);
         let result = accessor.read(&ctx(), &target, &index).unwrap();
@@ -168,9 +183,15 @@ mod tests {
             TypedValue::new(ExpressionValue::String("a".into()), TypeDescriptor::STRING),
             TypedValue::new(ExpressionValue::Int(1), TypeDescriptor::INT),
         )];
-        let target = TypedValue::new(ExpressionValue::Map(entries), TypeDescriptor::from_type_name("Map"));
+        let target = TypedValue::new(
+            ExpressionValue::Map(entries),
+            TypeDescriptor::from_type_name("Map"),
+        );
 
-        let index = TypedValue::new(ExpressionValue::String("missing".into()), TypeDescriptor::STRING);
+        let index = TypedValue::new(
+            ExpressionValue::String("missing".into()),
+            TypeDescriptor::STRING,
+        );
         let result = accessor.read(&ctx(), &target, &index).unwrap();
         assert!(result.is_null());
     }
@@ -187,7 +208,10 @@ mod tests {
     #[test]
     fn can_write_always_false() {
         let accessor = ReflectiveIndexAccessor;
-        let target = TypedValue::new(ExpressionValue::List(vec![]), TypeDescriptor::from_type_name("List"));
+        let target = TypedValue::new(
+            ExpressionValue::List(vec![]),
+            TypeDescriptor::from_type_name("List"),
+        );
         let index = TypedValue::new(ExpressionValue::Int(0), TypeDescriptor::INT);
         assert!(!accessor.can_write(&ctx(), &target, &index));
     }
@@ -195,7 +219,10 @@ mod tests {
     #[test]
     fn write_always_returns_error() {
         let accessor = ReflectiveIndexAccessor;
-        let target = TypedValue::new(ExpressionValue::List(vec![]), TypeDescriptor::from_type_name("List"));
+        let target = TypedValue::new(
+            ExpressionValue::List(vec![]),
+            TypeDescriptor::from_type_name("List"),
+        );
         let index = TypedValue::new(ExpressionValue::Int(0), TypeDescriptor::INT);
         let value = TypedValue::new(ExpressionValue::Int(42), TypeDescriptor::INT);
         let result = accessor.write(&ctx(), &target, &index, &value);

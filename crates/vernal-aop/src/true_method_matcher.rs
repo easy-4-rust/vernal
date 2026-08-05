@@ -2,8 +2,8 @@
 //!
 //! 对应 spring-aop `org.springframework.aop.TrueMethodMatcher`。
 
-use crate::method_matcher::MethodMatcher;
 use crate::Operation;
+use crate::method_matcher::MethodMatcher;
 
 /// 始终匹配的方法匹配器单例。
 ///

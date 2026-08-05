@@ -69,7 +69,9 @@ impl BeanDefinitionReaderUtils {
 
     /// 获取指定前缀的当前计数。
     pub fn counter_value(&self, prefix: &str) -> u32 {
-        self.name_counters.lock().unwrap()
+        self.name_counters
+            .lock()
+            .unwrap()
             .get(prefix)
             .copied()
             .unwrap_or(0)
@@ -100,7 +102,9 @@ impl BeanDefinitionReaderUtils {
 }
 
 impl Default for BeanDefinitionReaderUtils {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[cfg(test)]

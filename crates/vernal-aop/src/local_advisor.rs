@@ -69,7 +69,11 @@ mod tests {
 
     struct TestLocalInterceptor;
     impl LocalInterceptor for TestLocalInterceptor {
-        fn intercept_local<'a>(&'a self, invocation: Arc<crate::Invocation>, next: crate::LocalNext<'a>) -> crate::LocalInvocationFuture<'a> {
+        fn intercept_local<'a>(
+            &'a self,
+            invocation: Arc<crate::Invocation>,
+            next: crate::LocalNext<'a>,
+        ) -> crate::LocalInvocationFuture<'a> {
             next.run(invocation)
         }
     }
@@ -135,7 +139,11 @@ mod additional_tests {
 
     struct TestLocalInterceptor;
     impl LocalInterceptor for TestLocalInterceptor {
-        fn intercept_local<'a>(&'a self, invocation: Arc<crate::Invocation>, next: LocalNext<'a>) -> crate::LocalInvocationFuture<'a> {
+        fn intercept_local<'a>(
+            &'a self,
+            invocation: Arc<crate::Invocation>,
+            next: LocalNext<'a>,
+        ) -> crate::LocalInvocationFuture<'a> {
             next.run(invocation)
         }
     }
@@ -168,7 +176,11 @@ mod local_advisor_tests {
 
     struct TestLocalInterceptor;
     impl LocalInterceptor for TestLocalInterceptor {
-        fn intercept_local<'a>(&'a self, invocation: Arc<crate::Invocation>, next: LocalNext<'a>) -> crate::LocalInvocationFuture<'a> {
+        fn intercept_local<'a>(
+            &'a self,
+            invocation: Arc<crate::Invocation>,
+            next: LocalNext<'a>,
+        ) -> crate::LocalInvocationFuture<'a> {
             next.run(invocation)
         }
     }

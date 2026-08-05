@@ -59,7 +59,11 @@ impl BeanExpressionException {
 impl fmt::Display for BeanExpressionException {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let Some(ref expr) = self.expression {
-            write!(f, "Expression parsing failed for expression '{}': {}", expr, self.message)
+            write!(
+                f,
+                "Expression parsing failed for expression '{}': {}",
+                expr, self.message
+            )
         } else {
             write!(f, "Bean expression error: {}", self.message)
         }
@@ -68,7 +72,9 @@ impl fmt::Display for BeanExpressionException {
 
 impl std::error::Error for BeanExpressionException {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        self.source.as_ref().map(|e| e.as_ref() as &(dyn std::error::Error + 'static))
+        self.source
+            .as_ref()
+            .map(|e| e.as_ref() as &(dyn std::error::Error + 'static))
     }
 }
 

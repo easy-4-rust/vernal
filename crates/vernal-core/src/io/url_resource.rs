@@ -41,7 +41,11 @@ impl Resource for UrlResource {
 
     fn is_readable(&self) -> bool {
         match self.url.scheme() {
-            "file" => self.url.to_file_path().map(|p| p.is_file()).unwrap_or(false),
+            "file" => self
+                .url
+                .to_file_path()
+                .map(|p| p.is_file())
+                .unwrap_or(false),
             _ => false,
         }
     }
@@ -79,7 +83,11 @@ mod tests {
         // A 类（合同对齐）：对标 Spring `new UrlResource("file:...")`
         let resource = UrlResource::new("file:///tmp/nonexistent-xyz").unwrap();
         assert!(!resource.exists());
-        assert!(resource.description().contains("file:///tmp/nonexistent-xyz"));
+        assert!(
+            resource
+                .description()
+                .contains("file:///tmp/nonexistent-xyz")
+        );
     }
 
     #[test]

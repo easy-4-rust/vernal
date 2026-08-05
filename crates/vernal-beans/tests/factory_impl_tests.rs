@@ -30,7 +30,10 @@ fn default_singleton_registry_l1() {
 fn default_singleton_registry_l3() {
     use vernal_beans::factory::support::default_singleton_bean_registry::DefaultSingletonBeanRegistry;
     let r = DefaultSingletonBeanRegistry::new();
-    r.add_singleton_factory("b1".to_string(), Arc::new(|| Arc::new(99i32) as Arc<dyn std::any::Any + Send + Sync>));
+    r.add_singleton_factory(
+        "b1".to_string(),
+        Arc::new(|| Arc::new(99i32) as Arc<dyn std::any::Any + Send + Sync>),
+    );
     let early = r.get_early_bean_reference("b1");
     assert!(early.is_some());
 }
@@ -144,31 +147,34 @@ fn disposable_bean_adapter_test() {
 
 #[test]
 fn managed_collections_test() {
+    use vernal_beans::factory::support::managed_array::ManagedArray;
     use vernal_beans::factory::support::managed_list::ManagedList;
     use vernal_beans::factory::support::managed_map::ManagedMap;
-    use vernal_beans::factory::support::managed_set::ManagedSet;
-    use vernal_beans::factory::support::managed_array::ManagedArray;
     use vernal_beans::factory::support::managed_properties::ManagedProperties;
-    
+    use vernal_beans::factory::support::managed_set::ManagedSet;
+
     let list = ManagedList::new();
     list.add(Arc::new(1i32) as Arc<dyn std::any::Any + Send + Sync>);
     list.add(Arc::new(2i32) as Arc<dyn std::any::Any + Send + Sync>);
     assert_eq!(list.len(), 2);
-    
+
     let map = ManagedMap::new();
-    map.put("k1".to_string(), Arc::new(1) as Arc<dyn std::any::Any + Send + Sync>);
+    map.put(
+        "k1".to_string(),
+        Arc::new(1) as Arc<dyn std::any::Any + Send + Sync>,
+    );
     assert!(map.contains_key("k1"));
-    
+
     let set = ManagedSet::new();
     set.add("a");
     set.add("b");
     set.add("a");
     assert_eq!(set.len(), 2);
-    
+
     let arr = ManagedArray::new();
     arr.add(Arc::new(1) as Arc<dyn std::any::Any + Send + Sync>);
     assert_eq!(arr.len(), 1);
-    
+
     let p = ManagedProperties::new();
     p.set("k1".to_string(), "v1".to_string());
     assert_eq!(p.get("k1"), Some("v1".to_string()));
@@ -204,18 +210,18 @@ fn autowired_annotation_test() {
 
 #[test]
 fn annotation_markers_test() {
-    use vernal_beans::factory::annotation::value::Value;
     use vernal_beans::factory::annotation::configurable::Configurable;
     use vernal_beans::factory::annotation::lookup::Lookup;
-    
+    use vernal_beans::factory::annotation::value::Value;
+
     let v = Value::new("hello".to_string());
     assert_eq!(v.value(), "hello");
-    
+
     let mut c = Configurable::new();
     assert!(c.enabled());
     c.set_enabled(false);
     assert!(!c.enabled());
-    
+
     let l = Lookup::new("myBean".to_string());
     assert_eq!(l.value(), "myBean");
 }
@@ -274,15 +280,15 @@ fn aot_basic_test() {
     use vernal_beans::factory::aot::aot_services::AotServices;
     use vernal_beans::factory::aot::autowired_arguments_code_generator::AutowiredArgumentsCodeGenerator;
     use vernal_beans::factory::aot::code_warnings::CodeWarnings;
-    
+
     let s = AotServices::new();
     s.register("k".to_string(), "v".to_string());
     assert_eq!(s.count(), 1);
-    
+
     let g = AutowiredArgumentsCodeGenerator::new();
     let r = g.process("test".to_string());
     assert!(!r.is_empty());
-    
+
     let w = CodeWarnings::new();
     w.register("w1".to_string(), "msg1".to_string());
     assert_eq!(w.cache_size(), 1);
@@ -294,19 +300,19 @@ fn bean_registration_aot_test() {
     use vernal_beans::factory::aot::bean_registration_code::BeanRegistrationCode;
     use vernal_beans::factory::aot::bean_registration_code_fragments::BeanRegistrationCodeFragments;
     use vernal_beans::factory::aot::bean_registration_code_generator::BeanRegistrationCodeGenerator;
-    
+
     let c = BeanRegistrationAotContribution::new();
     c.register("bean1".to_string(), "method1".to_string());
     assert_eq!(c.get("bean1"), Some("method1".to_string()));
-    
+
     let code = BeanRegistrationCode::new();
     code.register("code".to_string(), "body".to_string());
     assert_eq!(code.get("code"), Some("body".to_string()));
-    
+
     let f = BeanRegistrationCodeFragments::new();
     f.register("frag".to_string(), "data".to_string());
     assert_eq!(f.get("frag"), Some("data".to_string()));
-    
+
     let g = BeanRegistrationCodeGenerator::new();
     g.register("gen".to_string(), "code".to_string());
     assert_eq!(g.count(), 1);
@@ -314,88 +320,88 @@ fn bean_registration_aot_test() {
 
 #[test]
 fn bean_aot_misc_test() {
+    use vernal_beans::factory::aot::autowired_element_resolver::AutowiredElementResolver;
+    use vernal_beans::factory::aot::autowired_field_value_resolver::AutowiredFieldValueResolver;
+    use vernal_beans::factory::aot::autowired_method_arguments_resolver::AutowiredMethodArgumentsResolver;
+    use vernal_beans::factory::aot::bean_definition_method_generator::BeanDefinitionMethodGenerator;
+    use vernal_beans::factory::aot::bean_definition_method_generator_factory::BeanDefinitionMethodGeneratorFactory;
+    use vernal_beans::factory::aot::bean_definition_properties_code_generator::BeanDefinitionPropertiesCodeGenerator;
+    use vernal_beans::factory::aot::bean_definition_property_value_code_generator_delegates::BeanDefinitionPropertyValueCodeGeneratorDelegates;
+    use vernal_beans::factory::aot::bean_factory_initialization_aot_contribution::BeanFactoryInitializationAotContribution;
+    use vernal_beans::factory::aot::bean_factory_initialization_code::BeanFactoryInitializationCode;
     use vernal_beans::factory::aot::bean_instance_supplier::BeanInstanceSupplier;
+    use vernal_beans::factory::aot::bean_registration_code_fragments_decorator::BeanRegistrationCodeFragmentsDecorator;
+    use vernal_beans::factory::aot::bean_registration_exclude_filter::BeanRegistrationExcludeFilter;
     use vernal_beans::factory::aot::bean_registrations_aot_contribution::BeanRegistrationsAotContribution;
     use vernal_beans::factory::aot::bean_registrations_aot_processor::BeanRegistrationsAotProcessor;
     use vernal_beans::factory::aot::bean_registrations_code::BeanRegistrationsCode;
-    use vernal_beans::factory::aot::bean_definition_method_generator::BeanDefinitionMethodGenerator;
-    use vernal_beans::factory::aot::bean_definition_method_generator_factory::BeanDefinitionMethodGeneratorFactory;
-    use vernal_beans::factory::aot::autowired_field_value_resolver::AutowiredFieldValueResolver;
-    use vernal_beans::factory::aot::autowired_method_arguments_resolver::AutowiredMethodArgumentsResolver;
-    use vernal_beans::factory::aot::autowired_element_resolver::AutowiredElementResolver;
-    use vernal_beans::factory::aot::bean_definition_properties_code_generator::BeanDefinitionPropertiesCodeGenerator;
-    use vernal_beans::factory::aot::bean_factory_initialization_aot_contribution::BeanFactoryInitializationAotContribution;
-    use vernal_beans::factory::aot::bean_factory_initialization_code::BeanFactoryInitializationCode;
-    use vernal_beans::factory::aot::bean_registration_exclude_filter::BeanRegistrationExcludeFilter;
     use vernal_beans::factory::aot::default_bean_registration_code_fragments::DefaultBeanRegistrationCodeFragments;
-    use vernal_beans::factory::aot::bean_registration_code_fragments_decorator::BeanRegistrationCodeFragmentsDecorator;
-    use vernal_beans::factory::aot::bean_definition_property_value_code_generator_delegates::BeanDefinitionPropertyValueCodeGeneratorDelegates;
     use vernal_beans::factory::aot::instance_supplier_code_generator::InstanceSupplierCodeGenerator;
-    
+
     let s = BeanInstanceSupplier::new();
     s.register("k".to_string(), "v".to_string());
     assert_eq!(s.count(), 1);
-    
+
     let c = BeanRegistrationsAotContribution::new();
     c.register("c".to_string(), "v".to_string());
     assert_eq!(c.count(), 1);
-    
+
     let p = BeanRegistrationsAotProcessor::new();
     p.register("p".to_string(), "v".to_string());
     assert_eq!(p.count(), 1);
-    
+
     let r = BeanRegistrationsCode::new();
     r.register("r".to_string(), "v".to_string());
     assert_eq!(r.count(), 1);
-    
+
     let g = BeanDefinitionMethodGenerator::new();
     g.register("g".to_string(), "v".to_string());
     assert_eq!(g.cache_size(), 1);
-    
+
     let f = BeanDefinitionMethodGeneratorFactory::new();
     f.register("f".to_string(), "v".to_string());
     assert!(f.contains("f"));
-    
+
     let fr = AutowiredFieldValueResolver::new();
     fr.register("f".to_string(), "v".to_string());
     assert_eq!(fr.count(), 1);
-    
+
     let m = AutowiredMethodArgumentsResolver::new();
     m.register("m".to_string(), "v".to_string());
     assert_eq!(m.count(), 1);
-    
+
     let e = AutowiredElementResolver::new();
     e.register("e".to_string(), "v".to_string());
     assert!(e.contains("e"));
-    
+
     let p = BeanDefinitionPropertiesCodeGenerator::new();
     p.register("p".to_string(), "v".to_string());
     assert_eq!(p.get("p"), Some("v".to_string()));
-    
+
     let c = BeanFactoryInitializationAotContribution::new();
     c.register("c".to_string(), "v".to_string());
     assert_eq!(c.get("c"), Some("v".to_string()));
-    
+
     let code = BeanFactoryInitializationCode::new();
     code.register("code".to_string(), "v".to_string());
     assert_eq!(code.get("code"), Some("v".to_string()));
-    
+
     let filter = BeanRegistrationExcludeFilter::new();
     filter.register("f".to_string(), "criteria".to_string());
     assert!(filter.contains("f"));
-    
+
     let df = DefaultBeanRegistrationCodeFragments::new();
     df.register("d".to_string(), "v".to_string());
     assert_eq!(df.count(), 1);
-    
+
     let dec = BeanRegistrationCodeFragmentsDecorator::new();
     dec.register("d".to_string(), "v".to_string());
     assert!(dec.contains("d"));
-    
+
     let del = BeanDefinitionPropertyValueCodeGeneratorDelegates::new();
     del.register("d".to_string(), "v".to_string());
     assert_eq!(del.count(), 1);
-    
+
     let g = InstanceSupplierCodeGenerator::new();
     g.register("i".to_string(), "v".to_string());
     assert_eq!(g.get("i"), Some("v".to_string()));

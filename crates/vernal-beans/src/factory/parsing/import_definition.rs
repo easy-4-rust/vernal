@@ -52,10 +52,7 @@ impl ImportDefinition {
     }
 
     /// 创建一个带位置信息的导入定义。
-    pub fn with_location(
-        imported_resource: impl Into<String>,
-        location: Location,
-    ) -> Self {
+    pub fn with_location(imported_resource: impl Into<String>, location: Location) -> Self {
         Self {
             imported_resource: imported_resource.into(),
             source_location: Some(location),

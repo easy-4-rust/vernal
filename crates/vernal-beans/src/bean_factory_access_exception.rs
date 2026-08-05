@@ -94,7 +94,11 @@ impl BeanFactoryAccessException {
 impl fmt::Display for BeanFactoryAccessException {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.bean_name {
-            Some(name) => write!(f, "BeanFactoryAccessException for bean '{}': {}", name, self.message),
+            Some(name) => write!(
+                f,
+                "BeanFactoryAccessException for bean '{}': {}",
+                name, self.message
+            ),
             None => write!(f, "BeanFactoryAccessException: {}", self.message),
         }
     }
@@ -102,7 +106,9 @@ impl fmt::Display for BeanFactoryAccessException {
 
 impl std::error::Error for BeanFactoryAccessException {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        self.cause.as_ref().map(|e| e.as_ref() as &(dyn std::error::Error + 'static))
+        self.cause
+            .as_ref()
+            .map(|e| e.as_ref() as &(dyn std::error::Error + 'static))
     }
 }
 
@@ -136,13 +142,19 @@ mod tests {
     #[test]
     fn display_format_with_bean_name() {
         let e = BeanFactoryAccessException::with_bean_name("timeout", "dataSource");
-        assert_eq!(format!("{}", e), "BeanFactoryAccessException for bean 'dataSource': timeout");
+        assert_eq!(
+            format!("{}", e),
+            "BeanFactoryAccessException for bean 'dataSource': timeout"
+        );
     }
 
     #[test]
     fn display_format_without_bean_name() {
         let e = BeanFactoryAccessException::new("generic error");
-        assert_eq!(format!("{}", e), "BeanFactoryAccessException: generic error");
+        assert_eq!(
+            format!("{}", e),
+            "BeanFactoryAccessException: generic error"
+        );
     }
 
     #[test]

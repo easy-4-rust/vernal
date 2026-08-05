@@ -65,7 +65,10 @@ fn make_map_root(entries: Vec<(&str, ExpressionValue)>) -> TypedValue {
         .map(|(k, v)| {
             let td = v.type_descriptor();
             (
-                TypedValue::new(ExpressionValue::String(k.to_string()), TypeDescriptor::STRING),
+                TypedValue::new(
+                    ExpressionValue::String(k.to_string()),
+                    TypeDescriptor::STRING,
+                ),
                 TypedValue::new(v, td),
             )
         })
@@ -327,9 +330,11 @@ fn function_reference_with_args_not_found() {
 
 #[test]
 fn function_reference_parse_ok() {
-    assert!(SpelExpressionParser::new()
-        .parse_expression("#greet('hello')")
-        .is_ok());
+    assert!(
+        SpelExpressionParser::new()
+            .parse_expression("#greet('hello')")
+            .is_ok()
+    );
 }
 
 #[test]
@@ -379,9 +384,11 @@ fn identifier_chained_on_map_parse_ok() {
 
 #[test]
 fn indexer_with_inline_list_parse() {
-    assert!(SpelExpressionParser::new()
-        .parse_expression("{10,20,30}[0]")
-        .is_ok());
+    assert!(
+        SpelExpressionParser::new()
+            .parse_expression("{10,20,30}[0]")
+            .is_ok()
+    );
 }
 
 #[test]
@@ -413,9 +420,11 @@ fn indexer_out_of_bounds() {
 
 #[test]
 fn projection_parse_ok() {
-    assert!(SpelExpressionParser::new()
-        .parse_expression("{1,2,3}.![true]")
-        .is_ok());
+    assert!(
+        SpelExpressionParser::new()
+            .parse_expression("{1,2,3}.![true]")
+            .is_ok()
+    );
 }
 
 #[test]
@@ -448,23 +457,29 @@ fn projection_with_literal() {
 
 #[test]
 fn selection_all_parse() {
-    assert!(SpelExpressionParser::new()
-        .parse_expression("{1,2,3}.?[true]")
-        .is_ok());
+    assert!(
+        SpelExpressionParser::new()
+            .parse_expression("{1,2,3}.?[true]")
+            .is_ok()
+    );
 }
 
 #[test]
 fn selection_first_parse() {
-    assert!(SpelExpressionParser::new()
-        .parse_expression("{1,2,3}.^[true]")
-        .is_ok());
+    assert!(
+        SpelExpressionParser::new()
+            .parse_expression("{1,2,3}.^[true]")
+            .is_ok()
+    );
 }
 
 #[test]
 fn selection_last_parse() {
-    assert!(SpelExpressionParser::new()
-        .parse_expression("{1,2,3}.$[true]")
-        .is_ok());
+    assert!(
+        SpelExpressionParser::new()
+            .parse_expression("{1,2,3}.$[true]")
+            .is_ok()
+    );
 }
 
 #[test]
@@ -534,13 +549,14 @@ fn expression_is_writable_default_false() {
 fn expression_set_value_default_errors() {
     let expr = parse_ok("42");
     let ctx = StandardEvaluationContext::new(TypedValue::null());
-    assert!(expr
-        .set_value(
+    assert!(
+        expr.set_value(
             &ctx,
             &TypedValue::null(),
             &TypedValue::new(ExpressionValue::Int(1), TypeDescriptor::INT),
         )
-        .is_err());
+        .is_err()
+    );
 }
 
 #[test]
@@ -612,7 +628,10 @@ fn parser_config_debug() {
 #[test]
 fn parser_config_clone() {
     let config = spel::spel_parser_configuration::SpelParserConfiguration::new();
-    assert_eq!(config.clone().max_expression_length(), config.max_expression_length());
+    assert_eq!(
+        config.clone().max_expression_length(),
+        config.max_expression_length()
+    );
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -746,7 +765,10 @@ fn matches_simple_true() {
 
 #[test]
 fn matches_simple_false() {
-    assert_eq!(eval("'xyz' matches 'a.*c'"), ExpressionValue::Boolean(false));
+    assert_eq!(
+        eval("'xyz' matches 'a.*c'"),
+        ExpressionValue::Boolean(false)
+    );
 }
 
 #[test]
@@ -773,7 +795,10 @@ fn matches_invalid_pattern_errors() {
 
 #[test]
 fn instanceof_string_true() {
-    assert_eq!(eval("'hello' instanceof T(String)"), ExpressionValue::Boolean(true));
+    assert_eq!(
+        eval("'hello' instanceof T(String)"),
+        ExpressionValue::Boolean(true)
+    );
 }
 
 #[test]
@@ -783,12 +808,18 @@ fn instanceof_int_true() {
 
 #[test]
 fn instanceof_null_false() {
-    assert_eq!(eval("null instanceof T(String)"), ExpressionValue::Boolean(false));
+    assert_eq!(
+        eval("null instanceof T(String)"),
+        ExpressionValue::Boolean(false)
+    );
 }
 
 #[test]
 fn instanceof_string_vs_int_false() {
-    assert_eq!(eval("'hello' instanceof T(int)"), ExpressionValue::Boolean(false));
+    assert_eq!(
+        eval("'hello' instanceof T(int)"),
+        ExpressionValue::Boolean(false)
+    );
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -797,12 +828,18 @@ fn instanceof_string_vs_int_false() {
 
 #[test]
 fn ternary_true_branch() {
-    assert_eq!(eval("true ? 'yes' : 'no'"), ExpressionValue::String("yes".to_string()));
+    assert_eq!(
+        eval("true ? 'yes' : 'no'"),
+        ExpressionValue::String("yes".to_string())
+    );
 }
 
 #[test]
 fn ternary_false_branch() {
-    assert_eq!(eval("false ? 'yes' : 'no'"), ExpressionValue::String("no".to_string()));
+    assert_eq!(
+        eval("false ? 'yes' : 'no'"),
+        ExpressionValue::String("no".to_string())
+    );
 }
 
 #[test]
@@ -817,7 +854,10 @@ fn ternary_nested() {
 
 #[test]
 fn ternary_with_comparison() {
-    assert_eq!(eval("(5 > 3) ? 'big' : 'small'"), ExpressionValue::String("big".to_string()));
+    assert_eq!(
+        eval("(5 > 3) ? 'big' : 'small'"),
+        ExpressionValue::String("big".to_string())
+    );
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -826,17 +866,26 @@ fn ternary_with_comparison() {
 
 #[test]
 fn elvis_null_returns_default() {
-    assert_eq!(eval("null ?: 'default'"), ExpressionValue::String("default".to_string()));
+    assert_eq!(
+        eval("null ?: 'default'"),
+        ExpressionValue::String("default".to_string())
+    );
 }
 
 #[test]
 fn elvis_non_null_returns_value() {
-    assert_eq!(eval("'value' ?: 'default'"), ExpressionValue::String("value".to_string()));
+    assert_eq!(
+        eval("'value' ?: 'default'"),
+        ExpressionValue::String("value".to_string())
+    );
 }
 
 #[test]
 fn elvis_empty_string_returns_default() {
-    assert_eq!(eval("'' ?: 'default'"), ExpressionValue::String("default".to_string()));
+    assert_eq!(
+        eval("'' ?: 'default'"),
+        ExpressionValue::String("default".to_string())
+    );
 }
 
 #[test]
@@ -1144,12 +1193,18 @@ fn null_equality() {
 
 #[test]
 fn string_single_quotes() {
-    assert_eq!(eval("'hello'"), ExpressionValue::String("hello".to_string()));
+    assert_eq!(
+        eval("'hello'"),
+        ExpressionValue::String("hello".to_string())
+    );
 }
 
 #[test]
 fn string_double_quotes() {
-    assert_eq!(eval(r#""world""#), ExpressionValue::String("world".to_string()));
+    assert_eq!(
+        eval(r#""world""#),
+        ExpressionValue::String("world".to_string())
+    );
 }
 
 #[test]
@@ -1159,7 +1214,10 @@ fn string_empty() {
 
 #[test]
 fn string_with_spaces() {
-    assert_eq!(eval("'hello world'"), ExpressionValue::String("hello world".to_string()));
+    assert_eq!(
+        eval("'hello world'"),
+        ExpressionValue::String("hello world".to_string())
+    );
 }
 
 #[test]
@@ -1338,7 +1396,10 @@ fn variable_root() {
         ExpressionValue::String("hello".to_string()),
         TypeDescriptor::STRING,
     );
-    assert_eq!(eval_with_root("#root", root), ExpressionValue::String("hello".to_string()));
+    assert_eq!(
+        eval_with_root("#root", root),
+        ExpressionValue::String("hello".to_string())
+    );
 }
 
 #[test]
@@ -1354,7 +1415,10 @@ fn variable_not_found() {
 #[test]
 fn variable_via_simple_context() {
     let mut ctx = SimpleEvaluationContext::for_read_only(TypedValue::null());
-    ctx.set_variable("x", TypedValue::new(ExpressionValue::Int(42), TypeDescriptor::INT));
+    ctx.set_variable(
+        "x",
+        TypedValue::new(ExpressionValue::Int(42), TypeDescriptor::INT),
+    );
     assert_eq!(eval_with_ctx("#x", &ctx), ExpressionValue::Int(42));
 }
 
@@ -1363,41 +1427,77 @@ fn variable_string_via_simple_context() {
     let mut ctx = SimpleEvaluationContext::for_read_only(TypedValue::null());
     ctx.set_variable(
         "name",
-        TypedValue::new(ExpressionValue::String("Alice".to_string()), TypeDescriptor::STRING),
+        TypedValue::new(
+            ExpressionValue::String("Alice".to_string()),
+            TypeDescriptor::STRING,
+        ),
     );
-    assert_eq!(eval_with_ctx("#name", &ctx), ExpressionValue::String("Alice".to_string()));
+    assert_eq!(
+        eval_with_ctx("#name", &ctx),
+        ExpressionValue::String("Alice".to_string())
+    );
 }
 
 #[test]
 fn variable_boolean_via_simple_context() {
     let mut ctx = SimpleEvaluationContext::for_read_only(TypedValue::null());
-    ctx.set_variable("flag", TypedValue::new(ExpressionValue::Boolean(true), TypeDescriptor::BOOLEAN));
+    ctx.set_variable(
+        "flag",
+        TypedValue::new(ExpressionValue::Boolean(true), TypeDescriptor::BOOLEAN),
+    );
     assert_eq!(eval_with_ctx("#flag", &ctx), ExpressionValue::Boolean(true));
 }
 
 #[test]
 fn variable_arithmetic() {
     let mut ctx = SimpleEvaluationContext::for_read_only(TypedValue::null());
-    ctx.set_variable("a", TypedValue::new(ExpressionValue::Int(3), TypeDescriptor::INT));
-    ctx.set_variable("b", TypedValue::new(ExpressionValue::Int(7), TypeDescriptor::INT));
+    ctx.set_variable(
+        "a",
+        TypedValue::new(ExpressionValue::Int(3), TypeDescriptor::INT),
+    );
+    ctx.set_variable(
+        "b",
+        TypedValue::new(ExpressionValue::Int(7), TypeDescriptor::INT),
+    );
     assert_eq!(eval_with_ctx("#a + #b", &ctx), ExpressionValue::Int(10));
 }
 
 #[test]
 fn variable_comparison() {
     let mut ctx = SimpleEvaluationContext::for_read_only(TypedValue::null());
-    ctx.set_variable("x", TypedValue::new(ExpressionValue::Int(5), TypeDescriptor::INT));
-    ctx.set_variable("y", TypedValue::new(ExpressionValue::Int(5), TypeDescriptor::INT));
-    assert_eq!(eval_with_ctx("#x == #y", &ctx), ExpressionValue::Boolean(true));
+    ctx.set_variable(
+        "x",
+        TypedValue::new(ExpressionValue::Int(5), TypeDescriptor::INT),
+    );
+    ctx.set_variable(
+        "y",
+        TypedValue::new(ExpressionValue::Int(5), TypeDescriptor::INT),
+    );
+    assert_eq!(
+        eval_with_ctx("#x == #y", &ctx),
+        ExpressionValue::Boolean(true)
+    );
 }
 
 #[test]
 fn variable_in_ternary() {
     let mut ctx = SimpleEvaluationContext::for_read_only(TypedValue::null());
-    ctx.set_variable("cond", TypedValue::new(ExpressionValue::Boolean(true), TypeDescriptor::BOOLEAN));
-    ctx.set_variable("a", TypedValue::new(ExpressionValue::Int(10), TypeDescriptor::INT));
-    ctx.set_variable("b", TypedValue::new(ExpressionValue::Int(20), TypeDescriptor::INT));
-    assert_eq!(eval_with_ctx("#cond ? #a : #b", &ctx), ExpressionValue::Int(10));
+    ctx.set_variable(
+        "cond",
+        TypedValue::new(ExpressionValue::Boolean(true), TypeDescriptor::BOOLEAN),
+    );
+    ctx.set_variable(
+        "a",
+        TypedValue::new(ExpressionValue::Int(10), TypeDescriptor::INT),
+    );
+    ctx.set_variable(
+        "b",
+        TypedValue::new(ExpressionValue::Int(20), TypeDescriptor::INT),
+    );
+    assert_eq!(
+        eval_with_ctx("#cond ? #a : #b", &ctx),
+        ExpressionValue::Int(10)
+    );
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -1406,22 +1506,38 @@ fn variable_in_ternary() {
 
 #[test]
 fn type_reference_parse_string() {
-    assert!(SpelExpressionParser::new().parse_expression("T(String)").is_ok());
+    assert!(
+        SpelExpressionParser::new()
+            .parse_expression("T(String)")
+            .is_ok()
+    );
 }
 
 #[test]
 fn type_reference_parse_int() {
-    assert!(SpelExpressionParser::new().parse_expression("T(int)").is_ok());
+    assert!(
+        SpelExpressionParser::new()
+            .parse_expression("T(int)")
+            .is_ok()
+    );
 }
 
 #[test]
 fn type_reference_parse_long() {
-    assert!(SpelExpressionParser::new().parse_expression("T(Long)").is_ok());
+    assert!(
+        SpelExpressionParser::new()
+            .parse_expression("T(Long)")
+            .is_ok()
+    );
 }
 
 #[test]
 fn type_reference_parse_qualified_fails() {
-    assert!(SpelExpressionParser::new().parse_expression("T(java.lang.String)").is_err());
+    assert!(
+        SpelExpressionParser::new()
+            .parse_expression("T(java.lang.String)")
+            .is_err()
+    );
 }
 
 #[test]
@@ -1437,12 +1553,20 @@ fn type_reference_eval_without_locator() {
 
 #[test]
 fn method_reference_parse() {
-    assert!(SpelExpressionParser::new().parse_expression("'hello'.toUpperCase()").is_ok());
+    assert!(
+        SpelExpressionParser::new()
+            .parse_expression("'hello'.toUpperCase()")
+            .is_ok()
+    );
 }
 
 #[test]
 fn method_reference_with_args_parse() {
-    assert!(SpelExpressionParser::new().parse_expression("'hello'.substring(0, 3)").is_ok());
+    assert!(
+        SpelExpressionParser::new()
+            .parse_expression("'hello'.substring(0, 3)")
+            .is_ok()
+    );
 }
 
 #[test]
@@ -1454,9 +1578,11 @@ fn method_reference_on_null_errors() {
 
 #[test]
 fn method_reference_chain_parse() {
-    assert!(SpelExpressionParser::new()
-        .parse_expression("'hello world'.substring(0, 5).toUpperCase()")
-        .is_ok());
+    assert!(
+        SpelExpressionParser::new()
+            .parse_expression("'hello world'.substring(0, 5).toUpperCase()")
+            .is_ok()
+    );
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -1465,7 +1591,11 @@ fn method_reference_chain_parse() {
 
 #[test]
 fn assign_parse() {
-    assert!(SpelExpressionParser::new().parse_expression("a = 5").is_ok());
+    assert!(
+        SpelExpressionParser::new()
+            .parse_expression("a = 5")
+            .is_ok()
+    );
 }
 
 #[test]
@@ -1489,7 +1619,11 @@ fn assign_disabled_in_simple_context() {
 
 #[test]
 fn bean_reference_parse() {
-    assert!(SpelExpressionParser::new().parse_expression("@myBean").is_ok());
+    assert!(
+        SpelExpressionParser::new()
+            .parse_expression("@myBean")
+            .is_ok()
+    );
 }
 
 #[test]
@@ -1499,12 +1633,20 @@ fn bean_reference_no_resolver_errors() {
 
 #[test]
 fn bean_reference_dotted() {
-    assert!(SpelExpressionParser::new().parse_expression("@com.example.MyBean").is_ok());
+    assert!(
+        SpelExpressionParser::new()
+            .parse_expression("@com.example.MyBean")
+            .is_ok()
+    );
 }
 
 #[test]
 fn factory_bean_reference_parse() {
-    assert!(SpelExpressionParser::new().parse_expression("&factoryBean").is_ok());
+    assert!(
+        SpelExpressionParser::new()
+            .parse_expression("&factoryBean")
+            .is_ok()
+    );
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -1536,7 +1678,11 @@ fn safe_navigation_parse() {
 
 #[test]
 fn safe_navigation_chain_parse() {
-    assert!(SpelExpressionParser::new().parse_expression("a?.b?.c").is_ok());
+    assert!(
+        SpelExpressionParser::new()
+            .parse_expression("a?.b?.c")
+            .is_ok()
+    );
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -1565,7 +1711,10 @@ fn chained_comparison() {
 
 #[test]
 fn mixed_logic_and_comparison() {
-    assert_eq!(eval("(5 > 3) && (2 < 4) || false"), ExpressionValue::Boolean(true));
+    assert_eq!(
+        eval("(5 > 3) && (2 < 4) || false"),
+        ExpressionValue::Boolean(true)
+    );
 }
 
 #[test]
@@ -1609,13 +1758,25 @@ fn typed_value_null() {
 
 #[test]
 fn typed_value_display_int() {
-    assert_eq!(format!("{}", TypedValue::new(ExpressionValue::Int(42), TypeDescriptor::INT)), "42");
+    assert_eq!(
+        format!(
+            "{}",
+            TypedValue::new(ExpressionValue::Int(42), TypeDescriptor::INT)
+        ),
+        "42"
+    );
 }
 
 #[test]
 fn typed_value_display_string() {
     assert_eq!(
-        format!("{}", TypedValue::new(ExpressionValue::String("hello".to_string()), TypeDescriptor::STRING)),
+        format!(
+            "{}",
+            TypedValue::new(
+                ExpressionValue::String("hello".to_string()),
+                TypeDescriptor::STRING
+            )
+        ),
         "hello"
     );
 }
@@ -1628,7 +1789,10 @@ fn typed_value_display_null() {
 #[test]
 fn typed_value_display_bool() {
     assert_eq!(
-        format!("{}", TypedValue::new(ExpressionValue::Boolean(true), TypeDescriptor::BOOLEAN)),
+        format!(
+            "{}",
+            TypedValue::new(ExpressionValue::Boolean(true), TypeDescriptor::BOOLEAN)
+        ),
         "true"
     );
 }
@@ -1673,9 +1837,18 @@ fn expression_value_is_truthy() {
 
 #[test]
 fn expression_value_type_descriptor() {
-    assert_eq!(ExpressionValue::Int(42).type_descriptor(), TypeDescriptor::INT);
-    assert_eq!(ExpressionValue::Boolean(true).type_descriptor(), TypeDescriptor::BOOLEAN);
-    assert_eq!(ExpressionValue::String("x".to_string()).type_descriptor(), TypeDescriptor::STRING);
+    assert_eq!(
+        ExpressionValue::Int(42).type_descriptor(),
+        TypeDescriptor::INT
+    );
+    assert_eq!(
+        ExpressionValue::Boolean(true).type_descriptor(),
+        TypeDescriptor::BOOLEAN
+    );
+    assert_eq!(
+        ExpressionValue::String("x".to_string()).type_descriptor(),
+        TypeDescriptor::STRING
+    );
 }
 
 #[test]
@@ -1683,8 +1856,14 @@ fn expression_value_partial_eq() {
     assert_eq!(ExpressionValue::Int(42), ExpressionValue::Int(42));
     assert_ne!(ExpressionValue::Int(42), ExpressionValue::Int(43));
     assert_eq!(ExpressionValue::Null, ExpressionValue::Null);
-    assert_eq!(ExpressionValue::String("a".to_string()), ExpressionValue::String("a".to_string()));
-    assert_ne!(ExpressionValue::Int(1), ExpressionValue::String("1".to_string()));
+    assert_eq!(
+        ExpressionValue::String("a".to_string()),
+        ExpressionValue::String("a".to_string())
+    );
+    assert_ne!(
+        ExpressionValue::Int(1),
+        ExpressionValue::String("1".to_string())
+    );
 }
 
 #[test]
@@ -1696,8 +1875,14 @@ fn expression_value_as_any() {
 
 #[test]
 fn expression_value_type_id() {
-    assert_eq!(ExpressionValue::Int(42).type_id(), std::any::TypeId::of::<i64>());
-    assert_eq!(ExpressionValue::Boolean(true).type_id(), std::any::TypeId::of::<bool>());
+    assert_eq!(
+        ExpressionValue::Int(42).type_id(),
+        std::any::TypeId::of::<i64>()
+    );
+    assert_eq!(
+        ExpressionValue::Boolean(true).type_id(),
+        std::any::TypeId::of::<bool>()
+    );
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -1706,11 +1891,26 @@ fn expression_value_type_id() {
 
 #[test]
 fn type_descriptor_constants() {
-    assert_eq!(TypeDescriptor::INT, TypeDescriptor::Primitive(PrimitiveKind::Int));
-    assert_eq!(TypeDescriptor::LONG, TypeDescriptor::Primitive(PrimitiveKind::Long));
-    assert_eq!(TypeDescriptor::BOOLEAN, TypeDescriptor::Primitive(PrimitiveKind::Boolean));
-    assert_eq!(TypeDescriptor::STRING, TypeDescriptor::Primitive(PrimitiveKind::String));
-    assert_eq!(TypeDescriptor::NULL, TypeDescriptor::Primitive(PrimitiveKind::Null));
+    assert_eq!(
+        TypeDescriptor::INT,
+        TypeDescriptor::Primitive(PrimitiveKind::Int)
+    );
+    assert_eq!(
+        TypeDescriptor::LONG,
+        TypeDescriptor::Primitive(PrimitiveKind::Long)
+    );
+    assert_eq!(
+        TypeDescriptor::BOOLEAN,
+        TypeDescriptor::Primitive(PrimitiveKind::Boolean)
+    );
+    assert_eq!(
+        TypeDescriptor::STRING,
+        TypeDescriptor::Primitive(PrimitiveKind::String)
+    );
+    assert_eq!(
+        TypeDescriptor::NULL,
+        TypeDescriptor::Primitive(PrimitiveKind::Null)
+    );
 }
 
 #[test]
@@ -1733,7 +1933,12 @@ fn type_descriptor_from_type_name() {
 
 #[test]
 fn type_descriptor_with_generic() {
-    assert_eq!(TypeDescriptor::from_type_name("List").with_generic(TypeDescriptor::INT).name(), "List<int>");
+    assert_eq!(
+        TypeDescriptor::from_type_name("List")
+            .with_generic(TypeDescriptor::INT)
+            .name(),
+        "List<int>"
+    );
 }
 
 #[test]
@@ -1745,7 +1950,10 @@ fn type_descriptor_array() {
 
 #[test]
 fn type_descriptor_map() {
-    let td = TypeDescriptor::Map(Box::new(TypeDescriptor::STRING), Box::new(TypeDescriptor::INT));
+    let td = TypeDescriptor::Map(
+        Box::new(TypeDescriptor::STRING),
+        Box::new(TypeDescriptor::INT),
+    );
     assert!(td.is_map());
     assert!(td.get_map_key_type().is_some());
     assert!(td.get_map_value_type().is_some());
@@ -1778,31 +1986,49 @@ fn std_ctx_default() {
 
 #[test]
 fn std_ctx_new_default() {
-    assert!(StandardEvaluationContext::new_default().root_object().is_null());
+    assert!(
+        StandardEvaluationContext::new_default()
+            .root_object()
+            .is_null()
+    );
 }
 
 #[test]
 fn std_ctx_property_accessors_non_empty() {
-    assert!(!StandardEvaluationContext::new(TypedValue::null()).property_accessors().is_empty());
+    assert!(
+        !StandardEvaluationContext::new(TypedValue::null())
+            .property_accessors()
+            .is_empty()
+    );
 }
 
 #[test]
 fn std_ctx_method_resolvers_non_empty() {
-    assert!(!StandardEvaluationContext::new(TypedValue::null()).method_resolvers().is_empty());
+    assert!(
+        !StandardEvaluationContext::new(TypedValue::null())
+            .method_resolvers()
+            .is_empty()
+    );
 }
 
 #[test]
 fn std_ctx_register_method_fn() {
     let ctx = StandardEvaluationContext::new(TypedValue::null());
     ctx.register_method_fn("test_fn", |_ctx, _target, _args| {
-        Ok(TypedValue::new(ExpressionValue::Int(99), TypeDescriptor::INT))
+        Ok(TypedValue::new(
+            ExpressionValue::Int(99),
+            TypeDescriptor::INT,
+        ))
     });
 }
 
 #[test]
 fn std_ctx_set_variable() {
     let mut ctx = StandardEvaluationContext::new(TypedValue::null());
-    ctx.set_variable("x", TypedValue::new(ExpressionValue::Int(42), TypeDescriptor::INT));
+    ctx.set_variable(
+        "x",
+        TypedValue::new(ExpressionValue::Int(42), TypeDescriptor::INT),
+    );
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -1822,7 +2048,10 @@ fn simple_ctx_read_write() {
 #[test]
 fn simple_ctx_variable_lookup() {
     let mut ctx = SimpleEvaluationContext::for_read_only(TypedValue::null());
-    ctx.set_variable("x", TypedValue::new(ExpressionValue::Int(42), TypeDescriptor::INT));
+    ctx.set_variable(
+        "x",
+        TypedValue::new(ExpressionValue::Int(42), TypeDescriptor::INT),
+    );
     let v = ctx.lookup_variable("x");
     assert!(v.is_some());
     assert_eq!(*v.unwrap().value(), ExpressionValue::Int(42));
@@ -1830,7 +2059,11 @@ fn simple_ctx_variable_lookup() {
 
 #[test]
 fn simple_ctx_variable_not_found() {
-    assert!(SimpleEvaluationContext::for_read_only(TypedValue::null()).lookup_variable("missing").is_none());
+    assert!(
+        SimpleEvaluationContext::for_read_only(TypedValue::null())
+            .lookup_variable("missing")
+            .is_none()
+    );
 }
 
 #[test]
@@ -1879,12 +2112,20 @@ fn parse_error_empty() {
 
 #[test]
 fn parse_error_trailing_garbage() {
-    assert!(SpelExpressionParser::new().parse_expression("1 + 2 abc").is_err());
+    assert!(
+        SpelExpressionParser::new()
+            .parse_expression("1 + 2 abc")
+            .is_err()
+    );
 }
 
 #[test]
 fn parse_error_unclosed_string() {
-    assert!(SpelExpressionParser::new().parse_expression("'hello").is_err());
+    assert!(
+        SpelExpressionParser::new()
+            .parse_expression("'hello")
+            .is_err()
+    );
 }
 
 #[test]

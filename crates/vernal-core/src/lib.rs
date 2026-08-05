@@ -6,67 +6,69 @@ pub mod app_lifecycle_phase;
 pub mod async_runtime;
 pub mod attribute_accessor;
 pub mod attribute_accessor_support;
-pub mod constants;
 pub mod cli;
-pub mod convert;
 pub mod codec;
+pub mod collection_factory;
+pub mod constants;
 pub mod conventions;
+pub mod convert;
 pub mod diagnostics;
+pub mod env;
 pub mod error;
 mod failure;
 pub mod id;
 pub mod io;
 pub mod log;
 pub mod logging;
-pub mod metrics;
-pub mod style;
 pub mod method_class_key;
 pub mod method_parameter;
+pub mod metrics;
 pub mod named_inheritable_thread_local;
 pub mod named_thread_local;
 pub mod nested_checked_exception;
 pub mod nested_exception_utils;
 pub mod nested_runtime_exception;
-pub mod collection_factory;
-pub mod simple_alias_registry;
-pub mod task;
-pub mod env;
-pub mod ordered;
 pub mod order_comparator;
+pub mod ordered;
 pub mod priority_ordered;
-pub mod serialization;
-pub mod sorted_properties;
 pub mod properties_file;
 pub mod retry;
+pub mod serialization;
 pub mod serializer;
+pub mod simple_alias_registry;
+pub mod sorted_properties;
+pub mod style;
+pub mod task;
 pub mod time;
-pub mod web;
 pub mod util;
 pub mod vernal_properties;
 pub mod vernal_version;
+pub mod web;
 
 pub use alias_registry::AliasRegistry;
 pub use app_lifecycle_phase::AppLifecyclePhase;
-pub use attribute_accessor::AttributeAccessor;
-pub use attribute_accessor_support::AttributeAccessorSupport;
-pub use simple_alias_registry::SimpleAliasRegistry;
 pub use async_runtime::RuntimeType;
 #[cfg(feature = "async-runtime")]
 pub use async_runtime::TokioRuntime;
-pub use method_parameter::MethodParameter;
-pub use vernal_properties::VernalProperties;
-pub use vernal_version::VernalVersion;
-pub use conventions::{Conventions, PLURAL_SUFFIX};
-pub use failure::{BoxError, SharedError};
-pub use cli::CliError;
+pub use attribute_accessor::AttributeAccessor;
+pub use attribute_accessor_support::AttributeAccessorSupport;
 #[cfg(feature = "cli")]
 pub use cli::ClapParser;
-pub use codec::{ByteArrayDecoder, ByteArrayEncoder, CodecError, Decoder, Encoder, StringDecoder, StringEncoder};
-pub use serialization::SerializationError;
+pub use cli::CliError;
+pub use codec::{
+    ByteArrayDecoder, ByteArrayEncoder, CodecError, Decoder, Encoder, StringDecoder, StringEncoder,
+};
+pub use conventions::{Conventions, PLURAL_SUFFIX};
+pub use failure::{BoxError, SharedError};
+pub use method_parameter::MethodParameter;
 #[cfg(feature = "json")]
 pub use serialization::JsonCodec;
+pub use serialization::SerializationError;
 #[cfg(feature = "xml")]
 pub use serialization::XmlCodec;
+pub use simple_alias_registry::SimpleAliasRegistry;
+pub use vernal_properties::VernalProperties;
+pub use vernal_version::VernalVersion;
 pub use web::HttpMethod;
 
 /// 当前 Vernal Workspace 发布版本。

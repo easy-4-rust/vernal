@@ -21,7 +21,12 @@ pub struct ManagedList {
 
 impl ManagedList {
     /// 创建空的管理列表。
-    pub fn new() -> Self { Self { items: Mutex::new(Vec::new()), element_type: None } }
+    pub fn new() -> Self {
+        Self {
+            items: Mutex::new(Vec::new()),
+            element_type: None,
+        }
+    }
 
     /// 设置元素类型约束。
     pub fn with_element_type(mut self, type_id: TypeId) -> Self {
@@ -40,13 +45,19 @@ impl ManagedList {
     }
 
     /// 元素数量。
-    pub fn len(&self) -> usize { self.items.lock().unwrap().len() }
+    pub fn len(&self) -> usize {
+        self.items.lock().unwrap().len()
+    }
 
     /// 是否为空。
-    pub fn is_empty(&self) -> bool { self.items.lock().unwrap().is_empty() }
+    pub fn is_empty(&self) -> bool {
+        self.items.lock().unwrap().is_empty()
+    }
 
     /// 获取元素类型约束。
-    pub fn element_type(&self) -> Option<TypeId> { self.element_type }
+    pub fn element_type(&self) -> Option<TypeId> {
+        self.element_type
+    }
 
     /// 将所有元素收集为 `Vec`。
     pub fn to_vec(&self) -> Vec<Arc<dyn Any + Send + Sync>> {
@@ -78,7 +89,11 @@ impl ManagedList {
     where
         F: Fn(&Arc<dyn Any + Send + Sync>) -> bool,
     {
-        self.items.lock().unwrap().iter().any(|item| predicate(item))
+        self.items
+            .lock()
+            .unwrap()
+            .iter()
+            .any(|item| predicate(item))
     }
 
     /// 对每个元素执行操作。
@@ -92,7 +107,11 @@ impl ManagedList {
     }
 }
 
-impl Default for ManagedList { fn default() -> Self { Self::new() } }
+impl Default for ManagedList {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -182,11 +201,9 @@ mod tests {
         list.add(Arc::new(2_i32));
         list.add(Arc::new(3_i32));
 
-        assert!(list.contains_any(|item| {
-            item.downcast_ref::<i32>().map_or(false, |&v| v > 2)
-        }));
-        assert!(!list.contains_any(|item| {
-            item.downcast_ref::<i32>().map_or(false, |&v| v > 10)
-        }));
+        assert!(list.contains_any(|item| { item.downcast_ref::<i32>().map_or(false, |&v| v > 2) }));
+        assert!(
+            !list.contains_any(|item| { item.downcast_ref::<i32>().map_or(false, |&v| v > 10) })
+        );
     }
 }

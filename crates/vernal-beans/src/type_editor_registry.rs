@@ -39,7 +39,10 @@ impl TypeEditorRegistry {
 
     /// 按 TypeId 注册编辑器。
     pub fn register_editor(&self, type_id: TypeId, editor: Arc<dyn PropertyEditor>) {
-        self.editors_by_type.write().unwrap().insert(type_id, editor);
+        self.editors_by_type
+            .write()
+            .unwrap()
+            .insert(type_id, editor);
     }
 
     /// 按类型名称注册编辑器。
@@ -154,14 +157,21 @@ mod tests {
 
     impl StubEditor {
         fn new(name: &str) -> Self {
-            Self { name: name.to_string() }
+            Self {
+                name: name.to_string(),
+            }
         }
     }
 
     impl PropertyEditor for StubEditor {
-        fn target_type(&self) -> TypeId { TypeId::of::<String>() }
+        fn target_type(&self) -> TypeId {
+            TypeId::of::<String>()
+        }
 
-        fn set_as_text(&mut self, _text: &str) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        fn set_as_text(
+            &mut self,
+            _text: &str,
+        ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             Ok(())
         }
         fn get_as_text(&self) -> Option<String> {
@@ -171,7 +181,9 @@ mod tests {
         fn get_value(&self) -> Option<&dyn std::any::Any> {
             Some(&self.name)
         }
-        fn get_value_type(&self) -> TypeId { TypeId::of::<String>() }
+        fn get_value_type(&self) -> TypeId {
+            TypeId::of::<String>()
+        }
     }
 
     #[test]

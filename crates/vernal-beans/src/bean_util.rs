@@ -461,7 +461,10 @@ mod tests {
     #[test]
     fn type_id_of_various_types() {
         assert_ne!(BeanUtil::type_id_of::<i32>(), BeanUtil::type_id_of::<i64>());
-        assert_ne!(BeanUtil::type_id_of::<String>(), BeanUtil::type_id_of::<i32>());
+        assert_ne!(
+            BeanUtil::type_id_of::<String>(),
+            BeanUtil::type_id_of::<i32>()
+        );
     }
 
     #[test]

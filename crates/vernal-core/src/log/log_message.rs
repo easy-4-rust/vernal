@@ -20,9 +20,7 @@ impl LogMessage {
     where
         F: FnOnce() -> String,
     {
-        Self {
-            text: formatter(),
-        }
+        Self { text: formatter() }
     }
 
     /// 创建空消息。

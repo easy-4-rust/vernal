@@ -69,7 +69,9 @@ impl ReflectiveMethodInvocation {
     }
 
     /// 调用连接点（目标方法）。
-    pub fn invoke_joinpoint(&self) -> Result<Box<dyn Any>, Box<dyn std::error::Error + Send + Sync>> {
+    pub fn invoke_joinpoint(
+        &self,
+    ) -> Result<Box<dyn Any>, Box<dyn std::error::Error + Send + Sync>> {
         // 默认实现：返回错误（需要子类覆盖）
         Err("invoke_joinpoint not implemented".into())
     }

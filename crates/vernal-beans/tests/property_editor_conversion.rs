@@ -5,13 +5,13 @@
 use std::any::Any;
 use std::sync::Arc;
 
+use vernal_beans::StringTrimmerEditor;
+use vernal_beans::URIEditor;
+use vernal_beans::UUIDEditor;
 use vernal_beans::boolean_editor::CustomBooleanEditor;
 use vernal_beans::conversion_service::{ConversionService, Converter, DefaultConversionService};
 use vernal_beans::number_editor::CustomNumberEditor;
 use vernal_beans::property_editor::PropertyEditor;
-use vernal_beans::StringTrimmerEditor;
-use vernal_beans::URIEditor;
-use vernal_beans::UUIDEditor;
 
 // ── StringTrimmerEditor 测试 ─────────────────────────────────────────────
 

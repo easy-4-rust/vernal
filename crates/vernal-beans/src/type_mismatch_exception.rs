@@ -24,7 +24,11 @@ impl TypeMismatchException {
     }
 
     /// 创建带有目标类型和实际值的 TypeMismatchException。
-    pub fn with_details(message: impl Into<String>, target_type: String, actual_value: String) -> Self {
+    pub fn with_details(
+        message: impl Into<String>,
+        target_type: String,
+        actual_value: String,
+    ) -> Self {
         Self {
             message: message.into(),
             target_type: Some(target_type),
@@ -33,13 +37,19 @@ impl TypeMismatchException {
     }
 
     /// 获取错误消息。
-    pub fn message(&self) -> &str { &self.message }
+    pub fn message(&self) -> &str {
+        &self.message
+    }
 
     /// 获取目标类型（如果有）。
-    pub fn target_type(&self) -> Option<&str> { self.target_type.as_deref() }
+    pub fn target_type(&self) -> Option<&str> {
+        self.target_type.as_deref()
+    }
 
     /// 获取实际值（如果有）。
-    pub fn actual_value(&self) -> Option<&str> { self.actual_value.as_deref() }
+    pub fn actual_value(&self) -> Option<&str> {
+        self.actual_value.as_deref()
+    }
 }
 
 impl fmt::Display for TypeMismatchException {
@@ -127,11 +137,8 @@ mod tests {
 
     #[test]
     fn test_with_details_empty_strings() {
-        let err = TypeMismatchException::with_details(
-            "".to_string(),
-            "".to_string(),
-            "".to_string(),
-        );
+        let err =
+            TypeMismatchException::with_details("".to_string(), "".to_string(), "".to_string());
         assert_eq!(err.message(), "");
         assert_eq!(err.target_type(), Some(""));
         assert_eq!(err.actual_value(), Some(""));

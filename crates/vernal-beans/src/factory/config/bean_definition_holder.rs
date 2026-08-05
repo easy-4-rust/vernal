@@ -15,10 +15,17 @@ pub struct BeanDefinitionHolder {
 impl BeanDefinitionHolder {
     /// 创建一个新的实例。
     pub fn new(bean_name: impl Into<String>, definition: Arc<dyn BeanDefinition>) -> Self {
-        Self { bean_name: bean_name.into(), bean_definition: definition }
+        Self {
+            bean_name: bean_name.into(),
+            bean_definition: definition,
+        }
     }
     /// 获取Bean名称。
-    pub fn bean_name(&self) -> &str { &self.bean_name }
+    pub fn bean_name(&self) -> &str {
+        &self.bean_name
+    }
     /// 获取Bean定义。
-    pub fn bean_definition(&self) -> &dyn BeanDefinition { &*self.bean_definition }
+    pub fn bean_definition(&self) -> &dyn BeanDefinition {
+        &*self.bean_definition
+    }
 }

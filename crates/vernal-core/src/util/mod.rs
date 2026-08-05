@@ -7,6 +7,7 @@ pub mod collection_utils;
 #[cfg(feature = "digest")]
 pub mod digest_utils;
 pub mod invalid_mime_type;
+pub mod linked_multi_value_map;
 #[cfg(feature = "mime-ext")]
 pub mod mime_ext;
 #[cfg(feature = "mime-sniff")]
@@ -15,7 +16,6 @@ pub mod mime_sniff;
 pub mod mime_type;
 #[cfg(feature = "mime")]
 pub mod mime_type_utils;
-pub mod linked_multi_value_map;
 pub mod multi_value_map;
 pub mod multi_value_map_adapters;
 pub mod number_utils;
@@ -32,13 +32,16 @@ pub use ant_path_matcher::AntPathMatcher;
 pub use collection_utils::CollectionUtils;
 #[cfg(feature = "mime")]
 pub use invalid_mime_type::InvalidMimeType;
+pub use linked_multi_value_map::LinkedMultiValueMap;
 #[cfg(feature = "mime")]
 pub use mime_type::{InvalidMimeType as InvalidMimeTypeError, MimeType};
 #[cfg(feature = "mime")]
 pub use mime_type_utils::MimeTypeUtils;
-pub use linked_multi_value_map::LinkedMultiValueMap;
 pub use multi_value_map::{MultiValueMap, MultiValueMapTrait, UnmodifiableMultiValueMap};
-pub use multi_value_map_adapters::{MultiValueMapAdapter, MultiToSingleValueMapAdapter, SingleToMultiValueMapAdapter, MultiValueMapCollector};
+pub use multi_value_map_adapters::{
+    MultiToSingleValueMapAdapter, MultiValueMapAdapter, MultiValueMapCollector,
+    SingleToMultiValueMapAdapter,
+};
 pub use number_utils::NumberUtils;
 pub use object_utils::ObjectUtils;
 pub use path_matcher::PathMatcher;

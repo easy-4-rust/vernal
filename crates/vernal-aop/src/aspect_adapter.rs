@@ -136,9 +136,12 @@ mod additional_tests {
     async fn aspect_adapter_intercept() {
         let adapter = AspectAdapter::new(TestAspect);
         let inv = Arc::new(Invocation::new(Operation::new("Service", "method")));
-        let next = Next::new(&[], crate::target_ref::TargetRef::Static(&|_| {
-            Box::pin(async { Ok(Box::new(42i32) as crate::InvocationValue) })
-        }));
+        let next = Next::new(
+            &[],
+            crate::target_ref::TargetRef::Static(&|_| {
+                Box::pin(async { Ok(Box::new(42i32) as crate::InvocationValue) })
+            }),
+        );
         let result = adapter.intercept(inv, next).await;
         assert!(result.is_ok());
     }
@@ -176,9 +179,12 @@ mod aspect_adapter_tests {
     async fn aspect_adapter_intercept() {
         let adapter = AspectAdapter::new(TestAspect);
         let inv = Arc::new(Invocation::new(Operation::new("Service", "method")));
-        let next = Next::new(&[], crate::target_ref::TargetRef::Static(&|_| {
-            Box::pin(async { Ok(Box::new(42i32) as crate::InvocationValue) })
-        }));
+        let next = Next::new(
+            &[],
+            crate::target_ref::TargetRef::Static(&|_| {
+                Box::pin(async { Ok(Box::new(42i32) as crate::InvocationValue) })
+            }),
+        );
         let result = adapter.intercept(inv, next).await;
         assert!(result.is_ok());
     }
@@ -209,9 +215,12 @@ mod aspect_adapter_final_tests {
     async fn aspect_adapter_intercept_success() {
         let adapter = AspectAdapter::new(TestAspect);
         let inv = Arc::new(Invocation::new(Operation::new("Service", "method")));
-        let next = Next::new(&[], crate::target_ref::TargetRef::Static(&|_| {
-            Box::pin(async { Ok(Box::new(42i32) as crate::InvocationValue) })
-        }));
+        let next = Next::new(
+            &[],
+            crate::target_ref::TargetRef::Static(&|_| {
+                Box::pin(async { Ok(Box::new(42i32) as crate::InvocationValue) })
+            }),
+        );
         let result = adapter.intercept(inv, next).await;
         assert!(result.is_ok());
     }
@@ -220,9 +229,12 @@ mod aspect_adapter_final_tests {
     async fn aspect_adapter_intercept_failure() {
         let adapter = AspectAdapter::new(TestAspect);
         let inv = Arc::new(Invocation::new(Operation::new("Service", "method")));
-        let next = Next::new(&[], crate::target_ref::TargetRef::Static(&|_| {
-            Box::pin(async { Err(crate::InvocationError::Cancelled) })
-        }));
+        let next = Next::new(
+            &[],
+            crate::target_ref::TargetRef::Static(&|_| {
+                Box::pin(async { Err(crate::InvocationError::Cancelled) })
+            }),
+        );
         let result = adapter.intercept(inv, next).await;
         assert!(result.is_err());
     }

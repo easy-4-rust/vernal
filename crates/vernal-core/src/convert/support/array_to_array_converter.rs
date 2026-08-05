@@ -2,7 +2,7 @@
 //!
 //! 对标 Spring `org.springframework.core.convert.support.ArrayToArrayConverter`。
 
-use crate::convert::{ConversionError, Convertible, Converter};
+use crate::convert::{ConversionError, Converter, Convertible};
 
 /// 数组 → 数组转换器。
 ///
@@ -29,7 +29,10 @@ mod tests {
         // A 类（合同对齐）：对标 Spring 数组元素级转换
         let converter = ArrayToArrayConverter;
         let output: Vec<String> = converter.convert(&[1_i32, 2, 3]).unwrap();
-        assert_eq!(output, vec!["1".to_string(), "2".to_string(), "3".to_string()]);
+        assert_eq!(
+            output,
+            vec!["1".to_string(), "2".to_string(), "3".to_string()]
+        );
     }
 
     #[test]

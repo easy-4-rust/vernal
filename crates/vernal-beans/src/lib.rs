@@ -9,65 +9,65 @@ pub mod property_matches;
 pub mod simple_type_converter;
 
 pub mod application_scope;
+pub mod bean_class_loader_aware;
 pub mod bean_definition_utils;
-pub mod bean_scope;
-pub mod bean_utils;
-pub mod bean_metadata_element;
+pub mod bean_info_factory;
 pub mod bean_metadata_attribute;
 pub mod bean_metadata_attribute_accessor;
+pub mod bean_metadata_element;
+pub mod bean_scope;
+pub mod bean_utils;
+pub mod bean_utils_runtime_hints;
 pub mod beans_exception;
-pub mod mergeable;
-pub mod configuration_class_post_processor;
-pub mod conversion_service;
-pub mod destructible_bean_adapter;
-pub mod field_metadata;
-pub mod mutable_property_values;
-pub mod property_editor;
-pub mod property_editor_registry;
-pub mod property_editor_registry_support;
-pub mod property_value;
-pub mod request_scope;
-pub mod session_scope;
-pub mod standard_bean_expression_resolver;
-pub mod type_converter;
-pub mod type_converter_delegate;
-pub mod type_converter_support;
 pub mod boolean_editor;
 pub mod byte_array_editor;
+pub mod cached_introspection_results;
 pub mod char_array_editor;
 pub mod char_property_editor;
 pub mod charset_property_editor;
-pub mod file_array_editor;
-pub mod number_editor;
-pub mod path_property_editor;
-pub mod string_array_editor;
-pub mod timezone_editor;
-pub mod type_mismatch_exception;
+pub mod configuration_class_post_processor;
 pub mod conversion_not_supported_exception;
-pub mod property_batch_update_exception;
+pub mod conversion_service;
+pub mod destructible_bean_adapter;
 pub mod direct_field_accessor;
-pub mod property_values;
-pub mod property_values_editor;
-pub mod property_editor_registrar;
-pub mod cached_introspection_results;
-pub mod bean_info_factory;
-pub mod property_descriptor_utils;
-pub mod property_accessor_factory;
-pub mod bean_class_loader_aware;
 pub mod extended_bean_info;
 pub mod extended_bean_info_factory;
+pub mod field_metadata;
+pub mod file_array_editor;
+pub mod mergeable;
+pub mod mutable_property_values;
+pub mod number_editor;
+pub mod path_property_editor;
+pub mod property_accessor_factory;
+pub mod property_batch_update_exception;
+pub mod property_descriptor_utils;
+pub mod property_editor;
+pub mod property_editor_registrar;
+pub mod property_editor_registry;
+pub mod property_editor_registry_support;
+pub mod property_value;
+pub mod property_values;
+pub mod property_values_editor;
+pub mod request_scope;
+pub mod session_scope;
 pub mod simple_bean_info_factory;
+pub mod standard_bean_expression_resolver;
 pub mod standard_bean_info_factory;
-pub mod bean_utils_runtime_hints;
+pub mod string_array_editor;
+pub mod timezone_editor;
+pub mod type_converter;
+pub mod type_converter_delegate;
+pub mod type_converter_support;
+pub mod type_mismatch_exception;
 
 // ── 属性访问机制模块 ───────────────────────────────────────────────────
 
-pub mod property_accessor;
+pub mod abstract_nestable_property_accessor;
+pub mod abstract_property_accessor;
 pub mod bean_wrapper;
 pub mod bean_wrapper_impl;
-pub mod abstract_property_accessor;
-pub mod abstract_nestable_property_accessor;
 pub mod configurable_property_accessor;
+pub mod property_accessor;
 
 // ── 原有 vernal-beans 模块 ─────────────────────────────────────────────
 
@@ -115,31 +115,31 @@ pub mod propertyeditors;
 pub mod support;
 
 // ── 新增核心模块 ─────────────────────────────────────────────────────
-pub mod scope_state;
+pub mod bean_instantiation_exception;
+pub mod destruction_aware_bean_post_processor;
+pub mod fatal_bean_exception;
+pub mod instantiation_aware_bean_post_processor;
+pub mod invalid_property_exception;
+pub mod not_readable_property_exception;
+pub mod not_writable_property_exception;
+pub mod null_value_in_nested_path_exception;
+pub mod property_access_exception;
 pub mod scope_close_failure;
 pub mod scope_future;
-pub mod property_access_exception;
-pub mod null_value_in_nested_path_exception;
-pub mod not_writable_property_exception;
-pub mod not_readable_property_exception;
-pub mod invalid_property_exception;
-pub mod fatal_bean_exception;
-pub mod bean_instantiation_exception;
-pub mod instantiation_aware_bean_post_processor;
-pub mod destruction_aware_bean_post_processor;
+pub mod scope_state;
 
 // ── 新增 Bean 生命周期处理模块 ───────────────────────────────────────
-pub mod initialization_bean_post_processor;
-pub mod destruction_bean_post_processor;
 pub mod bean_factory_aware_processor;
 pub mod bean_name_aware_processor;
 pub mod class_loader_aware_processor;
+pub mod destruction_bean_post_processor;
+pub mod initialization_bean_post_processor;
 
 // ── 新增类型转换和编辑器模块 ─────────────────────────────────────────
 pub mod bean_wrapper_info;
+pub mod conversion_service_factory;
 pub mod property_editor_cache;
 pub mod type_editor_registry;
-pub mod conversion_service_factory;
 
 // ── 新增异常类型 ────────────────────────────────────────────────────
 pub mod bean_factory_access_exception;
@@ -152,11 +152,11 @@ pub mod generic_type_aware_property_descriptor;
 // ── Spring 风格 re-export ───────────────────────────────────────────────
 
 pub use application_scope::ApplicationScope;
-pub use factory::annotation::autowire::Autowire;
 pub use bean_scope::BeanScope;
 pub use configuration_class_post_processor::ConfigurationClassPostProcessor;
 pub use conversion_service::ConversionService;
 pub use destructible_bean_adapter::DisposableBeanAdapter;
+pub use factory::annotation::autowire::Autowire;
 pub use mutable_property_values::MutablePropertyValues;
 pub use property_editor::PropertyEditor;
 pub use property_editor_registry::PropertyEditorRegistry;
@@ -190,15 +190,15 @@ pub use factory::bean_definition_store_exception::BeanDefinitionStoreException;
 pub use factory::bean_expression_exception::BeanExpressionException;
 pub use factory::bean_initialization_exception::BeanInitializationException;
 pub use factory::bean_not_of_required_type_exception::BeanNotOfRequiredTypeException;
+pub use factory::bean_registrar::BeanRegistrar;
+pub use factory::bean_registry::BeanRegistry;
 pub use factory::cannot_load_bean_class_exception::CannotLoadBeanClassException;
+pub use factory::named_bean::NamedBean;
 pub use factory::no_such_bean_definition_exception::NoSuchBeanDefinitionException;
 pub use factory::no_unique_bean_definition_exception::NoUniqueBeanDefinitionException;
-pub use factory::unsatisfied_dependency_exception::UnsatisfiedDependencyException;
-pub use factory::smart_factory_bean::SmartFactoryBean;
-pub use factory::named_bean::NamedBean;
-pub use factory::bean_registry::BeanRegistry;
-pub use factory::bean_registrar::BeanRegistrar;
 pub use factory::object_factory::ObjectFactory;
+pub use factory::smart_factory_bean::SmartFactoryBean;
+pub use factory::unsatisfied_dependency_exception::UnsatisfiedDependencyException;
 
 // factory/config 模块
 pub use factory::config::autowire_capable_bean_factory::AutowireCapableBeanFactory;
@@ -227,32 +227,21 @@ pub use factory::support::simple_instantiation_strategy::SimpleInstantiationStra
 
 // ── 原有 vernal-beans re-export ──────────────────────────────────────────
 
+pub use bean_class_loader_aware::BeanClassLoaderAware;
 pub use bean_desc_cache::BeanDescCache;
 pub use bean_descriptor::BeanDescriptor;
+pub use bean_descriptor::PropertyDescriptor;
+pub use bean_info_factory::BeanInfoFactory;
+pub use bean_metadata_attribute::BeanMetadataAttribute;
+pub use bean_metadata_attribute_accessor::BeanMetadataAttributeAccessor;
+pub use bean_metadata_element::BeanMetadataElement;
 pub use bean_util::BeanError;
 pub use bean_util::BeanUtil;
 pub use bean_utils::BeanUtils;
-pub use bean_metadata_element::BeanMetadataElement;
-pub use bean_metadata_attribute::BeanMetadataAttribute;
-pub use bean_metadata_attribute_accessor::BeanMetadataAttributeAccessor;
 pub use beans_exception::BeansException;
-pub use mergeable::Mergeable;
-pub use direct_field_accessor::DirectFieldAccessor;
-pub use property_values::PropertyValues;
-pub use property_values::MutablePropertyValuesImpl;
-pub use property_values::EmptyPropertyValues;
-pub use property_editor_registrar::PropertyEditorRegistrar;
-pub use cached_introspection_results::CachedIntrospectionResults;
-pub use bean_info_factory::BeanInfoFactory;
-pub use property_accessor_factory::PropertyAccessorFactory;
-pub use bean_class_loader_aware::BeanClassLoaderAware;
-pub use extended_bean_info::ExtendedBeanInfo;
-pub use extended_bean_info_factory::ExtendedBeanInfoFactory;
-pub use simple_bean_info_factory::SimpleBeanInfoFactory;
-pub use standard_bean_info_factory::StandardBeanInfoFactory;
 pub use build_plan::BuildPlan;
+pub use cached_introspection_results::CachedIntrospectionResults;
 pub use component_contract::Component;
-pub use factory::parsing::component_definition::ComponentDefinition;
 pub use component_key::ComponentKey;
 pub use component_provider::ComponentProvider;
 pub use component_registry::Registry;
@@ -261,8 +250,18 @@ pub use component_snapshot::ComponentSnapshot;
 pub use container::Container;
 pub use definition_error::DefinitionError;
 pub use dependency::Dependency;
-pub use graph_error::GraphError;
+pub use direct_field_accessor::DirectFieldAccessor;
+pub use extended_bean_info::ExtendedBeanInfo;
+pub use extended_bean_info_factory::ExtendedBeanInfoFactory;
 pub use factory::annotation::qualifier::Qualifier;
+pub use factory::parsing::component_definition::ComponentDefinition;
+pub use graph_error::GraphError;
+pub use mergeable::Mergeable;
+pub use property_accessor_factory::PropertyAccessorFactory;
+pub use property_editor_registrar::PropertyEditorRegistrar;
+pub use property_values::EmptyPropertyValues;
+pub use property_values::MutablePropertyValuesImpl;
+pub use property_values::PropertyValues;
 pub use registry_builder::RegistryBuilder;
 pub use registry_snapshot::RegistrySnapshot;
 pub use registry_summary::RegistrySummary;
@@ -271,26 +270,27 @@ pub use resolver::Resolver;
 pub use scope_context::ScopeContext;
 pub use scope_error::ScopeError;
 pub use scope_key::ScopeKey;
+pub use scope_state::ScopeState;
+pub use simple_bean_info_factory::SimpleBeanInfoFactory;
+pub use standard_bean_info_factory::StandardBeanInfoFactory;
 pub use trait_binding::TraitBinding;
 pub use trait_binding_snapshot::TraitBindingSnapshot;
 pub use trait_key::TraitKey;
 pub use trait_provider::TraitProvider;
 pub use transient_tracker::TransientTracker;
-pub use scope_state::ScopeState;
-pub use bean_descriptor::PropertyDescriptor;
 
 // ── 新增类型 re-export ────────────────────────────────────────────────
+pub use bean_factory_access_exception::BeanFactoryAccessException;
+pub use bean_factory_aware_processor::BeanFactoryAwareProcessor;
+pub use bean_name_aware_processor::BeanNameAwareProcessor;
 pub use bean_wrapper_info::BeanWrapperInfo;
+pub use class_loader_aware_processor::ClassLoaderAwareProcessor;
+pub use conversion_service_factory::ConversionServiceFactory;
+pub use destruction_bean_post_processor::DestructionBeanPostProcessor;
+pub use initialization_bean_post_processor::InitializationBeanPostProcessor;
 pub use property_editor_cache::PropertyEditorCache;
 pub use type_converter_support::TypeConverterSupport;
 pub use type_editor_registry::TypeEditorRegistry;
-pub use conversion_service_factory::ConversionServiceFactory;
-pub use bean_factory_access_exception::BeanFactoryAccessException;
-pub use initialization_bean_post_processor::InitializationBeanPostProcessor;
-pub use destruction_bean_post_processor::DestructionBeanPostProcessor;
-pub use bean_factory_aware_processor::BeanFactoryAwareProcessor;
-pub use bean_name_aware_processor::BeanNameAwareProcessor;
-pub use class_loader_aware_processor::ClassLoaderAwareProcessor;
 
 // ── 子包模块 re-export（供测试和外部使用） ─────────────────────────────
 

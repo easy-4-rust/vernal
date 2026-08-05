@@ -78,17 +78,26 @@ impl AbstractAutowireCapableBeanFactory {
     /// 典型的忽略类型包括 `BeanFactory`、`ApplicationContext` 等，
     /// 因为这些通过 Aware 接口注入。
     pub fn ignore_dependency_type(&self, type_id: TypeId) {
-        self.ignored_dependency_types.lock().unwrap().insert(type_id);
+        self.ignored_dependency_types
+            .lock()
+            .unwrap()
+            .insert(type_id);
     }
 
     /// 从忽略列表中移除指定类型。
     pub fn unignore_dependency_type(&self, type_id: TypeId) {
-        self.ignored_dependency_types.lock().unwrap().remove(&type_id);
+        self.ignored_dependency_types
+            .lock()
+            .unwrap()
+            .remove(&type_id);
     }
 
     /// 检查指定类型是否被忽略。
     pub fn is_dependency_ignored(&self, type_id: TypeId) -> bool {
-        self.ignored_dependency_types.lock().unwrap().contains(&type_id)
+        self.ignored_dependency_types
+            .lock()
+            .unwrap()
+            .contains(&type_id)
     }
 
     /// 获取已忽略的依赖类型数量。
@@ -127,7 +136,9 @@ impl AbstractAutowireCapableBeanFactory {
 }
 
 impl Default for AbstractAutowireCapableBeanFactory {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[cfg(test)]

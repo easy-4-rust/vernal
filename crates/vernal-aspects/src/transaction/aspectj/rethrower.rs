@@ -123,17 +123,13 @@ mod tests {
 
     #[test]
     fn test_rethrower_try_execute_with_option_return() {
-        let result = Rethrower::try_execute(|| {
-            Some(42)
-        });
+        let result = Rethrower::try_execute(|| Some(42));
         assert_eq!(result.unwrap(), Some(42));
     }
 
     #[test]
     fn test_rethrower_try_execute_with_result_return() {
-        let result = Rethrower::try_execute(|| {
-            Ok::<i32, String>(42)
-        });
+        let result = Rethrower::try_execute(|| Ok::<i32, String>(42));
         assert_eq!(result.unwrap(), Ok(42));
     }
 

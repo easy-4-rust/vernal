@@ -186,10 +186,7 @@ impl EventBus {
     /// 返回当前已注册的 listener 总数。
     #[must_use]
     pub fn listener_count(&self) -> usize {
-        self.runtime_listeners
-            .lock()
-            .expect("poisoned")
-            .len()
+        self.runtime_listeners.lock().expect("poisoned").len()
     }
 }
 

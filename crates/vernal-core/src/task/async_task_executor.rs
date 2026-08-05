@@ -22,8 +22,8 @@ pub trait AsyncTaskExecutor: TaskExecutor {
 mod tests {
     use super::*;
     use std::future::Future;
-    use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::Arc;
+    use std::sync::atomic::{AtomicBool, Ordering};
     use std::task::{Context, Poll};
 
     /// 测试双：立即完成的异步执行器。
@@ -115,7 +115,9 @@ mod tests {
     #[test]
     fn execute_async_propagates_rejection_error() {
         // B 类（错误路径）：对标 Spring `TaskRejectedException` 语义
-        let executor = RejectingExecutor { name: "reject".to_string() };
+        let executor = RejectingExecutor {
+            name: "reject".to_string(),
+        };
         let result = block_on(executor.execute_async(Box::new(|| {})));
         assert!(
             matches!(result, Err(TaskError::Rejected(_))),

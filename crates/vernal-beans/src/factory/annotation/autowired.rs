@@ -55,16 +55,24 @@ impl Autowired {
     }
 
     /// 是否必需。
-    pub fn required(&self) -> bool { self.required }
+    pub fn required(&self) -> bool {
+        self.required
+    }
 
     /// 设置是否必需。
-    pub fn set_required(&mut self, v: bool) { self.required = v; }
+    pub fn set_required(&mut self, v: bool) {
+        self.required = v;
+    }
 
     /// 是否 primary。
-    pub fn is_primary(&self) -> bool { self.primary }
+    pub fn is_primary(&self) -> bool {
+        self.primary
+    }
 
     /// 设置是否 primary。
-    pub fn set_primary(&mut self, v: bool) { self.primary = v; }
+    pub fn set_primary(&mut self, v: bool) {
+        self.primary = v;
+    }
 
     /// 添加限定符类型。
     pub fn add_qualifier_type(&self, type_id: TypeId) {
@@ -93,7 +101,9 @@ impl Autowired {
 }
 
 impl Default for Autowired {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[cfg(test)]

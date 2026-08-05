@@ -102,9 +102,10 @@ mod tests {
     #[test]
     fn test_submit_returns_same_future() {
         let executor = DefaultAsyncTaskExecutor::new("test");
-        let task: std::pin::Pin<Box<dyn std::future::Future<Output = AsyncTaskResult> + Send>> = Box::pin(async {
-            AsyncTaskResult::Ok(Box::new(42) as Box<dyn std::any::Any + Send + Sync>)
-        });
+        let task: std::pin::Pin<Box<dyn std::future::Future<Output = AsyncTaskResult> + Send>> =
+            Box::pin(async {
+                AsyncTaskResult::Ok(Box::new(42) as Box<dyn std::any::Any + Send + Sync>)
+            });
         let result = executor.submit(task);
         // 默认执行器直接返回 task
         let _ = result;
@@ -113,7 +114,9 @@ mod tests {
     #[test]
     fn test_submit_all() {
         let executor = DefaultAsyncTaskExecutor::new("test");
-        let tasks: Vec<std::pin::Pin<Box<dyn std::future::Future<Output = AsyncTaskResult> + Send>>> = vec![
+        let tasks: Vec<
+            std::pin::Pin<Box<dyn std::future::Future<Output = AsyncTaskResult> + Send>>,
+        > = vec![
             Box::pin(async {
                 AsyncTaskResult::Ok(Box::new(1) as Box<dyn std::any::Any + Send + Sync>)
             }),

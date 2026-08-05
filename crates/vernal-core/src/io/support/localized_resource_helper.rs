@@ -51,7 +51,9 @@ impl LocalizedResourceHelper {
             }
         }
         // 全部缺失: 对标 Spring 抛 IOException
-        let _ = self.loader.load(candidates.first().map_or(basename, String::as_str))?;
+        let _ = self
+            .loader
+            .load(candidates.first().map_or(basename, String::as_str))?;
         Err(io::Error::new(
             io::ErrorKind::NotFound,
             format!("no localized resource found for {basename}"),

@@ -4,7 +4,6 @@
 //!
 //! 负责将 XML 输入源加载为文档对象。
 
-
 /// XML 文档对象（简化表示）。
 #[derive(Debug, Clone)]
 pub struct Document {

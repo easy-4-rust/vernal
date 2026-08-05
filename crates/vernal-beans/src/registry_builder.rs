@@ -321,9 +321,15 @@ mod tests {
     #[test]
     fn test_register_multiple_different_types() {
         let mut builder = RegistryBuilder::new();
-        builder.register(ComponentDefinition::shared_value(42i32)).unwrap();
-        builder.register(ComponentDefinition::shared_value("hello".to_string())).unwrap();
-        builder.register(ComponentDefinition::shared_value(3.14f64)).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(42i32))
+            .unwrap();
+        builder
+            .register(ComponentDefinition::shared_value("hello".to_string()))
+            .unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(3.14f64))
+            .unwrap();
         assert_eq!(builder.len(), 3);
     }
 
@@ -359,7 +365,9 @@ mod tests {
     #[test]
     fn test_register_all_with_existing_duplicate() {
         let mut builder = RegistryBuilder::new();
-        builder.register(ComponentDefinition::shared_value(1i32)).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(1i32))
+            .unwrap();
         let defs = vec![ComponentDefinition::shared_value(2i32)];
         assert!(builder.register_all(defs).is_err());
         assert_eq!(builder.len(), 1);
@@ -369,7 +377,9 @@ mod tests {
     fn test_contains() {
         let mut builder = RegistryBuilder::new();
         assert!(!builder.contains::<i32>());
-        builder.register(ComponentDefinition::shared_value(42i32)).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(42i32))
+            .unwrap();
         assert!(builder.contains::<i32>());
         assert!(!builder.contains::<String>());
     }
@@ -377,8 +387,12 @@ mod tests {
     #[test]
     fn test_remove_by_type() {
         let mut builder = RegistryBuilder::new();
-        builder.register(ComponentDefinition::shared_value(42i32)).unwrap();
-        builder.register(ComponentDefinition::shared_value("hello".to_string())).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(42i32))
+            .unwrap();
+        builder
+            .register(ComponentDefinition::shared_value("hello".to_string()))
+            .unwrap();
         assert_eq!(builder.len(), 2);
 
         builder.remove::<i32>().unwrap();
@@ -396,7 +410,9 @@ mod tests {
     #[test]
     fn test_remove_by_key() {
         let mut builder = RegistryBuilder::new();
-        builder.register(ComponentDefinition::shared_value(42i32)).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(42i32))
+            .unwrap();
         let key = ComponentKey::of::<i32>();
         builder.remove_by_key(&key).unwrap();
         assert_eq!(builder.len(), 0);
@@ -419,8 +435,12 @@ mod tests {
     #[test]
     fn test_build_with_definitions() {
         let mut builder = RegistryBuilder::new();
-        builder.register(ComponentDefinition::shared_value(42i32)).unwrap();
-        builder.register(ComponentDefinition::shared_value("hello".to_string())).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(42i32))
+            .unwrap();
+        builder
+            .register(ComponentDefinition::shared_value("hello".to_string()))
+            .unwrap();
         let registry = builder.build().unwrap();
         assert_eq!(registry.definitions().len(), 2);
     }
@@ -428,9 +448,15 @@ mod tests {
     #[test]
     fn test_remove_and_rebuild_indices() {
         let mut builder = RegistryBuilder::new();
-        builder.register(ComponentDefinition::shared_value(1i32)).unwrap();
-        builder.register(ComponentDefinition::shared_value(2u64)).unwrap();
-        builder.register(ComponentDefinition::shared_value("hello".to_string())).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(1i32))
+            .unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(2u64))
+            .unwrap();
+        builder
+            .register(ComponentDefinition::shared_value("hello".to_string()))
+            .unwrap();
         assert_eq!(builder.len(), 3);
 
         // Remove the first one
@@ -440,7 +466,9 @@ mod tests {
         assert!(builder.contains::<String>());
 
         // Verify we can still register after remove
-        builder.register(ComponentDefinition::shared_value(3.14f64)).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(3.14f64))
+            .unwrap();
         assert_eq!(builder.len(), 3);
     }
 
@@ -476,9 +504,15 @@ mod tests {
     #[test]
     fn test_remove_middle_element() {
         let mut builder = RegistryBuilder::new();
-        builder.register(ComponentDefinition::shared_value(1i32)).unwrap();
-        builder.register(ComponentDefinition::shared_value(2u64)).unwrap();
-        builder.register(ComponentDefinition::shared_value("hello".to_string())).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(1i32))
+            .unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(2u64))
+            .unwrap();
+        builder
+            .register(ComponentDefinition::shared_value("hello".to_string()))
+            .unwrap();
 
         builder.remove::<u64>().unwrap();
         assert_eq!(builder.len(), 2);
@@ -490,8 +524,12 @@ mod tests {
     #[test]
     fn test_remove_last_element() {
         let mut builder = RegistryBuilder::new();
-        builder.register(ComponentDefinition::shared_value(1i32)).unwrap();
-        builder.register(ComponentDefinition::shared_value(2u64)).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(1i32))
+            .unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(2u64))
+            .unwrap();
 
         builder.remove::<u64>().unwrap();
         assert_eq!(builder.len(), 1);
@@ -502,9 +540,15 @@ mod tests {
     #[test]
     fn test_remove_by_key_rebuilds_indices() {
         let mut builder = RegistryBuilder::new();
-        builder.register(ComponentDefinition::shared_value(1i32)).unwrap();
-        builder.register(ComponentDefinition::shared_value(2u64)).unwrap();
-        builder.register(ComponentDefinition::shared_value("hello".to_string())).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(1i32))
+            .unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(2u64))
+            .unwrap();
+        builder
+            .register(ComponentDefinition::shared_value("hello".to_string()))
+            .unwrap();
 
         let key = ComponentKey::of::<u64>();
         builder.remove_by_key(&key).unwrap();
@@ -516,7 +560,9 @@ mod tests {
     #[test]
     fn test_build_with_transient() {
         let mut builder = RegistryBuilder::new();
-        builder.register(ComponentDefinition::transient::<i32, _>(|_| 42)).unwrap();
+        builder
+            .register(ComponentDefinition::transient::<i32, _>(|_| 42))
+            .unwrap();
         let registry = builder.build().unwrap();
         assert_eq!(registry.definitions().len(), 1);
     }
@@ -527,7 +573,9 @@ mod tests {
     fn bean_definition_registry_contains() {
         use crate::factory::support::bean_definition_registry::BeanDefinitionRegistry;
         let mut builder = RegistryBuilder::new();
-        builder.register(ComponentDefinition::shared_value(42i32)).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(42i32))
+            .unwrap();
         assert!(builder.contains_bean_definition("i32"));
         assert!(!builder.contains_bean_definition("nonexistent"));
     }
@@ -536,8 +584,12 @@ mod tests {
     fn bean_definition_registry_count() {
         use crate::factory::support::bean_definition_registry::BeanDefinitionRegistry;
         let mut builder = RegistryBuilder::new();
-        builder.register(ComponentDefinition::shared_value(42i32)).unwrap();
-        builder.register(ComponentDefinition::shared_value("hello".to_string())).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(42i32))
+            .unwrap();
+        builder
+            .register(ComponentDefinition::shared_value("hello".to_string()))
+            .unwrap();
         assert_eq!(builder.bean_definition_count(), 2);
     }
 
@@ -545,8 +597,12 @@ mod tests {
     fn bean_definition_registry_names() {
         use crate::factory::support::bean_definition_registry::BeanDefinitionRegistry;
         let mut builder = RegistryBuilder::new();
-        builder.register(ComponentDefinition::shared_value(42i32)).unwrap();
-        builder.register(ComponentDefinition::shared_value("hello".to_string())).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(42i32))
+            .unwrap();
+        builder
+            .register(ComponentDefinition::shared_value("hello".to_string()))
+            .unwrap();
         let names = builder.bean_definition_names();
         assert_eq!(names.len(), 2);
     }
@@ -563,7 +619,9 @@ mod tests {
     fn bean_definition_registry_remove_by_name() {
         use crate::factory::support::bean_definition_registry::BeanDefinitionRegistry;
         let mut builder = RegistryBuilder::new();
-        builder.register(ComponentDefinition::shared_value(42i32)).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(42i32))
+            .unwrap();
         let removed = builder.remove_bean_definition("i32");
         assert!(removed.is_ok());
         assert_eq!(builder.len(), 0);
@@ -614,22 +672,20 @@ mod tests {
     #[test]
     fn register_bundle_with_definitions_and_bindings() {
         let mut builder = RegistryBuilder::new();
-        builder.register_bundle(
-            vec![ComponentDefinition::shared_value(42i32)],
-            vec![],
-        ).unwrap();
+        builder
+            .register_bundle(vec![ComponentDefinition::shared_value(42i32)], vec![])
+            .unwrap();
         assert_eq!(builder.len(), 1);
     }
 
     #[test]
     fn register_bundle_definitions_fail_rolls_back() {
         let mut builder = RegistryBuilder::new();
-        builder.register(ComponentDefinition::shared_value(1i32)).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(1i32))
+            .unwrap();
         // Register bundle with duplicate i32 - should fail
-        let result = builder.register_bundle(
-            vec![ComponentDefinition::shared_value(2i32)],
-            vec![],
-        );
+        let result = builder.register_bundle(vec![ComponentDefinition::shared_value(2i32)], vec![]);
         assert!(result.is_err());
         assert_eq!(builder.len(), 1); // original still there
     }
@@ -637,7 +693,9 @@ mod tests {
     #[test]
     fn build_with_single_definition() {
         let mut builder = RegistryBuilder::new();
-        builder.register(ComponentDefinition::shared_value(42i32)).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(42i32))
+            .unwrap();
         let registry = builder.build().unwrap();
         assert_eq!(registry.definitions().len(), 1);
     }
@@ -645,8 +703,12 @@ mod tests {
     #[test]
     fn remove_first_element() {
         let mut builder = RegistryBuilder::new();
-        builder.register(ComponentDefinition::shared_value(1i32)).unwrap();
-        builder.register(ComponentDefinition::shared_value(2u64)).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(1i32))
+            .unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(2u64))
+            .unwrap();
         builder.remove::<i32>().unwrap();
         assert_eq!(builder.len(), 1);
         assert!(!builder.contains::<i32>());
@@ -656,7 +718,9 @@ mod tests {
     #[test]
     fn remove_only_element() {
         let mut builder = RegistryBuilder::new();
-        builder.register(ComponentDefinition::shared_value(42i32)).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(42i32))
+            .unwrap();
         builder.remove::<i32>().unwrap();
         assert!(builder.is_empty());
     }
@@ -671,10 +735,14 @@ mod tests {
     #[test]
     fn register_after_remove_allows_reregister() {
         let mut builder = RegistryBuilder::new();
-        builder.register(ComponentDefinition::shared_value(1i32)).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(1i32))
+            .unwrap();
         builder.remove::<i32>().unwrap();
         // Re-register same type
-        builder.register(ComponentDefinition::shared_value(2i32)).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(2i32))
+            .unwrap();
         assert_eq!(builder.len(), 1);
         assert!(builder.contains::<i32>());
     }
@@ -691,8 +759,11 @@ mod tests {
     fn bean_definition_registry_register_bean_definition() {
         use crate::factory::support::bean_definition_registry::BeanDefinitionRegistry;
         let mut builder = RegistryBuilder::new();
-        let def = Box::new(crate::factory::support::root_bean_definition::RootBeanDefinition::new());
-        builder.register_bean_definition("myBean".to_string(), def).unwrap();
+        let def =
+            Box::new(crate::factory::support::root_bean_definition::RootBeanDefinition::new());
+        builder
+            .register_bean_definition("myBean".to_string(), def)
+            .unwrap();
         // Current impl is a no-op for register_bean_definition on RegistryBuilder
     }
 
@@ -700,7 +771,9 @@ mod tests {
     fn bean_definition_registry_remove_by_name_found() {
         use crate::factory::support::bean_definition_registry::BeanDefinitionRegistry;
         let mut builder = RegistryBuilder::new();
-        builder.register(ComponentDefinition::shared_value(42i32)).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(42i32))
+            .unwrap();
         let removed = builder.remove_bean_definition("i32");
         assert!(removed.is_ok());
         assert_eq!(builder.len(), 0);
@@ -710,9 +783,15 @@ mod tests {
     fn bean_definition_registry_remove_middle_by_name() {
         use crate::factory::support::bean_definition_registry::BeanDefinitionRegistry;
         let mut builder = RegistryBuilder::new();
-        builder.register(ComponentDefinition::shared_value(1i32)).unwrap();
-        builder.register(ComponentDefinition::shared_value("hello".to_string())).unwrap();
-        builder.register(ComponentDefinition::shared_value(3.14f64)).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(1i32))
+            .unwrap();
+        builder
+            .register(ComponentDefinition::shared_value("hello".to_string()))
+            .unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(3.14f64))
+            .unwrap();
         let removed = builder.remove_bean_definition("alloc::string::String");
         assert!(removed.is_ok());
         assert_eq!(builder.len(), 2);
@@ -722,7 +801,9 @@ mod tests {
     fn bean_definition_registry_contains_after_remove() {
         use crate::factory::support::bean_definition_registry::BeanDefinitionRegistry;
         let mut builder = RegistryBuilder::new();
-        builder.register(ComponentDefinition::shared_value(42i32)).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(42i32))
+            .unwrap();
         assert!(builder.contains_bean_definition("i32"));
         builder.remove_bean_definition("i32").unwrap();
         assert!(!builder.contains_bean_definition("i32"));
@@ -731,8 +812,10 @@ mod tests {
     #[test]
     fn validate_bindings_duplicate_exact() {
         let mut builder = RegistryBuilder::new();
-        let binding1 = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Debug + Send + Sync>);
-        let binding2 = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Debug + Send + Sync>);
+        let binding1 =
+            TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Debug + Send + Sync>);
+        let binding2 =
+            TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Debug + Send + Sync>);
         builder.bind_all(vec![binding1]).unwrap();
         // Second identical binding should fail
         let result = builder.bind_all(vec![binding2]);
@@ -743,8 +826,12 @@ mod tests {
     fn validate_bindings_duplicate_qualified() {
         let mut builder = RegistryBuilder::new();
         let q = crate::Qualifier::new("myqual").unwrap();
-        let binding1 = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Debug + Send + Sync>).qualified(q.clone());
-        let binding2 = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Debug + Send + Sync>).qualified(q);
+        let binding1 =
+            TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Debug + Send + Sync>)
+                .qualified(q.clone());
+        let binding2 =
+            TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Debug + Send + Sync>)
+                .qualified(q);
         builder.bind_all(vec![binding1]).unwrap();
         let result = builder.bind_all(vec![binding2]);
         assert!(result.is_err());
@@ -755,10 +842,15 @@ mod tests {
         use crate::factory::config::bean_definition::BeanDefinition as BeanDefinitionTrait;
         use crate::factory::support::bean_definition_registry::BeanDefinitionRegistry;
         let mut builder = RegistryBuilder::new();
-        builder.register(ComponentDefinition::shared_value(42i32)).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(42i32))
+            .unwrap();
         let removed = builder.remove_bean_definition("i32").unwrap();
         assert_eq!(BeanDefinitionTrait::bean_class_name(&*removed), "i32");
-        assert_eq!(BeanDefinitionTrait::scope(&*removed), crate::component_scope::Scope::Singleton);
+        assert_eq!(
+            BeanDefinitionTrait::scope(&*removed),
+            crate::component_scope::Scope::Singleton
+        );
         assert!(!BeanDefinitionTrait::is_lazy_init(&*removed));
         assert!(!BeanDefinitionTrait::is_primary(&*removed));
     }
@@ -767,8 +859,12 @@ mod tests {
     fn removed_bean_definition_last_element() {
         use crate::factory::support::bean_definition_registry::BeanDefinitionRegistry;
         let mut builder = RegistryBuilder::new();
-        builder.register(ComponentDefinition::shared_value(1i32)).unwrap();
-        builder.register(ComponentDefinition::shared_value(2u64)).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(1i32))
+            .unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(2u64))
+            .unwrap();
         let removed = builder.remove_bean_definition("u64");
         assert!(removed.is_ok());
         assert_eq!(builder.len(), 1);
@@ -778,8 +874,12 @@ mod tests {
     fn removed_bean_definition_first_element() {
         use crate::factory::support::bean_definition_registry::BeanDefinitionRegistry;
         let mut builder = RegistryBuilder::new();
-        builder.register(ComponentDefinition::shared_value(1i32)).unwrap();
-        builder.register(ComponentDefinition::shared_value(2u64)).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(1i32))
+            .unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(2u64))
+            .unwrap();
         let removed = builder.remove_bean_definition("i32");
         assert!(removed.is_ok());
         assert_eq!(builder.len(), 1);
@@ -791,7 +891,8 @@ mod tests {
     fn bind_single_binding() {
         use crate::TraitBinding;
         let mut builder = RegistryBuilder::new();
-        let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
+        let binding =
+            TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
         builder.bind(binding).unwrap();
         assert!(!builder.is_empty());
     }
@@ -800,11 +901,14 @@ mod tests {
     fn register_bundle_with_bindings() {
         use crate::TraitBinding;
         let mut builder = RegistryBuilder::new();
-        let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
-        builder.register_bundle(
-            vec![ComponentDefinition::shared_value("hello".to_string())],
-            vec![binding],
-        ).unwrap();
+        let binding =
+            TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
+        builder
+            .register_bundle(
+                vec![ComponentDefinition::shared_value("hello".to_string())],
+                vec![binding],
+            )
+            .unwrap();
         assert_eq!(builder.len(), 1);
     }
 
@@ -814,8 +918,12 @@ mod tests {
         let mut builder = RegistryBuilder::new();
         let q = crate::Qualifier::new("q").unwrap();
         // Register two bindings with same trait+qualifier to trigger duplicate detection
-        let binding1 = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>).qualified(q.clone());
-        let binding2 = TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>).qualified(q.clone());
+        let binding1 =
+            TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>)
+                .qualified(q.clone());
+        let binding2 =
+            TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>)
+                .qualified(q.clone());
         // bind_all with two same-qualified bindings should fail
         let result = builder.bind_all(vec![binding1, binding2]);
         assert!(result.is_err());
@@ -826,8 +934,12 @@ mod tests {
     fn validate_bindings_multiple_primary_fails() {
         use crate::TraitBinding;
         let mut builder = RegistryBuilder::new();
-        let binding1 = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>).primary();
-        let binding2 = TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>).primary();
+        let binding1 =
+            TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>)
+                .primary();
+        let binding2 =
+            TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>)
+                .primary();
         let result = builder.bind_all(vec![binding1, binding2]);
         assert!(result.is_err());
     }
@@ -836,8 +948,10 @@ mod tests {
     fn bind_all_with_multiple_unqualified() {
         use crate::TraitBinding;
         let mut builder = RegistryBuilder::new();
-        let binding1 = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
-        let binding2 = TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>);
+        let binding1 =
+            TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
+        let binding2 =
+            TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>);
         builder.bind_all(vec![binding1, binding2]).unwrap();
     }
 
@@ -858,19 +972,24 @@ mod tests {
     #[test]
     fn register_bundle_with_empty_both() {
         let mut builder = RegistryBuilder::new();
-        builder.register_bundle(
-            std::iter::empty(),
-            std::iter::empty(),
-        ).unwrap();
+        builder
+            .register_bundle(std::iter::empty(), std::iter::empty())
+            .unwrap();
         assert!(builder.is_empty());
     }
 
     #[test]
     fn build_with_multiple_definitions() {
         let mut builder = RegistryBuilder::new();
-        builder.register(ComponentDefinition::shared_value(1i32)).unwrap();
-        builder.register(ComponentDefinition::shared_value("hello".to_string())).unwrap();
-        builder.register(ComponentDefinition::shared_value(3.14f64)).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(1i32))
+            .unwrap();
+        builder
+            .register(ComponentDefinition::shared_value("hello".to_string()))
+            .unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(3.14f64))
+            .unwrap();
         let registry = builder.build().unwrap();
         assert_eq!(registry.definitions().len(), 3);
     }
@@ -878,7 +997,11 @@ mod tests {
     #[test]
     fn build_with_transient_definition() {
         let mut builder = RegistryBuilder::new();
-        builder.register(ComponentDefinition::transient::<String, _>(|_| "t".to_string())).unwrap();
+        builder
+            .register(ComponentDefinition::transient::<String, _>(|_| {
+                "t".to_string()
+            }))
+            .unwrap();
         let registry = builder.build().unwrap();
         assert_eq!(registry.definitions().len(), 1);
     }
@@ -887,15 +1010,21 @@ mod tests {
     fn contains_after_register() {
         let mut builder = RegistryBuilder::new();
         assert!(!builder.contains::<i32>());
-        builder.register(ComponentDefinition::shared_value(42i32)).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(42i32))
+            .unwrap();
         assert!(builder.contains::<i32>());
     }
 
     #[test]
     fn remove_last_element() {
         let mut builder = RegistryBuilder::new();
-        builder.register(ComponentDefinition::shared_value(1i32)).unwrap();
-        builder.register(ComponentDefinition::shared_value(2u64)).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(1i32))
+            .unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(2u64))
+            .unwrap();
         builder.remove::<u64>().unwrap();
         assert_eq!(builder.len(), 1);
         assert!(!builder.contains::<u64>());
@@ -904,9 +1033,15 @@ mod tests {
     #[test]
     fn remove_by_key_rebuilds_indices() {
         let mut builder = RegistryBuilder::new();
-        builder.register(ComponentDefinition::shared_value(1i32)).unwrap();
-        builder.register(ComponentDefinition::shared_value(2u64)).unwrap();
-        builder.register(ComponentDefinition::shared_value("hello".to_string())).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(1i32))
+            .unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(2u64))
+            .unwrap();
+        builder
+            .register(ComponentDefinition::shared_value("hello".to_string()))
+            .unwrap();
         let key = ComponentKey::of::<u64>();
         builder.remove_by_key(&key).unwrap();
         assert_eq!(builder.len(), 2);
@@ -918,8 +1053,11 @@ mod tests {
     fn bean_definition_registry_register_bean_definition_noop() {
         use crate::factory::support::bean_definition_registry::BeanDefinitionRegistry;
         let mut builder = RegistryBuilder::new();
-        let def = Box::new(crate::factory::support::root_bean_definition::RootBeanDefinition::new());
-        builder.register_bean_definition("myBean".to_string(), def).unwrap();
+        let def =
+            Box::new(crate::factory::support::root_bean_definition::RootBeanDefinition::new());
+        builder
+            .register_bean_definition("myBean".to_string(), def)
+            .unwrap();
         // Current impl is a no-op for register_bean_definition on RegistryBuilder
     }
 
@@ -927,9 +1065,15 @@ mod tests {
     fn bean_definition_registry_remove_middle() {
         use crate::factory::support::bean_definition_registry::BeanDefinitionRegistry;
         let mut builder = RegistryBuilder::new();
-        builder.register(ComponentDefinition::shared_value(1i32)).unwrap();
-        builder.register(ComponentDefinition::shared_value("hello".to_string())).unwrap();
-        builder.register(ComponentDefinition::shared_value(3.14f64)).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(1i32))
+            .unwrap();
+        builder
+            .register(ComponentDefinition::shared_value("hello".to_string()))
+            .unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(3.14f64))
+            .unwrap();
         let removed = builder.remove_bean_definition("alloc::string::String");
         assert!(removed.is_ok());
         assert_eq!(builder.len(), 2);
@@ -939,7 +1083,9 @@ mod tests {
     fn bean_definition_registry_contains_after_remove_v2() {
         use crate::factory::support::bean_definition_registry::BeanDefinitionRegistry;
         let mut builder = RegistryBuilder::new();
-        builder.register(ComponentDefinition::shared_value(42i32)).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(42i32))
+            .unwrap();
         assert!(builder.contains_bean_definition("i32"));
         builder.remove_bean_definition("i32").unwrap();
         assert!(!builder.contains_bean_definition("i32"));
@@ -951,11 +1097,14 @@ mod tests {
     fn register_bundle_with_both() {
         use crate::TraitBinding;
         let mut builder = RegistryBuilder::new();
-        let binding = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
-        builder.register_bundle(
-            vec![ComponentDefinition::shared_value("hello".to_string())],
-            vec![binding],
-        ).unwrap();
+        let binding =
+            TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
+        builder
+            .register_bundle(
+                vec![ComponentDefinition::shared_value("hello".to_string())],
+                vec![binding],
+            )
+            .unwrap();
         assert_eq!(builder.len(), 1);
     }
 
@@ -964,8 +1113,12 @@ mod tests {
         use crate::TraitBinding;
         let mut builder = RegistryBuilder::new();
         let q = crate::Qualifier::new("q").unwrap();
-        let binding1 = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>).qualified(q.clone());
-        let binding2 = TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>).qualified(q.clone());
+        let binding1 =
+            TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>)
+                .qualified(q.clone());
+        let binding2 =
+            TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>)
+                .qualified(q.clone());
         let result = builder.bind_all(vec![binding1, binding2]);
         assert!(result.is_err());
         assert!(builder.is_empty());
@@ -975,8 +1128,12 @@ mod tests {
     fn validate_bindings_multiple_primary_fails_v2() {
         use crate::TraitBinding;
         let mut builder = RegistryBuilder::new();
-        let binding1 = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>).primary();
-        let binding2 = TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>).primary();
+        let binding1 =
+            TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>)
+                .primary();
+        let binding2 =
+            TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>)
+                .primary();
         let result = builder.bind_all(vec![binding1, binding2]);
         assert!(result.is_err());
     }
@@ -985,8 +1142,10 @@ mod tests {
     fn bind_all_with_multiple_unqualified_v2() {
         use crate::TraitBinding;
         let mut builder = RegistryBuilder::new();
-        let binding1 = TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
-        let binding2 = TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>);
+        let binding1 =
+            TraitBinding::new(|s: Arc<String>| s as Arc<dyn std::fmt::Display + Send + Sync>);
+        let binding2 =
+            TraitBinding::new(|i: Arc<i32>| i as Arc<dyn std::fmt::Display + Send + Sync>);
         builder.bind_all(vec![binding1, binding2]).unwrap();
     }
 
@@ -1007,19 +1166,24 @@ mod tests {
     #[test]
     fn register_bundle_with_empty_both_v2() {
         let mut builder = RegistryBuilder::new();
-        builder.register_bundle(
-            std::iter::empty(),
-            std::iter::empty(),
-        ).unwrap();
+        builder
+            .register_bundle(std::iter::empty(), std::iter::empty())
+            .unwrap();
         assert!(builder.is_empty());
     }
 
     #[test]
     fn build_with_multiple_definitions_v2() {
         let mut builder = RegistryBuilder::new();
-        builder.register(ComponentDefinition::shared_value(1i32)).unwrap();
-        builder.register(ComponentDefinition::shared_value("hello".to_string())).unwrap();
-        builder.register(ComponentDefinition::shared_value(3.14f64)).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(1i32))
+            .unwrap();
+        builder
+            .register(ComponentDefinition::shared_value("hello".to_string()))
+            .unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(3.14f64))
+            .unwrap();
         let registry = builder.build().unwrap();
         assert_eq!(registry.definitions().len(), 3);
     }
@@ -1027,7 +1191,11 @@ mod tests {
     #[test]
     fn build_with_transient_definition_v2() {
         let mut builder = RegistryBuilder::new();
-        builder.register(ComponentDefinition::transient::<String, _>(|_| "t".to_string())).unwrap();
+        builder
+            .register(ComponentDefinition::transient::<String, _>(|_| {
+                "t".to_string()
+            }))
+            .unwrap();
         let registry = builder.build().unwrap();
         assert_eq!(registry.definitions().len(), 1);
     }
@@ -1036,15 +1204,21 @@ mod tests {
     fn contains_after_register_v2() {
         let mut builder = RegistryBuilder::new();
         assert!(!builder.contains::<i32>());
-        builder.register(ComponentDefinition::shared_value(42i32)).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(42i32))
+            .unwrap();
         assert!(builder.contains::<i32>());
     }
 
     #[test]
     fn remove_last_element_v2() {
         let mut builder = RegistryBuilder::new();
-        builder.register(ComponentDefinition::shared_value(1i32)).unwrap();
-        builder.register(ComponentDefinition::shared_value(2u64)).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(1i32))
+            .unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(2u64))
+            .unwrap();
         builder.remove::<u64>().unwrap();
         assert_eq!(builder.len(), 1);
         assert!(!builder.contains::<u64>());
@@ -1053,9 +1227,15 @@ mod tests {
     #[test]
     fn remove_by_key_rebuilds_indices_v2() {
         let mut builder = RegistryBuilder::new();
-        builder.register(ComponentDefinition::shared_value(1i32)).unwrap();
-        builder.register(ComponentDefinition::shared_value(2u64)).unwrap();
-        builder.register(ComponentDefinition::shared_value("hello".to_string())).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(1i32))
+            .unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(2u64))
+            .unwrap();
+        builder
+            .register(ComponentDefinition::shared_value("hello".to_string()))
+            .unwrap();
         let key = ComponentKey::of::<u64>();
         builder.remove_by_key(&key).unwrap();
         assert_eq!(builder.len(), 2);
@@ -1067,17 +1247,26 @@ mod tests {
     fn bean_definition_registry_register_bean_definition_noop_v2() {
         use crate::factory::support::bean_definition_registry::BeanDefinitionRegistry;
         let mut builder = RegistryBuilder::new();
-        let def = Box::new(crate::factory::support::root_bean_definition::RootBeanDefinition::new());
-        builder.register_bean_definition("myBean".to_string(), def).unwrap();
+        let def =
+            Box::new(crate::factory::support::root_bean_definition::RootBeanDefinition::new());
+        builder
+            .register_bean_definition("myBean".to_string(), def)
+            .unwrap();
     }
 
     #[test]
     fn bean_definition_registry_remove_middle_v2() {
         use crate::factory::support::bean_definition_registry::BeanDefinitionRegistry;
         let mut builder = RegistryBuilder::new();
-        builder.register(ComponentDefinition::shared_value(1i32)).unwrap();
-        builder.register(ComponentDefinition::shared_value("hello".to_string())).unwrap();
-        builder.register(ComponentDefinition::shared_value(3.14f64)).unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(1i32))
+            .unwrap();
+        builder
+            .register(ComponentDefinition::shared_value("hello".to_string()))
+            .unwrap();
+        builder
+            .register(ComponentDefinition::shared_value(3.14f64))
+            .unwrap();
         let removed = builder.remove_bean_definition("alloc::string::String");
         assert!(removed.is_ok());
         assert_eq!(builder.len(), 2);

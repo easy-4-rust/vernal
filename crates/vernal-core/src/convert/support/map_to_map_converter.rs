@@ -4,7 +4,7 @@
 
 use std::collections::HashMap;
 
-use crate::convert::{ConversionError, Convertible, Converter};
+use crate::convert::{ConversionError, Converter, Convertible};
 
 /// 映射 → 映射转换器。
 ///
@@ -35,10 +35,12 @@ mod tests {
     fn converts_keys_and_values() {
         // A 类（合同对齐）：对标 Spring 键值逐项转换
         let converter = MapToMapConverter;
-        let source: HashMap<String, String> =
-            [("1".to_string(), "10".to_string()), ("2".to_string(), "20".to_string())]
-                .into_iter()
-                .collect();
+        let source: HashMap<String, String> = [
+            ("1".to_string(), "10".to_string()),
+            ("2".to_string(), "20".to_string()),
+        ]
+        .into_iter()
+        .collect();
         let output: HashMap<i32, i32> = converter.convert(&source).unwrap();
         assert_eq!(output.get(&1), Some(&10));
         assert_eq!(output.get(&2), Some(&20));

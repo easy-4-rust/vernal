@@ -35,11 +35,7 @@ pub trait BeanRegistrationAotProcessor: Send + Sync {
     /// # Returns
     ///
     /// 处理结果，成功返回 `Ok(())`，失败返回错误描述。
-    fn process_bean_registration(
-        &self,
-        bean_type: TypeId,
-        bean_name: &str,
-    ) -> Result<(), String>;
+    fn process_bean_registration(&self, bean_type: TypeId, bean_name: &str) -> Result<(), String>;
 
     /// 判断是否支持处理指定类型的 Bean。
     ///
@@ -96,11 +92,7 @@ impl Default for DefaultBeanRegistrationAotProcessor {
 }
 
 impl BeanRegistrationAotProcessor for DefaultBeanRegistrationAotProcessor {
-    fn process_bean_registration(
-        &self,
-        bean_type: TypeId,
-        bean_name: &str,
-    ) -> Result<(), String> {
+    fn process_bean_registration(&self, bean_type: TypeId, bean_name: &str) -> Result<(), String> {
         let mut processed = self.processed.lock().unwrap();
         processed.insert(bean_name.to_string(), bean_type);
         Ok(())
@@ -125,8 +117,7 @@ mod tests {
     #[test]
     fn test_process_bean_registration() {
         let processor = DefaultBeanRegistrationAotProcessor::new();
-        let result =
-            processor.process_bean_registration(TypeId::of::<String>(), "myString");
+        let result = processor.process_bean_registration(TypeId::of::<String>(), "myString");
         assert!(result.is_ok());
         assert_eq!(processor.processed_count(), 1);
         assert!(processor.is_processed("myString"));

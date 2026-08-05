@@ -128,7 +128,9 @@ impl AbstractBeanDefinitionReader {
 }
 
 impl Default for AbstractBeanDefinitionReader {
-    fn default() -> Self { Self::new("default") }
+    fn default() -> Self {
+        Self::new("default")
+    }
 }
 
 #[cfg(test)]

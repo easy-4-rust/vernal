@@ -41,18 +41,28 @@ pub struct SimpleMethodOverride {
 impl SimpleMethodOverride {
     /// 创建默认适用的方法覆盖。
     pub fn new(method_name: impl Into<String>) -> Self {
-        Self { method_name: method_name.into(), applicable: true }
+        Self {
+            method_name: method_name.into(),
+            applicable: true,
+        }
     }
 
     /// 创建指定适用性的方法覆盖。
     pub fn with_applicable(method_name: impl Into<String>, applicable: bool) -> Self {
-        Self { method_name: method_name.into(), applicable }
+        Self {
+            method_name: method_name.into(),
+            applicable,
+        }
     }
 }
 
 impl MethodOverride for SimpleMethodOverride {
-    fn get_method_name(&self) -> &str { &self.method_name }
-    fn is_applicable(&self) -> bool { self.applicable }
+    fn get_method_name(&self) -> &str {
+        &self.method_name
+    }
+    fn is_applicable(&self) -> bool {
+        self.applicable
+    }
 }
 
 #[cfg(test)]

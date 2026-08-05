@@ -85,6 +85,12 @@ mod tests {
     #[test]
     fn local_invocation_plan_builder_register() {
         let builder = LocalInvocationPlanBuilder::new();
-        assert_eq!(builder.build(crate::Operation::new("Service", "method")).operation().component(), "Service");
+        assert_eq!(
+            builder
+                .build(crate::Operation::new("Service", "method"))
+                .operation()
+                .component(),
+            "Service"
+        );
     }
 }

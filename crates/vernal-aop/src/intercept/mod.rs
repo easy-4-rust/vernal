@@ -7,6 +7,9 @@ pub mod invocation;
 pub mod joinpoint;
 
 // Re-export
-pub use constructor_interceptor::{ConstructorInterceptor, ConstructorInvocation, ConstructorInvocationError, FnConstructorInterceptor};
+pub use constructor_interceptor::{
+    ConstructorInterceptor, ConstructorInvocation, ConstructorInvocationError,
+    FnConstructorInterceptor,
+};
 pub use invocation::Invocation;
-pub use joinpoint::{Joinpoint, MethodInvocation, InvocationChain};
+pub use joinpoint::{InvocationChain, Joinpoint, MethodInvocation};

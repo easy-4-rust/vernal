@@ -1,7 +1,9 @@
 //! MethodResolver 链路集成测试。
 use vernal_expression::spel::ast::method_reference::MethodReference;
 use vernal_expression::spel::ast::spel_node::SpelNode;
-use vernal_expression::spel::support::reflective_method_resolver::{ArcReflectiveMethodExecutor, ReflectiveMethodResolver};
+use vernal_expression::spel::support::reflective_method_resolver::{
+    ArcReflectiveMethodExecutor, ReflectiveMethodResolver,
+};
 use vernal_expression::spel::support::standard_evaluation_context::StandardEvaluationContext;
 use vernal_expression::*;
 
@@ -9,7 +11,10 @@ use vernal_expression::*;
 fn resolver_register_and_resolve_by_name() {
     let resolver = ReflectiveMethodResolver::new();
     let executor = ArcReflectiveMethodExecutor::new(|_ctx, _target, _args| {
-        Ok(TypedValue::new(ExpressionValue::Int(42), TypeDescriptor::Primitive(PrimitiveKind::Int)))
+        Ok(TypedValue::new(
+            ExpressionValue::Int(42),
+            TypeDescriptor::Primitive(PrimitiveKind::Int),
+        ))
     });
     resolver.register("answer".to_string(), executor);
     let ctx = StandardEvaluationContext::new_default();
@@ -33,8 +38,14 @@ fn resolver_returns_none_for_unregistered_method() {
 fn resolver_has_method_and_method_names() {
     let resolver = ReflectiveMethodResolver::new();
     assert!(!resolver.has_method("foo"));
-    resolver.register("foo".to_string(), ArcReflectiveMethodExecutor::new(|_, _, _| Ok(TypedValue::null())));
-    resolver.register("bar".to_string(), ArcReflectiveMethodExecutor::new(|_, _, _| Ok(TypedValue::null())));
+    resolver.register(
+        "foo".to_string(),
+        ArcReflectiveMethodExecutor::new(|_, _, _| Ok(TypedValue::null())),
+    );
+    resolver.register(
+        "bar".to_string(),
+        ArcReflectiveMethodExecutor::new(|_, _, _| Ok(TypedValue::null())),
+    );
     assert!(resolver.has_method("foo"));
     assert!(resolver.has_method("bar"));
     assert!(!resolver.has_method("baz"));
@@ -47,12 +58,18 @@ fn resolver_has_method_and_method_names() {
 fn method_reference_calls_registered_method() {
     let ctx = StandardEvaluationContext::new_default();
     ctx.register_method_fn("greet", |_ctx, _target, _args| {
-        Ok(TypedValue::new(ExpressionValue::String("hello".to_string()), TypeDescriptor::Primitive(PrimitiveKind::String)))
+        Ok(TypedValue::new(
+            ExpressionValue::String("hello".to_string()),
+            TypeDescriptor::Primitive(PrimitiveKind::String),
+        ))
     });
     let method_ref = MethodReference::new("greet".to_string(), vec![], false);
     let result = method_ref.get_value(&ctx);
     assert!(result.is_ok());
-    assert_eq!(*result.unwrap().value(), ExpressionValue::String("hello".to_string()));
+    assert_eq!(
+        *result.unwrap().value(),
+        ExpressionValue::String("hello".to_string())
+    );
 }
 
 #[test]
@@ -70,10 +87,16 @@ fn parsed_expression_calls_registered_method() {
     let expr = parser.parse_expression("greet()").unwrap();
     let ctx = StandardEvaluationContext::new_default();
     ctx.register_method_fn("greet", |_ctx, _target, _args| {
-        Ok(TypedValue::new(ExpressionValue::String("hello, world".to_string()), TypeDescriptor::Primitive(PrimitiveKind::String)))
+        Ok(TypedValue::new(
+            ExpressionValue::String("hello, world".to_string()),
+            TypeDescriptor::Primitive(PrimitiveKind::String),
+        ))
     });
     let result = expr.get_value_with_context(&ctx).unwrap();
-    assert_eq!(*result.value(), ExpressionValue::String("hello, world".to_string()));
+    assert_eq!(
+        *result.value(),
+        ExpressionValue::String("hello, world".to_string())
+    );
 }
 
 #[test]
@@ -83,7 +106,12 @@ fn parsed_expression_method_not_found() {
     let ctx = StandardEvaluationContext::new_default();
     let result = expr.get_value_with_context(&ctx);
     assert!(result.is_err());
-    assert!(result.unwrap_err().simple_message().contains("noSuchMethod"));
+    assert!(
+        result
+            .unwrap_err()
+            .simple_message()
+            .contains("noSuchMethod")
+    );
 }
 
 #[test]
@@ -91,14 +119,25 @@ fn method_with_int_argument_via_ast() {
     let ctx = StandardEvaluationContext::new_default();
     ctx.register_method_fn("add", |_ctx, _target, args| {
         if args.len() >= 2 {
-            if let (ExpressionValue::Int(a), ExpressionValue::Int(b)) = (args[0].value(), args[1].value()) {
-                return Ok(TypedValue::new(ExpressionValue::Int(a + b), TypeDescriptor::Primitive(PrimitiveKind::Int)));
+            if let (ExpressionValue::Int(a), ExpressionValue::Int(b)) =
+                (args[0].value(), args[1].value())
+            {
+                return Ok(TypedValue::new(
+                    ExpressionValue::Int(a + b),
+                    TypeDescriptor::Primitive(PrimitiveKind::Int),
+                ));
             }
         }
         Err(AccessException::new("需要两个 Int 参数"))
     });
-    let arg1 = Box::new(vernal_expression::spel::ast::int_literal::IntLiteral::new(1, "1".to_string()));
-    let arg2 = Box::new(vernal_expression::spel::ast::int_literal::IntLiteral::new(2, "2".to_string()));
+    let arg1 = Box::new(vernal_expression::spel::ast::int_literal::IntLiteral::new(
+        1,
+        "1".to_string(),
+    ));
+    let arg2 = Box::new(vernal_expression::spel::ast::int_literal::IntLiteral::new(
+        2,
+        "2".to_string(),
+    ));
     let method_ref = MethodReference::new("add".to_string(), vec![arg1, arg2], false);
     let result = method_ref.get_value(&ctx);
     assert!(result.is_ok());
@@ -108,7 +147,10 @@ fn method_with_int_argument_via_ast() {
 #[test]
 fn arc_executor_executes_and_clones() {
     let executor = ArcReflectiveMethodExecutor::new(|_ctx, _target, _args| {
-        Ok(TypedValue::new(ExpressionValue::Boolean(true), TypeDescriptor::Primitive(PrimitiveKind::Boolean)))
+        Ok(TypedValue::new(
+            ExpressionValue::Boolean(true),
+            TypeDescriptor::Primitive(PrimitiveKind::Boolean),
+        ))
     });
     let ctx = StandardEvaluationContext::new_default();
     let target = TypedValue::null();
@@ -124,14 +166,20 @@ fn executor_with_args() {
     let executor = ArcReflectiveMethodExecutor::new(|_ctx, _target, args| {
         if let Some(arg) = args.first() {
             if let ExpressionValue::Int(n) = arg.value() {
-                return Ok(TypedValue::new(ExpressionValue::Int(n * n), TypeDescriptor::Primitive(PrimitiveKind::Int)));
+                return Ok(TypedValue::new(
+                    ExpressionValue::Int(n * n),
+                    TypeDescriptor::Primitive(PrimitiveKind::Int),
+                ));
             }
         }
         Err(AccessException::new("需要 Int 参数"))
     });
     let ctx = StandardEvaluationContext::new_default();
     let target = TypedValue::null();
-    let args = vec![TypedValue::new(ExpressionValue::Int(5), TypeDescriptor::Primitive(PrimitiveKind::Int))];
+    let args = vec![TypedValue::new(
+        ExpressionValue::Int(5),
+        TypeDescriptor::Primitive(PrimitiveKind::Int),
+    )];
     let result = executor.execute(&ctx, &target, &args).unwrap();
     assert_eq!(*result.value(), ExpressionValue::Int(25));
 }
@@ -141,26 +189,54 @@ fn multiple_methods_registered() {
     let ctx = StandardEvaluationContext::new_default();
     ctx.register_method_fn("add", |_ctx, _target, args| {
         if args.len() >= 2 {
-            if let (ExpressionValue::Int(a), ExpressionValue::Int(b)) = (args[0].value(), args[1].value()) {
-                return Ok(TypedValue::new(ExpressionValue::Int(a + b), TypeDescriptor::Primitive(PrimitiveKind::Int)));
+            if let (ExpressionValue::Int(a), ExpressionValue::Int(b)) =
+                (args[0].value(), args[1].value())
+            {
+                return Ok(TypedValue::new(
+                    ExpressionValue::Int(a + b),
+                    TypeDescriptor::Primitive(PrimitiveKind::Int),
+                ));
             }
         }
         Err(AccessException::new("需要两个 Int 参数"))
     });
     ctx.register_method_fn("multiply", |_ctx, _target, args| {
         if args.len() >= 2 {
-            if let (ExpressionValue::Int(a), ExpressionValue::Int(b)) = (args[0].value(), args[1].value()) {
-                return Ok(TypedValue::new(ExpressionValue::Int(a * b), TypeDescriptor::Primitive(PrimitiveKind::Int)));
+            if let (ExpressionValue::Int(a), ExpressionValue::Int(b)) =
+                (args[0].value(), args[1].value())
+            {
+                return Ok(TypedValue::new(
+                    ExpressionValue::Int(a * b),
+                    TypeDescriptor::Primitive(PrimitiveKind::Int),
+                ));
             }
         }
         Err(AccessException::new("需要两个 Int 参数"))
     });
-    let arg_a = Box::new(vernal_expression::spel::ast::int_literal::IntLiteral::new(3, "3".to_string()));
-    let arg_b = Box::new(vernal_expression::spel::ast::int_literal::IntLiteral::new(4, "4".to_string()));
+    let arg_a = Box::new(vernal_expression::spel::ast::int_literal::IntLiteral::new(
+        3,
+        "3".to_string(),
+    ));
+    let arg_b = Box::new(vernal_expression::spel::ast::int_literal::IntLiteral::new(
+        4,
+        "4".to_string(),
+    ));
     let add_ref = MethodReference::new("add".to_string(), vec![arg_a, arg_b], false);
-    assert_eq!(*add_ref.get_value(&ctx).unwrap().value(), ExpressionValue::Int(7));
-    let arg_c = Box::new(vernal_expression::spel::ast::int_literal::IntLiteral::new(3, "3".to_string()));
-    let arg_d = Box::new(vernal_expression::spel::ast::int_literal::IntLiteral::new(4, "4".to_string()));
+    assert_eq!(
+        *add_ref.get_value(&ctx).unwrap().value(),
+        ExpressionValue::Int(7)
+    );
+    let arg_c = Box::new(vernal_expression::spel::ast::int_literal::IntLiteral::new(
+        3,
+        "3".to_string(),
+    ));
+    let arg_d = Box::new(vernal_expression::spel::ast::int_literal::IntLiteral::new(
+        4,
+        "4".to_string(),
+    ));
     let mul_ref = MethodReference::new("multiply".to_string(), vec![arg_c, arg_d], false);
-    assert_eq!(*mul_ref.get_value(&ctx).unwrap().value(), ExpressionValue::Int(12));
+    assert_eq!(
+        *mul_ref.get_value(&ctx).unwrap().value(),
+        ExpressionValue::Int(12)
+    );
 }

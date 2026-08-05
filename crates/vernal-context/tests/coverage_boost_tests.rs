@@ -3,13 +3,12 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use vernal_context::{
-    ApplicationRunner, Lifecycle, ScheduledTask, TaskSchedule,
-    VernalApplicationBuilder, ApplicationEventListener,
-    ApplicationModuleRegistrar, ApplicationEnvironment,
-    ConfigurationPhase, ConditionalComponentModule, ComponentCondition,
-};
 use vernal_beans::{Component, ComponentDefinition, Qualifier};
+use vernal_context::{
+    ApplicationEnvironment, ApplicationEventListener, ApplicationModuleRegistrar,
+    ApplicationRunner, ComponentCondition, ConditionalComponentModule, ConfigurationPhase,
+    Lifecycle, ScheduledTask, TaskSchedule, VernalApplicationBuilder,
+};
 
 // ════════════════════════════════════════════════════════════════════
 // 测试用类型
@@ -75,8 +74,13 @@ impl ApplicationEventListener<TestEvent> for TestEventListener {
 
 struct AlwaysTrueCondition;
 impl ComponentCondition for AlwaysTrueCondition {
-    fn name(&self) -> &'static str { "always_true" }
-    fn matches(&self, _: &ApplicationEnvironment) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
+    fn name(&self) -> &'static str {
+        "always_true"
+    }
+    fn matches(
+        &self,
+        _: &ApplicationEnvironment,
+    ) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
         Ok(true)
     }
 }
@@ -94,7 +98,9 @@ fn test_registrar_register() {
 #[test]
 fn test_registrar_register_all() {
     let mut registrar = ApplicationModuleRegistrar::new();
-    let defs = vec![ComponentDefinition::singleton::<SimpleComponent, _>(|_| SimpleComponent)];
+    let defs = vec![ComponentDefinition::singleton::<SimpleComponent, _>(|_| {
+        SimpleComponent
+    })];
     registrar.register_all(defs);
 }
 
@@ -202,16 +208,21 @@ fn test_registrar_into_parts() {
 #[test]
 fn test_registrar_bind() {
     let mut registrar = ApplicationModuleRegistrar::new();
-    let binding = vernal_beans::TraitBinding::new::<dyn std::any::Any + Send + Sync, SimpleComponent, _>(|c| c);
+    let binding =
+        vernal_beans::TraitBinding::new::<dyn std::any::Any + Send + Sync, SimpleComponent, _>(
+            |c| c,
+        );
     registrar.bind(binding);
 }
 
 #[test]
 fn test_registrar_bind_all() {
     let mut registrar = ApplicationModuleRegistrar::new();
-    let bindings = vec![
-        vernal_beans::TraitBinding::new::<dyn std::any::Any + Send + Sync, SimpleComponent, _>(|c| c),
-    ];
+    let bindings = vec![vernal_beans::TraitBinding::new::<
+        dyn std::any::Any + Send + Sync,
+        SimpleComponent,
+        _,
+    >(|c| c)];
     registrar.bind_all(bindings);
 }
 
@@ -227,7 +238,11 @@ async fn test_lifecycle_via_build() {
     let _ = builder.register(TestLifecycle::definition());
     builder.lifecycle::<TestLifecycle>();
     let result = builder.build();
-    assert!(result.is_ok(), "build with lifecycle should succeed: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "build with lifecycle should succeed: {:?}",
+        result.err()
+    );
 }
 
 /// 验证 event_listener 闭包通过 build() 执行
@@ -238,7 +253,11 @@ async fn test_event_listener_via_build() {
     let _ = builder.register(TestEventListener::definition());
     builder.event_listener::<TestEvent, TestEventListener>();
     let result = builder.build();
-    assert!(result.is_ok(), "build with event_listener should succeed: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "build with event_listener should succeed: {:?}",
+        result.err()
+    );
 }
 
 /// 验证 application_runner 闭包通过 build() 执行
@@ -249,7 +268,11 @@ async fn test_application_runner_via_build() {
     let _ = builder.register(TestRunner::definition());
     builder.application_runner::<TestRunner>();
     let result = builder.build();
-    assert!(result.is_ok(), "build with application_runner should succeed: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "build with application_runner should succeed: {:?}",
+        result.err()
+    );
 }
 
 /// 验证 scheduled_task 闭包通过 build() 执行
@@ -260,7 +283,11 @@ async fn test_scheduled_task_via_build() {
     let _ = builder.register(TestTask::definition());
     builder.scheduled_task::<TestTask>();
     let result = builder.build();
-    assert!(result.is_ok(), "build with scheduled_task should succeed: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "build with scheduled_task should succeed: {:?}",
+        result.err()
+    );
 }
 
 /// 验证 conditional module 通过 build() 执行
@@ -272,5 +299,9 @@ async fn test_conditional_module_via_build() {
     module.register(SimpleComponent::definition());
     builder.register_conditional(module).unwrap();
     let result = builder.build();
-    assert!(result.is_ok(), "conditional module build should succeed: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "conditional module build should succeed: {:?}",
+        result.err()
+    );
 }

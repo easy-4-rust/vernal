@@ -230,12 +230,18 @@ mod tests {
         let c1 = called1.clone();
         let c2 = called2.clone();
 
-        scope.register_destruction_callback("bean1", Box::new(move || {
-            *c1.lock().unwrap() = true;
-        }));
-        scope.register_destruction_callback("bean2", Box::new(move || {
-            *c2.lock().unwrap() = true;
-        }));
+        scope.register_destruction_callback(
+            "bean1",
+            Box::new(move || {
+                *c1.lock().unwrap() = true;
+            }),
+        );
+        scope.register_destruction_callback(
+            "bean2",
+            Box::new(move || {
+                *c2.lock().unwrap() = true;
+            }),
+        );
 
         // Callbacks registered but not executed
         assert!(!*called1.lock().unwrap());

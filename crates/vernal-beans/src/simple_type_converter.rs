@@ -159,13 +159,17 @@ impl SimpleTypeConverter {
                 .parse::<f64>()
                 .map(|v| Some(Box::new(v) as Box<dyn Any>))
                 .map_err(|e| e.to_string()),
-            "bool" | "boolean" => Self::parse_bool(value)
-                .map(|v| Some(Box::new(v) as Box<dyn Any>)),
+            "bool" | "boolean" => {
+                Self::parse_bool(value).map(|v| Some(Box::new(v) as Box<dyn Any>))
+            }
             "char" => {
                 let mut chars = value.chars();
                 match (chars.next(), chars.next()) {
                     (Some(c), None) => Ok(Some(Box::new(c) as Box<dyn Any>)),
-                    _ => Err(format!("Cannot convert '{}' to char: expected single character", value)),
+                    _ => Err(format!(
+                        "Cannot convert '{}' to char: expected single character",
+                        value
+                    )),
                 }
             }
             _ => Err(format!(
@@ -229,22 +233,30 @@ impl TypeConverter for SimpleTypeConverter {
             } else if target_type == std::any::TypeId::of::<String>() {
                 "String"
             } else {
-                return Err(Box::new(TypeMismatchException::new("Unsupported target type")));
+                return Err(Box::new(TypeMismatchException::new(
+                    "Unsupported target type",
+                )));
             };
             match self.convert(Some(s), type_name) {
                 Ok(Some(v)) => Self::box_to_send_sync(v),
-                Ok(None) => Err(Box::new(TypeMismatchException::new("Conversion returned None"))),
+                Ok(None) => Err(Box::new(TypeMismatchException::new(
+                    "Conversion returned None",
+                ))),
                 Err(e) => Err(Box::new(e)),
             }
         } else if let Some(s) = value.downcast_ref::<&str>() {
             let type_name = if target_type == std::any::TypeId::of::<String>() {
                 "String"
             } else {
-                return Err(Box::new(TypeMismatchException::new("Unsupported target type")));
+                return Err(Box::new(TypeMismatchException::new(
+                    "Unsupported target type",
+                )));
             };
             match self.convert(Some(s), type_name) {
                 Ok(Some(v)) => Self::box_to_send_sync(v),
-                Ok(None) => Err(Box::new(TypeMismatchException::new("Conversion returned None"))),
+                Ok(None) => Err(Box::new(TypeMismatchException::new(
+                    "Conversion returned None",
+                ))),
                 Err(e) => Err(Box::new(e)),
             }
         } else {
@@ -261,7 +273,9 @@ impl SimpleTypeConverter {
     ///
     /// 由于 Rust 类型系统的限制，需要通过 downcast 和 re-box 来实现。
     /// downcast 在失败时返回原始 Box，因此可以链式调用。
-    fn box_to_send_sync(v: Box<dyn Any>) -> Result<Box<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> {
+    fn box_to_send_sync(
+        v: Box<dyn Any>,
+    ) -> Result<Box<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> {
         // downcast 返回 Result<Box<T>, Box<dyn Any>>，失败时返回原始值
         let v = match v.downcast::<String>() {
             Ok(s) => return Ok(s),
@@ -321,9 +335,11 @@ impl SimpleTypeConverter {
         };
         match v.downcast::<char>() {
             Ok(c) => return Ok(c),
-            Err(_) => {},
+            Err(_) => {}
         }
-        Err(Box::new(TypeMismatchException::new("Cannot convert value to Send + Sync")))
+        Err(Box::new(TypeMismatchException::new(
+            "Cannot convert value to Send + Sync",
+        )))
     }
 }
 
@@ -435,8 +451,13 @@ mod tests {
     #[test]
     fn convert_string_to_i128() {
         let converter = SimpleTypeConverter::new();
-        let result = converter.convert(Some("12345678901234567890"), "i128").unwrap();
-        assert_eq!(*result.unwrap().downcast::<i128>().unwrap(), 12345678901234567890i128);
+        let result = converter
+            .convert(Some("12345678901234567890"), "i128")
+            .unwrap();
+        assert_eq!(
+            *result.unwrap().downcast::<i128>().unwrap(),
+            12345678901234567890i128
+        );
     }
 
     #[test]
@@ -713,7 +734,8 @@ mod tests {
         use crate::type_converter::TypeConverter;
         let converter = SimpleTypeConverter::new();
         let value = "hello".to_string();
-        let result = converter.convert_if_necessary(None, &value, std::any::TypeId::of::<Vec<u8>>());
+        let result =
+            converter.convert_if_necessary(None, &value, std::any::TypeId::of::<Vec<u8>>());
         assert!(result.is_err());
     }
 

@@ -55,7 +55,11 @@ impl BeanFactoryAwareProcessor {
 
     /// 检查指定 Bean 是否已被注入。
     pub fn is_injected(&self, bean_name: &str) -> bool {
-        self.injected_beans.lock().unwrap().iter().any(|n| n == bean_name)
+        self.injected_beans
+            .lock()
+            .unwrap()
+            .iter()
+            .any(|n| n == bean_name)
     }
 }
 
@@ -70,7 +74,10 @@ impl BeanPostProcessor for BeanFactoryAwareProcessor {
         // 由于 dyn BeanFactory 不是 dyn-compatible 的，
         // 我们使用类型擦除的引用
 
-        self.injected_beans.lock().unwrap().push(bean_name.to_string());
+        self.injected_beans
+            .lock()
+            .unwrap()
+            .push(bean_name.to_string());
 
         Ok(Some(bean))
     }

@@ -22,7 +22,11 @@ pub struct GenericTypeAwareAutowireCandidateResolver {
 
 impl GenericTypeAwareAutowireCandidateResolver {
     /// 创建新的解析器（默认不排除任何类型）。
-    pub fn new() -> Self { Self { excluded_types: Mutex::new(HashSet::new()) } }
+    pub fn new() -> Self {
+        Self {
+            excluded_types: Mutex::new(HashSet::new()),
+        }
+    }
 
     /// 将指定类型排除出自动装配候选。
     pub fn exclude_type(&self, type_id: TypeId) {
@@ -51,7 +55,11 @@ impl AutowireCandidateResolver for GenericTypeAwareAutowireCandidateResolver {
     }
 }
 
-impl Default for GenericTypeAwareAutowireCandidateResolver { fn default() -> Self { Self::new() } }
+impl Default for GenericTypeAwareAutowireCandidateResolver {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 #[cfg(test)]
 mod tests {

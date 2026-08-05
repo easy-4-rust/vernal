@@ -21,8 +21,11 @@ use crate::{Advisor, Interceptor, Operation};
 /// ```
 pub trait AdvisorChainFactory: Send + Sync + 'static {
     /// 获取拦截器链。
-    fn get_interceptors(&self, advised: &dyn Advised, operation: &Operation)
-        -> Vec<Arc<dyn Interceptor>>;
+    fn get_interceptors(
+        &self,
+        advised: &dyn Advised,
+        operation: &Operation,
+    ) -> Vec<Arc<dyn Interceptor>>;
 }
 
 /// 默认顾问链工厂。
@@ -107,11 +110,7 @@ mod tests {
     fn default_advisor_chain_factory() {
         let factory = DefaultAdvisorChainFactory::new();
         let interceptor = TestInterceptor;
-        let advisor = Advisor::new(
-            AnyPointcut::new(),
-            interceptor,
-            0,
-        );
+        let advisor = Advisor::new(AnyPointcut::new(), interceptor, 0);
         let advised = TestAdvised::new(vec![advisor]);
         let op = Operation::new("Service", "method");
 

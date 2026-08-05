@@ -117,11 +117,7 @@ impl PropertyAccessorUtils {
         match Self::first_nested_separator_index(path) {
             Some(pos) => {
                 let rest = &path[pos + 1..];
-                if rest.is_empty() {
-                    None
-                } else {
-                    Some(rest)
-                }
+                if rest.is_empty() { None } else { Some(rest) }
             }
             None => None,
         }
@@ -149,7 +145,9 @@ impl PropertyAccessorUtils {
             return true;
         }
         let canonical = Self::canonical_property_name(candidate);
-        required.iter().any(|r| Self::canonical_property_name(r) == canonical)
+        required
+            .iter()
+            .any(|r| Self::canonical_property_name(r) == canonical)
     }
 
     /// 计算属性路径的嵌套深度。
@@ -240,7 +238,10 @@ mod tests {
 
     #[test]
     fn first_segment() {
-        assert_eq!(PropertyAccessorUtils::first_segment("address.city.name"), "address");
+        assert_eq!(
+            PropertyAccessorUtils::first_segment("address.city.name"),
+            "address"
+        );
         assert_eq!(PropertyAccessorUtils::first_segment("name"), "name");
     }
 
@@ -250,16 +251,19 @@ mod tests {
             PropertyAccessorUtils::nested_path_after_first("address.city.name"),
             Some("city.name")
         );
-        assert_eq!(
-            PropertyAccessorUtils::nested_path_after_first("name"),
-            None
-        );
+        assert_eq!(PropertyAccessorUtils::nested_path_after_first("name"), None);
     }
 
     #[test]
     fn canonical_property_name() {
-        assert_eq!(PropertyAccessorUtils::canonical_property_name("  name  "), "name");
-        assert_eq!(PropertyAccessorUtils::canonical_property_name("list[0]"), "list");
+        assert_eq!(
+            PropertyAccessorUtils::canonical_property_name("  name  "),
+            "name"
+        );
+        assert_eq!(
+            PropertyAccessorUtils::canonical_property_name("list[0]"),
+            "list"
+        );
     }
 
     #[test]
@@ -269,8 +273,14 @@ mod tests {
 
     #[test]
     fn matches_property_exact() {
-        assert!(PropertyAccessorUtils::matches_property(&["name", "age"], "name"));
-        assert!(!PropertyAccessorUtils::matches_property(&["name", "age"], "other"));
+        assert!(PropertyAccessorUtils::matches_property(
+            &["name", "age"],
+            "name"
+        ));
+        assert!(!PropertyAccessorUtils::matches_property(
+            &["name", "age"],
+            "other"
+        ));
     }
 
     #[test]

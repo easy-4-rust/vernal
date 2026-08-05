@@ -105,12 +105,8 @@ impl ReflectiveConstructorResolver {
     /// - `type_name` — 类型名（如 "String"、"java.util.ArrayList"）
     /// - `param_count` — 参数数量
     /// - `constructor` — 构造器闭包
-    pub fn register_constructor<F>(
-        &self,
-        type_name: &str,
-        param_count: usize,
-        constructor: F,
-    ) where
+    pub fn register_constructor<F>(&self, type_name: &str, param_count: usize, constructor: F)
+    where
         F: Fn(&dyn EvaluationContext, &[TypedValue]) -> Result<TypedValue, AccessException>
             + Send
             + Sync
@@ -214,9 +210,7 @@ mod tests {
     #[test]
     fn resolve_returns_none_for_unregistered_type() {
         let resolver = ReflectiveConstructorResolver::new();
-        resolver.register_constructor("String", 0, |_ctx, _args| {
-            Ok(TypedValue::null())
-        });
+        resolver.register_constructor("String", 0, |_ctx, _args| Ok(TypedValue::null()));
 
         let ctx = StandardEvaluationContext::new(TypedValue::null());
         let result = resolver.resolve(&ctx, "Integer", &[]).unwrap();
@@ -226,9 +220,7 @@ mod tests {
     #[test]
     fn resolve_returns_none_for_wrong_arg_count() {
         let resolver = ReflectiveConstructorResolver::new();
-        resolver.register_constructor("String", 0, |_ctx, _args| {
-            Ok(TypedValue::null())
-        });
+        resolver.register_constructor("String", 0, |_ctx, _args| Ok(TypedValue::null()));
 
         let ctx = StandardEvaluationContext::new(TypedValue::null());
         let arg_types = vec![TypeDescriptor::INT];
@@ -277,9 +269,15 @@ mod tests {
 
         let ctx = StandardEvaluationContext::new(TypedValue::null());
         let arg_types = vec![TypeDescriptor::STRING];
-        let executor = resolver.resolve(&ctx, "String", &arg_types).unwrap().unwrap();
+        let executor = resolver
+            .resolve(&ctx, "String", &arg_types)
+            .unwrap()
+            .unwrap();
 
-        let arg = TypedValue::new(ExpressionValue::String("hello".into()), TypeDescriptor::STRING);
+        let arg = TypedValue::new(
+            ExpressionValue::String("hello".into()),
+            TypeDescriptor::STRING,
+        );
         let result = executor.execute(&ctx, &[arg]).unwrap();
         assert_eq!(*result.value(), ExpressionValue::String("hello".into()));
     }

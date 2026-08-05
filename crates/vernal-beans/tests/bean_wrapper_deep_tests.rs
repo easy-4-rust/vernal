@@ -29,8 +29,12 @@ fn bean_wrapper_set_overwrite() {
     use vernal_beans::property_accessor::PropertyAccessor;
     let wrapper = BeanWrapperImpl::new(Arc::new("test".to_string()));
     wrapper.register_property("name", std::any::TypeId::of::<String>());
-    wrapper.set_property_value("name", Arc::new("Alice".to_string())).unwrap();
-    wrapper.set_property_value("name", Arc::new("Bob".to_string())).unwrap();
+    wrapper
+        .set_property_value("name", Arc::new("Alice".to_string()))
+        .unwrap();
+    wrapper
+        .set_property_value("name", Arc::new("Bob".to_string()))
+        .unwrap();
     let val = wrapper.get_property_value("name").unwrap();
     assert_eq!(val.downcast_ref::<String>().unwrap(), "Bob");
 }
@@ -50,15 +54,24 @@ fn bean_wrapper_readonly_multiple() {
 
 #[test]
 fn bean_wrapper_nested_deep() {
+    use std::collections::HashMap;
     use vernal_beans::bean_wrapper_impl::BeanWrapperImpl;
     use vernal_beans::property_accessor::PropertyAccessor;
-    use std::collections::HashMap;
     let wrapper = BeanWrapperImpl::new(Arc::new("test".to_string()));
-    wrapper.register_property("user", std::any::TypeId::of::<HashMap<String, Arc<dyn Any + Send + Sync>>>());
+    wrapper.register_property(
+        "user",
+        std::any::TypeId::of::<HashMap<String, Arc<dyn Any + Send + Sync>>>(),
+    );
     let mut inner = HashMap::new();
     let mut address = HashMap::new();
-    address.insert("city".to_string(), Arc::new("Beijing".to_string()) as Arc<dyn Any + Send + Sync>);
-    inner.insert("address".to_string(), Arc::new(address) as Arc<dyn Any + Send + Sync>);
+    address.insert(
+        "city".to_string(),
+        Arc::new("Beijing".to_string()) as Arc<dyn Any + Send + Sync>,
+    );
+    inner.insert(
+        "address".to_string(),
+        Arc::new(address) as Arc<dyn Any + Send + Sync>,
+    );
     wrapper.set_property_value("user", Arc::new(inner)).unwrap();
     let val = wrapper.get_property_value("user.address.city");
     assert!(val.is_ok());
@@ -75,13 +88,19 @@ fn bean_wrapper_nested_not_found() {
 
 #[test]
 fn bean_wrapper_get_property_type_nested() {
+    use std::collections::HashMap;
     use vernal_beans::bean_wrapper_impl::BeanWrapperImpl;
     use vernal_beans::property_accessor::PropertyAccessor;
-    use std::collections::HashMap;
     let wrapper = BeanWrapperImpl::new(Arc::new("test".to_string()));
-    wrapper.register_property("data", std::any::TypeId::of::<HashMap<String, Arc<dyn Any + Send + Sync>>>());
+    wrapper.register_property(
+        "data",
+        std::any::TypeId::of::<HashMap<String, Arc<dyn Any + Send + Sync>>>(),
+    );
     let mut inner = HashMap::new();
-    inner.insert("value".to_string(), Arc::new(42i32) as Arc<dyn Any + Send + Sync>);
+    inner.insert(
+        "value".to_string(),
+        Arc::new(42i32) as Arc<dyn Any + Send + Sync>,
+    );
     wrapper.set_property_value("data", Arc::new(inner)).unwrap();
     let t = wrapper.get_property_type("data.value");
     assert_eq!(t, Some(std::any::TypeId::of::<i32>()));
@@ -117,28 +136,44 @@ fn bean_wrapper_get_property_names_multiple() {
 
 #[test]
 fn bean_wrapper_batch_set() {
+    use vernal_beans::bean_wrapper::BeanWrapper;
     use vernal_beans::bean_wrapper_impl::BeanWrapperImpl;
     use vernal_beans::property_accessor::PropertyAccessor;
-    use vernal_beans::bean_wrapper::BeanWrapper;
     let wrapper = BeanWrapperImpl::new(Arc::new("test".to_string()));
     wrapper.register_property("x", std::any::TypeId::of::<i32>());
     wrapper.register_property("y", std::any::TypeId::of::<i32>());
     let mut values = std::collections::HashMap::new();
-    values.insert("x".to_string(), Arc::new(10i32) as Arc<dyn Any + Send + Sync>);
-    values.insert("y".to_string(), Arc::new(20i32) as Arc<dyn Any + Send + Sync>);
+    values.insert(
+        "x".to_string(),
+        Arc::new(10i32) as Arc<dyn Any + Send + Sync>,
+    );
+    values.insert(
+        "y".to_string(),
+        Arc::new(20i32) as Arc<dyn Any + Send + Sync>,
+    );
     wrapper.set_property_values(&values).unwrap();
-    let x = wrapper.get_property_value("x").unwrap().downcast_ref::<i32>().copied();
+    let x = wrapper
+        .get_property_value("x")
+        .unwrap()
+        .downcast_ref::<i32>()
+        .copied();
     assert_eq!(x, Some(10));
 }
 
 #[test]
 fn bean_wrapper_wrapped_instance() {
-    use vernal_beans::bean_wrapper_impl::BeanWrapperImpl;
     use vernal_beans::bean_wrapper::BeanWrapper;
+    use vernal_beans::bean_wrapper_impl::BeanWrapperImpl;
     let instance: Arc<dyn Any + Send + Sync> = Arc::new("my_bean".to_string());
     let wrapper = BeanWrapperImpl::new(Arc::clone(&instance));
-    assert_eq!(wrapper.get_wrapped_class(), std::any::TypeId::of::<String>());
-    let s = wrapper.get_wrapped_instance().downcast_ref::<String>().unwrap();
+    assert_eq!(
+        wrapper.get_wrapped_class(),
+        std::any::TypeId::of::<String>()
+    );
+    let s = wrapper
+        .get_wrapped_instance()
+        .downcast_ref::<String>()
+        .unwrap();
     assert_eq!(s, "my_bean");
 }
 
@@ -180,21 +215,31 @@ fn nestable_set_get_property() {
     use vernal_beans::property_accessor::PropertyAccessor;
     let accessor = AbstractNestablePropertyAccessor::new();
     accessor.register_property("name", std::any::TypeId::of::<String>());
-    accessor.set_property_value("name", Arc::new("Alice".to_string())).unwrap();
+    accessor
+        .set_property_value("name", Arc::new("Alice".to_string()))
+        .unwrap();
     let val = accessor.get_property_value("name").unwrap();
     assert_eq!(val.downcast_ref::<String>().unwrap(), "Alice");
 }
 
 #[test]
 fn nestable_nested_property_two_levels() {
+    use std::collections::HashMap;
     use vernal_beans::abstract_nestable_property_accessor::AbstractNestablePropertyAccessor;
     use vernal_beans::property_accessor::PropertyAccessor;
-    use std::collections::HashMap;
     let accessor = AbstractNestablePropertyAccessor::new();
-    accessor.register_property("address", std::any::TypeId::of::<HashMap<String, Arc<dyn Any + Send + Sync>>>());
+    accessor.register_property(
+        "address",
+        std::any::TypeId::of::<HashMap<String, Arc<dyn Any + Send + Sync>>>(),
+    );
     let mut inner = HashMap::new();
-    inner.insert("city".to_string(), Arc::new("Beijing".to_string()) as Arc<dyn Any + Send + Sync>);
-    accessor.set_property_value("address", Arc::new(inner)).unwrap();
+    inner.insert(
+        "city".to_string(),
+        Arc::new("Beijing".to_string()) as Arc<dyn Any + Send + Sync>,
+    );
+    accessor
+        .set_property_value("address", Arc::new(inner))
+        .unwrap();
     let val = accessor.get_property_value("address.city");
     assert!(val.is_ok());
     assert_eq!(val.unwrap().downcast_ref::<String>().unwrap(), "Beijing");
@@ -202,16 +247,27 @@ fn nestable_nested_property_two_levels() {
 
 #[test]
 fn nestable_nested_property_three_levels() {
+    use std::collections::HashMap;
     use vernal_beans::abstract_nestable_property_accessor::AbstractNestablePropertyAccessor;
     use vernal_beans::property_accessor::PropertyAccessor;
-    use std::collections::HashMap;
     let accessor = AbstractNestablePropertyAccessor::new();
-    accessor.register_property("user", std::any::TypeId::of::<HashMap<String, Arc<dyn Any + Send + Sync>>>());
+    accessor.register_property(
+        "user",
+        std::any::TypeId::of::<HashMap<String, Arc<dyn Any + Send + Sync>>>(),
+    );
     let mut inner = HashMap::new();
     let mut address = HashMap::new();
-    address.insert("city".to_string(), Arc::new("Beijing".to_string()) as Arc<dyn Any + Send + Sync>);
-    inner.insert("address".to_string(), Arc::new(address) as Arc<dyn Any + Send + Sync>);
-    accessor.set_property_value("user", Arc::new(inner)).unwrap();
+    address.insert(
+        "city".to_string(),
+        Arc::new("Beijing".to_string()) as Arc<dyn Any + Send + Sync>,
+    );
+    inner.insert(
+        "address".to_string(),
+        Arc::new(address) as Arc<dyn Any + Send + Sync>,
+    );
+    accessor
+        .set_property_value("user", Arc::new(inner))
+        .unwrap();
     let val = accessor.get_property_value("user.address.city");
     assert!(val.is_ok());
     assert_eq!(val.unwrap().downcast_ref::<String>().unwrap(), "Beijing");
@@ -231,7 +287,10 @@ fn nestable_property_type() {
     use vernal_beans::property_accessor::PropertyAccessor;
     let accessor = AbstractNestablePropertyAccessor::new();
     accessor.register_property("name", std::any::TypeId::of::<String>());
-    assert_eq!(accessor.get_property_type("name"), Some(std::any::TypeId::of::<String>()));
+    assert_eq!(
+        accessor.get_property_type("name"),
+        Some(std::any::TypeId::of::<String>())
+    );
     assert_eq!(accessor.get_property_type("missing"), None);
 }
 
@@ -271,8 +330,12 @@ fn nestable_set_overwrite() {
     use vernal_beans::property_accessor::PropertyAccessor;
     let accessor = AbstractNestablePropertyAccessor::new();
     accessor.register_property("name", std::any::TypeId::of::<String>());
-    accessor.set_property_value("name", Arc::new("Alice".to_string())).unwrap();
-    accessor.set_property_value("name", Arc::new("Bob".to_string())).unwrap();
+    accessor
+        .set_property_value("name", Arc::new("Alice".to_string()))
+        .unwrap();
+    accessor
+        .set_property_value("name", Arc::new("Bob".to_string()))
+        .unwrap();
     let val = accessor.get_property_value("name").unwrap();
     assert_eq!(val.downcast_ref::<String>().unwrap(), "Bob");
 }

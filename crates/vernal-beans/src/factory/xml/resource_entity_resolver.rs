@@ -57,7 +57,10 @@ impl EntityResolver for ResourceEntityResolver {
         // 尝试从资源路径加载
         for path in &self.resource_paths {
             if system_id.contains(path) || path.contains(system_id) {
-                self.resolved_entities.lock().unwrap().push(system_id.to_string());
+                self.resolved_entities
+                    .lock()
+                    .unwrap()
+                    .push(system_id.to_string());
                 return Ok(ResolvedEntity {
                     public_id: public_id.map(String::from),
                     system_id: system_id.to_string(),
@@ -68,7 +71,10 @@ impl EntityResolver for ResourceEntityResolver {
 
         // 尝试标准 DTD/XSD 解析
         if system_id.ends_with(".dtd") || system_id.ends_with(".xsd") {
-            self.resolved_entities.lock().unwrap().push(system_id.to_string());
+            self.resolved_entities
+                .lock()
+                .unwrap()
+                .push(system_id.to_string());
             return Ok(ResolvedEntity {
                 public_id: public_id.map(String::from),
                 system_id: system_id.to_string(),
@@ -88,7 +94,9 @@ mod tests {
     fn resolves_from_resource_path() {
         let mut resolver = ResourceEntityResolver::new();
         resolver.add_resource_path("spring-beans");
-        let result = resolver.resolve_entity(None, "http://spring-beans.xsd").unwrap();
+        let result = resolver
+            .resolve_entity(None, "http://spring-beans.xsd")
+            .unwrap();
         assert!(String::from_utf8_lossy(&result.content).contains("resource path"));
     }
 

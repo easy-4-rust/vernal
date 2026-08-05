@@ -2,22 +2,33 @@
 
 use std::any::Any;
 use std::sync::Arc;
-use vernal_beans::{BeanFactory, ComponentDefinition, Container, Qualifier, RegistryBuilder, Resolver, Scope};
+use vernal_beans::{
+    BeanFactory, ComponentDefinition, Container, Qualifier, RegistryBuilder, Resolver, Scope,
+};
 
 #[test]
 fn component_provider_get_in_with_scope() {
     let mut builder = RegistryBuilder::new();
-    builder.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string())).unwrap();
+    builder
+        .register(ComponentDefinition::singleton::<String, _>(|_| {
+            "hello".to_string()
+        }))
+        .unwrap();
     let container = Container::new(builder.build().unwrap());
     let scope = container.open_scope::<String>();
 
     let mut builder2 = RegistryBuilder::new();
-    builder2.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string())).unwrap();
+    builder2
+        .register(ComponentDefinition::singleton::<String, _>(|_| {
+            "hello".to_string()
+        }))
+        .unwrap();
     let def = ComponentDefinition::singleton::<i32, _>(move |resolver: &Resolver| {
         let provider = resolver.provider::<String>().unwrap();
         let _ = provider.get_in(&scope);
         42
-    }).depends_on_provider::<String>();
+    })
+    .depends_on_provider::<String>();
     builder2.register(def).unwrap();
 
     let container2 = Container::new(builder2.build().unwrap());
@@ -29,17 +40,26 @@ fn component_provider_get_in_with_scope() {
 #[test]
 fn component_provider_get_if_available_in_with_scope() {
     let mut builder = RegistryBuilder::new();
-    builder.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string())).unwrap();
+    builder
+        .register(ComponentDefinition::singleton::<String, _>(|_| {
+            "hello".to_string()
+        }))
+        .unwrap();
     let container = Container::new(builder.build().unwrap());
     let scope = container.open_scope::<String>();
 
     let mut builder2 = RegistryBuilder::new();
-    builder2.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string())).unwrap();
+    builder2
+        .register(ComponentDefinition::singleton::<String, _>(|_| {
+            "hello".to_string()
+        }))
+        .unwrap();
     let def = ComponentDefinition::singleton::<i32, _>(move |resolver: &Resolver| {
         let provider = resolver.provider::<String>().unwrap();
         let _ = provider.get_if_available_in(&scope);
         42
-    }).depends_on_provider::<String>();
+    })
+    .depends_on_provider::<String>();
     builder2.register(def).unwrap();
 
     let container2 = Container::new(builder2.build().unwrap());
@@ -51,12 +71,17 @@ fn component_provider_get_if_available_in_with_scope() {
 #[test]
 fn component_provider_clone() {
     let mut builder = RegistryBuilder::new();
-    builder.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string())).unwrap();
+    builder
+        .register(ComponentDefinition::singleton::<String, _>(|_| {
+            "hello".to_string()
+        }))
+        .unwrap();
     let def = ComponentDefinition::singleton::<i32, _>(|resolver: &Resolver| {
         let provider = resolver.provider::<String>().unwrap();
         let _ = provider.clone();
         42
-    }).depends_on_provider::<String>();
+    })
+    .depends_on_provider::<String>();
     builder.register(def).unwrap();
 
     let container = Container::new(builder.build().unwrap());
@@ -68,13 +93,18 @@ fn component_provider_clone() {
 #[test]
 fn component_provider_debug() {
     let mut builder = RegistryBuilder::new();
-    builder.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string())).unwrap();
+    builder
+        .register(ComponentDefinition::singleton::<String, _>(|_| {
+            "hello".to_string()
+        }))
+        .unwrap();
     let def = ComponentDefinition::singleton::<i32, _>(|resolver: &Resolver| {
         let provider = resolver.provider::<String>().unwrap();
         let debug = format!("{:?}", provider);
         assert!(debug.contains("ComponentProvider"));
         42
-    }).depends_on_provider::<String>();
+    })
+    .depends_on_provider::<String>();
     builder.register(def).unwrap();
 
     let container = Container::new(builder.build().unwrap());
@@ -86,14 +116,22 @@ fn component_provider_debug() {
 fn trait_provider_exists() {
     // 验证 trait_provider 方法存在
     let mut builder = RegistryBuilder::new();
-    builder.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string())).unwrap();
+    builder
+        .register(ComponentDefinition::singleton::<String, _>(|_| {
+            "hello".to_string()
+        }))
+        .unwrap();
     let _ = Container::new(builder.build().unwrap());
 }
 
 #[test]
 fn bean_factory_get_bean_by_key() {
     let mut builder = RegistryBuilder::new();
-    builder.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string())).unwrap();
+    builder
+        .register(ComponentDefinition::singleton::<String, _>(|_| {
+            "hello".to_string()
+        }))
+        .unwrap();
     let container = Container::new(builder.build().unwrap());
     let key = vernal_beans::ComponentKey::of::<String>();
     let result = container.get_bean_by_key(&key);
@@ -103,7 +141,11 @@ fn bean_factory_get_bean_by_key() {
 #[test]
 fn bean_factory_contains_bean() {
     let mut builder = RegistryBuilder::new();
-    builder.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string())).unwrap();
+    builder
+        .register(ComponentDefinition::singleton::<String, _>(|_| {
+            "hello".to_string()
+        }))
+        .unwrap();
     let container = Container::new(builder.build().unwrap());
     let key = vernal_beans::ComponentKey::of::<String>();
     assert!(container.contains_bean(&key));
@@ -114,7 +156,11 @@ fn bean_factory_contains_bean() {
 #[test]
 fn bean_factory_is_singleton() {
     let mut builder = RegistryBuilder::new();
-    builder.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string())).unwrap();
+    builder
+        .register(ComponentDefinition::singleton::<String, _>(|_| {
+            "hello".to_string()
+        }))
+        .unwrap();
     let container = Container::new(builder.build().unwrap());
     let key = vernal_beans::ComponentKey::of::<String>();
     let result = container.is_singleton(&key);
@@ -125,7 +171,11 @@ fn bean_factory_is_singleton() {
 #[test]
 fn bean_factory_is_prototype() {
     let mut builder = RegistryBuilder::new();
-    builder.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string())).unwrap();
+    builder
+        .register(ComponentDefinition::singleton::<String, _>(|_| {
+            "hello".to_string()
+        }))
+        .unwrap();
     let container = Container::new(builder.build().unwrap());
     let key = vernal_beans::ComponentKey::of::<String>();
     let result = container.is_prototype(&key);
@@ -136,7 +186,11 @@ fn bean_factory_is_prototype() {
 #[test]
 fn bean_factory_get_type() {
     let mut builder = RegistryBuilder::new();
-    builder.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string())).unwrap();
+    builder
+        .register(ComponentDefinition::singleton::<String, _>(|_| {
+            "hello".to_string()
+        }))
+        .unwrap();
     let container = Container::new(builder.build().unwrap());
     let key = vernal_beans::ComponentKey::of::<String>();
     let result = container.get_type(&key);
@@ -147,7 +201,11 @@ fn bean_factory_get_type() {
 #[test]
 fn bean_factory_get_aliases() {
     let mut builder = RegistryBuilder::new();
-    builder.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string())).unwrap();
+    builder
+        .register(ComponentDefinition::singleton::<String, _>(|_| {
+            "hello".to_string()
+        }))
+        .unwrap();
     let container = Container::new(builder.build().unwrap());
     let key = vernal_beans::ComponentKey::of::<String>();
     let _ = container.get_aliases(&key);
@@ -156,7 +214,11 @@ fn bean_factory_get_aliases() {
 #[test]
 fn container_resolve_string() {
     let mut builder = RegistryBuilder::new();
-    builder.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string())).unwrap();
+    builder
+        .register(ComponentDefinition::singleton::<String, _>(|_| {
+            "hello".to_string()
+        }))
+        .unwrap();
     let container = Container::new(builder.build().unwrap());
     let result = container.resolve::<String>();
     assert!(result.is_ok());
@@ -167,7 +229,12 @@ fn container_resolve_string() {
 fn container_resolve_qualified() {
     let mut builder = RegistryBuilder::new();
     let q = Qualifier::new("primary").unwrap();
-    builder.register(ComponentDefinition::singleton::<String, _>(|_| "qualified".to_string()).qualified(q.clone())).unwrap();
+    builder
+        .register(
+            ComponentDefinition::singleton::<String, _>(|_| "qualified".to_string())
+                .qualified(q.clone()),
+        )
+        .unwrap();
     let container = Container::new(builder.build().unwrap());
     let result = container.resolve_qualified::<String>(&q);
     assert!(result.is_ok());
@@ -177,7 +244,11 @@ fn container_resolve_qualified() {
 #[test]
 fn container_open_scope() {
     let mut builder = RegistryBuilder::new();
-    builder.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string())).unwrap();
+    builder
+        .register(ComponentDefinition::singleton::<String, _>(|_| {
+            "hello".to_string()
+        }))
+        .unwrap();
     let container = Container::new(builder.build().unwrap());
     let scope = container.open_scope::<String>();
     assert!(scope.state() == vernal_beans::ScopeState::Open);
@@ -186,7 +257,11 @@ fn container_open_scope() {
 #[test]
 fn container_resolve_in_scope() {
     let mut builder = RegistryBuilder::new();
-    builder.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string())).unwrap();
+    builder
+        .register(ComponentDefinition::singleton::<String, _>(|_| {
+            "hello".to_string()
+        }))
+        .unwrap();
     let container = Container::new(builder.build().unwrap());
     let scope = container.open_scope::<String>();
     let result = container.resolve_in::<String>(&scope);
@@ -197,7 +272,11 @@ fn container_resolve_in_scope() {
 #[test]
 fn container_warm_up() {
     let mut builder = RegistryBuilder::new();
-    builder.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string())).unwrap();
+    builder
+        .register(ComponentDefinition::singleton::<String, _>(|_| {
+            "hello".to_string()
+        }))
+        .unwrap();
     let container = Container::new(builder.build().unwrap());
     assert!(container.warm_up().is_ok());
 }
@@ -205,7 +284,11 @@ fn container_warm_up() {
 #[test]
 fn container_registry() {
     let mut builder = RegistryBuilder::new();
-    builder.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string())).unwrap();
+    builder
+        .register(ComponentDefinition::singleton::<String, _>(|_| {
+            "hello".to_string()
+        }))
+        .unwrap();
     let container = Container::new(builder.build().unwrap());
     let _ = container.registry();
 }
@@ -213,7 +296,11 @@ fn container_registry() {
 #[test]
 fn container_unused_definitions() {
     let mut builder = RegistryBuilder::new();
-    builder.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string())).unwrap();
+    builder
+        .register(ComponentDefinition::singleton::<String, _>(|_| {
+            "hello".to_string()
+        }))
+        .unwrap();
     let container = Container::new(builder.build().unwrap());
     let _ = container.unused_definitions();
 }
@@ -221,7 +308,11 @@ fn container_unused_definitions() {
 #[test]
 fn container_transient_tracker() {
     let mut builder = RegistryBuilder::new();
-    builder.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string())).unwrap();
+    builder
+        .register(ComponentDefinition::singleton::<String, _>(|_| {
+            "hello".to_string()
+        }))
+        .unwrap();
     let container = Container::new(builder.build().unwrap());
     let _ = container.transient_tracker();
 }
@@ -229,7 +320,11 @@ fn container_transient_tracker() {
 #[test]
 fn scope_context_get_or_insert_with() {
     let mut builder = RegistryBuilder::new();
-    builder.register(ComponentDefinition::singleton::<String, _>(|_| "hello".to_string())).unwrap();
+    builder
+        .register(ComponentDefinition::singleton::<String, _>(|_| {
+            "hello".to_string()
+        }))
+        .unwrap();
     let container = Container::new(builder.build().unwrap());
     let scope = container.open_scope::<String>();
     let result = scope.get_or_insert_with::<String, _>(|| "test".to_string());
@@ -269,13 +364,20 @@ fn component_definition_debug() {
 
 #[test]
 fn resolve_error_not_found() {
-    let err = vernal_beans::ResolveError::NotFound { component: "test".to_string(), path: vec![] };
+    let err = vernal_beans::ResolveError::NotFound {
+        component: "test".to_string(),
+        path: vec![],
+    };
     assert!(!format!("{err}").is_empty());
 }
 
 #[test]
 fn resolve_error_ambiguous() {
-    let err = vernal_beans::ResolveError::Ambiguous { component: "test".to_string(), candidates: vec!["a".to_string()], path: vec![] };
+    let err = vernal_beans::ResolveError::Ambiguous {
+        component: "test".to_string(),
+        candidates: vec!["a".to_string()],
+        path: vec![],
+    };
     assert!(!format!("{err}").is_empty());
 }
 
@@ -311,24 +413,34 @@ fn qualifier_new() {
 
 #[test]
 fn scope_state_open() {
-    assert_eq!(vernal_beans::ScopeState::Open, vernal_beans::ScopeState::Open);
+    assert_eq!(
+        vernal_beans::ScopeState::Open,
+        vernal_beans::ScopeState::Open
+    );
 }
 
 #[test]
 fn graph_error_cycle() {
-    let err = vernal_beans::GraphError::Cycle { path: vec!["a".to_string()] };
+    let err = vernal_beans::GraphError::Cycle {
+        path: vec!["a".to_string()],
+    };
     assert!(!format!("{err}").is_empty());
 }
 
 #[test]
 fn trait_binding_basic() {
-    let binding = vernal_beans::TraitBinding::new::<dyn Any + Send + Sync, String, _>(|arc| arc as Arc<dyn Any + Send + Sync>);
+    let binding = vernal_beans::TraitBinding::new::<dyn Any + Send + Sync, String, _>(|arc| {
+        arc as Arc<dyn Any + Send + Sync>
+    });
     let _ = binding;
 }
 
 #[test]
 fn injection_point_basic() {
-    let ip = vernal_beans::InjectionPoint::new(std::any::TypeId::of::<String>(), std::any::type_name::<String>());
+    let ip = vernal_beans::InjectionPoint::new(
+        std::any::TypeId::of::<String>(),
+        std::any::type_name::<String>(),
+    );
     let _ = ip;
 }
 

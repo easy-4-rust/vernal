@@ -15,6 +15,11 @@ use std::error::Error;
 use tokio::sync::Mutex;
 use tokio_util::sync::CancellationToken;
 
+use vernal_aop::pointcut::dsl::{
+    ExecutionPattern, FunctionDescriptor, ModulePattern, NamePattern, PointcutExpr,
+    PointcutMatcher, PointcutParseError, QualifierPattern, TagPattern, Visibility,
+    parse_pointcut_expr,
+};
 use vernal_aop::{
     Advisor, AndPointcut, AnyPointcut, Aspect, AspectAdapter, AspectError, ComponentPointcut,
     DefaultPointcutAdvisor, Interceptor, IntroductionAdvisor, IntroductionInfo, Invocation,
@@ -23,11 +28,6 @@ use vernal_aop::{
     OperationPointcut, OrPointcut, Pointcut, PointcutAdvisor, PointcutExt, QualifierPointcut,
     SimpleCallResult, SimpleInterceptor, SimpleInterceptorChain, SimpleInvocationContext,
     TagPointcut,
-};
-use vernal_aop::pointcut::dsl::{
-    ExecutionPattern, FunctionDescriptor, ModulePattern, NamePattern, PointcutExpr,
-    PointcutMatcher, PointcutParseError, QualifierPattern, TagPattern, Visibility,
-    parse_pointcut_expr,
 };
 use vernal_core::BoxError;
 
@@ -895,7 +895,10 @@ struct FailingSimpleInterceptor;
 
 impl SimpleInterceptor for FailingSimpleInterceptor {
     fn before(&self, _ctx: &SimpleInvocationContext) -> Result<(), BoxError> {
-        Err(Box::new(io::Error::new(io::ErrorKind::PermissionDenied, "denied")))
+        Err(Box::new(io::Error::new(
+            io::ErrorKind::PermissionDenied,
+            "denied",
+        )))
     }
 }
 
@@ -1054,11 +1057,10 @@ fn simple_interceptor_chain_after_all_runs_in_reverse_order() {
 #[test]
 fn simple_interceptor_chain_around_all_onion_model() {
     let events = Arc::new(std::sync::Mutex::new(Vec::new()));
-    let chain = SimpleInterceptorChain::with_interceptors(vec![
-        Arc::new(LoggingSimpleInterceptor {
+    let chain =
+        SimpleInterceptorChain::with_interceptors(vec![Arc::new(LoggingSimpleInterceptor {
             events: Arc::clone(&events),
-        }),
-    ]);
+        })]);
     let ctx = SimpleInvocationContext::new("test");
     let events_clone = Arc::clone(&events);
     let result = chain.around_all(&ctx, move || {
@@ -1110,7 +1112,6 @@ fn simple_interceptor_chain_default_is_empty() {
 // OperationMetadataError (0% coverage)
 // ============================================================================
 
-
 #[test]
 fn operation_metadata_error_invalid_tag_display() {
     let err = OperationMetadataError::InvalidTag {
@@ -1149,7 +1150,6 @@ fn operation_metadata_error_implements_std_error() {
 // ============================================================================
 // AndPointcut / OrPointcut direct tests
 // ============================================================================
-
 
 #[test]
 fn and_pointcut_left_and_right_accessors() {
@@ -1229,7 +1229,6 @@ fn not_pointcut_inverts() {
 // OperationPointcut direct tests
 // ============================================================================
 
-
 #[test]
 fn operation_pointcut_matches_exact_operation() {
     let target = Operation::new("OrderService", "create");
@@ -1308,7 +1307,6 @@ fn closure_pointcut_not_composition() {
 // ============================================================================
 // DSL parser edge cases and error paths
 // ============================================================================
-
 
 #[test]
 fn dsl_parse_empty_input_fails() {
@@ -1509,7 +1507,6 @@ fn pointcut_expr_within_module() {
 // Pattern direct tests
 // ============================================================================
 
-
 #[test]
 fn visibility_matches_all_variants() {
     assert!(Visibility::Public.matches("pub"));
@@ -1625,7 +1622,6 @@ fn module_pattern_is_clone_and_debug_and_eq() {
 // FunctionDescriptor from_operation with various metadata
 // ============================================================================
 
-
 #[test]
 fn function_descriptor_from_operation_basic() {
     let op = Operation::new("UserService", "create_user");
@@ -1654,8 +1650,11 @@ fn function_descriptor_from_operation_with_tags() {
 
 #[test]
 fn function_descriptor_from_operation_with_qualifier() {
-    let op = Operation::new("Svc", "m")
-        .with_metadata(OperationMetadata::empty().with_qualifier("primary").unwrap());
+    let op = Operation::new("Svc", "m").with_metadata(
+        OperationMetadata::empty()
+            .with_qualifier("primary")
+            .unwrap(),
+    );
     let fd = FunctionDescriptor::from_operation(&op);
     assert_eq!(fd.qualifier, Some("primary".to_string()));
 }
@@ -1674,28 +1673,26 @@ fn function_descriptor_new_and_builder() {
 // PointcutMatcher trait on PointcutExpr
 // ============================================================================
 
-
 #[test]
 fn pointcut_matcher_tag_matches() {
     let pc = PointcutExpr::Tag(TagPattern {
         tags: vec!["secured".to_string()],
     });
-    let op = Operation::new("Svc", "m").with_metadata(
-        OperationMetadata::empty().with_tag("secured").unwrap(),
-    );
+    let op = Operation::new("Svc", "m")
+        .with_metadata(OperationMetadata::empty().with_tag("secured").unwrap());
     assert!(pc.matches_operation(&op));
     assert!(!pc.matches_operation(&Operation::new("Svc", "m")));
 }
 
 #[test]
 fn pointcut_matcher_qualifier_matches() {
-    let pc = PointcutExpr::Qualifier(
-        QualifierPattern {
-            qualifier: "primary".to_string(),
-        },
-    );
+    let pc = PointcutExpr::Qualifier(QualifierPattern {
+        qualifier: "primary".to_string(),
+    });
     let op = Operation::new("Svc", "m").with_metadata(
-        OperationMetadata::empty().with_qualifier("primary").unwrap(),
+        OperationMetadata::empty()
+            .with_qualifier("primary")
+            .unwrap(),
     );
     assert!(pc.matches_operation(&op));
     assert!(!pc.matches_operation(&Operation::new("Svc", "m")));
@@ -1732,11 +1729,7 @@ fn advisor_shared_constructor() {
 
 #[test]
 fn advisor_interceptor_returns_shared_ref() {
-    let advisor = Advisor::new(
-        AnyPointcut::new(),
-        ShortCircuitInterceptor,
-        0,
-    );
+    let advisor = Advisor::new(AnyPointcut::new(), ShortCircuitInterceptor, 0);
     let _interceptor = advisor.interceptor();
 }
 
@@ -1799,7 +1792,6 @@ fn invocation_shared_returns_arc() {
 // InvocationError direct tests
 // ============================================================================
 
-
 #[test]
 fn invocation_error_target_constructor() {
     let err = InvocationError::target(io::Error::new(io::ErrorKind::Other, "test"));
@@ -1846,9 +1838,7 @@ fn invocation_error_target_already_invoked_display() {
 
 #[test]
 fn invocation_error_return_type_mismatch_display() {
-    let err = InvocationError::ReturnTypeMismatch {
-        expected: "i32",
-    };
+    let err = InvocationError::ReturnTypeMismatch { expected: "i32" };
     assert!(err.to_string().contains("return type mismatch"));
 }
 
@@ -1887,34 +1877,28 @@ fn operation_display() {
 
 #[test]
 fn operation_partial_eq_ignores_metadata() {
-    let op1 = Operation::new("Svc", "m").with_metadata(
-        OperationMetadata::empty().with_tag("a").unwrap(),
-    );
-    let op2 = Operation::new("Svc", "m").with_metadata(
-        OperationMetadata::empty().with_tag("b").unwrap(),
-    );
+    let op1 =
+        Operation::new("Svc", "m").with_metadata(OperationMetadata::empty().with_tag("a").unwrap());
+    let op2 =
+        Operation::new("Svc", "m").with_metadata(OperationMetadata::empty().with_tag("b").unwrap());
     assert_eq!(op1, op2);
 }
 
 #[test]
 fn operation_same_declaration_checks_metadata() {
-    let op1 = Operation::new("Svc", "m").with_metadata(
-        OperationMetadata::empty().with_tag("a").unwrap(),
-    );
-    let op2 = Operation::new("Svc", "m").with_metadata(
-        OperationMetadata::empty().with_tag("a").unwrap(),
-    );
+    let op1 =
+        Operation::new("Svc", "m").with_metadata(OperationMetadata::empty().with_tag("a").unwrap());
+    let op2 =
+        Operation::new("Svc", "m").with_metadata(OperationMetadata::empty().with_tag("a").unwrap());
     assert!(op1.same_declaration(&op2));
 }
 
 #[test]
 fn operation_same_declaration_different_metadata() {
-    let op1 = Operation::new("Svc", "m").with_metadata(
-        OperationMetadata::empty().with_tag("a").unwrap(),
-    );
-    let op2 = Operation::new("Svc", "m").with_metadata(
-        OperationMetadata::empty().with_tag("b").unwrap(),
-    );
+    let op1 =
+        Operation::new("Svc", "m").with_metadata(OperationMetadata::empty().with_tag("a").unwrap());
+    let op2 =
+        Operation::new("Svc", "m").with_metadata(OperationMetadata::empty().with_tag("b").unwrap());
     assert!(!op1.same_declaration(&op2));
 }
 
@@ -1923,12 +1907,10 @@ fn operation_hash_consistent_with_eq() {
     use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};
 
-    let op1 = Operation::new("Svc", "m").with_metadata(
-        OperationMetadata::empty().with_tag("a").unwrap(),
-    );
-    let op2 = Operation::new("Svc", "m").with_metadata(
-        OperationMetadata::empty().with_tag("b").unwrap(),
-    );
+    let op1 =
+        Operation::new("Svc", "m").with_metadata(OperationMetadata::empty().with_tag("a").unwrap());
+    let op2 =
+        Operation::new("Svc", "m").with_metadata(OperationMetadata::empty().with_tag("b").unwrap());
     assert_eq!(op1, op2);
 
     let mut h1 = DefaultHasher::new();
@@ -1972,7 +1954,9 @@ fn operation_metadata_with_tag() {
 
 #[test]
 fn operation_metadata_with_qualifier() {
-    let m = OperationMetadata::empty().with_qualifier("primary").unwrap();
+    let m = OperationMetadata::empty()
+        .with_qualifier("primary")
+        .unwrap();
     assert!(!m.is_empty());
     assert_eq!(m.qualifier(), Some("primary"));
 }
@@ -2214,11 +2198,7 @@ async fn aspect_around_custom_override() {
     struct CustomAspect;
 
     impl Aspect for CustomAspect {
-        fn around<'a>(
-            &'a self,
-            _inv: Arc<Invocation>,
-            _next: Next<'a>,
-        ) -> InvocationFuture<'a> {
+        fn around<'a>(&'a self, _inv: Arc<Invocation>, _next: Next<'a>) -> InvocationFuture<'a> {
             Box::pin(async { Ok(Box::new(999_i32) as InvocationValue) })
         }
     }
@@ -2356,9 +2336,8 @@ async fn invocation_plan_invoke_returns_correct_type() {
 async fn invocation_plan_invoke_with_string() {
     let operation = Operation::new("Svc", "m");
     let plan = InvocationPlanBuilder::new().build(operation.clone());
-    let target: Arc<vernal_aop::InvocationTarget> = Arc::new(|_| {
-        Box::pin(async { Ok(Box::new(String::from("hello")) as InvocationValue) })
-    });
+    let target: Arc<vernal_aop::InvocationTarget> =
+        Arc::new(|_| Box::pin(async { Ok(Box::new(String::from("hello")) as InvocationValue) }));
 
     let result = plan
         .invoke(Invocation::new(operation).shared(), target)
@@ -2399,7 +2378,9 @@ fn qualifier_pointcut_new_with_invalid_qualifier_returns_error() {
 fn qualifier_pointcut_matches_operation_with_qualifier_via_trait() {
     let pc = QualifierPointcut::new("primary").unwrap();
     let op = Operation::new("Svc", "m").with_metadata(
-        OperationMetadata::empty().with_qualifier("primary").unwrap(),
+        OperationMetadata::empty()
+            .with_qualifier("primary")
+            .unwrap(),
     );
     assert!(pc.matches(&op));
     assert!(!pc.matches(&Operation::new("Svc", "m")));
@@ -2637,11 +2618,12 @@ fn local_invocation_error_target_display() {
 
 #[test]
 fn local_invocation_error_target_constructor() {
-    let err = vernal_aop::LocalInvocationError::target(io::Error::new(
-        io::ErrorKind::Other,
-        "test",
+    let err =
+        vernal_aop::LocalInvocationError::target(io::Error::new(io::ErrorKind::Other, "test"));
+    assert!(matches!(
+        err,
+        vernal_aop::LocalInvocationError::Target { .. }
     ));
-    assert!(matches!(err, vernal_aop::LocalInvocationError::Target { .. }));
 }
 
 // ============================================================================
@@ -2736,7 +2718,9 @@ async fn aspect_default_around_with_error_target() {
         })
     });
 
-    let result = plan.invoke(Invocation::new(operation).shared(), target).await;
+    let result = plan
+        .invoke(Invocation::new(operation).shared(), target)
+        .await;
     assert!(result.is_err());
 }
 
@@ -2805,7 +2789,9 @@ async fn invocation_plan_invoke_borrowed() {
     let operation = Operation::new("Svc", "m");
     let plan = InvocationPlanBuilder::new().build(operation.clone());
     let mut result = String::new();
-    let mut target = BorrowedTarget { result: &mut result };
+    let mut target = BorrowedTarget {
+        result: &mut result,
+    };
     let inv = Invocation::new(operation).shared();
     let _value = plan.invoke_borrowed(inv, &mut target).await.unwrap();
     assert_eq!(result, "borrowed");
@@ -2857,7 +2843,6 @@ fn operation_metadata_conflict_error_display() {
     );
     assert!(err.to_string().contains("conflicting metadata"));
 }
-
 
 // ============================================================================
 // InvocationPlanBuilder more edge cases
@@ -2965,7 +2950,10 @@ fn local_error_into_target_on_non_target_variant() {
     let err = vernal_aop::LocalInvocationError::Cancelled;
     let recovered: Result<io::Error, _> = err.into_target();
     assert!(recovered.is_err());
-    assert!(matches!(recovered.unwrap_err(), vernal_aop::LocalInvocationError::Cancelled));
+    assert!(matches!(
+        recovered.unwrap_err(),
+        vernal_aop::LocalInvocationError::Cancelled
+    ));
 }
 
 #[test]
@@ -3013,19 +3001,43 @@ fn local_error_source_on_target_variant() {
 
 #[test]
 fn local_error_source_on_non_target_variants() {
-    assert!(vernal_aop::LocalInvocationError::Cancelled.source().is_none());
-    assert!(vernal_aop::LocalInvocationError::DeadlineExceeded.source().is_none());
-    assert!(vernal_aop::LocalInvocationError::PlanMismatch {
-        expected: Operation::new("A", "m"),
-        actual: Operation::new("B", "m"),
-    }.source().is_none());
-    assert!(vernal_aop::LocalInvocationError::PlanNotFound {
-        operation: Operation::new("Svc", "m"),
-    }.source().is_none());
-    assert!(vernal_aop::LocalInvocationError::TargetAlreadyInvoked {
-        operation: Operation::new("Svc", "m"),
-    }.source().is_none());
-    assert!(vernal_aop::LocalInvocationError::ReturnTypeMismatch { expected: "i32" }.source().is_none());
+    assert!(
+        vernal_aop::LocalInvocationError::Cancelled
+            .source()
+            .is_none()
+    );
+    assert!(
+        vernal_aop::LocalInvocationError::DeadlineExceeded
+            .source()
+            .is_none()
+    );
+    assert!(
+        vernal_aop::LocalInvocationError::PlanMismatch {
+            expected: Operation::new("A", "m"),
+            actual: Operation::new("B", "m"),
+        }
+        .source()
+        .is_none()
+    );
+    assert!(
+        vernal_aop::LocalInvocationError::PlanNotFound {
+            operation: Operation::new("Svc", "m"),
+        }
+        .source()
+        .is_none()
+    );
+    assert!(
+        vernal_aop::LocalInvocationError::TargetAlreadyInvoked {
+            operation: Operation::new("Svc", "m"),
+        }
+        .source()
+        .is_none()
+    );
+    assert!(
+        vernal_aop::LocalInvocationError::ReturnTypeMismatch { expected: "i32" }
+            .source()
+            .is_none()
+    );
 }
 
 // --- local_invocation_plan_catalog: interceptor_count with plans + Default ---
@@ -3086,7 +3098,10 @@ async fn local_plan_invoke_with_deadline_exceeded() {
         .shared();
     tokio::time::sleep(Duration::from_millis(10)).await;
     let result = plan.invoke(inv, target).await;
-    assert!(matches!(result, Err(vernal_aop::LocalInvocationError::DeadlineExceeded)));
+    assert!(matches!(
+        result,
+        Err(vernal_aop::LocalInvocationError::DeadlineExceeded)
+    ));
 }
 
 // --- local_advisor: shared constructor ---
@@ -3122,7 +3137,9 @@ fn plan_builder_len_and_is_empty() {
     assert!(builder.is_empty());
     builder.register(Advisor::new(
         always(),
-        CountingInterceptor { count: Arc::new(AtomicUsize::new(0)) },
+        CountingInterceptor {
+            count: Arc::new(AtomicUsize::new(0)),
+        },
         0,
     ));
     assert_eq!(builder.len(), 1);
@@ -3179,7 +3196,11 @@ fn local_plan_builder_len_and_is_empty() {
     let mut builder = vernal_aop::LocalInvocationPlanBuilder::new();
     assert_eq!(builder.len(), 0);
     assert!(builder.is_empty());
-    builder.register(vernal_aop::LocalAdvisor::new(AnyPointcut::new(), NopLocalInterceptor, 0));
+    builder.register(vernal_aop::LocalAdvisor::new(
+        AnyPointcut::new(),
+        NopLocalInterceptor,
+        0,
+    ));
     assert_eq!(builder.len(), 1);
     assert!(!builder.is_empty());
 }
@@ -3233,7 +3254,7 @@ async fn advised_invoke_type_mismatch_returns_error() {
 async fn aspect_default_before_returns_ok_v2() {
     struct DefaultAspect;
     impl Aspect for DefaultAspect {}
-    
+
     let aspect = DefaultAspect;
     let inv = Arc::new(Invocation::new(Operation::new("test", "test")));
     let result = aspect.before(&inv).await;
@@ -3244,7 +3265,7 @@ async fn aspect_default_before_returns_ok_v2() {
 async fn aspect_default_after_is_noop_v2() {
     struct DefaultAspect;
     impl Aspect for DefaultAspect {}
-    
+
     let aspect = DefaultAspect;
     let inv = Arc::new(Invocation::new(Operation::new("test", "test")));
     let value: InvocationValue = Box::new(42i32);
@@ -3255,7 +3276,7 @@ async fn aspect_default_after_is_noop_v2() {
 async fn aspect_default_after_error_is_noop_v2() {
     struct DefaultAspect;
     impl Aspect for DefaultAspect {}
-    
+
     let aspect = DefaultAspect;
     let inv = Arc::new(Invocation::new(Operation::new("test", "test")));
     let error = InvocationError::Cancelled;
@@ -3263,7 +3284,6 @@ async fn aspect_default_after_error_is_noop_v2() {
 }
 
 // --- CachingAspect coverage ---
-
 
 // ============================================================================
 // Coverage Gap Tests - 覆盖率补充测试
@@ -3280,7 +3300,9 @@ async fn aspect_default_after_error_is_noop_v2() {
 fn default_pointcut_advisor_new_v2() {
     let advisor = DefaultPointcutAdvisor::new(
         AnyPointcut::new(),
-        CountingInterceptor { count: Arc::new(AtomicUsize::new(0)) },
+        CountingInterceptor {
+            count: Arc::new(AtomicUsize::new(0)),
+        },
     );
     assert!(advisor.pointcut().matches(&Operation::new("any", "any")));
     assert_eq!(advisor.order(), 0);
@@ -3290,7 +3312,9 @@ fn default_pointcut_advisor_new_v2() {
 fn default_pointcut_advisor_with_order_v2() {
     let advisor = DefaultPointcutAdvisor::with_order(
         AnyPointcut::new(),
-        CountingInterceptor { count: Arc::new(AtomicUsize::new(0)) },
+        CountingInterceptor {
+            count: Arc::new(AtomicUsize::new(0)),
+        },
         10,
     );
     assert_eq!(advisor.order(), 10);
@@ -3335,19 +3359,22 @@ fn invocation_plan_catalog_deferred_v2() {
 
 #[test]
 fn invocation_error_display_variants() {
-    assert_eq!(format!("{}", InvocationError::Cancelled), "invocation cancelled");
-    
+    assert_eq!(
+        format!("{}", InvocationError::Cancelled),
+        "invocation cancelled"
+    );
+
     let err = InvocationError::PlanMismatch {
         expected: Operation::new("a", "b"),
         actual: Operation::new("c", "d"),
     };
     assert!(format!("{}", err).contains("plan mismatch"));
-    
+
     let err = InvocationError::PlanNotFound {
         operation: Operation::new("a", "b"),
     };
     assert!(format!("{}", err).contains("plan not found"));
-    
+
     let err = InvocationError::Target {
         source: Box::new(io::Error::new(io::ErrorKind::Other, "test")),
     };
@@ -3431,9 +3458,8 @@ fn invocation_output_trait_v2() {
 
 #[tokio::test]
 async fn local_invocation_plan_invoke_v2() {
-    let plan = vernal_aop::LocalInvocationPlanBuilder::new()
-        .build(Operation::new("test", "test"));
-    
+    let plan = vernal_aop::LocalInvocationPlanBuilder::new().build(Operation::new("test", "test"));
+
     let inv = Arc::new(Invocation::new(Operation::new("test", "test")));
     let target: std::rc::Rc<vernal_aop::LocalInvocationTarget> = std::rc::Rc::new(|_| {
         Box::pin(async { Ok(Box::new(42i32) as vernal_aop::LocalInvocationValue) })
@@ -3476,6 +3502,8 @@ fn operation_metadata_with_tag_v2() {
 
 #[test]
 fn operation_metadata_with_qualifier_v2() {
-    let meta = OperationMetadata::empty().with_qualifier("primary").unwrap();
+    let meta = OperationMetadata::empty()
+        .with_qualifier("primary")
+        .unwrap();
     assert_eq!(meta.qualifier(), Some("primary"));
 }

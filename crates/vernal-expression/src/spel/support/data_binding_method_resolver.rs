@@ -79,7 +79,11 @@ impl DataBindingMethodResolver {
     /// - `executor` — 方法执行闭包
     pub fn register_fn<F>(&self, name: impl Into<String>, executor: F)
     where
-        F: Fn(&dyn EvaluationContext, &TypedValue, &[TypedValue]) -> Result<TypedValue, AccessException>
+        F: Fn(
+                &dyn EvaluationContext,
+                &TypedValue,
+                &[TypedValue],
+            ) -> Result<TypedValue, AccessException>
             + Send
             + Sync
             + 'static,
@@ -150,7 +154,10 @@ mod tests {
     fn resolve_returns_none_for_unregistered_method() {
         let resolver = DataBindingMethodResolver::for_instance_method_invocation();
         let ctx = StandardEvaluationContext::new(TypedValue::null());
-        let target = TypedValue::new(ExpressionValue::String("hello".into()), TypeDescriptor::STRING);
+        let target = TypedValue::new(
+            ExpressionValue::String("hello".into()),
+            TypeDescriptor::STRING,
+        );
         let result = resolver.resolve(&ctx, &target, "nonexistent", &[]).unwrap();
         assert!(result.is_none());
     }
@@ -166,7 +173,10 @@ mod tests {
         });
 
         let ctx = StandardEvaluationContext::new(TypedValue::null());
-        let target = TypedValue::new(ExpressionValue::String("world".into()), TypeDescriptor::STRING);
+        let target = TypedValue::new(
+            ExpressionValue::String("world".into()),
+            TypeDescriptor::STRING,
+        );
         let result = resolver.resolve(&ctx, &target, "greet", &[]).unwrap();
         assert!(result.is_some());
     }

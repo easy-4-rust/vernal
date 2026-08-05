@@ -8,8 +8,8 @@
 //! 用于精确指定要注入的 Bean。此类负责匹配 `@Qualifier` 值与 Bean 的限定符。
 
 use std::any::TypeId;
-use std::sync::Mutex;
 use std::collections::HashMap;
+use std::sync::Mutex;
 
 use crate::Qualifier;
 
@@ -36,7 +36,9 @@ impl QualifierAnnotationAutowireCandidateResolver {
 
     /// 为指定类型注册一个限定符。
     pub fn register_qualifier(&self, type_id: TypeId, qualifier: String) {
-        self.qualifier_cache.lock().unwrap()
+        self.qualifier_cache
+            .lock()
+            .unwrap()
             .entry(type_id)
             .or_default()
             .push(qualifier);
@@ -44,7 +46,9 @@ impl QualifierAnnotationAutowireCandidateResolver {
 
     /// 获取指定类型的所有限定符。
     pub fn get_qualifiers(&self, type_id: TypeId) -> Vec<String> {
-        self.qualifier_cache.lock().unwrap()
+        self.qualifier_cache
+            .lock()
+            .unwrap()
             .get(&type_id)
             .cloned()
             .unwrap_or_default()
@@ -52,7 +56,9 @@ impl QualifierAnnotationAutowireCandidateResolver {
 
     /// 指定类型的限定符数量。
     pub fn qualifier_count(&self, type_id: TypeId) -> usize {
-        self.qualifier_cache.lock().unwrap()
+        self.qualifier_cache
+            .lock()
+            .unwrap()
             .get(&type_id)
             .map(|v| v.len())
             .unwrap_or(0)
@@ -70,7 +76,9 @@ impl QualifierAnnotationAutowireCandidateResolver {
 
     /// 判断指定类型是否包含指定限定符。
     pub fn has_qualifier(&self, type_id: TypeId, qualifier: &str) -> bool {
-        self.qualifier_cache.lock().unwrap()
+        self.qualifier_cache
+            .lock()
+            .unwrap()
             .get(&type_id)
             .map(|v| v.iter().any(|q| q == qualifier))
             .unwrap_or(false)
@@ -78,7 +86,9 @@ impl QualifierAnnotationAutowireCandidateResolver {
 
     /// 判断指定类型是否为自动装配候选（至少有一个限定符）。
     pub fn is_autowire_candidate(&self, type_id: TypeId) -> bool {
-        self.qualifier_cache.lock().unwrap()
+        self.qualifier_cache
+            .lock()
+            .unwrap()
             .get(&type_id)
             .map(|v| !v.is_empty())
             .unwrap_or(false)
@@ -86,7 +96,9 @@ impl QualifierAnnotationAutowireCandidateResolver {
 }
 
 impl Default for QualifierAnnotationAutowireCandidateResolver {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[cfg(test)]

@@ -75,7 +75,8 @@ impl StandardBeanExpressionResolver {
             return false;
         }
         // 其余字符必须是字母、数字、下划线或点（支持属性访问）
-        expr.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '.')
+        expr.chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '.')
     }
 }
 
@@ -123,24 +124,16 @@ impl BeanExpressionResolver for StandardBeanExpressionResolver {
                     Ok(val) => {
                         // 将 TypedValue 转换为 Arc<dyn Any+Send+Sync>
                         let result: Arc<dyn Any + Send + Sync> = match val.value() {
-                            vernal_expression::ExpressionValue::Null => {
-                                Arc::new(())
-                            }
+                            vernal_expression::ExpressionValue::Null => Arc::new(()),
                             vernal_expression::ExpressionValue::Boolean(b) => Arc::new(*b),
                             vernal_expression::ExpressionValue::Int(i) => Arc::new(*i),
                             vernal_expression::ExpressionValue::Long(l) => Arc::new(*l),
                             vernal_expression::ExpressionValue::Float(f) => Arc::new(*f),
                             vernal_expression::ExpressionValue::Double(d) => Arc::new(*d),
                             vernal_expression::ExpressionValue::String(s) => Arc::new(s.clone()),
-                            vernal_expression::ExpressionValue::List(l) => {
-                                Arc::new(l.clone())
-                            }
-                            vernal_expression::ExpressionValue::Map(m) => {
-                                Arc::new(m.clone())
-                            }
-                            _other => {
-                                Arc::new(val.clone())
-                            }
+                            vernal_expression::ExpressionValue::List(l) => Arc::new(l.clone()),
+                            vernal_expression::ExpressionValue::Map(m) => Arc::new(m.clone()),
+                            _other => Arc::new(val.clone()),
                         };
                         Ok(Some(result))
                     }
@@ -216,21 +209,37 @@ mod tests {
 
     #[test]
     fn is_simple_identifier_valid_names() {
-        assert!(StandardBeanExpressionResolver::is_simple_identifier("myBean"));
+        assert!(StandardBeanExpressionResolver::is_simple_identifier(
+            "myBean"
+        ));
         assert!(StandardBeanExpressionResolver::is_simple_identifier("user"));
-        assert!(StandardBeanExpressionResolver::is_simple_identifier("_private"));
-        assert!(StandardBeanExpressionResolver::is_simple_identifier("bean123"));
-        assert!(StandardBeanExpressionResolver::is_simple_identifier("user.name"));
-        assert!(StandardBeanExpressionResolver::is_simple_identifier("a.b.c"));
+        assert!(StandardBeanExpressionResolver::is_simple_identifier(
+            "_private"
+        ));
+        assert!(StandardBeanExpressionResolver::is_simple_identifier(
+            "bean123"
+        ));
+        assert!(StandardBeanExpressionResolver::is_simple_identifier(
+            "user.name"
+        ));
+        assert!(StandardBeanExpressionResolver::is_simple_identifier(
+            "a.b.c"
+        ));
     }
 
     #[test]
     fn is_simple_identifier_invalid_names() {
         assert!(!StandardBeanExpressionResolver::is_simple_identifier(""));
-        assert!(!StandardBeanExpressionResolver::is_simple_identifier("123abc"));
+        assert!(!StandardBeanExpressionResolver::is_simple_identifier(
+            "123abc"
+        ));
         assert!(!StandardBeanExpressionResolver::is_simple_identifier("1+1"));
-        assert!(!StandardBeanExpressionResolver::is_simple_identifier("'hello'"));
-        assert!(!StandardBeanExpressionResolver::is_simple_identifier("new Foo()"));
+        assert!(!StandardBeanExpressionResolver::is_simple_identifier(
+            "'hello'"
+        ));
+        assert!(!StandardBeanExpressionResolver::is_simple_identifier(
+            "new Foo()"
+        ));
         assert!(!StandardBeanExpressionResolver::is_simple_identifier("a-b"));
         assert!(!StandardBeanExpressionResolver::is_simple_identifier("a b"));
     }
@@ -240,7 +249,10 @@ mod tests {
     #[test]
     fn evaluate_registered_bean_name() {
         let resolver = StandardBeanExpressionResolver::new();
-        resolver.register_bean("myService".to_string(), Arc::new("service_impl".to_string()));
+        resolver.register_bean(
+            "myService".to_string(),
+            Arc::new("service_impl".to_string()),
+        );
         let result = resolver.evaluate("myService", None).unwrap();
         assert!(result.is_some());
         let val = result.unwrap();
@@ -312,7 +324,9 @@ mod tests {
     fn evaluate_with_bean_name_parameter() {
         let resolver = StandardBeanExpressionResolver::new();
         resolver.register_bean("contextBean".to_string(), Arc::new(42i32));
-        let result = resolver.evaluate("contextBean", Some("requestBean")).unwrap();
+        let result = resolver
+            .evaluate("contextBean", Some("requestBean"))
+            .unwrap();
         assert!(result.is_some());
     }
 
@@ -466,10 +480,16 @@ mod tests {
     #[test]
     fn evaluate_registered_bean_with_dot_notation() {
         let resolver = StandardBeanExpressionResolver::new();
-        resolver.register_bean("my.service".to_string(), Arc::new("service_value".to_string()));
+        resolver.register_bean(
+            "my.service".to_string(),
+            Arc::new("service_value".to_string()),
+        );
         let result = resolver.evaluate("my.service", None).unwrap();
         assert!(result.is_some());
-        assert_eq!(*result.unwrap().downcast_ref::<String>().unwrap(), "service_value");
+        assert_eq!(
+            *result.unwrap().downcast_ref::<String>().unwrap(),
+            "service_value"
+        );
     }
 
     #[test]

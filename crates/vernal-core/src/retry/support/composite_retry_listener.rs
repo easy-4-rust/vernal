@@ -63,8 +63,8 @@ impl RetryListener for CompositeRetryListener {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::atomic::{AtomicU32, Ordering};
     use std::sync::Arc;
+    use std::sync::atomic::{AtomicU32, Ordering};
 
     struct Counter {
         count: Arc<AtomicU32>,
@@ -85,8 +85,12 @@ mod tests {
         let first = Arc::new(AtomicU32::new(0));
         let second = Arc::new(AtomicU32::new(0));
         let mut composite = CompositeRetryListener::new();
-        composite.add_listener(Box::new(Counter { count: first.clone() }));
-        composite.add_listener(Box::new(Counter { count: second.clone() }));
+        composite.add_listener(Box::new(Counter {
+            count: first.clone(),
+        }));
+        composite.add_listener(Box::new(Counter {
+            count: second.clone(),
+        }));
         composite.on_start(0);
         assert_eq!(first.load(Ordering::SeqCst), 1);
         assert_eq!(second.load(Ordering::SeqCst), 1);

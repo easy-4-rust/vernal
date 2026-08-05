@@ -9,10 +9,17 @@
 /// 定义了 Bean 注册表的基本操作。
 pub trait BeanRegistry: Send + Sync {
     /// 注册一个新的 Bean 定义。
-    fn register_bean_definition(&mut self, bean_name: &str, definition: Box<dyn std::any::Any + Send + Sync>) -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
+    fn register_bean_definition(
+        &mut self,
+        bean_name: &str,
+        definition: Box<dyn std::any::Any + Send + Sync>,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
 
     /// 移除指定名称的 Bean 定义。
-    fn remove_bean_definition(&mut self, bean_name: &str) -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
+    fn remove_bean_definition(
+        &mut self,
+        bean_name: &str,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
 
     /// 获取指定名称的 Bean 定义。
     fn get_bean_definition(&self, bean_name: &str) -> Option<&dyn std::any::Any>;
@@ -38,23 +45,34 @@ mod tests {
 
     impl SimpleBeanRegistry {
         fn new() -> Self {
-            Self { definitions: HashMap::new() }
+            Self {
+                definitions: HashMap::new(),
+            }
         }
     }
 
     impl BeanRegistry for SimpleBeanRegistry {
-        fn register_bean_definition(&mut self, bean_name: &str, definition: Box<dyn std::any::Any + Send + Sync>) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        fn register_bean_definition(
+            &mut self,
+            bean_name: &str,
+            definition: Box<dyn std::any::Any + Send + Sync>,
+        ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             self.definitions.insert(bean_name.to_string(), definition);
             Ok(())
         }
 
-        fn remove_bean_definition(&mut self, bean_name: &str) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        fn remove_bean_definition(
+            &mut self,
+            bean_name: &str,
+        ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             self.definitions.remove(bean_name);
             Ok(())
         }
 
         fn get_bean_definition(&self, bean_name: &str) -> Option<&dyn std::any::Any> {
-            self.definitions.get(bean_name).map(|v| v.as_ref() as &dyn std::any::Any)
+            self.definitions
+                .get(bean_name)
+                .map(|v| v.as_ref() as &dyn std::any::Any)
         }
 
         fn contains_bean_definition(&self, bean_name: &str) -> bool {
@@ -75,7 +93,9 @@ mod tests {
         let mut registry = SimpleBeanRegistry::new();
         assert_eq!(registry.bean_definition_count(), 0);
 
-        registry.register_bean_definition("test", Box::new(String::from("value"))).unwrap();
+        registry
+            .register_bean_definition("test", Box::new(String::from("value")))
+            .unwrap();
         assert_eq!(registry.bean_definition_count(), 1);
         assert!(registry.contains_bean_definition("test"));
     }
@@ -85,8 +105,12 @@ mod tests {
     #[test]
     fn test_bean_registry_multiple() {
         let mut registry = SimpleBeanRegistry::new();
-        registry.register_bean_definition("bean1", Box::new(String::from("v1"))).unwrap();
-        registry.register_bean_definition("bean2", Box::new(42i32)).unwrap();
+        registry
+            .register_bean_definition("bean1", Box::new(String::from("v1")))
+            .unwrap();
+        registry
+            .register_bean_definition("bean2", Box::new(42i32))
+            .unwrap();
         assert_eq!(registry.bean_definition_count(), 2);
         assert!(registry.contains_bean_definition("bean1"));
         assert!(registry.contains_bean_definition("bean2"));
@@ -95,7 +119,9 @@ mod tests {
     #[test]
     fn test_bean_registry_remove() {
         let mut registry = SimpleBeanRegistry::new();
-        registry.register_bean_definition("bean1", Box::new(String::from("v1"))).unwrap();
+        registry
+            .register_bean_definition("bean1", Box::new(String::from("v1")))
+            .unwrap();
         assert_eq!(registry.bean_definition_count(), 1);
         registry.remove_bean_definition("bean1").unwrap();
         assert_eq!(registry.bean_definition_count(), 0);
@@ -105,7 +131,9 @@ mod tests {
     #[test]
     fn test_bean_registry_get() {
         let mut registry = SimpleBeanRegistry::new();
-        registry.register_bean_definition("bean1", Box::new(String::from("v1"))).unwrap();
+        registry
+            .register_bean_definition("bean1", Box::new(String::from("v1")))
+            .unwrap();
         let def = registry.get_bean_definition("bean1");
         assert!(def.is_some());
     }
@@ -120,8 +148,12 @@ mod tests {
     #[test]
     fn test_bean_registry_names() {
         let mut registry = SimpleBeanRegistry::new();
-        registry.register_bean_definition("bean1", Box::new(String::from("v1"))).unwrap();
-        registry.register_bean_definition("bean2", Box::new(42i32)).unwrap();
+        registry
+            .register_bean_definition("bean1", Box::new(String::from("v1")))
+            .unwrap();
+        registry
+            .register_bean_definition("bean2", Box::new(42i32))
+            .unwrap();
         let names = registry.bean_definition_names();
         assert_eq!(names.len(), 2);
         assert!(names.contains(&"bean1".to_string()));

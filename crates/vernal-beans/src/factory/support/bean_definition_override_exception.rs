@@ -24,14 +24,14 @@ pub struct BeanDefinitionOverrideException {
 impl BeanDefinitionOverrideException {
     /// 创建新的异常。
     pub fn new(message: impl Into<String>) -> Self {
-        Self { bean_name: String::new(), message: message.into() }
+        Self {
+            bean_name: String::new(),
+            message: message.into(),
+        }
     }
 
     /// 创建带 Bean 名称的异常。
-    pub fn with_bean_name(
-        bean_name: impl Into<String>,
-        existing_name: impl Into<String>,
-    ) -> Self {
+    pub fn with_bean_name(bean_name: impl Into<String>, existing_name: impl Into<String>) -> Self {
         let bean = bean_name.into();
         let existing = existing_name.into();
         Self {
@@ -44,10 +44,14 @@ impl BeanDefinitionOverrideException {
     }
 
     /// 获取错误消息。
-    pub fn message(&self) -> &str { &self.message }
+    pub fn message(&self) -> &str {
+        &self.message
+    }
 
     /// 获取 Bean 名称。
-    pub fn bean_name(&self) -> &str { &self.bean_name }
+    pub fn bean_name(&self) -> &str {
+        &self.bean_name
+    }
 }
 
 impl fmt::Display for BeanDefinitionOverrideException {

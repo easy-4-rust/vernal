@@ -24,7 +24,9 @@ impl SpringFactoriesLoader {
     /// # 错误
     ///
     /// 资源读取失败时返回 [`std::io::Error`]。
-    pub fn load_factory_names(resource: &dyn Resource) -> std::io::Result<BTreeMap<String, Vec<String>>> {
+    pub fn load_factory_names(
+        resource: &dyn Resource,
+    ) -> std::io::Result<BTreeMap<String, Vec<String>>> {
         let content = resource.read_string()?;
         let mut flat = std::collections::HashMap::new();
         parse_properties(&content, &mut flat);
@@ -56,7 +58,10 @@ mod tests {
         let impls = names.get("com.example.Service").unwrap();
         assert_eq!(
             impls,
-            &vec!["com.example.ImplA".to_string(), "com.example.ImplB".to_string()]
+            &vec![
+                "com.example.ImplA".to_string(),
+                "com.example.ImplB".to_string()
+            ]
         );
     }
 

@@ -65,11 +65,9 @@ mod tests {
         // B 类（边界行为）：对标 Spring 多位置合并覆盖
         let first = ByteArrayResource::new(b"k=first\nonly=1\n".to_vec());
         let second = ByteArrayResource::new(b"k=second\n".to_vec());
-        let merged = PropertiesLoaderUtils::load_all_properties(&[
-            Box::new(first),
-            Box::new(second),
-        ])
-        .unwrap();
+        let merged =
+            PropertiesLoaderUtils::load_all_properties(&[Box::new(first), Box::new(second)])
+                .unwrap();
         assert_eq!(merged.get("k").map(String::as_str), Some("second"));
         assert_eq!(merged.get("only").map(String::as_str), Some("1"));
     }

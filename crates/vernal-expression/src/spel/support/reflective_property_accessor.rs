@@ -21,8 +21,13 @@ pub struct PropertyBinding {
     /// getter 实现。
     pub getter: Arc<dyn Fn(&(dyn std::any::Any + '_)) -> Option<ExpressionValue> + Send + Sync>,
     /// setter 实现。
-    pub setter:
-        Option<Arc<dyn Fn(&(dyn std::any::Any + '_), ExpressionValue) -> Result<(), AccessException> + Send + Sync>>,
+    pub setter: Option<
+        Arc<
+            dyn Fn(&(dyn std::any::Any + '_), ExpressionValue) -> Result<(), AccessException>
+                + Send
+                + Sync,
+        >,
+    >,
 }
 
 // 用 inventory 静态收集器（运行时通过 `inventory::submit!` 注册）
@@ -43,15 +48,13 @@ impl PropertyBinding {
     }
 
     /// 创建 getter+setter 绑定。
-    pub fn accessor<G, S>(
-        target_type_id: TypeId,
-        name: &'static str,
-        getter: G,
-        setter: S,
-    ) -> Self
+    pub fn accessor<G, S>(target_type_id: TypeId, name: &'static str, getter: G, setter: S) -> Self
     where
         G: Fn(&(dyn std::any::Any + '_)) -> Option<ExpressionValue> + Send + Sync + 'static,
-        S: Fn(&(dyn std::any::Any + '_), ExpressionValue) -> Result<(), AccessException> + Send + Sync + 'static,
+        S: Fn(&(dyn std::any::Any + '_), ExpressionValue) -> Result<(), AccessException>
+            + Send
+            + Sync
+            + 'static,
     {
         Self {
             target_type_id,
@@ -64,7 +67,10 @@ impl PropertyBinding {
 
 /// inventory 注册收集器（按需收集）。
 pub fn property_bindings() -> Vec<PropertyBinding> {
-    inventory::iter::<PropertyBinding>.into_iter().cloned().collect()
+    inventory::iter::<PropertyBinding>
+        .into_iter()
+        .cloned()
+        .collect()
 }
 
 /// 属性 binding 计数。
@@ -98,12 +104,7 @@ impl Default for ReflectivePropertyAccessor {
 }
 
 impl PropertyAccessor for ReflectivePropertyAccessor {
-    fn can_read(
-        &self,
-        _context: &dyn EvaluationContext,
-        target: &TypedValue,
-        name: &str,
-    ) -> bool {
+    fn can_read(&self, _context: &dyn EvaluationContext, target: &TypedValue, name: &str) -> bool {
         let type_id = target.value().type_id();
         self.get_bindings()
             .iter()
@@ -138,12 +139,7 @@ impl PropertyAccessor for ReflectivePropertyAccessor {
         }
     }
 
-    fn can_write(
-        &self,
-        _context: &dyn EvaluationContext,
-        target: &TypedValue,
-        name: &str,
-    ) -> bool {
+    fn can_write(&self, _context: &dyn EvaluationContext, target: &TypedValue, name: &str) -> bool {
         let type_id = target.value().type_id();
         self.get_bindings()
             .iter()
@@ -159,7 +155,8 @@ impl PropertyAccessor for ReflectivePropertyAccessor {
     ) -> Result<(), AccessException> {
         let _ = (target, name, new_value);
         Err(AccessException::new(
-            "ReflectivePropertyAccessor::write 需要 Object 支持内部可变性（Phase F 完整实现）".to_string(),
+            "ReflectivePropertyAccessor::write 需要 Object 支持内部可变性（Phase F 完整实现）"
+                .to_string(),
         ))
     }
 }

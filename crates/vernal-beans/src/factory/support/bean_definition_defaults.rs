@@ -30,37 +30,59 @@ pub struct BeanDefinitionDefaults {
 
 impl BeanDefinitionDefaults {
     /// 创建新的 BeanDefinitionDefaults。
-    pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
 
     /// 设置懒加载
-    pub fn set_lazy_init(&mut self, v: bool) { self.lazy_init = v; }
+    pub fn set_lazy_init(&mut self, v: bool) {
+        self.lazy_init = v;
+    }
 
     /// 是否懒加载
-    pub fn is_lazy_init(&self) -> bool { self.lazy_init }
+    pub fn is_lazy_init(&self) -> bool {
+        self.lazy_init
+    }
 
     /// 设置自动装配
-    pub fn set_autowire(&mut self, v: bool) { self.autowire = v; }
+    pub fn set_autowire(&mut self, v: bool) {
+        self.autowire = v;
+    }
 
     /// 是否自动装配
-    pub fn is_autowire(&self) -> bool { self.autowire }
+    pub fn is_autowire(&self) -> bool {
+        self.autowire
+    }
 
     /// 设置依赖检查
-    pub fn set_dependency_check(&mut self, v: bool) { self.dependency_check = v; }
+    pub fn set_dependency_check(&mut self, v: bool) {
+        self.dependency_check = v;
+    }
 
     /// 是否依赖检查
-    pub fn is_dependency_check(&self) -> bool { self.dependency_check }
+    pub fn is_dependency_check(&self) -> bool {
+        self.dependency_check
+    }
 
     /// 设置自动装配候选
-    pub fn set_autowire_candidate(&mut self, v: bool) { self.autowire_candidate = v; }
+    pub fn set_autowire_candidate(&mut self, v: bool) {
+        self.autowire_candidate = v;
+    }
 
     /// 是否自动装配候选
-    pub fn is_autowire_candidate(&self) -> bool { self.autowire_candidate }
+    pub fn is_autowire_candidate(&self) -> bool {
+        self.autowire_candidate
+    }
 
     /// 设置主要候选
-    pub fn set_primary(&mut self, v: bool) { self.primary = v; }
+    pub fn set_primary(&mut self, v: bool) {
+        self.primary = v;
+    }
 
     /// 是否主要候选
-    pub fn is_primary(&self) -> bool { self.primary }
+    pub fn is_primary(&self) -> bool {
+        self.primary
+    }
 
     /// 从另一个 BeanDefinitionDefaults 复制所有值。
     ///
@@ -75,8 +97,11 @@ impl BeanDefinitionDefaults {
 
     /// 检查是否有任何非默认值（即至少有一个字段为 true）。
     pub fn has_non_default_values(&self) -> bool {
-        self.lazy_init || self.autowire || self.dependency_check
-            || self.autowire_candidate || self.primary
+        self.lazy_init
+            || self.autowire
+            || self.dependency_check
+            || self.autowire_candidate
+            || self.primary
     }
 
     /// 重置所有值为默认值（false）。

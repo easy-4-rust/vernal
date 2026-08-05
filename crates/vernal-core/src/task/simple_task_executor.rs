@@ -16,7 +16,9 @@ impl SimpleTaskExecutor {
     /// 创建默认执行器。
     #[must_use]
     pub fn new() -> Self {
-        Self { name: "simple".to_string() }
+        Self {
+            name: "simple".to_string(),
+        }
     }
 
     /// 创建带名称的执行器。

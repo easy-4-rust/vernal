@@ -4,9 +4,9 @@
 
 use std::io;
 
+use super::ResourceLoader;
 use super::class_path_resource::ClassPathResource;
 use super::resource::Resource;
-use super::ResourceLoader;
 
 /// 类相对资源加载器。
 ///
@@ -49,7 +49,11 @@ mod tests {
         // A 类（合同对齐）：对标 Spring 相对路径拼接
         let loader = ClassRelativeResourceLoader::new("com/example/config");
         let resource = loader.load("app.properties").unwrap();
-        assert!(resource.description().contains("com/example/config/app.properties"));
+        assert!(
+            resource
+                .description()
+                .contains("com/example/config/app.properties")
+        );
     }
 
     #[test]
@@ -57,6 +61,10 @@ mod tests {
         // B 类（边界行为）：对标 Spring 忽略前导 `/`
         let loader = ClassRelativeResourceLoader::new("com/example");
         let resource = loader.load("/app.properties").unwrap();
-        assert!(resource.description().contains("com/example/app.properties"));
+        assert!(
+            resource
+                .description()
+                .contains("com/example/app.properties")
+        );
     }
 }

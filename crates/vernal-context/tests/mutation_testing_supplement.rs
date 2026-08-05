@@ -5,8 +5,8 @@
 
 use std::sync::Arc;
 
-use vernal_context::{ApplicationContext, VernalApplicationBuilder};
 use vernal_beans::{Component, ComponentDefinition};
+use vernal_context::{ApplicationContext, VernalApplicationBuilder};
 
 // ════════════════════════════════════════════════════════════════════
 // 测试用类型
@@ -43,7 +43,11 @@ async fn test_context_id_not_empty() {
 async fn test_context_id_contains_prefix() {
     let context = build_context();
     let id = context.id();
-    assert!(id.contains("vernal-context"), "id should contain 'vernal-context' prefix, got: {}", id);
+    assert!(
+        id.contains("vernal-context"),
+        "id should contain 'vernal-context' prefix, got: {}",
+        id
+    );
 }
 
 /// 验证 id() 返回稳定值
@@ -111,7 +115,10 @@ async fn test_context_set_application_name() {
     let context = build_context();
     context.set_application_name("my-app".to_string());
     let name = context.application_name();
-    assert_eq!(name, "my-app", "set_application_name should change the name");
+    assert_eq!(
+        name, "my-app",
+        "set_application_name should change the name"
+    );
 }
 
 /// 验证 set_application_name() 可以设置空字符串
@@ -120,7 +127,10 @@ async fn test_context_set_application_name_empty() {
     let context = build_context();
     context.set_application_name(String::new());
     let name = context.application_name();
-    assert!(name.is_empty(), "set_application_name with empty string should work");
+    assert!(
+        name.is_empty(),
+        "set_application_name with empty string should work"
+    );
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -132,7 +142,10 @@ async fn test_context_set_application_name_empty() {
 async fn test_context_display_name_default() {
     let context = build_context();
     let name = context.display_name();
-    assert!(!name.is_empty(), "display_name should not be empty by default");
+    assert!(
+        !name.is_empty(),
+        "display_name should not be empty by default"
+    );
 }
 
 /// 验证 display_name() 返回稳定值
@@ -154,7 +167,10 @@ async fn test_context_set_display_name() {
     let context = build_context();
     context.set_display_name("My Application".to_string());
     let name = context.display_name();
-    assert_eq!(name, "My Application", "set_display_name should change the display name");
+    assert_eq!(
+        name, "My Application",
+        "set_display_name should change the display name"
+    );
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -191,7 +207,10 @@ async fn test_context_set_parent_none() {
     context.set_parent(Some(parent.clone()));
     assert!(context.parent().is_some());
     context.set_parent(None);
-    assert!(context.parent().is_none(), "parent should be None after set_parent(None)");
+    assert!(
+        context.parent().is_none(),
+        "parent should be None after set_parent(None)"
+    );
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -203,7 +222,11 @@ async fn test_context_set_parent_none() {
 async fn test_context_startup_date() {
     let context = build_context();
     let date = context.startup_date();
-    assert!(date > 0, "startup_date should be greater than 0, got: {}", date);
+    assert!(
+        date > 0,
+        "startup_date should be greater than 0, got: {}",
+        date
+    );
 }
 
 /// 验证 startup_date() 返回稳定值
@@ -290,5 +313,9 @@ async fn test_project_status_stable() {
     let context = build_context();
     let report1 = context.startup_report().await;
     let report2 = context.startup_report().await;
-    assert_eq!(report1.project_status(), report2.project_status(), "project_status should be stable");
+    assert_eq!(
+        report1.project_status(),
+        report2.project_status(),
+        "project_status should be stable"
+    );
 }

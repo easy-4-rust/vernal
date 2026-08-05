@@ -102,7 +102,10 @@ mod tests {
     fn set_as_text_valid_uri_with_colon() {
         let mut editor = URIEditor::new();
         editor.set_as_text("https://example.com").unwrap();
-        assert_eq!(editor.get_as_text(), Some("https://example.com".to_string()));
+        assert_eq!(
+            editor.get_as_text(),
+            Some("https://example.com".to_string())
+        );
     }
 
     #[test]
@@ -138,7 +141,10 @@ mod tests {
     fn set_as_text_trims_whitespace() {
         let mut editor = URIEditor::new();
         editor.set_as_text("  https://example.com  ").unwrap();
-        assert_eq!(editor.get_as_text(), Some("https://example.com".to_string()));
+        assert_eq!(
+            editor.get_as_text(),
+            Some("https://example.com".to_string())
+        );
     }
 
     #[test]
@@ -167,20 +173,29 @@ mod tests {
     fn set_as_text_ftp_uri() {
         let mut editor = URIEditor::new();
         editor.set_as_text("ftp://files.example.com").unwrap();
-        assert_eq!(editor.get_as_text(), Some("ftp://files.example.com".to_string()));
+        assert_eq!(
+            editor.get_as_text(),
+            Some("ftp://files.example.com".to_string())
+        );
     }
 
     #[test]
     fn set_as_text_mailto_uri() {
         let mut editor = URIEditor::new();
         editor.set_as_text("mailto:user@example.com").unwrap();
-        assert_eq!(editor.get_as_text(), Some("mailto:user@example.com".to_string()));
+        assert_eq!(
+            editor.get_as_text(),
+            Some("mailto:user@example.com".to_string())
+        );
     }
 
     #[test]
     fn set_as_text_file_uri() {
         let mut editor = URIEditor::new();
         editor.set_as_text("file:///path/to/file").unwrap();
-        assert_eq!(editor.get_as_text(), Some("file:///path/to/file".to_string()));
+        assert_eq!(
+            editor.get_as_text(),
+            Some("file:///path/to/file".to_string())
+        );
     }
 }

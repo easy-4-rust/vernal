@@ -2,9 +2,9 @@
 //!
 //! 对标 Spring `org.springframework.util` 中的适配器。
 
+use super::multi_value_map::MultiValueMapTrait;
 use std::collections::HashMap;
 use std::hash::Hash;
-use super::multi_value_map::MultiValueMapTrait;
 
 /// 包装任意 `Map<K, Vec<V>>` 实现 `MultiValueMapTrait`。对标 Spring `MultiValueMapAdapter`。
 pub struct MultiValueMapAdapter<K: Eq + Hash, V> {
@@ -14,40 +14,75 @@ pub struct MultiValueMapAdapter<K: Eq + Hash, V> {
 impl<K: Eq + Hash, V> MultiValueMapAdapter<K, V> {
     /// 使用给定的底层 Map 创建适配器。
     #[must_use]
-    pub fn new(target: HashMap<K, Vec<V>>) -> Self { Self { target } }
+    pub fn new(target: HashMap<K, Vec<V>>) -> Self {
+        Self { target }
+    }
     /// 返回键的个数。
     #[must_use]
-    pub fn len(&self) -> usize { self.target.len() }
+    pub fn len(&self) -> usize {
+        self.target.len()
+    }
     /// 判断底层 Map 是否为空。
     #[must_use]
-    pub fn is_empty(&self) -> bool { self.target.is_empty() }
+    pub fn is_empty(&self) -> bool {
+        self.target.is_empty()
+    }
     /// 取每个键的第一个值，转换为单值 Map。
     #[must_use]
-    pub fn to_single_value_map(&self) -> HashMap<K, V> where K: Clone, V: Clone {
-        self.target.iter().filter_map(|(k, vs)| vs.first().map(|v| (k.clone(), v.clone()))).collect()
+    pub fn to_single_value_map(&self) -> HashMap<K, V>
+    where
+        K: Clone,
+        V: Clone,
+    {
+        self.target
+            .iter()
+            .filter_map(|(k, vs)| vs.first().map(|v| (k.clone(), v.clone())))
+            .collect()
     }
     /// 获取底层 Map 的不可变引用。
     #[must_use]
-    pub fn as_inner(&self) -> &HashMap<K, Vec<V>> { &self.target }
+    pub fn as_inner(&self) -> &HashMap<K, Vec<V>> {
+        &self.target
+    }
     /// 获取底层 Map 的可变引用。
-    pub fn as_inner_mut(&mut self) -> &mut HashMap<K, Vec<V>> { &mut self.target }
+    pub fn as_inner_mut(&mut self) -> &mut HashMap<K, Vec<V>> {
+        &mut self.target
+    }
     /// 消耗自身，返回底层 Map。
     #[must_use]
-    pub fn into_inner(self) -> HashMap<K, Vec<V>> { self.target }
+    pub fn into_inner(self) -> HashMap<K, Vec<V>> {
+        self.target
+    }
 }
 
 impl<K: Eq + Hash, V> MultiValueMapTrait<K, V> for MultiValueMapAdapter<K, V> {
-    fn get_first(&self, key: &K) -> Option<&V> { self.target.get(key).and_then(|vs| vs.first()) }
-    fn add(&mut self, key: K, value: V) { self.target.entry(key).or_default().push(value); }
-    fn set(&mut self, key: K, value: V) { self.target.insert(key, vec![value]); }
-    fn get_all(&self, key: &K) -> Option<&[V]> { self.target.get(key).map(Vec::as_slice) }
-    fn len(&self) -> usize { self.target.len() }
-    fn is_empty(&self) -> bool { self.target.is_empty() }
-    fn contains_key(&self, key: &K) -> bool { self.target.contains_key(key) }
+    fn get_first(&self, key: &K) -> Option<&V> {
+        self.target.get(key).and_then(|vs| vs.first())
+    }
+    fn add(&mut self, key: K, value: V) {
+        self.target.entry(key).or_default().push(value);
+    }
+    fn set(&mut self, key: K, value: V) {
+        self.target.insert(key, vec![value]);
+    }
+    fn get_all(&self, key: &K) -> Option<&[V]> {
+        self.target.get(key).map(Vec::as_slice)
+    }
+    fn len(&self) -> usize {
+        self.target.len()
+    }
+    fn is_empty(&self) -> bool {
+        self.target.is_empty()
+    }
+    fn contains_key(&self, key: &K) -> bool {
+        self.target.contains_key(key)
+    }
 }
 
 impl<K: Eq + Hash, V> Default for MultiValueMapAdapter<K, V> {
-    fn default() -> Self { Self::new(HashMap::new()) }
+    fn default() -> Self {
+        Self::new(HashMap::new())
+    }
 }
 
 /// 多值 Map → 单值 Map 实时视图。对标 Spring `MultiToSingleValueMapAdapter`。
@@ -61,20 +96,32 @@ impl<'a, K: Eq + Hash, V, M: MultiValueMapTrait<K, V>> MultiToSingleValueMapAdap
     /// 基于给定的多值 Map 创建只读视图。
     #[must_use]
     pub fn new(delegate: &'a M) -> Self {
-        Self { delegate, _k: std::marker::PhantomData, _v: std::marker::PhantomData }
+        Self {
+            delegate,
+            _k: std::marker::PhantomData,
+            _v: std::marker::PhantomData,
+        }
     }
     /// 返回键对应的第一个值。
     #[must_use]
-    pub fn get(&self, key: &K) -> Option<&V> { self.delegate.get_first(key) }
+    pub fn get(&self, key: &K) -> Option<&V> {
+        self.delegate.get_first(key)
+    }
     /// 返回键的个数。
     #[must_use]
-    pub fn len(&self) -> usize { self.delegate.len() }
+    pub fn len(&self) -> usize {
+        self.delegate.len()
+    }
     /// 判断底层 Map 是否为空。
     #[must_use]
-    pub fn is_empty(&self) -> bool { self.delegate.is_empty() }
+    pub fn is_empty(&self) -> bool {
+        self.delegate.is_empty()
+    }
     /// 判断是否包含指定键。
     #[must_use]
-    pub fn contains_key(&self, key: &K) -> bool { self.delegate.contains_key(key) }
+    pub fn contains_key(&self, key: &K) -> bool {
+        self.delegate.contains_key(key)
+    }
 }
 
 /// 单值 Map → 多值 Map 包装。对标 Spring `SingleToMultiValueMapAdapter`。
@@ -85,26 +132,50 @@ pub struct SingleToMultiValueMapAdapter<K: Eq + Hash, V> {
 impl<K: Eq + Hash, V> SingleToMultiValueMapAdapter<K, V> {
     /// 使用给定的单值 Map 创建包装。
     #[must_use]
-    pub fn new(target: HashMap<K, V>) -> Self { Self { target } }
+    pub fn new(target: HashMap<K, V>) -> Self {
+        Self { target }
+    }
     /// 返回键的个数。
     #[must_use]
-    pub fn len(&self) -> usize { self.target.len() }
+    pub fn len(&self) -> usize {
+        self.target.len()
+    }
     /// 判断底层 Map 是否为空。
     #[must_use]
-    pub fn is_empty(&self) -> bool { self.target.is_empty() }
+    pub fn is_empty(&self) -> bool {
+        self.target.is_empty()
+    }
     /// 消耗自身，返回底层单值 Map。
     #[must_use]
-    pub fn into_single_value_map(self) -> HashMap<K, V> { self.target }
+    pub fn into_single_value_map(self) -> HashMap<K, V> {
+        self.target
+    }
 }
 
-impl<K: Eq + Hash + Clone, V: Clone> MultiValueMapTrait<K, V> for SingleToMultiValueMapAdapter<K, V> {
-    fn get_first(&self, key: &K) -> Option<&V> { self.target.get(key) }
-    fn add(&mut self, key: K, value: V) { self.target.entry(key).or_insert(value); }
-    fn set(&mut self, key: K, value: V) { self.target.insert(key, value); }
-    fn get_all(&self, _key: &K) -> Option<&[V]> { None }
-    fn len(&self) -> usize { self.target.len() }
-    fn is_empty(&self) -> bool { self.target.is_empty() }
-    fn contains_key(&self, key: &K) -> bool { self.target.contains_key(key) }
+impl<K: Eq + Hash + Clone, V: Clone> MultiValueMapTrait<K, V>
+    for SingleToMultiValueMapAdapter<K, V>
+{
+    fn get_first(&self, key: &K) -> Option<&V> {
+        self.target.get(key)
+    }
+    fn add(&mut self, key: K, value: V) {
+        self.target.entry(key).or_insert(value);
+    }
+    fn set(&mut self, key: K, value: V) {
+        self.target.insert(key, value);
+    }
+    fn get_all(&self, _key: &K) -> Option<&[V]> {
+        None
+    }
+    fn len(&self) -> usize {
+        self.target.len()
+    }
+    fn is_empty(&self) -> bool {
+        self.target.is_empty()
+    }
+    fn contains_key(&self, key: &K) -> bool {
+        self.target.contains_key(key)
+    }
 }
 
 /// 多值 Map 的 Stream 收集器。对标 Spring `MultiValueMapCollector`。
@@ -115,22 +186,32 @@ pub struct MultiValueMapCollector<K: Eq + Hash, V> {
 impl<K: Eq + Hash, V> MultiValueMapCollector<K, V> {
     /// 消耗收集器，返回收集到的多值 Map。
     #[must_use]
-    pub fn into_map(self) -> HashMap<K, Vec<V>> { self.map }
+    pub fn into_map(self) -> HashMap<K, Vec<V>> {
+        self.map
+    }
 }
 
 impl<K: Eq + Hash, V> Default for MultiValueMapCollector<K, V> {
-    fn default() -> Self { Self { map: HashMap::new() } }
+    fn default() -> Self {
+        Self {
+            map: HashMap::new(),
+        }
+    }
 }
 
 impl<K: Eq + Hash, V> Extend<(K, V)> for MultiValueMapCollector<K, V> {
     fn extend<I: IntoIterator<Item = (K, V)>>(&mut self, iter: I) {
-        for (k, v) in iter { self.map.entry(k).or_default().push(v); }
+        for (k, v) in iter {
+            self.map.entry(k).or_default().push(v);
+        }
     }
 }
 
 impl<K: Eq + Hash, V> FromIterator<(K, V)> for MultiValueMapCollector<K, V> {
     fn from_iter<I: IntoIterator<Item = (K, V)>>(iter: I) -> Self {
-        let mut c = Self::default(); c.extend(iter); c
+        let mut c = Self::default();
+        c.extend(iter);
+        c
     }
 }
 

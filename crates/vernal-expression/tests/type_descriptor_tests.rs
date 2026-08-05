@@ -231,8 +231,14 @@ fn is_big_false_for_non_big_types() {
 
 #[test]
 fn widen_same_type_returns_self() {
-    assert_eq!(PrimitiveKind::Int.widen(PrimitiveKind::Int), PrimitiveKind::Int);
-    assert_eq!(PrimitiveKind::Long.widen(PrimitiveKind::Long), PrimitiveKind::Long);
+    assert_eq!(
+        PrimitiveKind::Int.widen(PrimitiveKind::Int),
+        PrimitiveKind::Int
+    );
+    assert_eq!(
+        PrimitiveKind::Long.widen(PrimitiveKind::Long),
+        PrimitiveKind::Long
+    );
     assert_eq!(
         PrimitiveKind::BigDecimal.widen(PrimitiveKind::BigDecimal),
         PrimitiveKind::BigDecimal
@@ -241,12 +247,30 @@ fn widen_same_type_returns_self() {
 
 #[test]
 fn widen_narrow_to_wide() {
-    assert_eq!(PrimitiveKind::Byte.widen(PrimitiveKind::Short), PrimitiveKind::Short);
-    assert_eq!(PrimitiveKind::Byte.widen(PrimitiveKind::Int), PrimitiveKind::Int);
-    assert_eq!(PrimitiveKind::Byte.widen(PrimitiveKind::Long), PrimitiveKind::Long);
-    assert_eq!(PrimitiveKind::Byte.widen(PrimitiveKind::BigInt), PrimitiveKind::BigInt);
-    assert_eq!(PrimitiveKind::Byte.widen(PrimitiveKind::Float), PrimitiveKind::Float);
-    assert_eq!(PrimitiveKind::Byte.widen(PrimitiveKind::Double), PrimitiveKind::Double);
+    assert_eq!(
+        PrimitiveKind::Byte.widen(PrimitiveKind::Short),
+        PrimitiveKind::Short
+    );
+    assert_eq!(
+        PrimitiveKind::Byte.widen(PrimitiveKind::Int),
+        PrimitiveKind::Int
+    );
+    assert_eq!(
+        PrimitiveKind::Byte.widen(PrimitiveKind::Long),
+        PrimitiveKind::Long
+    );
+    assert_eq!(
+        PrimitiveKind::Byte.widen(PrimitiveKind::BigInt),
+        PrimitiveKind::BigInt
+    );
+    assert_eq!(
+        PrimitiveKind::Byte.widen(PrimitiveKind::Float),
+        PrimitiveKind::Float
+    );
+    assert_eq!(
+        PrimitiveKind::Byte.widen(PrimitiveKind::Double),
+        PrimitiveKind::Double
+    );
     assert_eq!(
         PrimitiveKind::Byte.widen(PrimitiveKind::BigDecimal),
         PrimitiveKind::BigDecimal
@@ -255,17 +279,35 @@ fn widen_narrow_to_wide() {
 
 #[test]
 fn widen_wide_to_narrow_returns_wide() {
-    assert_eq!(PrimitiveKind::Double.widen(PrimitiveKind::Int), PrimitiveKind::Double);
-    assert_eq!(PrimitiveKind::BigDecimal.widen(PrimitiveKind::Float), PrimitiveKind::BigDecimal);
-    assert_eq!(PrimitiveKind::Long.widen(PrimitiveKind::Byte), PrimitiveKind::Long);
+    assert_eq!(
+        PrimitiveKind::Double.widen(PrimitiveKind::Int),
+        PrimitiveKind::Double
+    );
+    assert_eq!(
+        PrimitiveKind::BigDecimal.widen(PrimitiveKind::Float),
+        PrimitiveKind::BigDecimal
+    );
+    assert_eq!(
+        PrimitiveKind::Long.widen(PrimitiveKind::Byte),
+        PrimitiveKind::Long
+    );
 }
 
 #[test]
 fn widen_non_numeric_types_returns_self() {
     // Null has width 0, so self (also 0) >= other (0) => self
-    assert_eq!(PrimitiveKind::Null.widen(PrimitiveKind::Null), PrimitiveKind::Null);
-    assert_eq!(PrimitiveKind::Boolean.widen(PrimitiveKind::Null), PrimitiveKind::Boolean);
-    assert_eq!(PrimitiveKind::String.widen(PrimitiveKind::Char), PrimitiveKind::String);
+    assert_eq!(
+        PrimitiveKind::Null.widen(PrimitiveKind::Null),
+        PrimitiveKind::Null
+    );
+    assert_eq!(
+        PrimitiveKind::Boolean.widen(PrimitiveKind::Null),
+        PrimitiveKind::Boolean
+    );
+    assert_eq!(
+        PrimitiveKind::String.widen(PrimitiveKind::Char),
+        PrimitiveKind::String
+    );
     assert_eq!(
         PrimitiveKind::DateTime.widen(PrimitiveKind::Duration),
         PrimitiveKind::DateTime
@@ -274,20 +316,38 @@ fn widen_non_numeric_types_returns_self() {
 
 #[test]
 fn widen_int_long() {
-    assert_eq!(PrimitiveKind::Int.widen(PrimitiveKind::Long), PrimitiveKind::Long);
-    assert_eq!(PrimitiveKind::Long.widen(PrimitiveKind::Int), PrimitiveKind::Long);
+    assert_eq!(
+        PrimitiveKind::Int.widen(PrimitiveKind::Long),
+        PrimitiveKind::Long
+    );
+    assert_eq!(
+        PrimitiveKind::Long.widen(PrimitiveKind::Int),
+        PrimitiveKind::Long
+    );
 }
 
 #[test]
 fn widen_float_double() {
-    assert_eq!(PrimitiveKind::Float.widen(PrimitiveKind::Double), PrimitiveKind::Double);
-    assert_eq!(PrimitiveKind::Double.widen(PrimitiveKind::Float), PrimitiveKind::Double);
+    assert_eq!(
+        PrimitiveKind::Float.widen(PrimitiveKind::Double),
+        PrimitiveKind::Double
+    );
+    assert_eq!(
+        PrimitiveKind::Double.widen(PrimitiveKind::Float),
+        PrimitiveKind::Double
+    );
 }
 
 #[test]
 fn widen_int_float() {
-    assert_eq!(PrimitiveKind::Int.widen(PrimitiveKind::Float), PrimitiveKind::Float);
-    assert_eq!(PrimitiveKind::Float.widen(PrimitiveKind::Int), PrimitiveKind::Float);
+    assert_eq!(
+        PrimitiveKind::Int.widen(PrimitiveKind::Float),
+        PrimitiveKind::Float
+    );
+    assert_eq!(
+        PrimitiveKind::Float.widen(PrimitiveKind::Int),
+        PrimitiveKind::Float
+    );
 }
 
 #[test]
@@ -347,43 +407,64 @@ fn primitive_kind_display_matches_name() {
 
 #[test]
 fn constant_int() {
-    assert_eq!(TypeDescriptor::INT, TypeDescriptor::Primitive(PrimitiveKind::Int));
+    assert_eq!(
+        TypeDescriptor::INT,
+        TypeDescriptor::Primitive(PrimitiveKind::Int)
+    );
     assert_eq!(TypeDescriptor::INT.name(), "int");
 }
 
 #[test]
 fn constant_long() {
-    assert_eq!(TypeDescriptor::LONG, TypeDescriptor::Primitive(PrimitiveKind::Long));
+    assert_eq!(
+        TypeDescriptor::LONG,
+        TypeDescriptor::Primitive(PrimitiveKind::Long)
+    );
     assert_eq!(TypeDescriptor::LONG.name(), "long");
 }
 
 #[test]
 fn constant_float() {
-    assert_eq!(TypeDescriptor::FLOAT, TypeDescriptor::Primitive(PrimitiveKind::Float));
+    assert_eq!(
+        TypeDescriptor::FLOAT,
+        TypeDescriptor::Primitive(PrimitiveKind::Float)
+    );
     assert_eq!(TypeDescriptor::FLOAT.name(), "float");
 }
 
 #[test]
 fn constant_double() {
-    assert_eq!(TypeDescriptor::DOUBLE, TypeDescriptor::Primitive(PrimitiveKind::Double));
+    assert_eq!(
+        TypeDescriptor::DOUBLE,
+        TypeDescriptor::Primitive(PrimitiveKind::Double)
+    );
     assert_eq!(TypeDescriptor::DOUBLE.name(), "double");
 }
 
 #[test]
 fn constant_boolean() {
-    assert_eq!(TypeDescriptor::BOOLEAN, TypeDescriptor::Primitive(PrimitiveKind::Boolean));
+    assert_eq!(
+        TypeDescriptor::BOOLEAN,
+        TypeDescriptor::Primitive(PrimitiveKind::Boolean)
+    );
     assert_eq!(TypeDescriptor::BOOLEAN.name(), "boolean");
 }
 
 #[test]
 fn constant_string() {
-    assert_eq!(TypeDescriptor::STRING, TypeDescriptor::Primitive(PrimitiveKind::String));
+    assert_eq!(
+        TypeDescriptor::STRING,
+        TypeDescriptor::Primitive(PrimitiveKind::String)
+    );
     assert_eq!(TypeDescriptor::STRING.name(), "java.lang.String");
 }
 
 #[test]
 fn constant_null() {
-    assert_eq!(TypeDescriptor::NULL, TypeDescriptor::Primitive(PrimitiveKind::Null));
+    assert_eq!(
+        TypeDescriptor::NULL,
+        TypeDescriptor::Primitive(PrimitiveKind::Null)
+    );
     assert_eq!(TypeDescriptor::NULL.name(), "null");
 }
 
@@ -391,7 +472,12 @@ fn constant_null() {
 fn constant_object_is_named() {
     // OBJECT is a Named variant with empty name
     match &TypeDescriptor::OBJECT {
-        TypeDescriptor::Named { name, type_id, generics, annotations } => {
+        TypeDescriptor::Named {
+            name,
+            type_id,
+            generics,
+            annotations,
+        } => {
             assert!(name.is_empty());
             assert!(type_id.is_none());
             assert!(generics.is_empty());
@@ -405,7 +491,12 @@ fn constant_object_is_named() {
 fn constant_value_is_named() {
     // VALUE is a Named variant with empty name
     match &TypeDescriptor::VALUE {
-        TypeDescriptor::Named { name, type_id, generics, annotations } => {
+        TypeDescriptor::Named {
+            name,
+            type_id,
+            generics,
+            annotations,
+        } => {
             assert!(name.is_empty());
             assert!(type_id.is_none());
             assert!(generics.is_empty());
@@ -423,7 +514,12 @@ fn constant_value_is_named() {
 fn from_type_name_creates_named() {
     let td = TypeDescriptor::from_type_name("ArrayList");
     match &td {
-        TypeDescriptor::Named { type_id, name, generics, annotations } => {
+        TypeDescriptor::Named {
+            type_id,
+            name,
+            generics,
+            annotations,
+        } => {
             assert!(type_id.is_none());
             assert_eq!(name, "ArrayList");
             assert!(generics.is_empty());
@@ -453,7 +549,12 @@ fn from_type_name_with_static_str() {
 fn from_type_id_string() {
     let td = TypeDescriptor::from_type_id::<String>();
     match &td {
-        TypeDescriptor::Named { type_id, name, generics, annotations } => {
+        TypeDescriptor::Named {
+            type_id,
+            name,
+            generics,
+            annotations,
+        } => {
             assert_eq!(*type_id, Some(TypeId::of::<String>()));
             // type_name::<String>() varies by platform but should contain "String"
             assert!(name.contains("String"), "name was: {}", name);
@@ -494,8 +595,7 @@ fn from_type_id_vec() {
 
 #[test]
 fn with_generic_adds_generic_to_named() {
-    let td = TypeDescriptor::from_type_name("List")
-        .with_generic(TypeDescriptor::INT);
+    let td = TypeDescriptor::from_type_name("List").with_generic(TypeDescriptor::INT);
     match &td {
         TypeDescriptor::Named { generics, .. } => {
             assert_eq!(generics.len(), 1);
@@ -533,8 +633,7 @@ fn with_generic_on_primitive_is_noop() {
 
 #[test]
 fn with_annotation_adds_to_named() {
-    let td = TypeDescriptor::from_type_name("MyClass")
-        .with_annotation("Nullable");
+    let td = TypeDescriptor::from_type_name("MyClass").with_annotation("Nullable");
     match &td {
         TypeDescriptor::Named { annotations, .. } => {
             assert_eq!(annotations.len(), 1);
@@ -571,7 +670,11 @@ fn with_generic_and_annotation_chaining() {
         .with_generic(TypeDescriptor::STRING)
         .with_annotation("Nullable");
     match &td {
-        TypeDescriptor::Named { generics, annotations, .. } => {
+        TypeDescriptor::Named {
+            generics,
+            annotations,
+            ..
+        } => {
             assert_eq!(generics.len(), 1);
             assert_eq!(generics[0], TypeDescriptor::STRING);
             assert_eq!(annotations.len(), 1);
@@ -588,7 +691,10 @@ fn with_generic_and_annotation_chaining() {
 #[test]
 fn name_primitive_uses_primitive_kind_name() {
     assert_eq!(TypeDescriptor::Primitive(PrimitiveKind::Int).name(), "int");
-    assert_eq!(TypeDescriptor::Primitive(PrimitiveKind::Null).name(), "null");
+    assert_eq!(
+        TypeDescriptor::Primitive(PrimitiveKind::Null).name(),
+        "null"
+    );
     assert_eq!(
         TypeDescriptor::Primitive(PrimitiveKind::BigInt).name(),
         "java.math.BigInteger"
@@ -629,8 +735,7 @@ fn name_named_without_generics() {
 
 #[test]
 fn name_named_with_one_generic() {
-    let td = TypeDescriptor::from_type_name("List")
-        .with_generic(TypeDescriptor::STRING);
+    let td = TypeDescriptor::from_type_name("List").with_generic(TypeDescriptor::STRING);
     assert_eq!(td.name(), "List<java.lang.String>");
 }
 
@@ -644,8 +749,7 @@ fn name_named_with_multiple_generics() {
 
 #[test]
 fn name_named_with_nested_generic() {
-    let inner_list = TypeDescriptor::from_type_name("List")
-        .with_generic(TypeDescriptor::INT);
+    let inner_list = TypeDescriptor::from_type_name("List").with_generic(TypeDescriptor::INT);
     let td = TypeDescriptor::from_type_name("Map")
         .with_generic(TypeDescriptor::STRING)
         .with_generic(inner_list);
@@ -684,7 +788,10 @@ fn is_primitive_true_for_all_primitive_variants() {
 fn is_primitive_false_for_non_primitive() {
     assert!(!TypeDescriptor::from_type_name("String").is_primitive());
     assert!(!TypeDescriptor::Array(Box::new(TypeDescriptor::INT)).is_primitive());
-    let map = TypeDescriptor::Map(Box::new(TypeDescriptor::STRING), Box::new(TypeDescriptor::INT));
+    let map = TypeDescriptor::Map(
+        Box::new(TypeDescriptor::STRING),
+        Box::new(TypeDescriptor::INT),
+    );
     assert!(!map.is_primitive());
 }
 
@@ -774,7 +881,12 @@ fn new_null() {
 fn new_unknown_falls_back_to_named() {
     let td = TypeDescriptor::new("CustomType");
     match &td {
-        TypeDescriptor::Named { type_id, name, generics, annotations } => {
+        TypeDescriptor::Named {
+            type_id,
+            name,
+            generics,
+            annotations,
+        } => {
             assert!(type_id.is_none());
             assert_eq!(name, "CustomType");
             assert!(generics.is_empty());
@@ -808,7 +920,10 @@ fn assignable_object_accepts_all() {
     assert!(object.is_assignable_from(&TypeDescriptor::STRING));
     assert!(object.is_assignable_from(&TypeDescriptor::NULL));
     assert!(object.is_assignable_from(&TypeDescriptor::Array(Box::new(TypeDescriptor::INT))));
-    let map = TypeDescriptor::Map(Box::new(TypeDescriptor::STRING), Box::new(TypeDescriptor::INT));
+    let map = TypeDescriptor::Map(
+        Box::new(TypeDescriptor::STRING),
+        Box::new(TypeDescriptor::INT),
+    );
     assert!(object.is_assignable_from(&map));
     assert!(object.is_assignable_from(&TypeDescriptor::from_type_name("Foo")));
 }
@@ -824,24 +939,36 @@ fn assignable_same_type() {
 #[test]
 fn assignable_numeric_widening() {
     // Int accepts Byte, Short
-    assert!(TypeDescriptor::INT.is_assignable_from(&TypeDescriptor::Primitive(PrimitiveKind::Byte)));
-    assert!(TypeDescriptor::INT.is_assignable_from(&TypeDescriptor::Primitive(PrimitiveKind::Short)));
+    assert!(
+        TypeDescriptor::INT.is_assignable_from(&TypeDescriptor::Primitive(PrimitiveKind::Byte))
+    );
+    assert!(
+        TypeDescriptor::INT.is_assignable_from(&TypeDescriptor::Primitive(PrimitiveKind::Short))
+    );
     assert!(TypeDescriptor::INT.is_assignable_from(&TypeDescriptor::INT));
 
     // Long accepts Byte, Short, Int
-    assert!(TypeDescriptor::LONG.is_assignable_from(&TypeDescriptor::Primitive(PrimitiveKind::Byte)));
-    assert!(TypeDescriptor::LONG.is_assignable_from(&TypeDescriptor::Primitive(PrimitiveKind::Short)));
+    assert!(
+        TypeDescriptor::LONG.is_assignable_from(&TypeDescriptor::Primitive(PrimitiveKind::Byte))
+    );
+    assert!(
+        TypeDescriptor::LONG.is_assignable_from(&TypeDescriptor::Primitive(PrimitiveKind::Short))
+    );
     assert!(TypeDescriptor::LONG.is_assignable_from(&TypeDescriptor::INT));
     assert!(TypeDescriptor::LONG.is_assignable_from(&TypeDescriptor::LONG));
 
     // Float accepts Byte, Short, Int, Long (width 6 > 4)
-    assert!(TypeDescriptor::FLOAT.is_assignable_from(&TypeDescriptor::Primitive(PrimitiveKind::Byte)));
+    assert!(
+        TypeDescriptor::FLOAT.is_assignable_from(&TypeDescriptor::Primitive(PrimitiveKind::Byte))
+    );
     assert!(TypeDescriptor::FLOAT.is_assignable_from(&TypeDescriptor::INT));
     assert!(TypeDescriptor::FLOAT.is_assignable_from(&TypeDescriptor::LONG));
     assert!(TypeDescriptor::FLOAT.is_assignable_from(&TypeDescriptor::FLOAT));
 
     // Double accepts everything numeric below it
-    assert!(TypeDescriptor::DOUBLE.is_assignable_from(&TypeDescriptor::Primitive(PrimitiveKind::Byte)));
+    assert!(
+        TypeDescriptor::DOUBLE.is_assignable_from(&TypeDescriptor::Primitive(PrimitiveKind::Byte))
+    );
     assert!(TypeDescriptor::DOUBLE.is_assignable_from(&TypeDescriptor::INT));
     assert!(TypeDescriptor::DOUBLE.is_assignable_from(&TypeDescriptor::LONG));
     assert!(TypeDescriptor::DOUBLE.is_assignable_from(&TypeDescriptor::FLOAT));
@@ -853,7 +980,9 @@ fn assignable_numeric_narrowing_rejected() {
     // Int does NOT accept Long
     assert!(!TypeDescriptor::INT.is_assignable_from(&TypeDescriptor::LONG));
     // Byte does NOT accept Int
-    assert!(!TypeDescriptor::Primitive(PrimitiveKind::Byte).is_assignable_from(&TypeDescriptor::INT));
+    assert!(
+        !TypeDescriptor::Primitive(PrimitiveKind::Byte).is_assignable_from(&TypeDescriptor::INT)
+    );
     // Float does NOT accept Double
     assert!(!TypeDescriptor::FLOAT.is_assignable_from(&TypeDescriptor::DOUBLE));
 }
@@ -868,9 +997,15 @@ fn assignable_string_accepts_same_type() {
 fn assignable_string_accepts_non_primitive_sources() {
     // The "String accepts all" match arm only fires when src is NOT a Primitive,
     // because the Primitive-Primitive numeric widening arm matches first.
-    assert!(TypeDescriptor::STRING.is_assignable_from(&TypeDescriptor::Array(Box::new(TypeDescriptor::INT))));
+    assert!(
+        TypeDescriptor::STRING
+            .is_assignable_from(&TypeDescriptor::Array(Box::new(TypeDescriptor::INT)))
+    );
     assert!(TypeDescriptor::STRING.is_assignable_from(&TypeDescriptor::from_type_name("Foo")));
-    let map = TypeDescriptor::Map(Box::new(TypeDescriptor::STRING), Box::new(TypeDescriptor::INT));
+    let map = TypeDescriptor::Map(
+        Box::new(TypeDescriptor::STRING),
+        Box::new(TypeDescriptor::INT),
+    );
     assert!(TypeDescriptor::STRING.is_assignable_from(&map));
 }
 
@@ -882,7 +1017,9 @@ fn assignable_string_accepts_numeric_primitives() {
     assert!(TypeDescriptor::STRING.is_assignable_from(&TypeDescriptor::LONG));
     assert!(TypeDescriptor::STRING.is_assignable_from(&TypeDescriptor::FLOAT));
     assert!(TypeDescriptor::STRING.is_assignable_from(&TypeDescriptor::DOUBLE));
-    assert!(TypeDescriptor::STRING.is_assignable_from(&TypeDescriptor::Primitive(PrimitiveKind::Byte)));
+    assert!(
+        TypeDescriptor::STRING.is_assignable_from(&TypeDescriptor::Primitive(PrimitiveKind::Byte))
+    );
 }
 
 #[test]
@@ -969,10 +1106,16 @@ fn assignable_cross_variant_rejected() {
     // Primitive vs Named
     assert!(!TypeDescriptor::INT.is_assignable_from(&TypeDescriptor::from_type_name("Integer")));
     // Primitive vs Array
-    assert!(!TypeDescriptor::INT.is_assignable_from(&TypeDescriptor::Array(Box::new(TypeDescriptor::INT))));
+    assert!(
+        !TypeDescriptor::INT
+            .is_assignable_from(&TypeDescriptor::Array(Box::new(TypeDescriptor::INT)))
+    );
     // Array vs Map
     let arr = TypeDescriptor::Array(Box::new(TypeDescriptor::INT));
-    let map = TypeDescriptor::Map(Box::new(TypeDescriptor::STRING), Box::new(TypeDescriptor::INT));
+    let map = TypeDescriptor::Map(
+        Box::new(TypeDescriptor::STRING),
+        Box::new(TypeDescriptor::INT),
+    );
     assert!(!arr.is_assignable_from(&map));
     assert!(!map.is_assignable_from(&arr));
 }
@@ -1064,15 +1207,27 @@ fn get_map_value_type_on_map() {
 #[test]
 fn get_map_key_type_on_non_map() {
     assert_eq!(TypeDescriptor::INT.get_map_key_type(), None);
-    assert_eq!(TypeDescriptor::Array(Box::new(TypeDescriptor::INT)).get_map_key_type(), None);
-    assert_eq!(TypeDescriptor::from_type_name("Foo").get_map_key_type(), None);
+    assert_eq!(
+        TypeDescriptor::Array(Box::new(TypeDescriptor::INT)).get_map_key_type(),
+        None
+    );
+    assert_eq!(
+        TypeDescriptor::from_type_name("Foo").get_map_key_type(),
+        None
+    );
 }
 
 #[test]
 fn get_map_value_type_on_non_map() {
     assert_eq!(TypeDescriptor::INT.get_map_value_type(), None);
-    assert_eq!(TypeDescriptor::Array(Box::new(TypeDescriptor::INT)).get_map_value_type(), None);
-    assert_eq!(TypeDescriptor::from_type_name("Foo").get_map_value_type(), None);
+    assert_eq!(
+        TypeDescriptor::Array(Box::new(TypeDescriptor::INT)).get_map_value_type(),
+        None
+    );
+    assert_eq!(
+        TypeDescriptor::from_type_name("Foo").get_map_value_type(),
+        None
+    );
 }
 
 // ===========================================================================
@@ -1097,9 +1252,15 @@ fn get_element_type_on_nested_array() {
 #[test]
 fn get_element_type_on_non_array() {
     assert_eq!(TypeDescriptor::INT.get_element_type(), None);
-    let map = TypeDescriptor::Map(Box::new(TypeDescriptor::STRING), Box::new(TypeDescriptor::INT));
+    let map = TypeDescriptor::Map(
+        Box::new(TypeDescriptor::STRING),
+        Box::new(TypeDescriptor::INT),
+    );
     assert_eq!(map.get_element_type(), None);
-    assert_eq!(TypeDescriptor::from_type_name("Foo").get_element_type(), None);
+    assert_eq!(
+        TypeDescriptor::from_type_name("Foo").get_element_type(),
+        None
+    );
 }
 
 // ===========================================================================
@@ -1108,7 +1269,10 @@ fn get_element_type_on_non_array() {
 
 #[test]
 fn is_map_true_for_map() {
-    let map = TypeDescriptor::Map(Box::new(TypeDescriptor::STRING), Box::new(TypeDescriptor::INT));
+    let map = TypeDescriptor::Map(
+        Box::new(TypeDescriptor::STRING),
+        Box::new(TypeDescriptor::INT),
+    );
     assert!(map.is_map());
 }
 
@@ -1129,7 +1293,10 @@ fn is_array_true_for_array() {
 #[test]
 fn is_array_false_for_non_array() {
     assert!(!TypeDescriptor::INT.is_array());
-    let map = TypeDescriptor::Map(Box::new(TypeDescriptor::STRING), Box::new(TypeDescriptor::INT));
+    let map = TypeDescriptor::Map(
+        Box::new(TypeDescriptor::STRING),
+        Box::new(TypeDescriptor::INT),
+    );
     assert!(!map.is_array());
     assert!(!TypeDescriptor::from_type_name("ArrayList").is_array());
     assert!(!TypeDescriptor::NULL.is_array());
@@ -1165,7 +1332,10 @@ fn type_id_on_array() {
 
 #[test]
 fn type_id_on_map() {
-    let map = TypeDescriptor::Map(Box::new(TypeDescriptor::STRING), Box::new(TypeDescriptor::INT));
+    let map = TypeDescriptor::Map(
+        Box::new(TypeDescriptor::STRING),
+        Box::new(TypeDescriptor::INT),
+    );
     assert_eq!(map.type_id(), None);
 }
 
@@ -1175,18 +1345,39 @@ fn type_id_on_map() {
 
 #[test]
 fn primitive_kind_on_primitive() {
-    assert_eq!(TypeDescriptor::INT.primitive_kind(), Some(PrimitiveKind::Int));
-    assert_eq!(TypeDescriptor::LONG.primitive_kind(), Some(PrimitiveKind::Long));
-    assert_eq!(TypeDescriptor::BOOLEAN.primitive_kind(), Some(PrimitiveKind::Boolean));
-    assert_eq!(TypeDescriptor::STRING.primitive_kind(), Some(PrimitiveKind::String));
-    assert_eq!(TypeDescriptor::NULL.primitive_kind(), Some(PrimitiveKind::Null));
+    assert_eq!(
+        TypeDescriptor::INT.primitive_kind(),
+        Some(PrimitiveKind::Int)
+    );
+    assert_eq!(
+        TypeDescriptor::LONG.primitive_kind(),
+        Some(PrimitiveKind::Long)
+    );
+    assert_eq!(
+        TypeDescriptor::BOOLEAN.primitive_kind(),
+        Some(PrimitiveKind::Boolean)
+    );
+    assert_eq!(
+        TypeDescriptor::STRING.primitive_kind(),
+        Some(PrimitiveKind::String)
+    );
+    assert_eq!(
+        TypeDescriptor::NULL.primitive_kind(),
+        Some(PrimitiveKind::Null)
+    );
 }
 
 #[test]
 fn primitive_kind_on_non_primitive() {
     assert_eq!(TypeDescriptor::from_type_name("Foo").primitive_kind(), None);
-    assert_eq!(TypeDescriptor::Array(Box::new(TypeDescriptor::INT)).primitive_kind(), None);
-    let map = TypeDescriptor::Map(Box::new(TypeDescriptor::STRING), Box::new(TypeDescriptor::INT));
+    assert_eq!(
+        TypeDescriptor::Array(Box::new(TypeDescriptor::INT)).primitive_kind(),
+        None
+    );
+    let map = TypeDescriptor::Map(
+        Box::new(TypeDescriptor::STRING),
+        Box::new(TypeDescriptor::INT),
+    );
     assert_eq!(map.primitive_kind(), None);
 }
 
@@ -1196,8 +1387,14 @@ fn primitive_kind_on_non_primitive() {
 
 #[test]
 fn partial_eq_primitive_same() {
-    assert_eq!(TypeDescriptor::INT, TypeDescriptor::Primitive(PrimitiveKind::Int));
-    assert_eq!(TypeDescriptor::STRING, TypeDescriptor::Primitive(PrimitiveKind::String));
+    assert_eq!(
+        TypeDescriptor::INT,
+        TypeDescriptor::Primitive(PrimitiveKind::Int)
+    );
+    assert_eq!(
+        TypeDescriptor::STRING,
+        TypeDescriptor::Primitive(PrimitiveKind::String)
+    );
 }
 
 #[test]
@@ -1223,21 +1420,36 @@ fn partial_eq_array_different() {
 
 #[test]
 fn partial_eq_map_same() {
-    let a = TypeDescriptor::Map(Box::new(TypeDescriptor::STRING), Box::new(TypeDescriptor::INT));
-    let b = TypeDescriptor::Map(Box::new(TypeDescriptor::STRING), Box::new(TypeDescriptor::INT));
+    let a = TypeDescriptor::Map(
+        Box::new(TypeDescriptor::STRING),
+        Box::new(TypeDescriptor::INT),
+    );
+    let b = TypeDescriptor::Map(
+        Box::new(TypeDescriptor::STRING),
+        Box::new(TypeDescriptor::INT),
+    );
     assert_eq!(a, b);
 }
 
 #[test]
 fn partial_eq_map_different_value() {
-    let a = TypeDescriptor::Map(Box::new(TypeDescriptor::STRING), Box::new(TypeDescriptor::INT));
-    let b = TypeDescriptor::Map(Box::new(TypeDescriptor::STRING), Box::new(TypeDescriptor::LONG));
+    let a = TypeDescriptor::Map(
+        Box::new(TypeDescriptor::STRING),
+        Box::new(TypeDescriptor::INT),
+    );
+    let b = TypeDescriptor::Map(
+        Box::new(TypeDescriptor::STRING),
+        Box::new(TypeDescriptor::LONG),
+    );
     assert_ne!(a, b);
 }
 
 #[test]
 fn partial_eq_map_different_key() {
-    let a = TypeDescriptor::Map(Box::new(TypeDescriptor::STRING), Box::new(TypeDescriptor::INT));
+    let a = TypeDescriptor::Map(
+        Box::new(TypeDescriptor::STRING),
+        Box::new(TypeDescriptor::INT),
+    );
     let b = TypeDescriptor::Map(Box::new(TypeDescriptor::INT), Box::new(TypeDescriptor::INT));
     assert_ne!(a, b);
 }
@@ -1274,7 +1486,10 @@ fn partial_eq_named_different_annotations() {
 fn partial_eq_cross_variant_all_false() {
     let primitive = TypeDescriptor::INT;
     let array = TypeDescriptor::Array(Box::new(TypeDescriptor::INT));
-    let map = TypeDescriptor::Map(Box::new(TypeDescriptor::STRING), Box::new(TypeDescriptor::INT));
+    let map = TypeDescriptor::Map(
+        Box::new(TypeDescriptor::STRING),
+        Box::new(TypeDescriptor::INT),
+    );
     let named = TypeDescriptor::from_type_name("int");
 
     // All cross-variant comparisons must be unequal
@@ -1298,7 +1513,10 @@ fn eq_trait_is_reflexive() {
         TypeDescriptor::STRING,
         TypeDescriptor::NULL,
         TypeDescriptor::Array(Box::new(TypeDescriptor::INT)),
-        TypeDescriptor::Map(Box::new(TypeDescriptor::STRING), Box::new(TypeDescriptor::INT)),
+        TypeDescriptor::Map(
+            Box::new(TypeDescriptor::STRING),
+            Box::new(TypeDescriptor::INT),
+        ),
     ];
     for td in &types {
         assert_eq!(td, td);
@@ -1319,8 +1537,14 @@ fn eq_trait_is_symmetric() {
 
 #[test]
 fn hash_primitive_equal_values() {
-    assert_eq!(hash_of(&TypeDescriptor::INT), hash_of(&TypeDescriptor::Primitive(PrimitiveKind::Int)));
-    assert_eq!(hash_of(&TypeDescriptor::STRING), hash_of(&TypeDescriptor::Primitive(PrimitiveKind::String)));
+    assert_eq!(
+        hash_of(&TypeDescriptor::INT),
+        hash_of(&TypeDescriptor::Primitive(PrimitiveKind::Int))
+    );
+    assert_eq!(
+        hash_of(&TypeDescriptor::STRING),
+        hash_of(&TypeDescriptor::Primitive(PrimitiveKind::String))
+    );
 }
 
 #[test]
@@ -1332,8 +1556,14 @@ fn hash_array_equal_values() {
 
 #[test]
 fn hash_map_equal_values() {
-    let a = TypeDescriptor::Map(Box::new(TypeDescriptor::STRING), Box::new(TypeDescriptor::INT));
-    let b = TypeDescriptor::Map(Box::new(TypeDescriptor::STRING), Box::new(TypeDescriptor::INT));
+    let a = TypeDescriptor::Map(
+        Box::new(TypeDescriptor::STRING),
+        Box::new(TypeDescriptor::INT),
+    );
+    let b = TypeDescriptor::Map(
+        Box::new(TypeDescriptor::STRING),
+        Box::new(TypeDescriptor::INT),
+    );
     assert_eq!(hash_of(&a), hash_of(&b));
 }
 
@@ -1389,7 +1619,10 @@ fn display_array() {
 
 #[test]
 fn display_map() {
-    let map = TypeDescriptor::Map(Box::new(TypeDescriptor::STRING), Box::new(TypeDescriptor::INT));
+    let map = TypeDescriptor::Map(
+        Box::new(TypeDescriptor::STRING),
+        Box::new(TypeDescriptor::INT),
+    );
     assert_eq!(format!("{}", map), "java.util.Map<java.lang.String, int>");
 }
 
@@ -1401,8 +1634,7 @@ fn display_named() {
 
 #[test]
 fn display_named_with_generics() {
-    let td = TypeDescriptor::from_type_name("List")
-        .with_generic(TypeDescriptor::STRING);
+    let td = TypeDescriptor::from_type_name("List").with_generic(TypeDescriptor::STRING);
     assert_eq!(format!("{}", td), "List<java.lang.String>");
 }
 
@@ -1426,7 +1658,10 @@ fn debug_array() {
 
 #[test]
 fn debug_map() {
-    let map = TypeDescriptor::Map(Box::new(TypeDescriptor::STRING), Box::new(TypeDescriptor::INT));
+    let map = TypeDescriptor::Map(
+        Box::new(TypeDescriptor::STRING),
+        Box::new(TypeDescriptor::INT),
+    );
     let dbg = format!("{:?}", map);
     assert!(dbg.contains("Map"), "Debug output: {}", dbg);
 }
@@ -1459,7 +1694,10 @@ fn clone_array() {
 
 #[test]
 fn clone_map() {
-    let a = TypeDescriptor::Map(Box::new(TypeDescriptor::STRING), Box::new(TypeDescriptor::INT));
+    let a = TypeDescriptor::Map(
+        Box::new(TypeDescriptor::STRING),
+        Box::new(TypeDescriptor::INT),
+    );
     let b = a.clone();
     assert_eq!(a, b);
 }
@@ -1543,7 +1781,11 @@ fn primitive_kind_all_distinct() {
     ];
     for i in 0..kinds.len() {
         for j in (i + 1)..kinds.len() {
-            assert_ne!(kinds[i], kinds[j], "kinds[{}] == kinds[{}]: {:?}", i, j, kinds[i]);
+            assert_ne!(
+                kinds[i], kinds[j],
+                "kinds[{}] == kinds[{}]: {:?}",
+                i, j, kinds[i]
+            );
         }
     }
 }
@@ -1610,19 +1852,32 @@ fn assignable_non_numeric_primitives_have_width_zero() {
     // numeric_width() == 0. Because the widening check is `dp.numeric_width() >= sp.numeric_width()`,
     // any numeric primitive (width > 0) accepts them (3 >= 0 is true).
     assert!(TypeDescriptor::INT.is_assignable_from(&TypeDescriptor::BOOLEAN));
-    assert!(TypeDescriptor::INT.is_assignable_from(&TypeDescriptor::Primitive(PrimitiveKind::Char)));
+    assert!(
+        TypeDescriptor::INT.is_assignable_from(&TypeDescriptor::Primitive(PrimitiveKind::Char))
+    );
     assert!(TypeDescriptor::INT.is_assignable_from(&TypeDescriptor::NULL));
-    assert!(TypeDescriptor::LONG.is_assignable_from(&TypeDescriptor::Primitive(PrimitiveKind::DateTime)));
-    assert!(TypeDescriptor::DOUBLE.is_assignable_from(&TypeDescriptor::Primitive(PrimitiveKind::Duration)));
+    assert!(
+        TypeDescriptor::LONG
+            .is_assignable_from(&TypeDescriptor::Primitive(PrimitiveKind::DateTime))
+    );
+    assert!(
+        TypeDescriptor::DOUBLE
+            .is_assignable_from(&TypeDescriptor::Primitive(PrimitiveKind::Duration))
+    );
 }
 
 #[test]
 fn assignable_non_numeric_cannot_accept_numeric() {
     // Reversed: Boolean (width 0) cannot accept Int (width 3) because 0 >= 3 is false.
     assert!(!TypeDescriptor::BOOLEAN.is_assignable_from(&TypeDescriptor::INT));
-    assert!(!TypeDescriptor::Primitive(PrimitiveKind::Char).is_assignable_from(&TypeDescriptor::LONG));
+    assert!(
+        !TypeDescriptor::Primitive(PrimitiveKind::Char).is_assignable_from(&TypeDescriptor::LONG)
+    );
     // DateTime cannot accept Long
-    assert!(!TypeDescriptor::Primitive(PrimitiveKind::DateTime).is_assignable_from(&TypeDescriptor::LONG));
+    assert!(
+        !TypeDescriptor::Primitive(PrimitiveKind::DateTime)
+            .is_assignable_from(&TypeDescriptor::LONG)
+    );
 }
 
 #[test]

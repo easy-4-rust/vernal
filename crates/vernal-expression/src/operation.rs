@@ -87,7 +87,12 @@ impl Operation {
     pub const fn is_arithmetic(&self) -> bool {
         matches!(
             self,
-            Self::Add | Self::Subtract | Self::Multiply | Self::Divide | Self::Modulus | Self::Power
+            Self::Add
+                | Self::Subtract
+                | Self::Multiply
+                | Self::Divide
+                | Self::Modulus
+                | Self::Power
         )
     }
 

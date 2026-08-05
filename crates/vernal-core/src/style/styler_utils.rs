@@ -2,8 +2,8 @@
 //!
 //! 对标 Spring `org.springframework.core.style.StylerUtils`。
 
-use super::default_value_styler::DefaultValueStyler;
 use super::ValueStyler;
+use super::default_value_styler::DefaultValueStyler;
 
 /// 样式工具（静态辅助函数）。
 ///

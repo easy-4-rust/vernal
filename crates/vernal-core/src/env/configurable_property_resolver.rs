@@ -38,8 +38,8 @@ pub trait ConfigurablePropertyResolver: PropertyResolver {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::env::PropertySourcesPropertyResolver;
     use crate::env::MutablePropertySources;
+    use crate::env::PropertySourcesPropertyResolver;
 
     #[test]
     fn resolver_satisfies_contract() {

@@ -141,9 +141,7 @@ mod operation_metadata_tests {
 
     #[test]
     fn operation_metadata_with_tag() {
-        let metadata = OperationMetadata::empty()
-            .with_tag("secured")
-            .unwrap();
+        let metadata = OperationMetadata::empty().with_tag("secured").unwrap();
         assert!(!metadata.is_empty());
         assert!(metadata.has_tag("secured"));
     }
@@ -180,9 +178,7 @@ mod operation_metadata_tests {
 
     #[test]
     fn operation_metadata_has_tag() {
-        let metadata = OperationMetadata::empty()
-            .with_tag("secured")
-            .unwrap();
+        let metadata = OperationMetadata::empty().with_tag("secured").unwrap();
         assert!(metadata.has_tag("secured"));
         assert!(!metadata.has_tag("public"));
     }
@@ -211,9 +207,7 @@ mod operation_metadata_tests {
 
     #[test]
     fn operation_metadata_clone() {
-        let metadata = OperationMetadata::empty()
-            .with_tag("secured")
-            .unwrap();
+        let metadata = OperationMetadata::empty().with_tag("secured").unwrap();
         let cloned = metadata.clone();
         assert_eq!(metadata, cloned);
     }

@@ -160,8 +160,7 @@ mod tests {
 
     #[test]
     fn test_with_reference() {
-        let entry = ConstructorArgumentEntry::new(0)
-            .with_reference("dataSource");
+        let entry = ConstructorArgumentEntry::new(0).with_reference("dataSource");
         assert_eq!(entry.value(), Some("dataSource"));
         assert!(entry.is_reference());
     }
@@ -181,8 +180,7 @@ mod tests {
 
     #[test]
     fn display_reference() {
-        let entry = ConstructorArgumentEntry::new(0)
-            .with_reference("dataSource");
+        let entry = ConstructorArgumentEntry::new(0).with_reference("dataSource");
         let display = format!("{}", entry);
         assert!(display.contains("ref=dataSource"));
     }
@@ -196,8 +194,7 @@ mod tests {
 
     #[test]
     fn display_with_type_no_value() {
-        let entry = ConstructorArgumentEntry::new(1)
-            .with_type_name("String");
+        let entry = ConstructorArgumentEntry::new(1).with_type_name("String");
         let display = format!("{}", entry);
         assert!(display.contains("type=String"));
         assert!(!display.contains("value="));
@@ -205,8 +202,8 @@ mod tests {
 
     #[test]
     fn with_location() {
-        let entry = ConstructorArgumentEntry::new(0)
-            .with_location(Location::from_resource("test.xml"));
+        let entry =
+            ConstructorArgumentEntry::new(0).with_location(Location::from_resource("test.xml"));
         assert!(entry.location().is_some());
     }
 
@@ -229,8 +226,7 @@ mod tests {
 
     #[test]
     fn debug_format() {
-        let entry = ConstructorArgumentEntry::new(0)
-            .with_value("test");
+        let entry = ConstructorArgumentEntry::new(0).with_value("test");
         let debug = format!("{:?}", entry);
         assert!(debug.contains("ConstructorArgumentEntry"));
     }

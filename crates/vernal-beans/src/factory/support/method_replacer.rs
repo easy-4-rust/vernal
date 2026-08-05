@@ -46,7 +46,14 @@ pub trait MethodReplacer: Send + Sync {
 ///
 /// 将闭包包装为 `MethodReplacer`，方便使用。
 pub struct ClosureMethodReplacer {
-    closure: Box<dyn Fn(&[Arc<dyn Any + Send + Sync>]) -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> + Send + Sync>,
+    closure: Box<
+        dyn Fn(
+                &[Arc<dyn Any + Send + Sync>],
+            )
+                -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>>
+            + Send
+            + Sync,
+    >,
     description: String,
 }
 
@@ -58,7 +65,13 @@ impl ClosureMethodReplacer {
     /// - `closure` — 替换闭包
     pub fn new(
         description: impl Into<String>,
-        closure: impl Fn(&[Arc<dyn Any + Send + Sync>]) -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> + Send + Sync + 'static,
+        closure: impl Fn(
+            &[Arc<dyn Any + Send + Sync>],
+        )
+            -> Result<Arc<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>>
+        + Send
+        + Sync
+        + 'static,
     ) -> Self {
         Self {
             closure: Box::new(closure),
@@ -134,9 +147,7 @@ mod tests {
 
     #[test]
     fn closure_replacer_error() {
-        let replacer = ClosureMethodReplacer::new("fail", |_args| {
-            Err("always fails".into())
-        });
+        let replacer = ClosureMethodReplacer::new("fail", |_args| Err("always fails".into()));
         let result = replacer.reimplement(&[]);
         assert!(result.is_err());
     }

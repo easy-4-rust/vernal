@@ -71,11 +71,7 @@ mod tests {
 
     #[test]
     fn new_basic() {
-        let desc = DependencyDescriptor::new(
-            TypeId::of::<String>(),
-            "String".to_string(),
-            true,
-        );
+        let desc = DependencyDescriptor::new(TypeId::of::<String>(), "String".to_string(), true);
         assert_eq!(desc.type_id, TypeId::of::<String>());
         assert_eq!(desc.type_name, "String");
         assert!(desc.required);
@@ -85,87 +81,55 @@ mod tests {
 
     #[test]
     fn new_optional() {
-        let desc = DependencyDescriptor::new(
-            TypeId::of::<i32>(),
-            "i32".to_string(),
-            false,
-        );
+        let desc = DependencyDescriptor::new(TypeId::of::<i32>(), "i32".to_string(), false);
         assert!(!desc.required);
     }
 
     #[test]
     fn with_qualifier() {
-        let desc = DependencyDescriptor::new(
-            TypeId::of::<String>(),
-            "String".to_string(),
-            true,
-        )
-        .with_qualifier("primary".to_string());
+        let desc = DependencyDescriptor::new(TypeId::of::<String>(), "String".to_string(), true)
+            .with_qualifier("primary".to_string());
         assert!(desc.has_qualifier());
         assert_eq!(desc.qualifier, Some("primary".to_string()));
     }
 
     #[test]
     fn with_injection_point_name() {
-        let desc = DependencyDescriptor::new(
-            TypeId::of::<String>(),
-            "String".to_string(),
-            true,
-        )
-        .with_injection_point_name("myField".to_string());
+        let desc = DependencyDescriptor::new(TypeId::of::<String>(), "String".to_string(), true)
+            .with_injection_point_name("myField".to_string());
         assert_eq!(desc.injection_point_name, "myField");
     }
 
     #[test]
     fn is_required_true() {
-        let desc = DependencyDescriptor::new(
-            TypeId::of::<String>(),
-            "String".to_string(),
-            true,
-        );
+        let desc = DependencyDescriptor::new(TypeId::of::<String>(), "String".to_string(), true);
         assert!(desc.is_required());
     }
 
     #[test]
     fn is_required_false() {
-        let desc = DependencyDescriptor::new(
-            TypeId::of::<String>(),
-            "String".to_string(),
-            false,
-        );
+        let desc = DependencyDescriptor::new(TypeId::of::<String>(), "String".to_string(), false);
         assert!(!desc.is_required());
     }
 
     #[test]
     fn has_qualifier_false_by_default() {
-        let desc = DependencyDescriptor::new(
-            TypeId::of::<String>(),
-            "String".to_string(),
-            true,
-        );
+        let desc = DependencyDescriptor::new(TypeId::of::<String>(), "String".to_string(), true);
         assert!(!desc.has_qualifier());
     }
 
     #[test]
     fn has_qualifier_true() {
-        let desc = DependencyDescriptor::new(
-            TypeId::of::<String>(),
-            "String".to_string(),
-            true,
-        )
-        .with_qualifier("q".to_string());
+        let desc = DependencyDescriptor::new(TypeId::of::<String>(), "String".to_string(), true)
+            .with_qualifier("q".to_string());
         assert!(desc.has_qualifier());
     }
 
     #[test]
     fn builder_chaining() {
-        let desc = DependencyDescriptor::new(
-            TypeId::of::<String>(),
-            "String".to_string(),
-            true,
-        )
-        .with_qualifier("primary".to_string())
-        .with_injection_point_name("myField".to_string());
+        let desc = DependencyDescriptor::new(TypeId::of::<String>(), "String".to_string(), true)
+            .with_qualifier("primary".to_string())
+            .with_injection_point_name("myField".to_string());
         assert!(desc.is_required());
         assert!(desc.has_qualifier());
         assert_eq!(desc.qualifier, Some("primary".to_string()));
@@ -174,23 +138,15 @@ mod tests {
 
     #[test]
     fn debug_format() {
-        let desc = DependencyDescriptor::new(
-            TypeId::of::<String>(),
-            "String".to_string(),
-            true,
-        );
+        let desc = DependencyDescriptor::new(TypeId::of::<String>(), "String".to_string(), true);
         let debug = format!("{:?}", desc);
         assert!(debug.contains("DependencyDescriptor"));
     }
 
     #[test]
     fn clone() {
-        let desc = DependencyDescriptor::new(
-            TypeId::of::<String>(),
-            "String".to_string(),
-            true,
-        )
-        .with_qualifier("q".to_string());
+        let desc = DependencyDescriptor::new(TypeId::of::<String>(), "String".to_string(), true)
+            .with_qualifier("q".to_string());
         let cloned = desc.clone();
         assert_eq!(cloned.type_id, desc.type_id);
         assert_eq!(cloned.type_name, desc.type_name);

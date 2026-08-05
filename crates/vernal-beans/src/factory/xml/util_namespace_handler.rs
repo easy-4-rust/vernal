@@ -18,8 +18,8 @@
 use std::collections::HashMap;
 use std::sync::Mutex;
 
-use crate::factory::xml::namespace_handler::NamespaceHandler;
 use crate::factory::xml::bean_definition_parser_delegate::BeanDefinitionParserDelegate;
+use crate::factory::xml::namespace_handler::NamespaceHandler;
 
 /// util 元素类型。
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -115,7 +115,9 @@ mod tests {
     fn parse_list_element() {
         let handler = UtilNamespaceHandler::new();
         let attrs = vec![("id".to_string(), "myList".to_string())];
-        handler.parse_util_element(UtilElementType::List, "myList", &attrs).unwrap();
+        handler
+            .parse_util_element(UtilElementType::List, "myList", &attrs)
+            .unwrap();
         assert_eq!(handler.element_count(), 1);
     }
 
@@ -124,9 +126,14 @@ mod tests {
         let handler = UtilNamespaceHandler::new();
         let attrs = vec![
             ("id".to_string(), "maxValue".to_string()),
-            ("static-field".to_string(), "java.lang.Integer.MAX_VALUE".to_string()),
+            (
+                "static-field".to_string(),
+                "java.lang.Integer.MAX_VALUE".to_string(),
+            ),
         ];
-        handler.parse_util_element(UtilElementType::Constant, "maxValue", &attrs).unwrap();
+        handler
+            .parse_util_element(UtilElementType::Constant, "maxValue", &attrs)
+            .unwrap();
         let elements = handler.elements();
         assert_eq!(elements[0].element_type, UtilElementType::Constant);
     }
@@ -134,9 +141,15 @@ mod tests {
     #[test]
     fn multiple_util_elements() {
         let handler = UtilNamespaceHandler::new();
-        handler.parse_util_element(UtilElementType::List, "list1", &[]).unwrap();
-        handler.parse_util_element(UtilElementType::Map, "map1", &[]).unwrap();
-        handler.parse_util_element(UtilElementType::Set, "set1", &[]).unwrap();
+        handler
+            .parse_util_element(UtilElementType::List, "list1", &[])
+            .unwrap();
+        handler
+            .parse_util_element(UtilElementType::Map, "map1", &[])
+            .unwrap();
+        handler
+            .parse_util_element(UtilElementType::Set, "set1", &[])
+            .unwrap();
         assert_eq!(handler.element_count(), 3);
     }
 

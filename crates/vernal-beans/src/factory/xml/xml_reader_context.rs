@@ -95,7 +95,8 @@ impl XmlReaderContext {
 
     /// 增加已解析的 Bean 数量。
     pub fn increment_bean_count(&self) {
-        self.bean_count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        self.bean_count
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     }
 
     /// 获取已解析的 Bean 数量。

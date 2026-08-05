@@ -4,11 +4,13 @@
 //! - `SpringConfiguredConfiguration`：`@Configuration` 等价
 //! - `EnableSpringConfigured`：启用注解等价
 
-mod spring_configured_configuration;
 mod enable_spring_configured;
+mod spring_configured_configuration;
 
+pub use enable_spring_configured::{
+    EnableSpringConfigured, enable_and_register, enable_spring_configured,
+};
 pub use spring_configured_configuration::SpringConfiguredConfiguration;
-pub use enable_spring_configured::{EnableSpringConfigured, enable_spring_configured, enable_and_register};
 
 #[cfg(test)]
 mod tests {

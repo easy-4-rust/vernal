@@ -4,8 +4,8 @@
 
 use std::collections::HashMap;
 
-use super::enumerable_property_source::EnumerablePropertySource;
 use super::PropertySource;
+use super::enumerable_property_source::EnumerablePropertySource;
 
 /// 属性表属性源。
 ///
@@ -80,6 +80,9 @@ mod tests {
         map.insert("b".to_string(), "2".to_string());
         map.insert("a".to_string(), "1".to_string());
         let source = PropertiesPropertySource::new("props", map);
-        assert_eq!(source.property_names(), vec!["a".to_string(), "b".to_string()]);
+        assert_eq!(
+            source.property_names(),
+            vec!["a".to_string(), "b".to_string()]
+        );
     }
 }

@@ -36,7 +36,12 @@ pub struct PropertyDescriptorEntry {
 
 impl PropertyDescriptorEntry {
     /// 创建一个新的实例。
-    pub fn new(name: impl Into<String>, property_type: TypeId, readable: bool, writable: bool) -> Self {
+    pub fn new(
+        name: impl Into<String>,
+        property_type: TypeId,
+        readable: bool,
+        writable: bool,
+    ) -> Self {
         Self {
             name: name.into(),
             property_type,
@@ -157,7 +162,12 @@ mod tests {
     #[test]
     fn test_bean_info_entries() {
         let mut entries = BeanInfoEntries::new();
-        entries.add_property(PropertyDescriptorEntry::new("name", TypeId::of::<String>(), true, true));
+        entries.add_property(PropertyDescriptorEntry::new(
+            "name",
+            TypeId::of::<String>(),
+            true,
+            true,
+        ));
         entries.add_method(MethodDescriptorEntry::new("getName", 0));
 
         assert_eq!(entries.property_count(), 1);

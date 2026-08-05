@@ -62,7 +62,9 @@ impl StandardEvaluationContext {
     pub fn new(root: TypedValue) -> Self {
         let dr = Arc::new(ReflectiveMethodResolver::new());
         let mri: OnceLock<Vec<Box<dyn MethodResolver>>> = OnceLock::new();
-        let _ = mri.set(vec![Box::new(ReflectiveMethodResolverWrapper(Arc::clone(&dr)))]);
+        let _ = mri.set(vec![Box::new(ReflectiveMethodResolverWrapper(Arc::clone(
+            &dr,
+        )))]);
         Self {
             root_object: root,
             variables: RwLock::new(HashMap::new()),

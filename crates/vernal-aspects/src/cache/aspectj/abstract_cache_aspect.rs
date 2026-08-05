@@ -4,7 +4,7 @@
 
 use std::sync::Arc;
 
-use super::cache_aspect_support::{CacheAspectSupport, CacheResult, CacheOperationInvoker};
+use super::cache_aspect_support::{CacheAspectSupport, CacheOperationInvoker, CacheResult};
 use super::cache_operation_source::{CacheOperationSource, MethodMetadata};
 
 /// 缓存切面抽象基类。
@@ -47,7 +47,10 @@ impl<S: CacheOperationSource> AbstractCacheAspect<S> {
         callback: F,
     ) -> CacheResult
     where
-        F: FnOnce() -> Result<Box<dyn std::any::Any + Send + Sync>, Box<dyn std::any::Any + Send + Sync>>,
+        F: FnOnce() -> Result<
+            Box<dyn std::any::Any + Send + Sync>,
+            Box<dyn std::any::Any + Send + Sync>,
+        >,
     {
         self.support
             .execute(method, target_type_name, invoker, callback)
@@ -69,7 +72,10 @@ mod tests {
 
     struct MockInvoker;
     impl CacheOperationInvoker for MockInvoker {
-        fn invoke(&self) -> Result<Box<dyn std::any::Any + Send + Sync>, Box<dyn std::any::Any + Send + Sync>> {
+        fn invoke(
+            &self,
+        ) -> Result<Box<dyn std::any::Any + Send + Sync>, Box<dyn std::any::Any + Send + Sync>>
+        {
             Ok(Box::new(42) as Box<dyn std::any::Any + Send + Sync>)
         }
     }

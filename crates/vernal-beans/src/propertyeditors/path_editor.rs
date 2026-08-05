@@ -87,7 +87,10 @@ mod tests {
         let val: Arc<dyn Any + Send + Sync> = Arc::new("/tmp/file.txt".to_string());
         editor.set_value(val);
         let retrieved = editor.get_value().unwrap();
-        assert_eq!(*retrieved.downcast_ref::<String>().unwrap(), "/tmp/file.txt");
+        assert_eq!(
+            *retrieved.downcast_ref::<String>().unwrap(),
+            "/tmp/file.txt"
+        );
     }
 
     #[test]

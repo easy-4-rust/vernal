@@ -4,8 +4,8 @@
 //!
 //! 提供流式 API 构建 BeanDefinition，是注册 Bean 定义的主要入口。
 
-use crate::factory::annotation::autowire::Autowire;
 use crate::component_scope::Scope;
+use crate::factory::annotation::autowire::Autowire;
 use crate::factory::config::constructor_argument_values::ValueHolder;
 use crate::factory::support::generic_bean_definition::GenericBeanDefinition;
 use crate::factory::support::root_bean_definition::RootBeanDefinition;
@@ -395,7 +395,10 @@ mod tests {
         let bd = BeanDefinitionBuilder::generic("MyService")
             .set_role(crate::factory::config::bean_definition::ROLE_SUPPORT)
             .build();
-        assert_eq!(bd.role(), crate::factory::config::bean_definition::ROLE_SUPPORT);
+        assert_eq!(
+            bd.role(),
+            crate::factory::config::bean_definition::ROLE_SUPPORT
+        );
     }
 
     #[test]
@@ -484,7 +487,10 @@ mod tests {
         assert_eq!(bd.scope(), Scope::Singleton);
         assert!(!bd.is_lazy_init());
         assert!(bd.is_primary());
-        assert_eq!(bd.role(), crate::factory::config::bean_definition::ROLE_APPLICATION);
+        assert_eq!(
+            bd.role(),
+            crate::factory::config::bean_definition::ROLE_APPLICATION
+        );
     }
 
     #[test]

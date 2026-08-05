@@ -24,8 +24,8 @@ use std::collections::HashSet;
 
 use crate::convert::ConversionError;
 
-use super::convertible_pair::ConvertiblePair;
 use super::ConditionalConverter;
+use super::convertible_pair::ConvertiblePair;
 
 /// 类型擦除的通用转换函数:`(&str, TypeId)` → `Result<String, ConversionError>`。
 pub type ErasedGenericFn =

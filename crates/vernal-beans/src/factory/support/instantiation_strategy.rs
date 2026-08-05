@@ -48,11 +48,15 @@ pub struct FactoryClosureStrategy;
 
 impl FactoryClosureStrategy {
     /// 创建一个新的实例。
-    pub fn new() -> Self { Self }
+    pub fn new() -> Self {
+        Self
+    }
 }
 
 impl Default for FactoryClosureStrategy {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl InstantiationStrategy for FactoryClosureStrategy {

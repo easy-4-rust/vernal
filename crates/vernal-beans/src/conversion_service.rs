@@ -10,7 +10,6 @@
 use std::any::Any;
 use std::sync::Arc;
 
-
 /// Spring 风格的类型转换服务 trait。
 ///
 /// 对应 Spring 的 `ConversionService`。
@@ -375,7 +374,11 @@ mod tests {
         for value in &["true", "yes", "1", "TRUE", "Yes", "True"] {
             let source = String::from(*value);
             let result = service.convert(&source, TypeId::of::<bool>()).unwrap();
-            assert!(*result.downcast_ref::<bool>().unwrap(), "Expected true for '{}'", value);
+            assert!(
+                *result.downcast_ref::<bool>().unwrap(),
+                "Expected true for '{}'",
+                value
+            );
         }
     }
 
@@ -385,7 +388,11 @@ mod tests {
         for value in &["false", "no", "0", "FALSE", "No", "False"] {
             let source = String::from(*value);
             let result = service.convert(&source, TypeId::of::<bool>()).unwrap();
-            assert!(!*result.downcast_ref::<bool>().unwrap(), "Expected false for '{}'", value);
+            assert!(
+                !*result.downcast_ref::<bool>().unwrap(),
+                "Expected false for '{}'",
+                value
+            );
         }
     }
 
@@ -424,11 +431,15 @@ mod tests {
     fn test_bool_to_string_conversion() {
         let service = DefaultConversionService::new();
         let source_true = true;
-        let result = service.convert(&source_true, TypeId::of::<String>()).unwrap();
+        let result = service
+            .convert(&source_true, TypeId::of::<String>())
+            .unwrap();
         assert_eq!(*result.downcast_ref::<String>().unwrap(), "true");
 
         let source_false = false;
-        let result = service.convert(&source_false, TypeId::of::<String>()).unwrap();
+        let result = service
+            .convert(&source_false, TypeId::of::<String>())
+            .unwrap();
         assert_eq!(*result.downcast_ref::<String>().unwrap(), "false");
     }
 
@@ -443,9 +454,17 @@ mod tests {
     fn test_register_custom_converter() {
         struct U8ToU16Converter;
         impl Converter for U8ToU16Converter {
-            fn source_type(&self) -> TypeId { TypeId::of::<u8>() }
-            fn target_type(&self) -> TypeId { TypeId::of::<u16>() }
-            fn convert(&self, source: &dyn Any) -> Result<Box<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>> {
+            fn source_type(&self) -> TypeId {
+                TypeId::of::<u8>()
+            }
+            fn target_type(&self) -> TypeId {
+                TypeId::of::<u16>()
+            }
+            fn convert(
+                &self,
+                source: &dyn Any,
+            ) -> Result<Box<dyn Any + Send + Sync>, Box<dyn std::error::Error + Send + Sync>>
+            {
                 let v = source.downcast_ref::<u8>().ok_or("Not a u8")?;
                 Ok(Box::new(*v as u16))
             }

@@ -2,12 +2,12 @@
 //!
 //! 对标 Spring `org.springframework.core.env.PropertySourcesPropertyResolver`。
 
+use super::PropertyResolver;
 use super::abstract_property_resolver::AbstractPropertyResolver;
 use super::configurable_property_resolver::ConfigurablePropertyResolver;
 use super::missing_required_properties_exception::MissingRequiredPropertiesException;
-use super::property_sources::PropertySources;
 use super::property_resolver::LookupAdapter;
-use super::PropertyResolver;
+use super::property_sources::PropertySources;
 
 /// 属性源解析器。
 ///
@@ -45,10 +45,7 @@ impl PropertyResolver for PropertySourcesPropertyResolver<'_> {
         let mut helper = crate::util::PropertyPlaceholderHelper::new(
             self.inner.placeholder_prefix().to_string(),
             self.inner.placeholder_suffix().to_string(),
-            self.inner
-                .value_separator()
-                .unwrap_or(":")
-                .to_string(),
+            self.inner.value_separator().unwrap_or(":").to_string(),
         );
         helper.set_ignore_unresolvable(ignore_unresolvable);
         let adapter = LookupAdapter::new(self);
@@ -70,7 +67,8 @@ impl ConfigurablePropertyResolver for PropertySourcesPropertyResolver<'_> {
     }
 
     fn set_ignore_unresolvable_nested_placeholders(&mut self, ignore: bool) {
-        self.inner.set_ignore_unresolvable_nested_placeholders(ignore);
+        self.inner
+            .set_ignore_unresolvable_nested_placeholders(ignore);
     }
 
     fn set_required_properties(&mut self, required: Vec<String>) {

@@ -7,8 +7,8 @@
 //!
 //! 写回机制：通过 ExpressionState 的变量/属性访问器写回修改后的值。
 
-use super::spel_node::SpelNode;
 use super::super::expression_state::ExpressionState;
+use super::spel_node::SpelNode;
 use crate::evaluation_context::EvaluationContext;
 use crate::evaluation_exception::EvaluationException;
 use crate::spel::spel_message::SpelMessage;
@@ -66,11 +66,7 @@ impl SpelNode for OpInc {
         self.write_back(state, &new_tv)?;
 
         // 前缀返回新值，后缀返回旧值
-        if self.prefix {
-            Ok(new_tv)
-        } else {
-            Ok(value)
-        }
+        if self.prefix { Ok(new_tv) } else { Ok(value) }
     }
 
     fn is_writable(&self, _context: &dyn EvaluationContext) -> bool {

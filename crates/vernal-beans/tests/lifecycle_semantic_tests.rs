@@ -4,9 +4,15 @@ use std::sync::Arc;
 
 fn make_container() -> vernal_beans::Container {
     let mut b = vernal_beans::RegistryBuilder::new();
-    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "hello".to_string()));
-    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<i32, _>(|_| 42i32));
-    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<f64, _>(|_| 3.14f64));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(
+        |_| "hello".to_string(),
+    ));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<i32, _>(
+        |_| 42i32,
+    ));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<f64, _>(
+        |_| 3.14f64,
+    ));
     vernal_beans::Container::new(b.build().unwrap())
 }
 
@@ -55,7 +61,9 @@ fn resolve_definition_singleton_scope() {
 #[test]
 fn resolve_definition_transient_scope() {
     let mut b = vernal_beans::RegistryBuilder::new();
-    let _ = b.register(vernal_beans::ComponentDefinition::transient::<String, _>(|_| "transient".to_string()));
+    let _ = b.register(vernal_beans::ComponentDefinition::transient::<String, _>(
+        |_| "transient".to_string(),
+    ));
     let c = vernal_beans::Container::new(b.build().unwrap());
     let v1: Arc<String> = c.resolve().unwrap();
     let v2: Arc<String> = c.resolve().unwrap();
@@ -74,7 +82,10 @@ fn resolve_definition_custom_scope() {
 fn resolve_definition_qualified() {
     let mut b = vernal_beans::RegistryBuilder::new();
     let q = vernal_beans::Qualifier::new("primary").unwrap();
-    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "primary".to_string()).qualified(q.clone()));
+    let _ = b.register(
+        vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "primary".to_string())
+            .qualified(q.clone()),
+    );
     let c = vernal_beans::Container::new(b.build().unwrap());
     let v: Arc<String> = c.resolve_qualified(&q).unwrap();
     assert_eq!(*v, "primary");
@@ -92,7 +103,9 @@ fn resolve_definition_qualified_not_found() {
 fn resolve_definition_circular_dependency() {
     // 循环依赖检测
     let mut b = vernal_beans::RegistryBuilder::new();
-    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(|_| "a".to_string()));
+    let _ = b.register(vernal_beans::ComponentDefinition::singleton::<String, _>(
+        |_| "a".to_string(),
+    ));
     let c = vernal_beans::Container::new(b.build().unwrap());
     // 正常解析应该成功
     let v: Arc<String> = c.resolve().unwrap();
@@ -113,11 +126,15 @@ fn destroy_bean_instance_basic() {
 
 #[test]
 fn destroy_bean_instance_with_post_processor() {
-    use vernal_beans::BeanPostProcessor;
     use vernal_beans::AutowireCapableBeanFactory;
+    use vernal_beans::BeanPostProcessor;
     struct PP;
     impl BeanPostProcessor for PP {
-        fn post_process_before_destruction(&self, _bean: &dyn Any, _name: &str) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        fn post_process_before_destruction(
+            &self,
+            _bean: &dyn Any,
+            _name: &str,
+        ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             Ok(())
         }
     }
@@ -153,11 +170,11 @@ fn warm_up_empty_container() {
 
 #[test]
 fn post_processor_chain_order() {
-    use vernal_beans::BeanPostProcessor;
     use std::sync::atomic::{AtomicU32, Ordering};
+    use vernal_beans::BeanPostProcessor;
 
     #[allow(dead_code)]
-        struct OrderPP {
+    struct OrderPP {
         id: u32,
         counter: Arc<AtomicU32>,
     }
@@ -167,7 +184,8 @@ fn post_processor_chain_order() {
             &self,
             bean: Arc<dyn Any + Send + Sync>,
             _name: &str,
-        ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>> {
+        ) -> Result<Option<Arc<dyn Any + Send + Sync>>, Box<dyn std::error::Error + Send + Sync>>
+        {
             self.counter.fetch_add(1, Ordering::SeqCst);
             Ok(Some(bean))
         }
@@ -175,8 +193,14 @@ fn post_processor_chain_order() {
 
     let counter = Arc::new(AtomicU32::new(0));
     let mut c = make_container();
-    c.add_bean_post_processor(Arc::new(OrderPP { id: 1, counter: counter.clone() }));
-    c.add_bean_post_processor(Arc::new(OrderPP { id: 2, counter: counter.clone() }));
+    c.add_bean_post_processor(Arc::new(OrderPP {
+        id: 1,
+        counter: counter.clone(),
+    }));
+    c.add_bean_post_processor(Arc::new(OrderPP {
+        id: 2,
+        counter: counter.clone(),
+    }));
 
     let _v: Arc<String> = c.resolve().unwrap();
     // Both processors should have been called
@@ -214,14 +238,20 @@ fn bean_factory_contains_bean() {
 fn bean_factory_is_singleton() {
     use vernal_beans::BeanFactory;
     let c = make_container();
-    assert!(c.is_singleton(&vernal_beans::ComponentKey::of::<String>()).unwrap());
+    assert!(
+        c.is_singleton(&vernal_beans::ComponentKey::of::<String>())
+            .unwrap()
+    );
 }
 
 #[test]
 fn bean_factory_is_prototype() {
     use vernal_beans::BeanFactory;
     let c = make_container();
-    assert!(!c.is_prototype(&vernal_beans::ComponentKey::of::<String>()).unwrap());
+    assert!(
+        !c.is_prototype(&vernal_beans::ComponentKey::of::<String>())
+            .unwrap()
+    );
 }
 
 #[test]
@@ -244,7 +274,10 @@ fn bean_factory_get_aliases() {
 fn bean_factory_is_type_match() {
     use vernal_beans::BeanFactory;
     let c = make_container();
-    assert!(c.is_type_match(&vernal_beans::ComponentKey::of::<String>(), std::any::TypeId::of::<String>()));
+    assert!(c.is_type_match(
+        &vernal_beans::ComponentKey::of::<String>(),
+        std::any::TypeId::of::<String>()
+    ));
 }
 
 #[test]
@@ -306,7 +339,10 @@ fn acbf_autowire_modes() {
 fn acbf_resolve_named_bean() {
     use vernal_beans::AutowireCapableBeanFactory;
     let c = make_container();
-    assert!(c.resolve_named_bean(std::any::TypeId::of::<String>()).is_ok());
+    assert!(
+        c.resolve_named_bean(std::any::TypeId::of::<String>())
+            .is_ok()
+    );
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -315,8 +351,8 @@ fn acbf_resolve_named_bean() {
 
 #[test]
 fn bdr_register_and_remove() {
-    use vernal_beans::BeanDefinitionRegistry;
     use vernal_beans::BeanDefinition;
+    use vernal_beans::BeanDefinitionRegistry;
     use vernal_beans::RootBeanDefinition;
     let mut c = vernal_beans::Container::new(vernal_beans::RegistryBuilder::new().build().unwrap());
     let def = Box::new(RootBeanDefinition::new()) as Box<dyn BeanDefinition>;

@@ -70,8 +70,11 @@ mod additional_tests {
     #[test]
     fn qualifier_pointcut_matches() {
         let pc = QualifierPointcut::new("primary").unwrap();
-        let op = Operation::new("Service", "method")
-            .with_metadata(OperationMetadata::empty().with_qualifier("primary").unwrap());
+        let op = Operation::new("Service", "method").with_metadata(
+            OperationMetadata::empty()
+                .with_qualifier("primary")
+                .unwrap(),
+        );
         assert!(pc.matches(&op));
     }
 
