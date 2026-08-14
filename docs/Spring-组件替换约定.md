@@ -216,9 +216,11 @@ Tower 生态兼容、异步优先。vernal-web 已有的 trait 抽象可直接�
 （邮件等）；thymeleaf-rust 负责 **HTML 服务端渲染**（webmvc 视图解析）——
 自然模板（HTML 可直接浏览器预览）+ Spring 生态语义，二者不冲突。
 
-**状态**：`[待验证]`——P0 三件适配器做厚计划见
-thymeleaf-rust `docs/superpowers/plans/2026-08-15-web-adapter-p0.md`
-（含 spec `2026-08-15-web-adapter-p0-design.md`）；P0 完成后升 `[已验证]`。
+**状态**：`[已验证]`——P0 三件适配器（axum/actix-web/topcoat）已做厚完成：
+IWebExchange 四件套 + 与 hyper 标杆逐断言对齐的契约测试（13/13/12 全绿）
++ `render_async`。计划与实施记录见 thymeleaf-rust
+`docs/superpowers/plans/2026-08-15-web-adapter-p0.md`；后续 ViewResolver
+桥接缺口清单见 `2026-08-15-webmvc-view-integration-notes.md`。
 
 **降级说明**：`thymeleaf-gotham` / `thymeleaf-tide` / `thymeleaf-warp` 标记为
 实验性（上游维护停滞 / 被 axum 取代），与 4.3 节优先级排序一致。
@@ -605,7 +607,7 @@ JMS 不单独建 crate，JMS 语义融入 `vernal-messaging` 2.11 节（点对�
 | `vernal-gotham` | spring-webmvc (Gotham) | gotham 0.8.0, vernal-http, vernal-web | `[已确认]` |
 | `vernal-tide` | spring-webmvc (Tide) | tide 0.17.0-beta.1, vernal-http, vernal-web | `[已确认]` |
 | `vernal-tonic` | spring-grpc | tonic 0.12.3, tower, vernal-tower, vernal-web | `[已确认]` |
-| `thymeleaf-vernal` | ThymeleafViewResolver / View | thymeleaf（easy-4-rust/thymeleaf-rust） | `[待验证]`（4.7 节；P0 三件适配器做厚后升已验证） |
+| `thymeleaf-vernal` | ThymeleafViewResolver / View | thymeleaf（easy-4-rust/thymeleaf-rust） | `[已验证]`（4.7 节；P0 三件适配器契约测试全绿） |
 | `vernal-web-testkit` | spring-test (Web) | bytes, tokio, vernal-aop, vernal-context, vernal-web | `[已确认]` |
 | `vernal-messaging` | spring-messaging / spring-jms | tokio | `[已确认]` |
 | `vernal-websocket` | spring-websocket | tokio-websockets 0.12.0, vernal-messaging | `[已确认]` |
