@@ -200,6 +200,29 @@ Tower 生态兼容、异步优先。vernal-web 已有的 trait 抽象可直接�
 | gRPC 实现 | `tonic` 0.12.3 | Tokio-native gRPC 框架 |
 | Protobuf | `prost`（ddd4r 层） | Protobuf 编解码 |
 
+### 4.7 视图层（HTML 服务端渲染）
+
+对标 Spring Web MVC 的 `ThymeleafViewResolver`/`View` 体系，选型 **thymeleaf-rust**
+（easy-4-rust/thymeleaf-rust，Thymeleaf 3.1.5.RELEASE 的 Rust 语义兼容移植，
+2609 语料差分锁定 Java 行为）。
+
+| 对标 Spring | crate | 说明 |
+|:---|:---|:---|
+| `ThymeleafViewResolver` / `View` | `thymeleaf-vernal`（`ThymeleafView`） | 渲染结果 → Vernal `HttpResponse` 协议转换 + 请求上下文适配 `IWebExchange` |
+| Web 框架适配 | `thymeleaf-{axum\|actix-web\|topcoat}` 等 | `thymeleaf-support/*` 15 crate：P0 三件（axum/actix-web/topcoat）做厚至 `IWebExchange` 四件套完整实现，其余保持稳定薄层 |
+| `spring-security-thymeleaf`（安全方言） | `thymeleaf-sa-token` | 鉴权身份桥进模板安全方言（对标 spring-security 与 Thymeleaf 的集成路径） |
+
+**与 tera 分工**：`vernal-context-support` 的 tera 继续负责**通用文本模板**
+（邮件等）；thymeleaf-rust 负责 **HTML 服务端渲染**（webmvc 视图解析）——
+自然模板（HTML 可直接浏览器预览）+ Spring 生态语义，二者不冲突。
+
+**状态**：`[待验证]`——P0 三件适配器做厚计划见
+thymeleaf-rust `docs/superpowers/plans/2026-08-15-web-adapter-p0.md`
+（含 spec `2026-08-15-web-adapter-p0-design.md`）；P0 完成后升 `[已验证]`。
+
+**降级说明**：`thymeleaf-gotham` / `thymeleaf-tide` / `thymeleaf-warp` 标记为
+实验性（上游维护停滞 / 被 axum 取代），与 4.3 节优先级排序一致。
+
 ---
 
 ## 五、消息层
@@ -582,6 +605,7 @@ JMS 不单独建 crate，JMS 语义融入 `vernal-messaging` 2.11 节（点对�
 | `vernal-gotham` | spring-webmvc (Gotham) | gotham 0.8.0, vernal-http, vernal-web | `[已确认]` |
 | `vernal-tide` | spring-webmvc (Tide) | tide 0.17.0-beta.1, vernal-http, vernal-web | `[已确认]` |
 | `vernal-tonic` | spring-grpc | tonic 0.12.3, tower, vernal-tower, vernal-web | `[已确认]` |
+| `thymeleaf-vernal` | ThymeleafViewResolver / View | thymeleaf（easy-4-rust/thymeleaf-rust） | `[待验证]`（4.7 节；P0 三件适配器做厚后升已验证） |
 | `vernal-web-testkit` | spring-test (Web) | bytes, tokio, vernal-aop, vernal-context, vernal-web | `[已确认]` |
 | `vernal-messaging` | spring-messaging / spring-jms | tokio | `[已确认]` |
 | `vernal-websocket` | spring-websocket | tokio-websockets 0.12.0, vernal-messaging | `[已确认]` |
