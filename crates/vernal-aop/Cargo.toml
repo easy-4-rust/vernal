@@ -12,8 +12,8 @@ tokio.workspace = true
 tokio-util.workspace = true
 tracing.workspace = true
 vernal-core = { path = "../vernal-core" }
-aspect-core = { path = "../../../aspect-rs/aspect-core" }
-aspect-std = { path = "../../../aspect-rs/aspect-std" }
+aspect-core = { git = "https://github.com/easy-4-rust/aspect-rs.git", rev = "89beaa9057b3f2b73093fc31d3219420e0bb6182" }
+aspect-std = { git = "https://github.com/easy-4-rust/aspect-rs.git", rev = "89beaa9057b3f2b73093fc31d3219420e0bb6182" }
 
 [dev-dependencies]
 criterion.workspace = true
