@@ -12,6 +12,7 @@ mod request_id;
 mod route_metadata;
 mod security_principal;
 mod transport_kind;
+mod view;
 mod web_failure;
 mod web_request_scope;
 mod web_request_scope_owner;

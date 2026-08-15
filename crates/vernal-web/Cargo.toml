@@ -8,6 +8,9 @@ description = "Framework-neutral web contracts for Vernal."
 publish = false
 
 [dependencies]
+bytes.workspace = true
+http.workspace = true
+indexmap.workspace = true
 tokio.workspace = true
 tokio-util.workspace = true
 vernal-aop = { path = "../vernal-aop" }
