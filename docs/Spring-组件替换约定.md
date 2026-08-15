@@ -216,11 +216,15 @@ Tower 生态兼容、异步优先。vernal-web 已有的 trait 抽象可直接�
 （邮件等）；thymeleaf-rust 负责 **HTML 服务端渲染**（webmvc 视图解析）——
 自然模板（HTML 可直接浏览器预览）+ Spring 生态语义，二者不冲突。
 
-**状态**：`[已验证]`——P0 三件适配器（axum/actix-web/topcoat）已做厚完成：
-IWebExchange 四件套 + 与 hyper 标杆逐断言对齐的契约测试（13/13/12 全绿）
-+ `render_async`。计划与实施记录见 thymeleaf-rust
-`docs/superpowers/plans/2026-08-15-web-adapter-p0.md`；后续 ViewResolver
-桥接缺口清单见 `2026-08-15-webmvc-view-integration-notes.md`。
+**状态**：`[已验证]`——两层已落地：
+1. P0 三件适配器（axum/actix-web/topcoat）做厚：IWebExchange 四件套 +
+   hyper 标杆对齐契约测试（13/13/12 全绿）+ `render_async`。
+2. **ViewResolver 桥完成**：vernal-web 新增视图合同（Model/RenderedView/
+   View/ViewResolver，对标 org.springframework.ui.Model 与 Web MVC），
+   thymeleaf-vernal 提供 `ThymeleafViewResolver` 首个实现（prefix/suffix
+   映射 + Model 弱类型桥 + Locale 协商 + cacheable 开关，集成测试 5/5）。
+计划记录见 thymeleaf-rust `docs/superpowers/plans/
+2026-08-15-web-adapter-p0.md` 与 `2026-08-15-webmvc-viewresolver-bridge.md`。
 
 **降级说明**：`thymeleaf-gotham` / `thymeleaf-tide` / `thymeleaf-warp` 标记为
 实验性（上游维护停滞 / 被 axum 取代），与 4.3 节优先级排序一致。
