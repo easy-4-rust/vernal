@@ -10,8 +10,7 @@ use futures_lite::io::{AsyncBufRead, AsyncRead};
 
 /// 在第一次 Futures IO 读取时返回确定性错误的测试 Reader。
 ///
-/// Tide 使用 `futures_lite::io::AsyncRead` 而不是 Tokio Reader；独立对象避免
-/// 测试通过兼容层改变 Tide 原生的读取与错误语义。
+/// 用于验证基于 `futures_lite::io::AsyncRead` 的读取与错误传播。
 #[derive(Default)]
 pub struct FailingFuturesReader {
     emitted: bool,

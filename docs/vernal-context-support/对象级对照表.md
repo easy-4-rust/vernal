@@ -40,21 +40,21 @@
 
 > 下列既存问题属于未完成证据。本报告只登记，不在文档治理任务中修改源码。
 
-- 单文件多个公开对象位于 `mail/javamail/mime_message_preparator.rs`：`MimeMessagePreparator`、`SimpleMimeMessagePreparator`
-- 单文件多个公开对象位于 `mail/javamail/java_mail_sender.rs`：`JavaMailSender`、`LettreJavaMailSender`
-- 单文件多个公开对象位于 `scheduling/quartz/scheduler_context_aware.rs`：`SchedulerContext`、`SchedulerContextAware`
-- 单文件多个公开对象位于 `scheduling/quartz/local_data_source_job_store.rs`：`ConnectionProvider`、`LocalDataSourceJobStore`
-- 单文件多个公开对象位于 `scheduling/quartz/job_detail_factory_bean.rs`：`JobDetail`、`JobDetailFactoryBean`
-- 单文件多个公开对象位于 `scheduling/quartz/local_task_executor_thread_pool.rs`：`TaskExecutor`、`LocalTaskExecutorThreadPool`
-- 单文件多个公开对象位于 `scheduling/quartz/resource_loader_class_load_helper.rs`：`ResourceLoader`、`FileSystemResourceLoader`、`ResourceLoaderClassLoadHelper`
-- 单文件多个公开对象位于 `scheduling/quartz/scheduler_factory_bean.rs`：`SchedulerState`、`SchedulerFactoryBean`
-- 单文件多个公开对象位于 `scheduling/quartz/cron_trigger_factory_bean.rs`：`CronTrigger`、`CronTriggerFactoryBean`
-- 单文件多个公开对象位于 `scheduling/quartz/quartz_job_bean.rs`：`QuartzJob`、`JobExecutionContext`、`SimpleQuartzJob`
-- 单文件多个公开对象位于 `scheduling/quartz/simple_trigger_factory_bean.rs`：`SimpleTrigger`、`SimpleTriggerFactoryBean`
-- 单文件多个公开对象位于 `cache/transaction/transaction_aware_cache_decorator.rs`：`TransactionStatus`、`TransactionCallbackRegistrar`、`ImmediateCallbackRegistrar`、`TransactionAwareCacheDecorator`
-- 单文件多个公开对象位于 `cache/caffeine/caffeine_spec.rs`：`CaffeineSpecParseError`、`CaffeineSpec`
 - 单文件多个公开对象位于 `cache/caffeine/caffeine_cache_manager.rs`：`AsyncCacheMode`、`CaffeineCacheManager`
+- 单文件多个公开对象位于 `cache/caffeine/caffeine_spec.rs`：`CaffeineSpecParseError`、`CaffeineSpec`
 - 单文件多个公开对象位于 `cache/jcache/interceptor/jcache_operation_source.rs`：`JCacheOperationSource`、`JCacheOperation`、`JCacheOperationType`
+- 单文件多个公开对象位于 `cache/transaction/transaction_aware_cache_decorator.rs`：`TransactionStatus`、`TransactionCallbackRegistrar`、`ImmediateCallbackRegistrar`、`TransactionAwareCacheDecorator`
+- 单文件多个公开对象位于 `mail/javamail/java_mail_sender.rs`：`JavaMailSender`、`LettreJavaMailSender`
+- 单文件多个公开对象位于 `mail/javamail/mime_message_preparator.rs`：`MimeMessagePreparator`、`SimpleMimeMessagePreparator`
+- 单文件多个公开对象位于 `scheduling/quartz/cron_trigger_factory_bean.rs`：`CronTrigger`、`CronTriggerFactoryBean`
+- 单文件多个公开对象位于 `scheduling/quartz/job_detail_factory_bean.rs`：`JobDetail`、`JobDetailFactoryBean`
+- 单文件多个公开对象位于 `scheduling/quartz/local_data_source_job_store.rs`：`ConnectionProvider`、`LocalDataSourceJobStore`
+- 单文件多个公开对象位于 `scheduling/quartz/local_task_executor_thread_pool.rs`：`TaskExecutor`、`LocalTaskExecutorThreadPool`
+- 单文件多个公开对象位于 `scheduling/quartz/quartz_job_bean.rs`：`QuartzJob`、`JobExecutionContext`、`SimpleQuartzJob`
+- 单文件多个公开对象位于 `scheduling/quartz/resource_loader_class_load_helper.rs`：`ResourceLoader`、`FileSystemResourceLoader`、`ResourceLoaderClassLoadHelper`
+- 单文件多个公开对象位于 `scheduling/quartz/scheduler_context_aware.rs`：`SchedulerContext`、`SchedulerContextAware`
+- 单文件多个公开对象位于 `scheduling/quartz/scheduler_factory_bean.rs`：`SchedulerState`、`SchedulerFactoryBean`
+- 单文件多个公开对象位于 `scheduling/quartz/simple_trigger_factory_bean.rs`：`SimpleTrigger`、`SimpleTriggerFactoryBean`
 
 ## 逐对象台账
 

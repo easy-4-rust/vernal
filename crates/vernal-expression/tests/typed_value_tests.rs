@@ -1,7 +1,7 @@
 //! 类型化值测试（`TypedValue` / `ExpressionValue` / `TypeDescriptor`）。
 
 use bigdecimal::BigDecimal;
-use chrono::{Duration as ChronoDuration, TimeZone, Utc};
+use jiff::{SignedDuration, Timestamp};
 use num_bigint::BigInt;
 use vernal_expression::{ExpressionValue, PrimitiveKind, TypeDescriptor, TypedValue};
 
@@ -93,7 +93,9 @@ fn typed_value_new_with_string() {
 
 #[test]
 fn typed_value_new_with_datetime() {
-    let dt = Utc.with_ymd_and_hms(2024, 1, 15, 10, 30, 0).unwrap();
+    let dt = "2024-01-15T10:30:00Z"
+        .parse::<Timestamp>()
+        .expect("valid fixture");
     let tv = TypedValue::new(
         ExpressionValue::DateTime(dt),
         TypeDescriptor::Primitive(PrimitiveKind::DateTime),
@@ -104,7 +106,7 @@ fn typed_value_new_with_datetime() {
 
 #[test]
 fn typed_value_new_with_duration() {
-    let dur = ChronoDuration::seconds(42);
+    let dur = SignedDuration::from_secs(42);
     let tv = TypedValue::new(
         ExpressionValue::Duration(dur),
         TypeDescriptor::Primitive(PrimitiveKind::Duration),
@@ -295,27 +297,26 @@ fn typed_value_display_string() {
 
 #[test]
 fn typed_value_display_datetime() {
-    let dt = Utc.with_ymd_and_hms(2024, 1, 15, 10, 30, 0).unwrap();
+    let dt = "2024-01-15T10:30:00Z"
+        .parse::<Timestamp>()
+        .expect("valid fixture");
     let tv = TypedValue::new(
         ExpressionValue::DateTime(dt),
         TypeDescriptor::Primitive(PrimitiveKind::DateTime),
     );
     let display = tv.to_string();
-    assert!(
-        display.contains("2024"),
-        "DateTime display should contain year, got: {display}"
-    );
+    assert_eq!(display, "2024-01-15 10:30:00 UTC");
 }
 
 #[test]
 fn typed_value_display_duration() {
-    let dur = ChronoDuration::seconds(3600);
+    let dur = SignedDuration::from_secs(3600);
     let tv = TypedValue::new(
         ExpressionValue::Duration(dur),
         TypeDescriptor::Primitive(PrimitiveKind::Duration),
     );
     let display = tv.to_string();
-    assert!(!display.is_empty(), "Duration display should not be empty");
+    assert_eq!(display, "PT3600S");
 }
 
 #[test]
@@ -440,9 +441,9 @@ fn expression_value_is_truthy_char_null_char() {
 fn expression_value_is_truthy_list_and_map_are_true() {
     assert!(ExpressionValue::List(vec![]).is_truthy());
     assert!(ExpressionValue::Map(vec![]).is_truthy());
-    let dt = Utc::now();
+    let dt = Timestamp::now();
     assert!(ExpressionValue::DateTime(dt).is_truthy());
-    assert!(ExpressionValue::Duration(ChronoDuration::zero()).is_truthy());
+    assert!(ExpressionValue::Duration(SignedDuration::ZERO).is_truthy());
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -520,11 +521,11 @@ fn expression_value_type_descriptor_char_string() {
 #[test]
 fn expression_value_type_descriptor_datetime_duration() {
     assert!(matches!(
-        ExpressionValue::DateTime(Utc::now()).type_descriptor(),
+        ExpressionValue::DateTime(Timestamp::now()).type_descriptor(),
         TypeDescriptor::Primitive(PrimitiveKind::DateTime)
     ));
     assert!(matches!(
-        ExpressionValue::Duration(ChronoDuration::seconds(42)).type_descriptor(),
+        ExpressionValue::Duration(SignedDuration::from_secs(42)).type_descriptor(),
         TypeDescriptor::Primitive(PrimitiveKind::Duration)
     ));
 }
@@ -609,9 +610,13 @@ fn expression_value_as_any_unsupported_types_return_none() {
     );
     assert!(ExpressionValue::List(vec![]).as_any().is_none());
     assert!(ExpressionValue::Map(vec![]).as_any().is_none());
-    assert!(ExpressionValue::DateTime(Utc::now()).as_any().is_none());
     assert!(
-        ExpressionValue::Duration(ChronoDuration::seconds(42))
+        ExpressionValue::DateTime(Timestamp::now())
+            .as_any()
+            .is_none()
+    );
+    assert!(
+        ExpressionValue::Duration(SignedDuration::from_secs(42))
             .as_any()
             .is_none()
     );
@@ -791,9 +796,15 @@ fn expression_value_partial_eq_different_types_not_equal() {
 
 #[test]
 fn expression_value_partial_eq_datetime() {
-    let dt1 = Utc.with_ymd_and_hms(2024, 1, 1, 0, 0, 0).unwrap();
-    let dt2 = Utc.with_ymd_and_hms(2024, 1, 1, 0, 0, 0).unwrap();
-    let dt3 = Utc.with_ymd_and_hms(2024, 1, 2, 0, 0, 0).unwrap();
+    let dt1 = "2024-01-01T00:00:00Z"
+        .parse::<Timestamp>()
+        .expect("valid fixture");
+    let dt2 = "2024-01-01T00:00:00Z"
+        .parse::<Timestamp>()
+        .expect("valid fixture");
+    let dt3 = "2024-01-02T00:00:00Z"
+        .parse::<Timestamp>()
+        .expect("valid fixture");
     assert_eq!(
         ExpressionValue::DateTime(dt1),
         ExpressionValue::DateTime(dt2)
@@ -807,12 +818,12 @@ fn expression_value_partial_eq_datetime() {
 #[test]
 fn expression_value_partial_eq_duration() {
     assert_eq!(
-        ExpressionValue::Duration(ChronoDuration::seconds(42)),
-        ExpressionValue::Duration(ChronoDuration::seconds(42))
+        ExpressionValue::Duration(SignedDuration::from_secs(42)),
+        ExpressionValue::Duration(SignedDuration::from_secs(42))
     );
     assert_ne!(
-        ExpressionValue::Duration(ChronoDuration::seconds(42)),
-        ExpressionValue::Duration(ChronoDuration::seconds(43))
+        ExpressionValue::Duration(SignedDuration::from_secs(42)),
+        ExpressionValue::Duration(SignedDuration::from_secs(43))
     );
 }
 
@@ -934,14 +945,14 @@ fn expression_value_clone_string() {
 
 #[test]
 fn expression_value_clone_datetime() {
-    let dt = Utc::now();
+    let dt = Timestamp::now();
     let v = ExpressionValue::DateTime(dt);
     assert_eq!(v, v.clone());
 }
 
 #[test]
 fn expression_value_clone_duration() {
-    let v = ExpressionValue::Duration(ChronoDuration::seconds(42));
+    let v = ExpressionValue::Duration(SignedDuration::from_secs(42));
     assert_eq!(v, v.clone());
 }
 

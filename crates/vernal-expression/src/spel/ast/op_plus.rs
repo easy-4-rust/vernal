@@ -121,8 +121,8 @@ impl OpPlus {
             ExpressionValue::Char(c) => c.to_string(),
             ExpressionValue::Boolean(b) => b.to_string(),
             ExpressionValue::String(s) => s.clone(),
-            ExpressionValue::DateTime(dt) => dt.to_string(),
-            ExpressionValue::Duration(d) => d.to_string(),
+            ExpressionValue::DateTime(dt) => crate::expression_value::format_timestamp(*dt),
+            ExpressionValue::Duration(d) => crate::expression_value::format_duration(*d),
             ExpressionValue::List(l) => {
                 let items: Vec<String> =
                     l.iter().map(|v| Self::value_to_string(v.value())).collect();

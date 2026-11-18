@@ -40,9 +40,9 @@
 
 > 下列既存问题属于未完成证据。本报告只登记，不在文档治理任务中修改源码。
 
-- 单文件多个公开对象位于 `task_options.rs`：`TaskOptions`、`TaskPriority`
-- 单文件多个公开对象位于 `event_listener_registration.rs`：`ListenerKey`、`ApplicationListenerRegistration`、`EventListenerRegistry`
 - 单文件多个公开对象位于 `application_context_event.rs`：`ApplicationContextEvent`、`ApplicationContextEventBase`
+- 单文件多个公开对象位于 `event_listener_registration.rs`：`ListenerKey`、`ApplicationListenerRegistration`、`EventListenerRegistry`
+- 单文件多个公开对象位于 `task_options.rs`：`TaskOptions`、`TaskPriority`
 - 单文件多个公开对象位于 `value_binding.rs`：`ValueBinding`、`ValueExpressionResolver`
 
 ## 逐对象台账

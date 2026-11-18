@@ -18,7 +18,8 @@ freemarker = ["dep:tera"]
 async-trait.workspace = true
 moka = { version = "0.12", features = ["sync", "future"], optional = true }
 lettre = { version = "0.11", features = ["builder", "hostname", "tokio1-native-tls"], optional = true }
-tera = { version = "1", optional = true }
+# 保留 Tera 1 公开类型和 URL 编码，默认 builtins 特性会引入 Chrono。
+tera = { version = "1", default-features = false, features = ["urlencode"], optional = true }
 thiserror = "2.0"
 tokio.workspace = true
 vernal-cache = { path = "../vernal-cache" }

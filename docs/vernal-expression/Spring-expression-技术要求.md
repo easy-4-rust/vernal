@@ -219,7 +219,9 @@ crates/vernal-expression/src/
 |:------|:-----|:---------|
 | `regex` | `matches` 运算符正则匹配 | 约定文档：正则用 `regex` |
 | `moka` | 正则编译缓存 | 约定文档：缓存用 `moka` |
-| `chrono` | `DateTime<Utc>` / `Duration` | 时间类型 |
+| `jiff` | `Timestamp` / `SignedDuration` | UTC 瞬时与有符号时间间隔 |
+
+Chrono 迁移保留表达式变体名称、文本格式及 `convert-chrono` 功能开关。旧开关现在选中现有 `convert-time` 实现。可选 `freemarker` 保留 Tera 1 公开类型及 URL 编码，关闭会引入 Chrono 的 Tera `builtins` 功能组。模板使用 `date`、`now`、`slugify`、`filesizeformat` 或 `get_random` 时，需注册相应的过滤器或函数。
 | `num-bigint` / `bigdecimal` | 任意精度数值 | `BigInt` / `BigDecimal` |
 | `num-traits` | 数值 trait（`Zero` 等） | 数值运算基础 |
 | `inventory` | 属性绑定静态注册 | `ReflectivePropertyAccessor` 运行时收集 |
@@ -228,7 +230,7 @@ crates/vernal-expression/src/
 | `once_cell` | 懒初始化 | `OnceLock` 替代方案 |
 | `thiserror` | 错误类型派生 | `SpelParseException` / `SpelEvaluationException` |
 | `tracing` | 日志追踪 | 运行时诊断 |
-| `vernal-core` | 内核 trait / 注册表 | `once-cell` / `registry` / `convert-chrono` / `convert-regex` / `error-derive` |
+| `vernal-core` | 内核 trait / 注册表 | `once-cell` / `registry` / `convert-regex` / `error-derive` |
 
 ### 1.4 不迁移项
 
@@ -370,8 +372,8 @@ pub enum ExpressionValue {
     Decimal(BigDecimal),// java.math.BigDecimal
     Char(char),
     String(String),
-    DateTime(DateTime<Utc>),  // java.util.Date
-    Duration(ChronoDuration), // java.time.Duration
+    DateTime(Timestamp),  // java.util.Date
+    Duration(SignedDuration), // java.time.Duration
     List(Vec<TypedValue>),
     Map(Vec<(TypedValue, TypedValue)>),  // 保留顺序，允许任意类型键
     Object(Arc<dyn Any + Send + Sync>),  // 用户对象（vernal-beans Bean 等）

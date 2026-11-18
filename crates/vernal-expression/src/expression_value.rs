@@ -8,7 +8,7 @@ use std::any::Any;
 use std::sync::Arc;
 
 use bigdecimal::BigDecimal;
-use chrono::{DateTime, Duration as ChronoDuration, Utc};
+use jiff::{SignedDuration, Timestamp};
 use num_bigint::BigInt;
 use num_traits::Zero;
 
@@ -56,9 +56,9 @@ pub enum ExpressionValue {
     /// 字符串。
     String(String),
     /// UTC 日期时间（对标 `java.util.Date`）。
-    DateTime(DateTime<Utc>),
+    DateTime(Timestamp),
     /// 时间间隔（对标 `java.time.Duration`）。
-    Duration(ChronoDuration),
+    Duration(SignedDuration),
     /// 列表（对应任意索引集合）。
     List(Vec<TypedValue>),
     /// 映射（`Vec<(K, V)>` 形式以保留顺序并允许任意类型键）。
@@ -66,6 +66,33 @@ pub enum ExpressionValue {
     /// 任意用户对象（用于 vernal-beans Bean 等）。
     /// 用 `Arc` 包裹以便 `Clone` 派生。
     Object(Arc<dyn Any + Send + Sync>),
+}
+
+/// 保留表达式向文本转换时既有的 UTC 时间表示。
+pub(crate) fn format_timestamp(value: Timestamp) -> String {
+    let precision = match value.subsec_nanosecond() {
+        0 => "%Y-%m-%d %H:%M:%S",
+        nanos if nanos % 1_000_000 == 0 => "%Y-%m-%d %H:%M:%S%.3f",
+        nanos if nanos % 1_000 == 0 => "%Y-%m-%d %H:%M:%S%.6f",
+        _ => "%Y-%m-%d %H:%M:%S%.9f",
+    };
+    format!("{} UTC", value.strftime(precision))
+}
+
+/// 保留秒为单位的 ISO 时间间隔文本。
+pub(crate) fn format_duration(value: SignedDuration) -> String {
+    if value.is_zero() {
+        return "P0D".to_owned();
+    }
+    let sign = if value.is_negative() { "-" } else { "" };
+    let seconds = value.as_secs().unsigned_abs();
+    let nanos = value.subsec_nanos().unsigned_abs();
+    if nanos == 0 {
+        format!("{sign}PT{seconds}S")
+    } else {
+        let fraction = format!("{nanos:09}");
+        format!("{sign}PT{seconds}.{}S", fraction.trim_end_matches('0'))
+    }
 }
 
 impl ExpressionValue {
@@ -153,8 +180,8 @@ impl ExpressionValue {
             Self::Char(_) => std::any::TypeId::of::<char>(),
             Self::List(_) => std::any::TypeId::of::<Vec<TypedValue>>(),
             Self::Map(_) => std::any::TypeId::of::<Vec<(TypedValue, TypedValue)>>(),
-            Self::DateTime(_) => std::any::TypeId::of::<chrono::DateTime<chrono::Utc>>(),
-            Self::Duration(_) => std::any::TypeId::of::<chrono::Duration>(),
+            Self::DateTime(_) => std::any::TypeId::of::<Timestamp>(),
+            Self::Duration(_) => std::any::TypeId::of::<SignedDuration>(),
             Self::Null => std::any::TypeId::of::<()>(),
         }
     }
@@ -307,13 +334,13 @@ mod tests {
 
     #[test]
     fn type_descriptor_datetime() {
-        let td = ExpressionValue::DateTime(Utc::now()).type_descriptor();
+        let td = ExpressionValue::DateTime(Timestamp::now()).type_descriptor();
         assert_eq!(td, TypeDescriptor::Primitive(PrimitiveKind::DateTime));
     }
 
     #[test]
     fn type_descriptor_duration() {
-        let td = ExpressionValue::Duration(ChronoDuration::seconds(10)).type_descriptor();
+        let td = ExpressionValue::Duration(SignedDuration::from_secs(10)).type_descriptor();
         assert_eq!(td, TypeDescriptor::Primitive(PrimitiveKind::Duration));
     }
 
@@ -429,12 +456,12 @@ mod tests {
 
     #[test]
     fn truthy_datetime() {
-        assert!(ExpressionValue::DateTime(Utc::now()).is_truthy());
+        assert!(ExpressionValue::DateTime(Timestamp::now()).is_truthy());
     }
 
     #[test]
     fn truthy_duration() {
-        assert!(ExpressionValue::Duration(ChronoDuration::seconds(1)).is_truthy());
+        assert!(ExpressionValue::Duration(SignedDuration::from_secs(1)).is_truthy());
     }
 
     // ── as_any() ──────────────────────────────────────────────────────
@@ -494,9 +521,13 @@ mod tests {
         );
         assert!(ExpressionValue::List(vec![]).as_any().is_none());
         assert!(ExpressionValue::Map(vec![]).as_any().is_none());
-        assert!(ExpressionValue::DateTime(Utc::now()).as_any().is_none());
         assert!(
-            ExpressionValue::Duration(ChronoDuration::seconds(1))
+            ExpressionValue::DateTime(Timestamp::now())
+                .as_any()
+                .is_none()
+        );
+        assert!(
+            ExpressionValue::Duration(SignedDuration::from_secs(1))
                 .as_any()
                 .is_none()
         );
@@ -603,14 +634,14 @@ mod tests {
 
     #[test]
     fn type_id_datetime() {
-        let v = ExpressionValue::DateTime(Utc::now());
-        assert_eq!(v.type_id(), std::any::TypeId::of::<DateTime<Utc>>());
+        let v = ExpressionValue::DateTime(Timestamp::now());
+        assert_eq!(v.type_id(), std::any::TypeId::of::<Timestamp>());
     }
 
     #[test]
     fn type_id_duration() {
-        let v = ExpressionValue::Duration(ChronoDuration::seconds(1));
-        assert_eq!(v.type_id(), std::any::TypeId::of::<ChronoDuration>());
+        let v = ExpressionValue::Duration(SignedDuration::from_secs(1));
+        assert_eq!(v.type_id(), std::any::TypeId::of::<SignedDuration>());
     }
 
     #[test]
@@ -702,7 +733,7 @@ mod tests {
 
     #[test]
     fn partial_eq_datetime() {
-        let now = Utc::now();
+        let now = Timestamp::now();
         assert_eq!(
             ExpressionValue::DateTime(now),
             ExpressionValue::DateTime(now)
@@ -711,7 +742,7 @@ mod tests {
 
     #[test]
     fn partial_eq_duration() {
-        let d = ChronoDuration::seconds(10);
+        let d = SignedDuration::from_secs(10);
         assert_eq!(ExpressionValue::Duration(d), ExpressionValue::Duration(d));
     }
 

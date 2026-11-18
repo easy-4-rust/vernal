@@ -372,6 +372,7 @@ fn field_metadata_multiple_types() {
 /// 验证 field_metadata clear 功能。
 #[test]
 fn field_metadata_clear() {
+    let _guard = lock_field_md();
     use vernal_beans::field_metadata;
 
     // 清理后注册

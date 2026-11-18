@@ -26,7 +26,7 @@ Application components
 │ IoC kernel       construct, resolve, scope, validate      │
 │ AOP kernel       match, compose and execute interceptors  │
 │ Context          bootstrap, lifecycle, events, shutdown   │
-│ Web              Web / HTTP / ten adapters                  │
+│ Web              Web / HTTP / nine adapters                  │
 └──────────────────────────────────────────────────────────┘
         │ explicit ports and framework-native values
         ▼
@@ -35,8 +35,8 @@ Hutool-Rust · Sa-Token-Rust · Ddd4r · general Rust applications
 
 > **Project status:** experimental. Phase 1 IoC, the Tokio-first Phase 2 AOP
 > kernel, Phase 3 application context, and the Phase 4 Web/HTTP/Tower/Hyper
-> foundations are callable and contract-tested. All ten selected framework
-> adapters—Axum, Actix Web, Rocket, Warp, Salvo, Poem, Ntex, Gotham, Tide, and
+> foundations are callable and contract-tested. All nine selected framework
+> adapters—Axum, Actix Web, Rocket, Warp, Salvo, Poem, Ntex, Gotham, and
 > Tonic—are runnable. The explicit Component derive and context-local async AOP
 > method macro are callable but still experimental. Nothing is published yet.
 
@@ -53,7 +53,7 @@ missing between small Rust libraries and full web frameworks:
 - procedural macros that generate ordinary Rust code rather than hiding a
   reflection runtime;
 - framework-neutral Web and HTTP contracts plus thin integration crates for
-  the ten selected HTTP/RPC frameworks and downstream ecosystems.
+  the nine selected HTTP/RPC frameworks and downstream ecosystems.
 
 Vernal learns from Spring's proven concepts and from the local `tx-di` source,
 but it is not a JVM proxy model translated line by line. Ownership, lifetimes,
@@ -120,13 +120,13 @@ Detailed decisions, flows, failure semantics, and acceptance criteria are in:
 | `vernal-context` | Phase 3/diagnostics kernel implemented | Managed bootstrap, environment, typed configuration, conditional assembly, lifecycle, events, runners, scheduled tasks, redacted reports |
 | `vernal-macros` | Phase 2/3 macros implemented | Component/configuration metadata, operation declarations, and context-local async method weaving |
 | `vernal-web` | Phase 4 contract implemented | Framework-neutral context, request scope, handler, and error contracts |
-| `vernal-web-testkit` | Phase 4 binding/lifecycle contracts implemented | Shared Context/scope/component binding and success/error/drop cleanup assertions for all ten adapters |
+| `vernal-web-testkit` | Phase 4 binding/lifecycle contracts implemented | Shared Context/scope/component binding and success/error/drop cleanup assertions for all nine adapters |
 | `vernal-http` | Phase 4 contract implemented | HTTP request, response, body, streaming, cancellation, and backpressure |
 | `vernal-tower` | Phase 4 foundation implemented | Tower context, request scope, propagation, AOP, and configurable native error recovery |
 | `vernal-hyper` | Phase 4 foundation implemented | Lossless Hyper request/body-frame transport bridge |
 
 The target integration set is recorded in
-[`web-integration-manifest.toml`](./web-integration-manifest.toml). All ten
+[`web-integration-manifest.toml`](./web-integration-manifest.toml). All nine
 adapter crates contain runnable native integrations:
 
 | Priority | Framework | Vernal crate | Protocol | Status |
@@ -139,7 +139,6 @@ adapter crates contain runnable native integrations:
 | 6 | Poem | `vernal-poem` | HTTP | Phase 5 adapter + strict AOP |
 | 7 | Ntex | `vernal-ntex` | HTTP | Phase 5 adapter + strict Local-AOP |
 | 8 | Gotham | `vernal-gotham` | HTTP | Phase 5 adapter + strict AOP |
-| 9 | Tide | `vernal-tide` | HTTP | Phase 5 adapter + strict AOP |
 | 10 | Tonic | `vernal-tonic` | RPC streaming + Tower | Phase 5 adapter + strict AOP |
 
 Axum provides native Router assembly plus Context, component, request-scope
@@ -185,21 +184,15 @@ cleanup, and strict Send-AOP over the complete Pipeline Chain. A concrete
 Pipeline receives its full low-cardinality route pattern explicitly; owned
 request metadata crosses the async chain, missing patterns or plans fail
 closed, and native `HandlerError` status and cause are restored unchanged.
-Tide provides native `Middleware`, typed Request Extension access,
-response-reader-bound Scope cleanup, and strict Send-AOP over the complete
-Middleware/Endpoint chain. Because Tide exposes route parameters but not the
-matched template, strict middleware receives the same full low-cardinality
-route pattern explicitly; it combines that pattern with the real method,
-carries an owned cross-HTTP-model snapshot, fail-closes missing patterns or
-plans, and preserves native responses through `BorrowedInvocationTarget`.
 Tonic provides a Context interceptor,
 typed Request extensions, exact service/method operation identity, stable
 `Status` mapping, and a fail-closed AOP Tower layer.
 
-“Ten” is a versioned coverage priority derived from the reviewed local
-integration superset and current registry availability, not a claim of an
-objective universal popularity ranking. Tonic is explicitly an RPC integration,
-while Tower and Hyper are foundations rather than application frameworks.
+The workspace requires Rust 1.90 or newer. The Tide adapter was retired
+because Tide and several of its dependencies are unmaintained. Applications
+using the former `vernal-tide` crate can move their HTTP middleware to
+`vernal-actix-web` or `vernal-axum` while retaining framework-neutral
+`vernal-http` and `vernal-web` integrations.
 
 Target dependency direction:
 
@@ -798,7 +791,7 @@ L5  Depends on L4
     └── vernal-r2dbc       ✅ done
 
 L6  Web framework adapters (depends on L4 + L5, parallelise)  ✅ all done
-    ├── vernal-axum / actix-web / poem / salvo / rocket / warp / ntex / gotham / tide
+    ├── vernal-axum / actix-web / poem / salvo / rocket / warp / ntex / gotham
     └── vernal-tonic (gRPC)
 
 L7  Top-level facade
@@ -859,7 +852,7 @@ under design. There is no crates.io installation command or stable API yet.
 | 1 | `vernal-core` + `vernal-beans` minimum kernel | Graph, scope, resolution tests |
 | 2 | `vernal-aop` + macros | Ordering, error, async, and compile-fail tests |
 | 3 | `vernal-context` lifecycle and events | Startup, rollback, and shutdown tests |
-| 4 | Web/HTTP contracts, Tower/Hyper, and ten adapters | Cross-framework conformance suite |
+| 4 | Web/HTTP contracts, Tower/Hyper, and nine adapters | Cross-framework conformance suite |
 | 5 | Hutool-Rust, Sa-Token-Rust, and Ddd4r bridges | Consumer-owned integration examples |
 | 6 | Preview release | MSRV, SemVer, security, docs.rs, and package gates |
 
@@ -869,7 +862,7 @@ named application module installs the native security graph and both execution
 planes atomically; twelve bridge tests and two Environment-binding tests pass.
 Vernal now independently verifies its side of that boundary: the shared
 testkit covers principal projection and redacted 401/403 short-circuits; all
-nine HTTP adapters map authenticated denial to HTTP 403, while Tonic maps it to
+eight HTTP adapters map authenticated denial to HTTP 403, while Tonic maps it to
 gRPC `PermissionDenied`; Axum and Actix Web additionally prove principal
 visibility through the Send and Local success paths.
 Hutool-Rust owns a
@@ -954,14 +947,14 @@ Environment and roll back the outer module on invalid or duplicate condition
 identities.
 
 Phase 4 now makes `WebRequestScope` the Web facade over IoC `ScopeContext`.
-All ten adapters resolve singleton, transient, and request-scoped components
+All nine adapters resolve singleton, transient, and request-scoped components
 inside the active request scope. Every adapter invokes
 `vernal-web-testkit::WebAdapterContract` to verify native Context identity,
 scope ownership/key/open state/cancellation, and component `Arc` identity after
 same-scope re-resolution. `ScopeCloseProbe` and
 `ScopeRejectingInterceptor` additionally verify that every adapter closes the
 real scope after normal body completion, policy short-circuit, and response
-body drop without letting the testkit perform cleanup. All ten adapters now
+body drop without letting the testkit perform cleanup. All nine adapters now
 also trigger native `http-body`, byte-stream, Tokio `AsyncRead`, or Futures IO
 `AsyncRead` failures and prove that scope closure completes before the original
 transport failure is restored; the shared failure sources never own a scope.

@@ -40,9 +40,9 @@
 
 > 下列既存问题属于未完成证据。本报告只登记，不在文档治理任务中修改源码。
 
-- 单文件多个公开对象位于 `message.rs`：`Message`、`GenericMessage`
 - 单文件多个公开对象位于 `channel.rs`：`SendFuture`、`ReceiveFuture`、`MessageChannel`、`SubscribableChannel`、`SubscriptionId`、`MessageHandler`、`InMemoryChannel`、`MessageError`
 - 单文件多个公开对象位于 `default_simp_user_registry.rs`：`SimpSubscription`、`SimpSession`、`SimpUser`、`DefaultSimpUserRegistry`、`SharedSimpUserRegistry`
+- 单文件多个公开对象位于 `message.rs`：`Message`、`GenericMessage`
 
 ## 逐对象台账
 

@@ -40,31 +40,31 @@
 
 > 下列既存问题属于未完成证据。本报告只登记，不在文档治理任务中修改源码。
 
-- 单文件多个公开对象位于 `target_source.rs`：`TargetSource`、`SingletonTargetSource`、`LazyTargetSource`、`TargetClassAware`
-- 单文件多个公开对象位于 `method_matcher.rs`：`MethodMatcher`、`TrueMethodMatcher`、`StaticMethodMatcher`、`DynamicMethodMatcher`、`MethodMatcherFactory`
-- 单文件多个公开对象位于 `class_filter.rs`：`ClassFilter`、`TrueClassFilter`、`FnClassFilter`、`ClassFilterFactory`
-- 单文件多个公开对象位于 `local_invocation_result.rs`：`LocalInvocationValue`、`LocalInvocationResult`、`LocalInvocationFuture`、`LocalInvocationTarget`
-- 单文件多个公开对象位于 `proxy_method_invocation.rs`：`ProxyMethodInvocation`、`SimpleProxyMethodInvocation`、`IntroductionAwareMethodMatcher`、`AspectJPrecedenceInformation`
-- 单文件多个公开对象位于 `raw_target_access.rs`：`RawTargetAccess`、`Refreshable`、`PoolingConfig`、`ScopedObject`、`SpringProxy`、`ThreadLocalTargetSourceStats`、`AsyncUncaughtExceptionHandler`、`AopInfrastructureBean`、`AdvisedSupportListener`、`InstantiationModelAwarePointcutAdvisor`、`MetadataAwarePointcutAdvisor`
-- 单文件多个公开对象位于 `invocation_result.rs`：`InvocationValue`、`InvocationResult`、`InvocationFuture`、`InvocationTarget`
+- 单文件多个公开对象位于 `aop/advice.rs`：`Advice`、`AspectException`
+- 单文件多个公开对象位于 `aop/after_advice.rs`：`AfterAdvice`、`AfterReturningAdvice`、`ThrowsAdvice`
+- 单文件多个公开对象位于 `aop/before_advice.rs`：`BeforeAdvice`、`MethodBeforeAdvice`
+- 单文件多个公开对象位于 `aop/dynamic_introduction_advice.rs`：`DynamicIntroductionAdvice`、`IntroductionAdvice`、`IntroductionInterceptor`
 - 单文件多个公开对象位于 `aspect_rs_adapter.rs`：`AspectRsAdapter`、`AroundAdapter`
-- 单文件多个公开对象位于 `spring_proxy.rs`：`SpringProxy`、`DefaultSpringProxy`
+- 单文件多个公开对象位于 `aspectj/aspect_instance_factory.rs`：`AspectInstanceFactory`、`AspectInstanceError`、`SingletonAspectInstanceFactory`、`LazyAspectInstanceFactory`、`MetadataAwareAspectInstanceFactory`
+- 单文件多个公开对象位于 `class_filter.rs`：`ClassFilter`、`TrueClassFilter`、`FnClassFilter`、`ClassFilterFactory`
+- 单文件多个公开对象位于 `framework/adapter/advisor_adapter.rs`：`AdvisorAdapter`、`AdvisorAdapterRegistry`、`DefaultAdvisorAdapterRegistry`
+- 单文件多个公开对象位于 `framework/advised_support_listener.rs`：`AdvisedSupportListener`、`FnAdvisedSupportListener`
 - 单文件多个公开对象位于 `framework/advisor_chain_factory.rs`：`AdvisorChainFactory`、`DefaultAdvisorChainFactory`、`Advised`
 - 单文件多个公开对象位于 `framework/aop_infrastructure_bean.rs`：`AopInfrastructureBean`、`DefaultAopInfrastructureBean`
 - 单文件多个公开对象位于 `framework/aop_proxy.rs`：`AopProxy`、`AopProxyError`、`AopProxyFactory`、`FnAopProxy`
-- 单文件多个公开对象位于 `framework/advised_support_listener.rs`：`AdvisedSupportListener`、`FnAdvisedSupportListener`
-- 单文件多个公开对象位于 `intercept/joinpoint.rs`：`Joinpoint`、`MethodInvocation`、`InvocationChain`
-- 单文件多个公开对象位于 `intercept/constructor_interceptor.rs`：`ConstructorInvocation`、`ConstructorInvocationError`、`ConstructorInterceptor`、`FnConstructorInterceptor`
-- 单文件多个公开对象位于 `aspectj/aspect_instance_factory.rs`：`AspectInstanceFactory`、`AspectInstanceError`、`SingletonAspectInstanceFactory`、`LazyAspectInstanceFactory`、`MetadataAwareAspectInstanceFactory`
-- 单文件多个公开对象位于 `aop/dynamic_introduction_advice.rs`：`DynamicIntroductionAdvice`、`IntroductionAdvice`、`IntroductionInterceptor`
-- 单文件多个公开对象位于 `aop/after_advice.rs`：`AfterAdvice`、`AfterReturningAdvice`、`ThrowsAdvice`
-- 单文件多个公开对象位于 `aop/advice.rs`：`Advice`、`AspectException`
-- 单文件多个公开对象位于 `aop/before_advice.rs`：`BeforeAdvice`、`MethodBeforeAdvice`
-- 单文件多个公开对象位于 `support/expression_pointcut.rs`：`ExpressionPointcut`、`StringExpressionPointcut`
-- 单文件多个公开对象位于 `pointcut/dsl/pattern.rs`：`Visibility`、`NamePattern`、`ExecutionPattern`、`ModulePattern`
-- 单文件多个公开对象位于 `pointcut/dsl/matcher.rs`：`FunctionDescriptor`、`PointcutMatcher`、`TagPattern`、`QualifierPattern`
 - 单文件多个公开对象位于 `framework/autoproxy/target_source_creator.rs`：`TargetSourceCreator`、`FnTargetSourceCreator`
-- 单文件多个公开对象位于 `framework/adapter/advisor_adapter.rs`：`AdvisorAdapter`、`AdvisorAdapterRegistry`、`DefaultAdvisorAdapterRegistry`
+- 单文件多个公开对象位于 `intercept/constructor_interceptor.rs`：`ConstructorInvocation`、`ConstructorInvocationError`、`ConstructorInterceptor`、`FnConstructorInterceptor`
+- 单文件多个公开对象位于 `intercept/joinpoint.rs`：`Joinpoint`、`MethodInvocation`、`InvocationChain`
+- 单文件多个公开对象位于 `invocation_result.rs`：`InvocationValue`、`InvocationResult`、`InvocationFuture`、`InvocationTarget`
+- 单文件多个公开对象位于 `local_invocation_result.rs`：`LocalInvocationValue`、`LocalInvocationResult`、`LocalInvocationFuture`、`LocalInvocationTarget`
+- 单文件多个公开对象位于 `method_matcher.rs`：`MethodMatcher`、`TrueMethodMatcher`、`StaticMethodMatcher`、`DynamicMethodMatcher`、`MethodMatcherFactory`
+- 单文件多个公开对象位于 `pointcut/dsl/matcher.rs`：`FunctionDescriptor`、`PointcutMatcher`、`TagPattern`、`QualifierPattern`
+- 单文件多个公开对象位于 `pointcut/dsl/pattern.rs`：`Visibility`、`NamePattern`、`ExecutionPattern`、`ModulePattern`
+- 单文件多个公开对象位于 `proxy_method_invocation.rs`：`ProxyMethodInvocation`、`SimpleProxyMethodInvocation`、`IntroductionAwareMethodMatcher`、`AspectJPrecedenceInformation`
+- 单文件多个公开对象位于 `raw_target_access.rs`：`RawTargetAccess`、`Refreshable`、`PoolingConfig`、`ScopedObject`、`SpringProxy`、`ThreadLocalTargetSourceStats`、`AsyncUncaughtExceptionHandler`、`AopInfrastructureBean`、`AdvisedSupportListener`、`InstantiationModelAwarePointcutAdvisor`、`MetadataAwarePointcutAdvisor`
+- 单文件多个公开对象位于 `spring_proxy.rs`：`SpringProxy`、`DefaultSpringProxy`
+- 单文件多个公开对象位于 `support/expression_pointcut.rs`：`ExpressionPointcut`、`StringExpressionPointcut`
+- 单文件多个公开对象位于 `target_source.rs`：`TargetSource`、`SingletonTargetSource`、`LazyTargetSource`、`TargetClassAware`
 
 ## 依赖复用边界
 

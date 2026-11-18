@@ -169,14 +169,14 @@ def _test_sources(target_root: Path) -> list[tuple[str, str]]:
     sources: list[tuple[str, str]] = []
     tests_root = crate_root / "tests"
     if tests_root.is_dir():
-        for path in tests_root.rglob("*.rs"):
+        for path in sorted(tests_root.rglob("*.rs")):
             sources.append(
                 (
                     path.relative_to(crate_root).as_posix(),
                     path.read_text(encoding="utf-8", errors="ignore"),
                 )
             )
-    for path in target_root.rglob("*.rs"):
+    for path in sorted(target_root.rglob("*.rs")):
         text = path.read_text(encoding="utf-8", errors="ignore")
         marker = text.find("#[cfg(test)]")
         if marker >= 0:
@@ -391,7 +391,7 @@ def validate_rust_red_lines(module: ModuleConfig) -> list[str]:
     """
 
     violations: list[str] = []
-    for path in module.target_root.rglob("*.rs"):
+    for path in sorted(module.target_root.rglob("*.rs")):
         text = path.read_text(encoding="utf-8", errors="ignore")
         relative = path.relative_to(module.target_root)
         if path.name in {"lib.rs", "mod.rs"} and PUBLIC_TYPE_PATTERN.search(text):
