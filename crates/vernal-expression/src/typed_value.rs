@@ -135,8 +135,12 @@ impl fmt::Display for TypedValue {
                 }
                 f.write_str("}")
             }
-            ExpressionValue::DateTime(dt) => write!(f, "{dt}"),
-            ExpressionValue::Duration(d) => write!(f, "{d}"),
+            ExpressionValue::DateTime(dt) => {
+                f.write_str(&crate::expression_value::format_timestamp(*dt))
+            }
+            ExpressionValue::Duration(d) => {
+                f.write_str(&crate::expression_value::format_duration(*d))
+            }
             ExpressionValue::Object(_) => f.write_str("<object>"),
         }
     }

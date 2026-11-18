@@ -9,7 +9,7 @@ publish = false
 
 [dependencies]
 # Vernal 内核
-vernal-core = { path = "../vernal-core", features = ["once-cell", "registry", "convert-chrono", "convert-regex", "error-derive"] }
+vernal-core = { path = "../vernal-core", features = ["once-cell", "registry", "convert-regex", "error-derive"] }
 
 # 任意精度数字
 bigdecimal.workspace = true
@@ -17,7 +17,7 @@ num-bigint.workspace = true
 num-traits = { workspace = true, features = ["std"] }
 
 # 时间
-chrono.workspace = true
+jiff.workspace = true
 
 # 反射/集合/缓存
 inventory.workspace = true

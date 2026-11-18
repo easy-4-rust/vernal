@@ -17,7 +17,7 @@ actix-web = { version = "=4.11.0", default-features = false, features = ["macros
 axum = { version = "0.8.9", default-features = false, features = ["http1", "json", "matched-path", "tokio"] }
 bigdecimal = "0.4.7"
 bytes = "1.11.1"
-chrono = { version = "0.4.45", default-features = false, features = ["std", "clock"] }
+jiff = { version = "1.0.1", default-features = false, features = ["std"] }
 criterion = { version = "=0.7.0", default-features = false, features = ["async_tokio"] }
 dashmap = "6.1.0"
 futures-core = "0.3.32"
