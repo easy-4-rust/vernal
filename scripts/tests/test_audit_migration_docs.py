@@ -7,6 +7,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 
 SCRIPT = Path(__file__).resolve().parents[1] / "audit_migration_docs.py"
@@ -48,6 +49,21 @@ class NamingTests(unittest.TestCase):
 
 class SourceInspectionTests(unittest.TestCase):
     """验证 stub、mod.rs 和状态识别所需的基础逻辑。"""
+
+    def test_evidence_selection_is_independent_of_directory_order(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "src").mkdir()
+            (root / "tests").mkdir()
+            for name in ("alpha", "zeta"):
+                (root / "tests" / f"{name}.rs").write_text("assert_sample();", encoding="utf-8")
+            original_rglob = Path.rglob
+            with patch.object(
+                Path, "rglob",
+                lambda path, pattern: iter(sorted(original_rglob(path, pattern), reverse=True)),
+            ):
+                sources = AUDIT._test_sources(root / "src")
+            self.assertEqual(AUDIT._test_evidence(sources, "sample", "Sample"), "tests/alpha.rs")
 
     def test_stub_markers(self) -> None:
         self.assertTrue(AUDIT.has_stub_marker("fn run() { todo!() }"))

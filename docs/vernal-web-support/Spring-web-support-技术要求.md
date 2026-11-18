@@ -10,7 +10,7 @@
 
 - 来源主线：`spring-webmvc` 337 个对象、`spring-webflux` 252 个对象。
 - 目标：`vernal-web` 核心合同加 `vernal-actix-web`、`vernal-axum`、`vernal-warp`、
-  `vernal-rocket`、`vernal-salvo`、`vernal-tide` 等运行时 crate。
+  `vernal-rocket`、`vernal-salvo` 等运行时 crate。Tide 适配器已随 RustSec 依赖治理退役。
 - 当前没有统一对象台账报告，也没有名为 `vernal-web-support` 的 crate；状态为 `PLANNED`，
   不能宣称 589 个来源对象已迁移。
 

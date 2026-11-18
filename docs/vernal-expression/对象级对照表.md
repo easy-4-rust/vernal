@@ -41,14 +41,14 @@
 > 下列既存问题属于未完成证据。本报告只登记，不在文档治理任务中修改源码。
 
 - 单文件多个公开对象位于 `method_filter.rs`：`MethodFilter`、`MethodFilterRegistry`
-- 单文件多个公开对象位于 `property_accessor.rs`：`PropertyAccessor`、`IndexAccessor`
 - 单文件多个公开对象位于 `parser_context.rs`：`ParserContext`、`TemplateParserContext`
-- 单文件多个公开对象位于 `type_descriptor.rs`：`PrimitiveKind`、`TypeDescriptor`
+- 单文件多个公开对象位于 `property_accessor.rs`：`PropertyAccessor`、`IndexAccessor`
+- 单文件多个公开对象位于 `spel/ast/selection.rs`：`SelectionVariant`、`Selection`
 - 单文件多个公开对象位于 `spel/spel_message.rs`：`SpelMessage`、`MessageKind`
+- 单文件多个公开对象位于 `spel/support/reflective_constructor_resolver.rs`：`ReflectiveConstructorExecutor`、`ReflectiveConstructorResolver`
 - 单文件多个公开对象位于 `spel/support/reflective_method_resolver.rs`：`ArcReflectiveMethodExecutor`、`ReflectiveMethodResolver`、`ReflectiveMethodExecutor`
 - 单文件多个公开对象位于 `spel/support/reflective_property_accessor.rs`：`PropertyBinding`、`ReflectivePropertyAccessor`
-- 单文件多个公开对象位于 `spel/support/reflective_constructor_resolver.rs`：`ReflectiveConstructorExecutor`、`ReflectiveConstructorResolver`
-- 单文件多个公开对象位于 `spel/ast/selection.rs`：`SelectionVariant`、`Selection`
+- 单文件多个公开对象位于 `type_descriptor.rs`：`PrimitiveKind`、`TypeDescriptor`
 
 ## 逐对象台账
 
@@ -58,9 +58,9 @@
 | `org.springframework.expression.BeanResolver` | `BeanResolver.java` | `bean_resolver.rs` | `bean_resolver.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
 | `org.springframework.expression.ConstructorExecutor` | `ConstructorExecutor.java` | `constructor_executor.rs` | `constructor_executor.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
 | `org.springframework.expression.ConstructorResolver` | `ConstructorResolver.java` | `constructor_resolver.rs` | `constructor_resolver.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
-| `org.springframework.expression.EvaluationContext` | `EvaluationContext.java` | `evaluation_context.rs` | `evaluation_context.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `tests/selection_projection_tests.rs` |
+| `org.springframework.expression.EvaluationContext` | `EvaluationContext.java` | `evaluation_context.rs` | `evaluation_context.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `tests/ast_node_tests.rs` |
 | `org.springframework.expression.EvaluationException` | `EvaluationException.java` | `evaluation_exception.rs` | `evaluation_exception.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
-| `org.springframework.expression.Expression` | `Expression.java` | `expression.rs` | `expression.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `tests/selection_projection_tests.rs` |
+| `org.springframework.expression.Expression` | `Expression.java` | `expression.rs` | `expression.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `tests/ast_node_tests.rs` |
 | `org.springframework.expression.ExpressionException` | `ExpressionException.java` | `expression_exception.rs` | `expression_exception.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
 | `org.springframework.expression.ExpressionInvocationTargetException` | `ExpressionInvocationTargetException.java` | `expression_invocation_target_exception.rs` | `expression_invocation_target_exception.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释、测试引用 |
 | `org.springframework.expression.ExpressionParser` | `ExpressionParser.java` | `expression_parser.rs` | `—` | `MISSING` | 未找到同名 Rust 对象文件 |
@@ -77,7 +77,7 @@
 | `org.springframework.expression.TypeComparator` | `TypeComparator.java` | `type_comparator.rs` | `type_comparator.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
 | `org.springframework.expression.TypeConverter` | `TypeConverter.java` | `type_converter.rs` | `type_converter.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
 | `org.springframework.expression.TypeLocator` | `TypeLocator.java` | `type_locator.rs` | `type_locator.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
-| `org.springframework.expression.TypedValue` | `TypedValue.java` | `typed_value.rs` | `typed_value.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `tests/selection_projection_tests.rs` |
+| `org.springframework.expression.TypedValue` | `TypedValue.java` | `typed_value.rs` | `typed_value.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `tests/ast_node_tests.rs` |
 | `org.springframework.expression.common.CompositeStringExpression` | `common/CompositeStringExpression.java` | `common/composite_string_expression.rs` | `common/composite_string_expression.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
 | `org.springframework.expression.common.ExpressionUtils` | `common/ExpressionUtils.java` | `common/expression_utils.rs` | `common/expression_utils.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |
 | `org.springframework.expression.common.LiteralExpression` | `common/LiteralExpression.java` | `common/literal_expression.rs` | `common/literal_expression.rs` | `UNVERIFIED` | 缺少中文 Java 来源注释 |

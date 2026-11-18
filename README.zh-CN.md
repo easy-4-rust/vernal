@@ -24,7 +24,7 @@ Vernal 是 **句芒** 的英文品牌。句芒在中国古代文化中与春天�
 │ IoC 内核        构建、解析、作用域、图校验                │
 │ AOP 内核        匹配、组合、执行拦截器                    │
 │ Context         启动、生命周期、事件、关闭                │
-│ Web             Web / HTTP / 十个 Adapter                │
+│ Web             Web / HTTP / 九个 Adapter                │
 └──────────────────────────────────────────────────────────┘
     │ 显式端口与 Web 框架原生类型
     ▼
@@ -34,7 +34,7 @@ Hutool-Rust · Sa-Token-Rust · Ddd4r · 通用 Rust 应用
 > **项目状态**：实验阶段。Phase 1 IoC、Tokio-first 的 Phase 2 AOP 内核、
 > Phase 3 应用上下文，以及 Phase 4 Web/HTTP/Tower/Hyper 底座已有可调用实现
 > 和合同测试；Axum、Actix Web、Rocket、Warp、Salvo、Poem、Ntex、Gotham、
-> Tide 与 Tonic 十种适配器均已具备可运行实现，显式组件派生宏和 Context-local
+> Tonic 九种适配器均已具备可运行实现，显式组件派生宏和 Context-local
 > 异步 AOP 方法宏可调用但仍处实验阶段。当前尚未发布。
 
 ## 1. 愿景
@@ -45,7 +45,7 @@ Vernal 希望为 Rust 生态补齐小型基础库与完整 Web 框架之间可�
 - 可独立使用的 AOP 内核，负责有序、可组合的调用拦截；
 - 组合 IoC、AOP、生命周期、事件和配置，但不吞并底层内核的应用上下文；
 - 生成普通 Rust 代码、不隐藏反射运行时的过程宏；
-- 框架中立的 Web/HTTP 合同，以及面向选定十种 HTTP/RPC 框架和下游生态的薄适配
+- 框架中立的 Web/HTTP 合同，以及面向选定九种 HTTP/RPC 框架和下游生态的薄适配
   crate。
 
 Vernal 借鉴 Spring 已验证的核心概念，也吸收本地 `tx-di` 源码中有价值的实现思路，
@@ -109,13 +109,13 @@ Vernal 遵守四条不可退化的规则：
 | `vernal-context` | Phase 3/诊断内核已实现 | 应用环境、类型安全配置、条件装配、生命周期、事件、Runner、周期任务和脱敏报告 |
 | `vernal-macros` | Phase 2/3 宏已实现 | 组件/配置元数据、Operation 声明与 Context-local 异步方法织入 |
 | `vernal-web` | Phase 4 合同已实现 | 框架中立的 Context、请求 Scope、Handler 和错误合同 |
-| `vernal-web-testkit` | Phase 4 绑定/生命周期合同已实现 | 十个 Adapter 共享 Context/Scope/组件绑定及成功、错误、Drop 清理断言 |
+| `vernal-web-testkit` | Phase 4 绑定/生命周期合同已实现 | 九个 Adapter 共享 Context/Scope/组件绑定及成功、错误、Drop 清理断言 |
 | `vernal-http` | Phase 4 合同已实现 | HTTP 请求、响应、Body、流、取消和背压合同 |
 | `vernal-tower` | Phase 4 底座已实现 | Tower Context、请求 Scope、传播、AOP 与可配置原生错误恢复 |
 | `vernal-hyper` | Phase 4 底座已实现 | Hyper 请求与 Body Frame 无损传输桥接 |
 
 目标集成集合记录在
-[`web-integration-manifest.toml`](./web-integration-manifest.toml)。十个 Adapter
+[`web-integration-manifest.toml`](./web-integration-manifest.toml)。九个 Adapter
 crate 均已具备可运行的原生集成：
 
 | 优先级 | 框架 | Vernal crate | 协议 | 状态 |
@@ -128,7 +128,6 @@ crate 均已具备可运行的原生集成：
 | 6 | Poem | `vernal-poem` | HTTP | Phase 5 适配 + 严格 AOP 已实现 |
 | 7 | Ntex | `vernal-ntex` | HTTP | Phase 5 适配 + 严格 Local-AOP 已实现 |
 | 8 | Gotham | `vernal-gotham` | HTTP | Phase 5 适配 + 严格 AOP 已实现 |
-| 9 | Tide | `vernal-tide` | HTTP | Phase 5 适配 + 严格 AOP 已实现 |
 | 10 | Tonic | `vernal-tonic` | RPC Streaming + Tower | Phase 5 适配 + 严格 AOP 已实现 |
 
 Axum 已提供原生 Router 装配、Context/组件/请求 Scope 提取器、匹配路由操作
@@ -162,19 +161,14 @@ Endpoint Future 的严格 Around AOP；操作身份取自 Poem 匹配后的低�
 `StateData`、类型安全 State 扩展、Pipeline Middleware、Frame/Trailer
 保真的 Body 释放，以及覆盖完整 Pipeline Chain 的严格 Send-AOP。具体 Pipeline
 显式接收完整低基数路由模式，owned 请求元数据跨异步链传播；缺少模式或计划时
-fail-closed，原生 `HandlerError` 的状态码与错误源保持不变；Tide 已提供原生
-`Middleware`、类型化 Request Extension
-访问、响应 Reader 绑定的 Scope 释放，以及覆盖完整 Middleware/Endpoint 链的
-严格 Send-AOP。Tide 只暴露路由参数值而不暴露匹配模板，因此严格中间件显式
-接收同一条低基数完整路径模式，结合真实方法并携带跨 HTTP 模型的 owned 快照；
-缺少模式或计划时 fail-closed，原生响应通过 `BorrowedInvocationTarget` 保持；
+fail-closed，原生 `HandlerError` 的状态码与错误源保持不变。
 Tonic 已提供 Context Interceptor、
 类型化 Request 扩展、精确 Service/Method 操作身份、稳定 `Status` 映射和
 fail-closed AOP Tower Layer。
 
-这里的“十种”是基于本地源码集成并集和当前 registry 可用性形成的版本化覆盖优先级，
-不是对全世界 Rust 框架热度的绝对排名。Tonic 明确属于 RPC 集成；Tower 和 Hyper
-属于公共底座，不冒充应用层 Web 框架。
+工作区最低支持 Rust 1.90。Tide 及其多项依赖已停止维护，`vernal-tide`
+适配器已退役。现有应用可将 HTTP 中间件迁到 `vernal-actix-web` 或
+`vernal-axum`，继续使用中立的 `vernal-http` 和 `vernal-web` 接口。
 
 目标依赖方向：
 
@@ -193,7 +187,7 @@ flowchart TB
     HYPER["vernal-hyper"] --> HTTP
     IOC --> CORE["vernal-core"]
     AOP --> CORE
-    HTTPADAPTERS["九种 HTTP 适配器"] --> HTTP
+    HTTPADAPTERS["八种 HTTP 适配器"] --> HTTP
     TONIC["vernal-tonic"] --> TOWER
 ```
 
@@ -613,14 +607,14 @@ crates.io 安装命令，也没有稳定 API 承诺。
 | Phase 1 | `vernal-core` + `vernal-beans` 最小内核 | 依赖图、作用域和解析测试 |
 | Phase 2 | `vernal-aop` + 宏 | 顺序、错误、异步和编译失败测试 |
 | Phase 3 | `vernal-context` 生命周期和事件 | 启动、回滚和关闭测试 |
-| Phase 4 | Web/HTTP 合同、Tower/Hyper 与十个 Adapter | 跨框架一致性测试套件 |
+| Phase 4 | Web/HTTP 合同、Tower/Hyper 与九个 Adapter | 跨框架一致性测试套件 |
 | Phase 5 | Hutool-Rust、Sa-Token-Rust 和 Ddd4r 桥接 | 由消费方拥有的集成示例 |
 | Phase 6 | Preview 发布 | MSRV、SemVer、安全、docs.rs 和打包门禁 |
 
 Phase 5 正在进行：Sa-Token-Rust 已远端集成 `sa-token-vernal` 认证、操作授权
 AOP 与 Environment 配置绑定；其具名应用模块会原子安装原生安全组件图和两个
 执行平面，12 个 Bridge 测试与 2 个配置绑定测试通过。Vernal 现已独立验证自己
-一侧的合同：共享 Testkit 覆盖 Principal 投影和脱敏 401/403 短路；九个 HTTP
+一侧的合同：共享 Testkit 覆盖 Principal 投影和脱敏 401/403 短路；八个 HTTP
 Adapter 均把已认证拒绝映射为 HTTP 403，Tonic 映射为 gRPC
 `PermissionDenied`；Axum 与 Actix Web 还分别证明 Send/Local 成功路径可读取
 Principal。Hutool-Rust 已远端集成
@@ -680,17 +674,17 @@ fail-closed、条件错误脱敏，以及成功/失败启动报告的只读性�
 
 Phase 4 已把 `WebRequestScope` 收敛为 IoC `ScopeContext` 的 Web 门面，十个
 Adapter 的组件提取器均在当前请求 Scope 内解析 Singleton、Transient 或请求级
-组件。`vernal-web-testkit::WebAdapterContract` 已被十个 Adapter 共同调用，
+组件。`vernal-web-testkit::WebAdapterContract` 已被九个 Adapter 共同调用，
 验证原生 Context、Scope 所有权、Scope 身份、Open/取消状态及二次解析的
 组件 `Arc` 身份。`ScopeCloseProbe` 与 `ScopeRejectingInterceptor` 还让十个
 Adapter 共同验证正常 Body 完成、策略短路和响应 Body Drop 后由 Adapter 自身
-关闭真实 Scope，testkit 不参与清理。十个 Adapter 现在还分别以原生
+关闭真实 Scope，testkit 不参与清理。九个 Adapter 现在还分别以原生
 `http-body`、字节 `Stream`、Tokio `AsyncRead` 或 Futures IO `AsyncRead`
 触发上游流错误，验证 Adapter 会先异步关闭 Scope，再恢复原始传输失败；共享
 失败源仍不持有 Scope。`ScopeCleanupTimeoutFixture` 还为每个 Adapter 建立采用
 有界策略的真实应用请求 Scope 和可控阻塞钩子，验证原生 Body/Stream/Reader 会
 在预算内返回结构化超时，只记录脱敏告警，并让唯一后台协调器在钩子释放后恰好
-一次进入 `Closed`。十个 Adapter 还会各自消费一个原生数据帧、字节块或字节，
+一次进入 `Closed`。九个 Adapter 还会各自消费一个原生数据帧、字节块或字节，
 但不轮询终止边界，随后丢弃响应消费者；这一确定性的框架边界断连合同已证明
 `DropGuard` 取消会唤醒预启动清理任务，并关闭仍处于 Open 的 Scope。真实网络
 Socket 断连 E2E、让下游 Sa-Token-Rust Bridge 的固定 Revision 跟进最新

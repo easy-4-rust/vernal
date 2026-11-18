@@ -10,7 +10,7 @@ use vernal_web::WebRequestScope;
 ///
 /// 各框架仍使用自己的 Router、Middleware、Extractor、Request Guard 或 Extension
 /// 产生三个原生观察值；本对象只验证它们最终落在同一个 Vernal 语义上。这样
-/// Axum、Actix Web、Rocket、Warp、Salvo、Poem、Ntex、Gotham、Tide 和 Tonic
+/// Axum、Actix Web、Rocket、Warp、Salvo、Poem、Ntex、Gotham 和 Tonic
 /// 不会各自复制一套容易漂移的“看起来差不多”断言。
 pub struct WebAdapterContract;
 

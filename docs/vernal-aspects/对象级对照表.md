@@ -40,34 +40,34 @@
 
 > 下列既存问题属于未完成证据。本报告只登记，不在文档治理任务中修改源码。
 
-- 单文件多个公开对象位于 `transactional_aspect.rs`：`Propagation`、`Isolation`、`TransactionConfig`、`TransactionalAspect`
 - 单文件多个公开对象位于 `async_aspect.rs`：`AsyncConfig`、`AsyncAspect`
-- 单文件多个公开对象位于 `cacheable_aspect.rs`：`CacheOperation`、`CacheConfig`、`CacheableAspect`
-- 单文件多个公开对象位于 `scheduled_aspect.rs`：`ScheduleConfig`、`ScheduledAspect`
-- 单文件多个公开对象位于 `weaver/pointcut_matcher.rs`：`MethodMetadata`、`PointcutMatcher`
-- 类型定义位于 `support/mod.rs`
-- 单文件多个公开对象位于 `factory/aspectj/configurable_object.rs`：`ConfigurableObject`、`ConfigurableObjectWithLifetime`
-- 单文件多个公开对象位于 `beans/factory/aspectj/configurable_object.rs`：`ConfigurableObject`、`ConfigurableObjectWithLifetime`
 - 单文件多个公开对象位于 `beans/factory/aspectj/abstract_dependency_injection_aspect.rs`：`MethodMetadata`、`AbstractDependencyInjectionAspect`
-- 单文件多个公开对象位于 `scheduling/aspectj/async_task_executor.rs`：`AsyncTaskResult`、`AsyncTaskExecutor`、`DefaultAsyncTaskExecutor`
-- 单文件多个公开对象位于 `scheduling/aspectj/abstract_async_execution_aspect.rs`：`MethodMetadata`、`AsyncExecutionResult`、`AbstractAsyncExecutionAspect`
-- 单文件多个公开对象位于 `scheduling/aspectj/async_uncaught_exception_handler.rs`：`AsyncUncaughtExceptionHandler`、`DefaultAsyncUncaughtExceptionHandler`
-- 单文件多个公开对象位于 `cache/aspectj/cache_operation.rs`：`CacheOperation`、`CacheOperationMetadata`
+- 单文件多个公开对象位于 `beans/factory/aspectj/configurable_object.rs`：`ConfigurableObject`、`ConfigurableObjectWithLifetime`
 - 单文件多个公开对象位于 `cache/aspectj/cache_aspect_support.rs`：`CacheResult`、`CacheManager`、`Cache`、`CacheOperationInvoker`、`CacheAspectSupport`
+- 单文件多个公开对象位于 `cache/aspectj/cache_operation.rs`：`CacheOperation`、`CacheOperationMetadata`
 - 单文件多个公开对象位于 `cache/aspectj/cache_operation_source.rs`：`MethodMetadata`、`CacheOperationSource`、`AnnotationCacheOperationSource`
+- 单文件多个公开对象位于 `cacheable_aspect.rs`：`CacheOperation`、`CacheConfig`、`CacheableAspect`
+- 单文件多个公开对象位于 `factory/aspectj/configurable_object.rs`：`ConfigurableObject`、`ConfigurableObjectWithLifetime`
+- 单文件多个公开对象位于 `scheduled_aspect.rs`：`ScheduleConfig`、`ScheduledAspect`
+- 单文件多个公开对象位于 `scheduling/aspectj/abstract_async_execution_aspect.rs`：`MethodMetadata`、`AsyncExecutionResult`、`AbstractAsyncExecutionAspect`
+- 单文件多个公开对象位于 `scheduling/aspectj/async_task_executor.rs`：`AsyncTaskResult`、`AsyncTaskExecutor`、`DefaultAsyncTaskExecutor`
+- 单文件多个公开对象位于 `scheduling/aspectj/async_uncaught_exception_handler.rs`：`AsyncUncaughtExceptionHandler`、`DefaultAsyncUncaughtExceptionHandler`
+- 类型定义位于 `support/mod.rs`
 - 单文件多个公开对象位于 `transaction/aspectj/transaction_aspect_support.rs`：`TransactionResult`、`TransactionError`、`TransactionManager`、`NoOpTransactionManager`、`SuspendedTransactionInfo`、`TransactionAspectSupport`
 - 单文件多个公开对象位于 `transaction/aspectj/transaction_attribute_source.rs`：`MethodMetadata`、`TransactionAttributeSource`、`AnnotationTransactionAttributeSource`
+- 单文件多个公开对象位于 `transactional_aspect.rs`：`Propagation`、`Isolation`、`TransactionConfig`、`TransactionalAspect`
+- 单文件多个公开对象位于 `weaver/pointcut_matcher.rs`：`MethodMetadata`、`PointcutMatcher`
 
 ## 逐对象台账
 
 | Java FQN | Java 相对路径 | 预期 Rust 路径 | 当前 Rust 路径 | 状态 | 证据 |
 |---|---|---|---|---|---|
-| `org.springframework.beans.factory.aspectj.ConfigurableObject` | `beans/factory/aspectj/ConfigurableObject.java` | `factory/aspectj/configurable_object.rs` | `factory/aspectj/configurable_object.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/lib.rs#[cfg(test)]` |
+| `org.springframework.beans.factory.aspectj.ConfigurableObject` | `beans/factory/aspectj/ConfigurableObject.java` | `factory/aspectj/configurable_object.rs` | `factory/aspectj/configurable_object.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/beans/factory/aspectj/abstract_dependency_injection_aspect.rs#[cfg(test)]` |
 | `org.springframework.cache.aspectj.AnyThrow` | `cache/aspectj/AnyThrow.java` | `cache/aspectj/any_throw.rs` | `cache/aspectj/any_throw.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/cache/aspectj/any_throw.rs#[cfg(test)]` |
 | `org.springframework.cache.aspectj.AspectJCachingConfiguration` | `cache/aspectj/AspectJCachingConfiguration.java` | `cache/aspectj/aspect_j_caching_configuration.rs` | `cache/aspectj/aspect_j_caching_configuration.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/cache/aspectj/aspect_j_caching_configuration.rs#[cfg(test)]` |
 | `org.springframework.cache.aspectj.AspectJJCacheConfiguration` | `cache/aspectj/AspectJJCacheConfiguration.java` | `cache/aspectj/aspect_jj_cache_configuration.rs` | `cache/aspectj/aspect_jj_cache_configuration.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/cache/aspectj/aspect_jj_cache_configuration.rs#[cfg(test)]` |
 | `org.springframework.context.annotation.aspectj.EnableSpringConfigured` | `context/annotation/aspectj/EnableSpringConfigured.java` | `annotation/aspectj/enable_spring_configured.rs` | `annotation/aspectj/enable_spring_configured.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/annotation/aspectj/enable_spring_configured.rs#[cfg(test)]` |
-| `org.springframework.context.annotation.aspectj.SpringConfiguredConfiguration` | `context/annotation/aspectj/SpringConfiguredConfiguration.java` | `annotation/aspectj/spring_configured_configuration.rs` | `annotation/aspectj/spring_configured_configuration.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/lib.rs#[cfg(test)]` |
+| `org.springframework.context.annotation.aspectj.SpringConfiguredConfiguration` | `context/annotation/aspectj/SpringConfiguredConfiguration.java` | `annotation/aspectj/spring_configured_configuration.rs` | `annotation/aspectj/spring_configured_configuration.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/annotation/aspectj/enable_spring_configured.rs#[cfg(test)]` |
 | `org.springframework.scheduling.aspectj.AspectJAsyncConfiguration` | `scheduling/aspectj/AspectJAsyncConfiguration.java` | `scheduling/aspectj/aspect_j_async_configuration.rs` | `scheduling/aspectj/aspect_j_async_configuration.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/scheduling/aspectj/aspect_j_async_configuration.rs#[cfg(test)]` |
 | `org.springframework.transaction.aspectj.AspectJJtaTransactionManagementConfiguration` | `transaction/aspectj/AspectJJtaTransactionManagementConfiguration.java` | `transaction/aspectj/aspect_j_jta_transaction_management_configuration.rs` | `transaction/aspectj/aspect_j_jta_transaction_management_configuration.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/transaction/aspectj/aspect_j_jta_transaction_management_configuration.rs#[cfg(test)]` |
 | `org.springframework.transaction.aspectj.AspectJTransactionManagementConfiguration` | `transaction/aspectj/AspectJTransactionManagementConfiguration.java` | `transaction/aspectj/aspect_j_transaction_management_configuration.rs` | `transaction/aspectj/aspect_j_transaction_management_configuration.rs` | `IMPLEMENTED` | 预期路径、公开主类型、中文 Java 来源注释均存在；测试证据 `src/transaction/aspectj/aspect_j_transaction_management_configuration.rs#[cfg(test)]` |

@@ -38,7 +38,9 @@
 
 ## 结构红线
 
-- 未发现 `lib.rs`/`mod.rs` 类型定义或生产 wildcard import。
+> 下列既存问题属于未完成证据。本报告只登记，不在文档治理任务中修改源码。
+
+- 单文件多个公开对象位于 `view.rs`：`Model`、`ViewError`、`RenderedView`、`View`、`ViewResolver`
 
 ## 逐对象台账
 
